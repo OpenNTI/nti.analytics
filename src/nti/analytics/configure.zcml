@@ -1,0 +1,134 @@
+<!-- -*- mode: nxml -*- -->
+<configure	xmlns="http://namespaces.zope.org/zope"
+			xmlns:i18n="http://namespaces.zope.org/i18n"
+			xmlns:zcml="http://namespaces.zope.org/zcml"
+			xmlns:gdb="http://nextthought.com/ntp/graphdb">
+
+	<include package="zope.component" file="meta.zcml" />
+	<include package="zope.security" file="meta.zcml" />
+	<include package="zope.component" />
+
+	<!-- access to the views under .../graph/ -->
+	
+	<adapter name="graphdb"
+			 for="nti.dataserver.interfaces.IDataserverFolder pyramid.interfaces.IRequest"
+			 factory=".views.GraphPathAdapter"
+			 provides="zope.traversing.interfaces.IPathAdapter" />
+			
+	<!-- generations -->
+	
+	<utility factory=".generations.install._GraphDBSchemaManager"
+			 name="nti.dataserver-graphdb"
+			 provides="zope.generations.interfaces.IInstallableSchemaManager"/>
+			  
+	<include package=".async" file="configure.zcml" />
+	
+	<!-- database -->
+	
+	<include package=".neo4j" file="configure.zcml" />
+	
+	<!-- adapters -->
+		 		
+	<adapter factory=".containers._default_container_adapter"
+			 provides=".interfaces.IContainer"
+			 for="basestring" />
+			 
+	<include package="." file="configure_labels.zcml" />
+	<include package="." file="configure_unique.zcml" />
+	<include package="." file="configure_properties.zcml" />
+			   
+	<!-- subscribers -->
+	 
+	<subscriber handler=".subscribers._set_change_listener" />
+	
+	<subscriber handler=".search._search_completed" />
+	
+	<subscriber handler=".entities._entity_added" />
+	<subscriber handler=".entities._entity_removed" />
+	
+	<subscriber handler=".connections._friendslist_added" />
+	<subscriber handler=".connections._friendslist_modified" />
+	<subscriber handler=".connections._friendslist_deleted" />
+	
+	<subscriber handler=".connections._dfl_deleted" />
+	
+	<subscriber handler=".connections._stop_following_event" />
+	<subscriber handler=".connections._start_following_event" />
+	
+	<subscriber handler=".connections._stop_dynamic_membership_event" />
+	<subscriber handler=".connections._start_dynamic_membership_event" />
+	
+	<subscriber handler=".discussions._topic_added" />
+	<subscriber handler=".discussions._topic_removed" />
+	<subscriber handler=".discussions._topic_modified" />
+		
+	<subscriber handler=".discussions._forum_added" />
+	<subscriber handler=".discussions._forum_removed" />
+	<subscriber handler=".discussions._forum_modified" />
+	
+	<subscriber handler=".discussions._add_personal_blog_comment" />
+	<subscriber handler=".discussions._add_general_forum_comment" />
+	<subscriber handler=".discussions._modify_personal_blog_comment" />
+	<subscriber handler=".discussions._modify_general_forum_comment" />
+	
+	<subscriber handler=".ratings._topic_rated" />
+	<subscriber handler=".ratings._object_rated" />
+	
+	<subscriber handler=".threadables._threadable_added" />
+	<subscriber handler=".threadables._threadable_removed" />
+	<subscriber handler=".threadables._threadable_modified" />
+	
+	<subscriber handler=".sharing._shareable_added" />
+	<subscriber handler=".sharing._shareable_modified" />
+	
+	<subscriber handler=".flagging._object_flagged" />
+	<subscriber handler=".flagging._object_unflagged" />
+	
+	<subscriber handler=".assessments._grade_added" />
+	<subscriber handler=".assessments._grade_modified" />
+	
+	<subscriber handler=".assessments._question_assessed" />
+	<subscriber handler=".assessments._questionset_assessed" />
+	<subscriber handler=".assessments._assignment_history_item_added" />
+	
+	<subscriber handler=".assessments._feedback_added" />
+	<subscriber handler=".assessments._feedback_removed" />
+	
+	<subscriber handler=".containers._contained_added" />
+	<subscriber handler=".containers._contained_removed" />
+	<subscriber handler=".containers._contained_modified" />
+		
+	<subscriber handler=".creators._object_created" />
+	<subscriber handler=".creators._object_modified" />
+	<subscriber handler=".creators._object_removed" />
+	<subscriber handler=".creators._message_posted_to_room" />
+	
+	<!-- utils -->
+	
+	<utility component=".entities" provides=".interfaces.IObjectProcessor" name="entities"/>
+	<utility component=".connections" provides=".interfaces.IObjectProcessor" name="connections"/>
+	<utility component=".creators" provides=".interfaces.IObjectProcessor" name="creators"/>
+	<utility component=".containers" provides=".interfaces.IObjectProcessor" name="containers"/>
+	<utility component=".threadables" provides=".interfaces.IObjectProcessor" name="threadables"/>
+	<utility component=".sharing" provides=".interfaces.IObjectProcessor" name="sharing"/>
+	<utility component=".tagging" provides=".interfaces.IObjectProcessor" name="tagging"/>
+	<utility component=".flagging" provides=".interfaces.IObjectProcessor" name="flagging"/>
+	<utility component=".ratings" provides=".interfaces.IObjectProcessor" name="ratings"/>
+	<utility component=".discussions" provides=".interfaces.IObjectProcessor" name="discussions"/>
+	<utility component=".assessments" provides=".interfaces.IObjectProcessor" name="assessments"/>
+		
+	<!-- graph stores -->
+	
+	<include package="." file="meta.zcml" />
+		
+	<configure zcml:condition="have devmode">
+		<gdb:registerGraphDB
+			url="http://localhost:7474/db/data/" />
+		
+		<gdb:registerGraphDB
+			url="http://localhost:7474/db/data/" 
+			name="janux.ou.edu" />
+	</configure>
+
+</configure>
+
