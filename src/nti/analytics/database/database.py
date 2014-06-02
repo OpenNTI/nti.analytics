@@ -110,66 +110,70 @@ class AnalyticsDB(object):
 		
 		
 
-	#StudentParticipationReport	
-	def get_comments_for_user(self, session, user, course_id):		
-		results = session.query(CommentsCreated).filter( user_id=user.intid, course_id=course_id, deleted=None ).all()
-		return results
-	
-	def get_discussions_created_for_user(self, session, user, course_id):		
-		results = session.query(DiscussionsCreated).filter( user_id=user.intid, course_id=course_id, deleted=None  ).all()
-		return results
-	
-	def get_self_assessments_for_user(self, session, user, course_id):		
-		results = session.query(SelfAssessmentsTaken).filter( user_id=user.intid, course_id=course_id ).all()
-		return results
-	
-	def get_assignments_for_user(self, session, user, course_id):		
-		results = session.query(AssignmentsTaken).filter( user_id=user.intid, course_id=course_id ).all()
-		return results
-	
-	#TopicReport
-	def get_comments_for_discussion(self, session, discussion_id):
-		results = session.query(CommentsCreated).filter( discussion_id=discussion_id ).all()
-		return results
-	
-	#ForumReport
-	def get_comments_for_forum(self, session, forum_id):
-		results = session.query(CommentsCreated).filter( forum_id=forum_id, deleted=None  ).all()
-		return results
-	
-	def get_discussions_created_for_forum(self, session, forum_id):		
-		results = session.query(DiscussionsCreated).filter( forum_id=forum_id, deleted=None  ).all()
-		return results
-	
-	#CourseReport
-	def get_comments_for_course(self, session, course_id):
-		results = session.query(CommentsCreated).filter( course_id=course_id, deleted=None  ).all()
-		return results
-	
-	def get_discussions_created_for_course(self, session, course_id):		
-		results = session.query(DiscussionsCreated).filter( course_id=course_id, deleted=None  ).all()
-		return results
-	
-	def get_self_assessments_for_course(self, session, course_id):		
-		results = session.query(SelfAssessmentsTaken).filter( course_id=course_id ).all()
-		return results
-	
-	def get_assignments_for_course(self, session, course_id):		
-		results = session.query(AssignmentsTaken).filter( course_id=course_id ).all()
-		return results
-	
-	def get_notes_created_for_course(self, session, course_id):		
-		results = session.query(NotesCreated).filter( course_id=course_id, deleted=None  ).all()
-		return results
-	
-	def get_highlights_created_for_course(self, session, course_id):		
-		results = session.query(HighlightsCreated).filter( course_id=course_id, deleted=None  ).all()
-		return results
-	
-	#AssignmentReport
-	def get_assignment_details_for_course(self, session, course_id):		
-		results = session.query(AssignmentDetails).filter( course_id=course_id ).all()
-		return results
+#StudentParticipationReport	
+def get_comments_for_user(session, user, course_id):		
+	results = session.query(CommentsCreated).filter( 	CommentsCreated.user_id == user.intid, 
+														CommentsCreated.course_id==course_id, 
+														CommentsCreated.deleted==None ).all()
+	return results
+
+def get_discussions_created_for_user(session, user, course_id):		
+	results = session.query(DiscussionsCreated).filter( user_id=user.intid, course_id=course_id, deleted=None  ).all()
+	return results
+
+def get_self_assessments_for_user(session, user, course_id):		
+	results = session.query(SelfAssessmentsTaken).filter( user_id=user.intid, course_id=course_id ).all()
+	return results
+
+def get_assignments_for_user(session, user, course_id):		
+	results = session.query(AssignmentsTaken).filter( user_id=user.intid, course_id=course_id ).all()
+	return results
+
+#TopicReport
+def get_comments_for_discussion(session, discussion_id):
+	results = session.query(CommentsCreated).filter( CommentsCreated.discussion_id==discussion_id ).all()
+	return results
+
+#ForumReport
+def get_comments_for_forum(session, forum_id):
+	results = session.query(CommentsCreated).filter( 	CommentsCreated.forum_id==forum_id, 
+														CommentsCreated.deleted==None  ).all()
+	return results
+
+def get_discussions_created_for_forum(session, forum_id):		
+	results = session.query(DiscussionsCreated).filter( forum_id=forum_id, deleted=None  ).all()
+	return results
+
+#CourseReport
+def get_comments_for_course(session, course_id):
+	results = session.query(CommentsCreated).filter( 	CommentsCreated.course_id==course_id, 
+														CommentsCreated.deleted==None  ).all()
+	return results
+
+def get_discussions_created_for_course(session, course_id):		
+	results = session.query(DiscussionsCreated).filter( course_id=course_id, deleted=None  ).all()
+	return results
+
+def get_self_assessments_for_course(session, course_id):		
+	results = session.query(SelfAssessmentsTaken).filter( course_id=course_id ).all()
+	return results
+
+def get_assignments_for_course(session, course_id):		
+	results = session.query(AssignmentsTaken).filter( course_id=course_id ).all()
+	return results
+
+def get_notes_created_for_course(session, course_id):		
+	results = session.query(NotesCreated).filter( course_id=course_id, deleted=None  ).all()
+	return results
+
+def get_highlights_created_for_course(session, course_id):		
+	results = session.query(HighlightsCreated).filter( course_id=course_id, deleted=None  ).all()
+	return results
+
+#AssignmentReport
+def get_assignment_details_for_course(session, course_id):		
+	results = session.query(AssignmentDetails).filter( course_id=course_id ).all()
+	return results
 
 def create_database( dburi=None, twophase=False, defaultSQLite=False, autocommit=False ):
 	if defaultSQLite:

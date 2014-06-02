@@ -14,6 +14,8 @@ from datetime import datetime
 
 from tempfile import mkstemp
 
+from collections import namedtuple
+
 from hamcrest import is_
 from hamcrest import none
 from hamcrest import not_none
@@ -50,6 +52,8 @@ from ..metadata import AssignmentDetails
 from metadata import SelfAssessmentsTaken
 
 from ..database import create_database
+from ..database import get_comments_for_course
+from ..database import get_comments_for_user
 
 from sqlalchemy.orm.exc import FlushError
 from sqlalchemy.exc import IntegrityError
@@ -119,6 +123,8 @@ class TestUsers(unittest.TestCase):
 		assert_that( new_session.ip_addr, '0.1.2.3.4' )	
 		assert_that( new_session.version, 'webapp-0.9' )	
 
+_User = namedtuple('_User', ('intid',))
+
 class TestAnalytics(unittest.TestCase):
 
 	def setUp(self):
@@ -151,5 +157,47 @@ class TestAnalytics(unittest.TestCase):
 		assert_that( new_chat.user_id, test_user_id )
 		assert_that( new_chat.session_id, test_session_id )
 		assert_that( new_chat.timestamp, 0 )	
+		
+	def test_comments(self):
+		results = self.session.query( CommentsCreated ).all()
+		assert_that( results, has_length( 0 ) )
+		results = get_comments_for_user( self.session, user=_User(test_user_id), course_id='course1')
+		assert_that( results, has_length( 0 ) )
+		
+		#Forum
+		new_forum = ForumsCreated( 	session_id=test_session_id, 
+									user_id=test_user_id, 
+									timestamp=datetime.now(),
+									forum_id='forum1',
+									course_id='course1' )
+		self.session.add( new_forum )
+		
+		#Discussion
+		new_discussion = DiscussionsCreated( 	session_id=test_session_id, 
+												user_id=test_user_id, 
+												timestamp=datetime.now(),
+												forum_id='forum1',
+												discussion_id='discussion1',
+												course_id='course1' )
+		self.session.add( new_discussion )
+		
+		#Top level comments
+		new_comment = CommentsCreated( 	session_id=test_session_id, 
+										user_id=test_user_id, 
+										timestamp=datetime.now(),
+										forum_id='forum1',
+										discussion_id='discussion1',
+										comment_id=1,
+										course_id='course1' )
+		self.session.add( new_comment )
+
+		results = get_comments_for_user( self.session, user=_User(test_user_id), course_id='course1')
+		assert_that( results, has_length( 1 ) )
+		
+		results = get_comments_for_course( self.session, course_id='course1')
+		assert_that( results, has_length( 1 ) )
+		
+		result = results[0]
+		
 	
 

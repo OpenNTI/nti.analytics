@@ -44,8 +44,8 @@ class Sessions(Base):
 	__tablename__ = 'sessions'
 	session_id = Column('session_id', Integer, primary_key=True)
 	user_id = Column('user_id', Integer, ForeignKey("users.user_id"), nullable=False )
-	ip_addr = Column('ip_addr', String(64) )	
-	version = Column('version', String(64) )
+	ip_addr = Column('ip_addr', String(64))	
+	version = Column('version', String(64))
 	timestamp = Column('timestamp', DateTime)
 
 
@@ -129,7 +129,7 @@ class VideoEvents(Base,ResourceViewMixin,TimeLengthMixin):
 	
 class NotesCreated(Base,ResourceMixin,DeletedMixin):	
 	__tablename__ = 'notes_created'
-	sharing = Column('sharing', Enum( 'PUBLIC', 'PRIVATE', 'COURSE_ONLY' ), nullable=False ) #PUBLIC|PRIVATE|COURSE_ONLY	
+	sharing = Column('sharing', Enum( 'PUBLIC', 'PRIVATE', 'COURSE_ONLY' ), nullable=False )
 
 # TODO time_length?
 class NotesViewed(Base,ResourceMixin):	
@@ -161,13 +161,12 @@ class DiscussionsViewed(Base,DiscussionMixin,TimeLengthMixin):
 	__tablename__ = 'discussions_viewed'	
 
 # TOOD these will not be just in forums, we may have these in thoughts...We should distinguish.
-
 class CommentsCreated(Base,DiscussionMixin,DeletedMixin):
 	__tablename__ = 'comments_created'		
 	# comment_id should be the DS intid
 	comment_id = Column('comment_id', Integer, nullable=False)
 	# parent_id should point to a parent comment, top-level comments will have null parent_ids
-	parent_id = Column('parent_id', Integer, nullable=False)
+	parent_id = Column('parent_id', Integer)
 
 class CourseCatalogViews(Base,CourseMixin):	
 	#TODO time_length?	
@@ -218,9 +217,7 @@ class AssignmentDetails(Base,AssignmentMixin):
 ## TODO LIST
 #	examine String limits
 #		TODO Should we use TEXT instead of String?
-#	constraint
-
-# Deleted comments/forums
+#	constraints
 
 # Timestamps TEXT here?
 
