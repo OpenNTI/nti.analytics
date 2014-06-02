@@ -7,7 +7,9 @@ __docformat__ = "restructuredtext en"
 # disable: accessing protected members, too many methods
 # pylint: disable=W0212,R0904
 
+import os
 import unittest
+from tempfile import mkstemp
 
 from hamcrest import is_
 from hamcrest import none
@@ -25,10 +27,16 @@ from ..database import create_database
 class TestAnalytics(unittest.TestCase):
 
 	def setUp(self):
-		self.db = create_database( defaultSQLite=True )
+		_, self.filename = mkstemp()
+		uri = 'sqlite:///%s' % self.filename
+		self.db = create_database( dburi=uri )
+# 		self.db = create_database( defaultSQLite=True )
 		assert_that( self.db.engine.table_names(), has_length( 24 ) )
-
-	def test_insert(self):
+		
+	def tearDown(self):
+		os.remove( self.filename )
+				
+	def test_users(self):
 		session = self.db.get_session()
 		
 		results = session.query(Users).all()
@@ -42,5 +50,6 @@ class TestAnalytics(unittest.TestCase):
 		new_user = session.query(Users).one()
 		assert_that( new_user.user_id, 01234 )
 		assert_that( new_user.user_id, 'Oberyn Martell' )
+		assert_that( new_user.email, none() )
 	
 

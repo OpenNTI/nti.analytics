@@ -25,14 +25,14 @@ from sqlalchemy import DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.declarative import declared_attr
 
-from sqlalchemy.orm import relationship
-
 Base = declarative_base()
 
+# This user_id should be the dataserver's intid value for this user.
 class Users(Base):
 	__tablename__ = 'users'
 	user_id = Column('user_id', Integer, primary_key=True)
 	username = Column('username', String(64), nullable=False)
+	email = Column('email', String(128))
 	
 # TODO timezone?	
 	
@@ -46,19 +46,19 @@ class Sessions(Base):
 
 
 class BaseTableMixin(object):
-	# We could default the timestamp to the current time, but we may have insertion lag.
+
 	@declared_attr
 	def session_id(cls):
-		return Column('session_id', Integer, ForeignKey("sessions.session_id"), primary_key=True )
+		return Column('session_id', Integer, ForeignKey("sessions.session_id"), primary_key=True)
 	
 	@declared_attr
 	def user_id(cls):
-		return Column('user_id', Integer, ForeignKey("users.user_id"), primary_key=True )
+		return Column('user_id', Integer, ForeignKey("users.user_id"), primary_key=True)
 	
-	timestamp = Column('timestamp', DateTime, primary_key=True )
+	# We could default the timestamp to the current time, but we may have insertion lag.
+	timestamp = Column('timestamp', DateTime, primary_key=True)
 
 
-# TODO combo keys here?
 # TODO how about inverse here? (contact_removed, groups_destroyed?)
 # TODO do social elements have course context?
 # This information needs to be obscured to protect privacy.	
@@ -86,6 +86,9 @@ class ThoughtsCreated(Base,BaseTableMixin):
 	
 class ThoughtsViewed(Base,BaseTableMixin):
 	__tablename__ = 'thoughts_viewed'					
+
+
+
 
 class CourseMixin(BaseTableMixin):
 	course_id = Column('course_id', String(64) )
@@ -151,6 +154,8 @@ class DiscussionsViewed(Base,DiscussionMixin,TimeLengthMixin):
 
 class CommentsCreated(Base,DiscussionMixin):
 	__tablename__ = 'comments_created'		
+	# parent_id should point to a parent comment, top-level comments will have null parent_ids
+	parent_id = Column('parent_id', Integer) 
 
 class CourseCatalogViews(Base,CourseMixin):	
 	#TODO time_length?	

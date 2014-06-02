@@ -34,7 +34,7 @@ class AnalyticsDB(object):
 		Session = sessionmaker(bind=self.engine)
 		return Session()
 
-def create_database(dburi=None, twophase=False, defaultSQLite=False, autocommit=False):
+def create_database( dburi=None, twophase=False, defaultSQLite=False, autocommit=False ):
 	if defaultSQLite:
 		data_dir = os.getenv( 'DATASERVER_DATA_DIR' ) or '/tmp'
 		data_dir = os.path.expanduser( data_dir )
