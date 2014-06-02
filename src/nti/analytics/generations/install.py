@@ -39,11 +39,13 @@ def install_queue(context):
 	lsm = dataserver_folder.getSiteManager()
 	intids = lsm.getUtility(zope.intid.IIntIds)
 
-	result = queue.Queue()
-	result.__parent__ = dataserver_folder
-	##FIXME what's this
-	result.__name__ = '++etc++graphdb++queue'
-	intids.register(result)
-	lsm.registerUtility(result, provided=asyc_interfaces.IQueue)
+# 	result = queue.Queue()
+# 	result.__parent__ = dataserver_folder
+# 	##FIXME what's this
+# 	result.__name__ = '++etc++graphdb++queue'
+# 	intids.register(result)
+# 	lsm.registerUtility(result, provided=asyc_interfaces.IQueue)
+# 	
+# # 	lsm.unregisterUtility( result, provided=asyc_interfaces.IQueue )
 
 	return result

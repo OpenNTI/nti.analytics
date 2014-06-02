@@ -29,7 +29,7 @@ setup(
         ],
 	packages=find_packages('src'),
 	package_dir={'': 'src'},
-	namespace_packages=['nti', 'nti.analytics'],
+	namespace_packages=['nti'],
 	install_requires=[
 		'setuptools'
 	],

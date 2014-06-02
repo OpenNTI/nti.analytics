@@ -13,22 +13,26 @@ import sqlite3
 import pkg_resources
 
 from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 from metadata import AnalyticsMetadata
 from interfaces import IAnalyticsDB
 
-class AnalyticsDB(IAnalyticsDB):
-	def __init__( self, dburi, twophase=False, autocommit=True ):
+from zope import interface
+
+@interface.implementer(IAnalyticsDB)
+class AnalyticsDB(object):
+	
+	def __init__( self, dburi, twophase=False, autocommit=False ):
 		self.dburi = dburi
 		self.twophase = twophase
 		self.autocommit = autocommit
-		self.metadata = AnalyticsMetadata()
-		self.metadata.initialize( self.engine )
+		self.engine = create_engine(self.dburi, echo=False )
+		self.metadata = AnalyticsMetadata( self.engine )
 
-	@property
-	def engine(self):
-		result = create_engine(self.dburi, echo=False)
-		return result
+	def get_session(self):
+		Session = sessionmaker(bind=self.engine)
+		return Session()
 
 def create_database(dburi=None, twophase=False, defaultSQLite=False, autocommit=False):
 	if defaultSQLite:
@@ -39,3 +43,4 @@ def create_database(dburi=None, twophase=False, defaultSQLite=False, autocommit=
 		
 	logger.info( "Creating database at '%s'", dburi )	
 	return AnalyticsDB( dburi, twophase, autocommit )
+
