@@ -35,7 +35,6 @@ class Users(Base):
 	email = Column('email', String(128))
 	
 # TODO timezone?	
-	
 class Sessions(Base):
 	__tablename__ = 'sessions'
 	session_id = Column('session_id', Integer, primary_key=True)
@@ -62,7 +61,6 @@ class BaseTableMixin(object):
 # TODO how about inverse here? (contact_removed, groups_destroyed?)
 # TODO do social elements have course context?
 # This information needs to be obscured to protect privacy.	
-
 class ChatsInitiated(Base,BaseTableMixin):
 	__tablename__ = 'chats_initiated'
 
@@ -107,10 +105,9 @@ class TimeLengthMixin(object):
 class CourseResourceViews(Base,ResourceViewMixin,TimeLengthMixin):
 	__tablename__ = 'course_resource_views'	
 
-# TODO Would we query on these separate event types? Probably not.
+#	Would we query on these separate event types? Probably not.
 # 	If so, we may break them out into separate tables.	
-# TODO how about calculating the intervals?
-class VideoEvents(Base,ResourceViewMixin):
+class VideoEvents(Base,ResourceViewMixin,TimeLengthMixin):
 	__tablename__ = 'video_events'
 	video_event_type = Column('video_event_type', Enum( 'WATCH', 'SKIP' ) )
 	video_start_time = Column('video_start_time', DateTime )
@@ -119,7 +116,7 @@ class VideoEvents(Base,ResourceViewMixin):
 	
 class NotesCreated(Base,ResourceMixin):	
 	__tablename__ = 'notes_created'
-	sharing = Column('sharing', String(16) ) #PUBLIC|PRIVATE|COURSE_ONLY	
+	sharing = Column('sharing', Enum( 'PUBLIC', 'PRIVATE', 'COURSE_ONLY' ) ) #PUBLIC|PRIVATE|COURSE_ONLY	
 
 # TODO time_length?
 class NotesViewed(Base,ResourceMixin):	
@@ -130,15 +127,13 @@ class HighlightsCreated(Base,ResourceMixin):
 
 class ForumsCreated(Base,CourseMixin):		
 	__tablename__ = 'forums_created'
-	# TODO unique
 	forum_id = Column('forum_id', String(256), primary_key=True)				
-
 
 class ForumMixin(CourseMixin):
 	#TODO is it necessary to have these foreign_keys?
 	@declared_attr
 	def forum_id(cls):
-		return Column('forum_id', Integer, ForeignKey("forums_created.forum_id"))
+		return Column('forum_id', String(256), ForeignKey("forums_created.forum_id"))
 	
 class DiscussionsCreated(Base,ForumMixin):	
 	__tablename__ = 'discussions_created'
@@ -147,11 +142,12 @@ class DiscussionsCreated(Base,ForumMixin):
 class DiscussionMixin(ForumMixin):	
 	@declared_attr
 	def discussion_id(cls):
-		return Column('discussion_id', Integer, ForeignKey("discussions_created.discussion_id"))
+		return Column('discussion_id', String(256), ForeignKey("discussions_created.discussion_id"))
 
 class DiscussionsViewed(Base,DiscussionMixin,TimeLengthMixin):
 	__tablename__ = 'discussions_viewed'	
 
+# TOOD these will not be just in forums, we may have these in thoughts...We should distinguish.
 class CommentsCreated(Base,DiscussionMixin):
 	__tablename__ = 'comments_created'		
 	# parent_id should point to a parent comment, top-level comments will have null parent_ids
@@ -164,7 +160,7 @@ class CourseCatalogViews(Base,CourseMixin):
 	
 # TODO Do we want instructors here at all?
 #	If not, we just have for_credit and non_credit		
-# Is dropped redundant?  It may be useful to grab all course enrollment information here.		
+# Dropped is redundant, but it may be useful to grab all course enrollment information here.		
 class CourseEnrollments(Base,CourseMixin):
 	__tablename__ = 'course_enrollments'
 	for_credit = Column('for_credit', Boolean )
@@ -208,10 +204,6 @@ class AssignmentDetails(Base,AssignmentMixin):
 #	sequence
 #	constraint
 #	nullable fields
-
-# TODO uid should come from DS
-# 	if so, we don't need any other identification, or this table perhaps
-#	if not, we should map the DS id to a obfuscated id here.
 
 # Timestamps TEXT here?
 
