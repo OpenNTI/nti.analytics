@@ -31,14 +31,17 @@ Base = declarative_base()
 class Users(Base):
 	__tablename__ = 'users'
 	user_id = Column('user_id', Integer, primary_key=True)
-	username = Column('username', String(64), nullable=False)
+	username = Column('username', String(128), nullable=False)
 	email = Column('email', String(128))
+	alias = Column('alias', String(128))
+	realname = Column('realname', String(128))
 	
 # TODO timezone?	
+# TODO Do we want to (or can we) determine how long the session lasts?
 class Sessions(Base):
 	__tablename__ = 'sessions'
 	session_id = Column('session_id', Integer, primary_key=True)
-	user_id = Column('user_id', Integer, ForeignKey("users.user_id") )
+	user_id = Column('user_id', Integer, ForeignKey("users.user_id"), nullable=False )
 	ip_addr = Column('ip_addr', String(64) )	
 	version = Column('version', String(64) )
 	timestamp = Column('timestamp', DateTime)
@@ -89,14 +92,15 @@ class ThoughtsViewed(Base,BaseTableMixin):
 
 
 class CourseMixin(BaseTableMixin):
-	course_id = Column('course_id', String(64) )
+	course_id = Column('course_id', String(64), nullable=False)
 
 class ResourceMixin(CourseMixin):
-	resource_id = Column('resource_id', String(1048))
+	resource_id = Column('resource_id', String(1048), nullable=False)
 	
 class ResourceViewMixin(ResourceMixin):
-	context_path = Column('context_path', String(1048))
+	context_path = Column('context_path', String(1048), nullable=False)
 
+# Time length in seconds
 class TimeLengthMixin(object):
 	time_length = Column('time_length', Integer)
 
@@ -105,18 +109,18 @@ class TimeLengthMixin(object):
 class CourseResourceViews(Base,ResourceViewMixin,TimeLengthMixin):
 	__tablename__ = 'course_resource_views'	
 
-#	Would we query on these separate event types? Probably not.
-# 	If so, we may break them out into separate tables.	
+# Would we query on these separate event types? Probably not.
+# If so, we may break them out into separate tables.	
 class VideoEvents(Base,ResourceViewMixin,TimeLengthMixin):
 	__tablename__ = 'video_events'
-	video_event_type = Column('video_event_type', Enum( 'WATCH', 'SKIP' ) )
-	video_start_time = Column('video_start_time', DateTime )
-	video_end_time = Column('video_end_time', DateTime )
-	with_transcript = Column('with_transcript', Boolean )
+	video_event_type = Column('video_event_type', Enum( 'WATCH', 'SKIP' ), nullable=False )
+	video_start_time = Column('video_start_time', DateTime, nullable=False )
+	video_end_time = Column('video_end_time', DateTime, nullable=False )
+	with_transcript = Column('with_transcript', Boolean, nullable=False )
 	
 class NotesCreated(Base,ResourceMixin):	
 	__tablename__ = 'notes_created'
-	sharing = Column('sharing', Enum( 'PUBLIC', 'PRIVATE', 'COURSE_ONLY' ) ) #PUBLIC|PRIVATE|COURSE_ONLY	
+	sharing = Column('sharing', Enum( 'PUBLIC', 'PRIVATE', 'COURSE_ONLY' ), nullable=False ) #PUBLIC|PRIVATE|COURSE_ONLY	
 
 # TODO time_length?
 class NotesViewed(Base,ResourceMixin):	
@@ -133,7 +137,7 @@ class ForumMixin(CourseMixin):
 	#TODO is it necessary to have these foreign_keys?
 	@declared_attr
 	def forum_id(cls):
-		return Column('forum_id', String(256), ForeignKey("forums_created.forum_id"))
+		return Column('forum_id', String(256), ForeignKey("forums_created.forum_id"), nullable=False)
 	
 class DiscussionsCreated(Base,ForumMixin):	
 	__tablename__ = 'discussions_created'
@@ -142,16 +146,19 @@ class DiscussionsCreated(Base,ForumMixin):
 class DiscussionMixin(ForumMixin):	
 	@declared_attr
 	def discussion_id(cls):
-		return Column('discussion_id', String(256), ForeignKey("discussions_created.discussion_id"))
+		return Column('discussion_id', String(256), ForeignKey("discussions_created.discussion_id"), nullable=False)
 
 class DiscussionsViewed(Base,DiscussionMixin,TimeLengthMixin):
 	__tablename__ = 'discussions_viewed'	
 
 # TOOD these will not be just in forums, we may have these in thoughts...We should distinguish.
+
 class CommentsCreated(Base,DiscussionMixin):
 	__tablename__ = 'comments_created'		
+	# comment_id should be the DS intid
+	comment_id = Column('comment_id', Integer, nullable=False)
 	# parent_id should point to a parent comment, top-level comments will have null parent_ids
-	parent_id = Column('parent_id', Integer) 
+	parent_id = Column('parent_id', Integer, nullable=False)
 
 class CourseCatalogViews(Base,CourseMixin):	
 	#TODO time_length?	
@@ -163,17 +170,19 @@ class CourseCatalogViews(Base,CourseMixin):
 # Dropped is redundant, but it may be useful to grab all course enrollment information here.		
 class CourseEnrollments(Base,CourseMixin):
 	__tablename__ = 'course_enrollments'
-	for_credit = Column('for_credit', Boolean )
-	dropped = Column('dropped', Boolean )
+	for_credit = Column('for_credit', Boolean, nullable=False)
+	dropped = Column('dropped', Boolean, nullable=False)
 	
 class CourseDrops(Base,CourseMixin):	
 	__tablename__ = 'course_drops'
 
 class AssignmentMixin(CourseMixin,TimeLengthMixin):
-	assignment_id = Column('assignment_id', String(1048))
+	assignment_id = Column('assignment_id', String(1048), nullable=False)
 		
-# Self-assessments too				
-# Self-assessments may have retakes; so may assignments.	
+# TODO will we have self-assessment details (grades and part details)?		
+class SelfAssessmentsTaken(Base,AssignmentMixin):
+	__tablename__ = 'self_assessments_taken'
+		
 # TODO Should feedback have its own event tracking?
 #	It's one of the few mutable fields if not.
 class AssignmentsTaken(Base,AssignmentMixin):
@@ -184,11 +193,12 @@ class AssignmentsTaken(Base,AssignmentMixin):
 # TODO How do we do this with retakes, is it important to distinguish?		
 #	Perhaps we need to generate a unique id here that maps to assignment_details.
 # TODO Can we rely on these parts/ids being integers?
+# TODO What do we do if instructor corrects an answer for a question_part?
 class AssignmentDetails(Base,AssignmentMixin):	
 	__tablename__ = 'assignment_details'
-	question_id = Column('question_id', Integer)
-	question_part = Column('question_part', Integer)
-	submission = Column('submission', String(1048)) #(Freeform|MapEntry|Index|List)
+	question_id = Column('question_id', Integer, nullable=False)
+	question_part = Column('question_part', Integer, nullable=False)
+	submission = Column('submission', String(1048), nullable=False) #(Freeform|MapEntry|Index|List)
 	is_correct = Column('is_correct', Boolean)
 
 
@@ -199,11 +209,11 @@ class AssignmentDetails(Base,AssignmentMixin):
 ## TODO LIST
 #	examine String limits
 #		TODO Should we use TEXT instead of String?
-#	parent id (comments, replies, etc)
 #	indexes
-#	sequence
+#		we'll need indexes on course_id and user_id, generally
 #	constraint
-#	nullable fields
+
+# Deleted comments/forums
 
 # Timestamps TEXT here?
 

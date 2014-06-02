@@ -26,10 +26,33 @@ from hamcrest import has_property
 from ..metadata import Users
 from ..metadata import Sessions
 from ..metadata import ChatsInitiated
+from ..metadata import ChatsJoined
+from ..metadata import GroupsCreated
+from ..metadata import DistributionListsCreated
+from ..metadata import ContactsAdded
+from ..metadata import ContactsRemoved
+from ..metadata import ThoughtsCreated
+from ..metadata import ThoughtsViewed
+from ..metadata import CourseResourceViews
+from ..metadata import VideoEvents
+from ..metadata import NotesCreated
+from ..metadata import NotesViewed
+from ..metadata import HighlightsCreated
+from ..metadata import ForumsCreated
+from ..metadata import DiscussionsCreated
+from ..metadata import DiscussionsViewed
+from ..metadata import CommentsCreated
+from ..metadata import CourseCatalogViews
+from ..metadata import CourseEnrollments
+from ..metadata import CourseDrops
+from ..metadata import AssignmentsTaken
+from ..metadata import AssignmentDetails
+from metadata import SelfAssessmentsTaken
 
 from ..database import create_database
 
 from sqlalchemy.orm.exc import FlushError
+from sqlalchemy.exc import IntegrityError
 
 test_user_id = 01234
 test_session_id = 56
@@ -40,7 +63,7 @@ class TestUsers(unittest.TestCase):
 		_, self.filename = mkstemp()
 		uri = 'sqlite:///%s' % self.filename
 		self.db = create_database( dburi=uri )
-		assert_that( self.db.engine.table_names(), has_length( 24 ) )
+		assert_that( self.db.engine.table_names(), has_length( 25 ) )
 		
 		self.session = self.db.get_session()
 		
@@ -65,12 +88,21 @@ class TestUsers(unittest.TestCase):
 			user2 = Users( user_id=test_user_id, username='Oberyn Martell' )
 			self.session.add( user2 )
 			self.session.commit()
+			
+	def test_user_constraints(self):
+		results = self.session.query(Users).all()
+		assert_that( results, has_length( 0 ) )
+			
+		with self.assertRaises(IntegrityError):
+			new_user = Users( user_id='new_user_1', username=None )
+			self.session.add( new_user )
+			self.session.commit()
 		
 	def test_sessions(self):
 		results = self.session.query(Sessions).all()
 		assert_that( results, has_length( 0 ) )
 		
-		user = Users( user_id=01234, username='Oberyn Martell' )
+		user = Users( user_id=test_user_id, username='Oberyn Martell' )
 		self.session.add( user )
 		
 		new_session = Sessions( session_id=test_session_id, user_id=test_user_id, ip_addr='0.1.2.3.4', version='webapp-0.9', timestamp=datetime.now() )
@@ -90,13 +122,12 @@ class TestAnalytics(unittest.TestCase):
 		_, self.filename = mkstemp()
 		uri = 'sqlite:///%s' % self.filename
 		self.db = create_database( dburi=uri )
-		assert_that( self.db.engine.table_names(), has_length( 24 ) )
 		
 		self.session = self.db.get_session()
 		user = Users( user_id=test_user_id, username='test_user1' )
 		self.session.add( user )
 		
-		db_session = Sessions( session_id=test_session_id, user_id=01234, ip_addr='0.1.2.3.4', version='webapp-0.9', timestamp=datetime.now() )
+		db_session = Sessions( session_id=test_session_id, user_id=test_user_id, ip_addr='0.1.2.3.4', version='webapp-0.9', timestamp=datetime.now() )
 		self.session.add( db_session )
 		
 	def tearDown(self):
