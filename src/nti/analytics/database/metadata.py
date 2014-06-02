@@ -22,6 +22,8 @@ from sqlalchemy import Boolean
 from sqlalchemy import Enum
 from sqlalchemy import DateTime
 
+from sqlalchemy.schema import Index
+
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.declarative import declared_attr
 
@@ -55,7 +57,7 @@ class BaseTableMixin(object):
 	
 	@declared_attr
 	def user_id(cls):
-		return Column('user_id', Integer, ForeignKey("users.user_id"), primary_key=True)
+		return Column('user_id', Integer, ForeignKey("users.user_id"), primary_key=True, index=True)
 	
 	# We could default the timestamp to the current time, but we may have insertion lag.
 	timestamp = Column('timestamp', DateTime, primary_key=True)
@@ -92,7 +94,11 @@ class ThoughtsViewed(Base,BaseTableMixin):
 
 
 class CourseMixin(BaseTableMixin):
-	course_id = Column('course_id', String(64), nullable=False)
+	course_id = Column('course_id', String(64), nullable=False, index=True)
+	
+	@declared_attr
+	def __table_args__(cls):
+		return (Index('ix_%s_user_course' % cls.__tablename__, 'user_id', 'course_id'),)
 
 class ResourceMixin(CourseMixin):
 	resource_id = Column('resource_id', String(1048), nullable=False)
@@ -209,8 +215,6 @@ class AssignmentDetails(Base,AssignmentMixin):
 ## TODO LIST
 #	examine String limits
 #		TODO Should we use TEXT instead of String?
-#	indexes
-#		we'll need indexes on course_id and user_id, generally
 #	constraint
 
 # Deleted comments/forums

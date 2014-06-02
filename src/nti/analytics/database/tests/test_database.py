@@ -60,15 +60,18 @@ test_session_id = 56
 class TestUsers(unittest.TestCase):
 
 	def setUp(self):
-		_, self.filename = mkstemp()
-		uri = 'sqlite:///%s' % self.filename
-		self.db = create_database( dburi=uri )
+# 		_, self.filename = mkstemp()
+# 		uri = 'sqlite:///%s' % self.filename
+# 		self.db = create_database( dburi=uri )
+		self.db = create_database( defaultSQLite=True )
 		assert_that( self.db.engine.table_names(), has_length( 25 ) )
 		
 		self.session = self.db.get_session()
 		
 	def tearDown(self):
-		os.remove( self.filename )
+# 		if self.filename:
+# 			os.remove( self.filename )
+		self.session.close()	
 				
 	def test_users(self):
 		results = self.session.query(Users).all()
@@ -131,7 +134,9 @@ class TestAnalytics(unittest.TestCase):
 		self.session.add( db_session )
 		
 	def tearDown(self):
-		os.remove( self.filename )
+		if self.filename:
+			os.remove( self.filename )
+		self.session.close()	
 		
 	def test_chats(self):
 		results = self.session.query( ChatsInitiated ).all()
