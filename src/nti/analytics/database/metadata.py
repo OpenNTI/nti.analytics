@@ -109,6 +109,9 @@ class ResourceViewMixin(ResourceMixin):
 # Time length in seconds
 class TimeLengthMixin(object):
 	time_length = Column('time_length', Integer)
+	
+class DeletedMixin(object):
+	deleted = Column('deleted', DateTime)
 
 # For meta-views into synthetic course info, we can special type the resource_id:
 #	(about|instructors|tech_support)	
@@ -124,7 +127,7 @@ class VideoEvents(Base,ResourceViewMixin,TimeLengthMixin):
 	video_end_time = Column('video_end_time', DateTime, nullable=False )
 	with_transcript = Column('with_transcript', Boolean, nullable=False )
 	
-class NotesCreated(Base,ResourceMixin):	
+class NotesCreated(Base,ResourceMixin,DeletedMixin):	
 	__tablename__ = 'notes_created'
 	sharing = Column('sharing', Enum( 'PUBLIC', 'PRIVATE', 'COURSE_ONLY' ), nullable=False ) #PUBLIC|PRIVATE|COURSE_ONLY	
 
@@ -132,10 +135,10 @@ class NotesCreated(Base,ResourceMixin):
 class NotesViewed(Base,ResourceMixin):	
 	__tablename__ = 'notes_viewed'
 
-class HighlightsCreated(Base,ResourceMixin):
+class HighlightsCreated(Base,ResourceMixin,DeletedMixin):
 	__tablename__ = 'highlights_created'
 
-class ForumsCreated(Base,CourseMixin):		
+class ForumsCreated(Base,CourseMixin,DeletedMixin):		
 	__tablename__ = 'forums_created'
 	forum_id = Column('forum_id', String(256), primary_key=True)				
 
@@ -145,7 +148,7 @@ class ForumMixin(CourseMixin):
 	def forum_id(cls):
 		return Column('forum_id', String(256), ForeignKey("forums_created.forum_id"), nullable=False)
 	
-class DiscussionsCreated(Base,ForumMixin):	
+class DiscussionsCreated(Base,ForumMixin,DeletedMixin):	
 	__tablename__ = 'discussions_created'
 	discussion_id = Column('discussion_id', String(256), primary_key=True ) 
 	
@@ -159,7 +162,7 @@ class DiscussionsViewed(Base,DiscussionMixin,TimeLengthMixin):
 
 # TOOD these will not be just in forums, we may have these in thoughts...We should distinguish.
 
-class CommentsCreated(Base,DiscussionMixin):
+class CommentsCreated(Base,DiscussionMixin,DeletedMixin):
 	__tablename__ = 'comments_created'		
 	# comment_id should be the DS intid
 	comment_id = Column('comment_id', Integer, nullable=False)

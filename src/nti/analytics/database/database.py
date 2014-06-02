@@ -46,6 +46,12 @@ from metadata import AssignmentsTaken
 from metadata import AssignmentDetails
 from metadata import SelfAssessmentsTaken
 
+# We should only have a few different types of operations here:
+# - Insertions
+# - Deleted objects will modify 'deleted' column with timestamp
+# - Reads
+
+
 @interface.implementer(IAnalyticsDB)
 class AnalyticsDB(object):
 	
@@ -106,13 +112,11 @@ class AnalyticsDB(object):
 
 	#StudentParticipationReport	
 	def get_comments_for_user(self, session, user, course_id):		
-		# TODO Exclude deleted...
-		results = session.query(CommentsCreated).filter( user_id=user.intid, course_id=course_id ).all()
+		results = session.query(CommentsCreated).filter( user_id=user.intid, course_id=course_id, deleted=None ).all()
 		return results
 	
 	def get_discussions_created_for_user(self, session, user, course_id):		
-		# TODO Exclude deleted...
-		results = session.query(DiscussionsCreated).filter( user_id=user.intid, course_id=course_id ).all()
+		results = session.query(DiscussionsCreated).filter( user_id=user.intid, course_id=course_id, deleted=None  ).all()
 		return results
 	
 	def get_self_assessments_for_user(self, session, user, course_id):		
@@ -130,24 +134,20 @@ class AnalyticsDB(object):
 	
 	#ForumReport
 	def get_comments_for_forum(self, session, forum_id):
-		# TODO Exclude deleted...
-		results = session.query(CommentsCreated).filter( forum_id=forum_id ).all()
+		results = session.query(CommentsCreated).filter( forum_id=forum_id, deleted=None  ).all()
 		return results
 	
 	def get_discussions_created_for_forum(self, session, forum_id):		
-		# TODO Exclude deleted...
-		results = session.query(DiscussionsCreated).filter( forum_id=forum_id ).all()
+		results = session.query(DiscussionsCreated).filter( forum_id=forum_id, deleted=None  ).all()
 		return results
 	
 	#CourseReport
 	def get_comments_for_course(self, session, course_id):
-		# TODO Exclude deleted...
-		results = session.query(CommentsCreated).filter( course_id=course_id ).all()
+		results = session.query(CommentsCreated).filter( course_id=course_id, deleted=None  ).all()
 		return results
 	
 	def get_discussions_created_for_course(self, session, course_id):		
-		# TODO Exclude deleted...
-		results = session.query(DiscussionsCreated).filter( course_id=course_id ).all()
+		results = session.query(DiscussionsCreated).filter( course_id=course_id, deleted=None  ).all()
 		return results
 	
 	def get_self_assessments_for_course(self, session, course_id):		
@@ -159,11 +159,11 @@ class AnalyticsDB(object):
 		return results
 	
 	def get_notes_created_for_course(self, session, course_id):		
-		results = session.query(NotesCreated).filter( course_id=course_id ).all()
+		results = session.query(NotesCreated).filter( course_id=course_id, deleted=None  ).all()
 		return results
 	
 	def get_highlights_created_for_course(self, session, course_id):		
-		results = session.query(HighlightsCreated).filter( course_id=course_id ).all()
+		results = session.query(HighlightsCreated).filter( course_id=course_id, deleted=None  ).all()
 		return results
 	
 	#AssignmentReport
