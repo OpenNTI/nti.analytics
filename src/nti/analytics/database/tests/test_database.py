@@ -157,19 +157,32 @@ class TestAnalytics(unittest.TestCase):
 		assert_that( new_chat.user_id, test_user_id )
 		assert_that( new_chat.session_id, test_session_id )
 		assert_that( new_chat.timestamp, 0 )	
+	
+_User = namedtuple('_User', ('intid',))
+
+class TestComments(unittest.TestCase):
+
+	def setUp(self):
+		_, self.filename = mkstemp()
+		uri = 'sqlite:///%s' % self.filename
+		self.db = create_database( dburi=uri )
 		
-	def test_comments(self):
-		results = self.session.query( CommentsCreated ).all()
-		assert_that( results, has_length( 0 ) )
-		results = get_comments_for_user( self.session, user=_User(test_user_id), course_id='course1')
-		assert_that( results, has_length( 0 ) )
+		self.session = self.db.get_session()
+		user = Users( user_id=test_user_id, username='test_user1' )
+		self.session.add( user )
 		
+		db_session = Sessions( session_id=test_session_id, user_id=test_user_id, ip_addr='0.1.2.3.4', version='webapp-0.9', timestamp=datetime.now() )
+		self.session.add( db_session )
+		self.course_name='course1'
+		self.create_forum_and_topic( self.course_name )	
+		
+	def create_forum_and_topic(self,course_name):
 		#Forum
 		new_forum = ForumsCreated( 	session_id=test_session_id, 
 									user_id=test_user_id, 
 									timestamp=datetime.now(),
 									forum_id='forum1',
-									course_id='course1' )
+									course_id=course_name )
 		self.session.add( new_forum )
 		
 		#Discussion
@@ -178,23 +191,28 @@ class TestAnalytics(unittest.TestCase):
 												timestamp=datetime.now(),
 												forum_id='forum1',
 												discussion_id='discussion1',
-												course_id='course1' )
+												course_id=course_name )
 		self.session.add( new_discussion )
 		
-		#Top level comments
+	def test_comments(self):
+		results = self.session.query( CommentsCreated ).all()
+		assert_that( results, has_length( 0 ) )
+		results = get_comments_for_user( self.session, user=_User(test_user_id), course_id='course1')
+		assert_that( results, has_length( 0 ) )
+		
 		new_comment = CommentsCreated( 	session_id=test_session_id, 
 										user_id=test_user_id, 
 										timestamp=datetime.now(),
 										forum_id='forum1',
 										discussion_id='discussion1',
-										comment_id=1,
-										course_id='course1' )
+										comment_id='comment1',
+										course_id=self.course_name )
 		self.session.add( new_comment )
 
-		results = get_comments_for_user( self.session, user=_User(test_user_id), course_id='course1')
+		results = get_comments_for_user( self.session, user=_User(test_user_id), course_id=self.course_name )
 		assert_that( results, has_length( 1 ) )
 		
-		results = get_comments_for_course( self.session, course_id='course1')
+		results = get_comments_for_course( self.session, course_id=self.course_name )
 		assert_that( results, has_length( 1 ) )
 		
 		result = results[0]
