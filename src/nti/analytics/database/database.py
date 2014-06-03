@@ -50,8 +50,6 @@ from metadata import SelfAssessmentsTaken
 # - Insertions
 # - Deleted objects will modify 'deleted' column with timestamp
 # - Reads
-
-
 @interface.implementer(IAnalyticsDB)
 class AnalyticsDB(object):
 	
@@ -134,6 +132,7 @@ def get_comments_for_discussion(session, discussion_id):
 	results = session.query(CommentsCreated).filter( CommentsCreated.discussion_id==discussion_id ).all()
 	return results
 
+
 #ForumReport
 def get_comments_for_forum(session, forum_id):
 	results = session.query(CommentsCreated).filter( 	CommentsCreated.forum_id==forum_id, 
@@ -143,6 +142,7 @@ def get_comments_for_forum(session, forum_id):
 def get_discussions_created_for_forum(session, forum_id):		
 	results = session.query(DiscussionsCreated).filter( forum_id=forum_id, deleted=None  ).all()
 	return results
+
 
 #CourseReport
 def get_comments_for_course(session, course_id):
@@ -169,6 +169,7 @@ def get_notes_created_for_course(session, course_id):
 def get_highlights_created_for_course(session, course_id):		
 	results = session.query(HighlightsCreated).filter( course_id=course_id, deleted=None  ).all()
 	return results
+
 
 #AssignmentReport
 def get_assignment_details_for_course(session, course_id):		

@@ -24,6 +24,8 @@ from hamcrest import has_entry
 from hamcrest import has_length
 from hamcrest import assert_that
 from hamcrest import has_property
+from hamcrest import contains
+from hamcrest import has_items
 
 from ..metadata import Users
 from ..metadata import Sessions
@@ -49,7 +51,7 @@ from ..metadata import CourseEnrollments
 from ..metadata import CourseDrops
 from ..metadata import AssignmentsTaken
 from ..metadata import AssignmentDetails
-from metadata import SelfAssessmentsTaken
+from ..metadata import SelfAssessmentsTaken
 
 from ..database import create_database
 from ..database import get_comments_for_course
@@ -197,7 +199,7 @@ class TestComments(unittest.TestCase):
 	def test_comments(self):
 		results = self.session.query( CommentsCreated ).all()
 		assert_that( results, has_length( 0 ) )
-		results = get_comments_for_user( self.session, user=_User(test_user_id), course_id='course1')
+		results = get_comments_for_user( self.session, user=_User(test_user_id), course_id=self.course_name)
 		assert_that( results, has_length( 0 ) )
 		
 		new_comment = CommentsCreated( 	session_id=test_session_id, 
@@ -216,6 +218,93 @@ class TestComments(unittest.TestCase):
 		assert_that( results, has_length( 1 ) )
 		
 		result = results[0]
+		assert_that( result.forum_id, 'forum1' )
+		assert_that( result.discussion_id, 'discussion1' )
+		assert_that( result.comment_id, 'comment1' )
+		assert_that( result.session_id, test_session_id )
+		assert_that( result.user_id, test_user_id )
+		assert_that( result.course_id, self.course_name )
 		
+	def test_multiple_comments(self):
+		results = get_comments_for_user( self.session, user=_User(test_user_id), course_id=self.course_name )
+		assert_that( results, has_length( 0 ) )
+		
+		new_comment1 = CommentsCreated( session_id=test_session_id, 
+										user_id=test_user_id, 
+										timestamp=datetime.now(),
+										forum_id='forum1',
+										discussion_id='discussion1',
+										comment_id='comment1',
+										course_id=self.course_name )
+		new_comment2 = CommentsCreated( session_id=test_session_id, 
+										user_id=test_user_id, 
+										timestamp=datetime.now(),
+										forum_id='forum1',
+										discussion_id='discussion1',
+										comment_id='comment2',
+										deleted=datetime.now(),
+										course_id=self.course_name )
+		self.session.add( new_comment1 )
+		self.session.add( new_comment2 )
+
+		#Deleted comments not returned
+		results = get_comments_for_user( self.session, user=_User(test_user_id), course_id=self.course_name )
+		assert_that( results, has_length( 1 ) )
+		assert_that( results[0].comment_id, 'comment1' )
+		
+		results = get_comments_for_course( self.session, course_id=self.course_name )
+		assert_that( results, has_length( 1 ) )
+		assert_that( results[0].comment_id, 'comment1' )
+		
+	def test_multiple_comments_users(self):
+		results = get_comments_for_user( self.session, user=_User(test_user_id), course_id=self.course_name )
+		assert_that( results, has_length( 0 ) )
+		
+		#different user
+		new_comment1 = CommentsCreated( session_id=test_session_id, 
+										user_id='test_user_2', 
+										timestamp=datetime.now(),
+										forum_id='forum1',
+										discussion_id='discussion1',
+										comment_id='comment1',
+										course_id=self.course_name )
+		new_comment2 = CommentsCreated( session_id=test_session_id, 
+										user_id=test_user_id, 
+										timestamp=datetime.now(),
+										forum_id='forum1',
+										discussion_id='discussion1',
+										comment_id='comment2',
+										course_id=self.course_name )
+		#deleted
+		new_comment3 = CommentsCreated( session_id=test_session_id, 
+										user_id=test_user_id, 
+										timestamp=datetime.now(),
+										forum_id='forum1',
+										discussion_id='discussion1',
+										comment_id='comment3',
+										deleted=datetime.now(),
+										course_id=self.course_name )
+		#Different course
+		new_comment4 = CommentsCreated( session_id=test_session_id, 
+										user_id=test_user_id, 
+										timestamp=datetime.now(),
+										forum_id='forum1',
+										discussion_id='discussion1',
+										comment_id='comment4',
+										course_id='course_2' )
+		self.session.add( new_comment1 )
+		self.session.add( new_comment2 )
+		self.session.add( new_comment3 )
+		self.session.add( new_comment4 )
+
+		#Deleted comments not returned
+		results = get_comments_for_user( self.session, user=_User(test_user_id), course_id=self.course_name )
+		assert_that( results, has_length( 1 ) )
+		assert_that( results[0].comment_id, 'comment2' )
+		
+		results = get_comments_for_course( self.session, course_id=self.course_name )
+		assert_that( results, has_length( 2 ) )
+		results = [x.comment_id for x in results]
+		assert_that( results, has_items( 'comment1', 'comment2' ) )
 	
 
