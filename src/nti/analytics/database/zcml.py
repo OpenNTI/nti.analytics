@@ -12,37 +12,34 @@ logger = __import__('logging').getLogger(__name__)
 
 import functools
 
+from zope import schema
 from zope import interface
 from zope.configuration import fields
 from zope.component.zcml import utility
+from zope import component
 
-from . import interfaces
-from .database import create_database
+from . import interfaces as analytics_interfaces
+from .database import AnalyticsDB
 
-class IRegisterDB(interface.Interface):
+
+class IRegisterAnalyticsDB(interface.Interface):
 	"""
-	The arguments needed for registering a db
+	The arguments needed for registering the analytics db.
 	"""
 	name = fields.TextLine(title="db name identifier (site)", required=False, default="")
 	dburi = fields.TextLine(title="db uri", required=False)
-	twophase = fields.Bool(title='two phase commit protocol', required=False, default=False)
-	defaultSQLite = fields.Bool(title='default to SQLite', required=False, default=False)
-
-def registerDB(_context, dburi=None, twophase=False, defaultSQLite=False,
-				autocommit=False, name=u""):
+	twophase = schema.Bool(title="twophase commit", required=False)
+	autocommit = fields.Bool(title="autocommit", required=False)
+	defaultSQLite = schema.Bool(title="default to SQLite", required=False)
+	
+def registerAnalyticsDB(_context, dburi=None, twophase=False, autocommit=False, defaultSQLite=False, name=u""):
 	"""
-	Register an db
+	Register the db
 	"""
-
-	if not dburi and not defaultSQLite:
-		raise ValueError( "Must specify valid database uri" )
-
-	factory = functools.partial(create_database,
-								dburi=dburi,
-								twophase=twophase,
-								defaultSQLite=defaultSQLite,
-								autocommit=autocommit)
-	utility(_context, provides=interfaces.IAnalyticsDB,
-			factory=factory, name=name)
-
-
+	logger.info( "Registering %s" % name )
+	factory = functools.partial(	AnalyticsDB, 
+									dburi=dburi, 
+									twophase=twophase, 
+									autocommit=autocommit, 
+									defaultSQLite=defaultSQLite )
+	utility(_context, provides=analytics_interfaces.IAnalyticsDB, factory=factory, name=name)

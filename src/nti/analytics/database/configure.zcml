@@ -11,6 +11,7 @@
 			 		 
 	<configure zcml:condition="have devmode">
 		<include package="." file="meta.zcml" />
-		<adb:registerDB defaultSQLite="True" />
+		<adb:registerAnalyticsDB 	defaultSQLite="True"
+									name="janux.ou.edu" />
 	</configure>
 </configure>

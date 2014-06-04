@@ -54,8 +54,6 @@ from ..metadata import AssignmentDetails
 from ..metadata import SelfAssessmentsTaken
 
 from ..database import AnalyticsDB
-from ..database import get_comments_for_course
-from ..database import get_comments_for_user
 
 from sqlalchemy.orm.exc import FlushError
 from sqlalchemy.exc import IntegrityError
@@ -200,7 +198,7 @@ class TestComments(unittest.TestCase):
 	def test_comments(self):
 		results = self.session.query( CommentsCreated ).all()
 		assert_that( results, has_length( 0 ) )
-		results = get_comments_for_user( self.session, user=_User(test_user_id), course_id=self.course_name)
+		results = self.db.get_comments_for_user( self.session, user=_User(test_user_id), course_id=self.course_name)
 		assert_that( results, has_length( 0 ) )
 		
 		new_comment = CommentsCreated( 	session_id=test_session_id, 
@@ -212,10 +210,10 @@ class TestComments(unittest.TestCase):
 										course_id=self.course_name )
 		self.session.add( new_comment )
 
-		results = get_comments_for_user( self.session, user=_User(test_user_id), course_id=self.course_name )
+		results = self.db.get_comments_for_user( self.session, user=_User(test_user_id), course_id=self.course_name )
 		assert_that( results, has_length( 1 ) )
 		
-		results = get_comments_for_course( self.session, course_id=self.course_name )
+		results = self.db.get_comments_for_course( self.session, course_id=self.course_name )
 		assert_that( results, has_length( 1 ) )
 		
 		result = results[0]
@@ -227,7 +225,7 @@ class TestComments(unittest.TestCase):
 		assert_that( result.course_id, self.course_name )
 		
 	def test_multiple_comments(self):
-		results = get_comments_for_user( self.session, user=_User(test_user_id), course_id=self.course_name )
+		results = self.db.get_comments_for_user( self.session, user=_User(test_user_id), course_id=self.course_name )
 		assert_that( results, has_length( 0 ) )
 		
 		new_comment1 = CommentsCreated( session_id=test_session_id, 
@@ -249,16 +247,16 @@ class TestComments(unittest.TestCase):
 		self.session.add( new_comment2 )
 
 		#Deleted comments not returned
-		results = get_comments_for_user( self.session, user=_User(test_user_id), course_id=self.course_name )
+		results = self.db.get_comments_for_user( self.session, user=_User(test_user_id), course_id=self.course_name )
 		assert_that( results, has_length( 1 ) )
 		assert_that( results[0].comment_id, 'comment1' )
 		
-		results = get_comments_for_course( self.session, course_id=self.course_name )
+		results = self.db.get_comments_for_course( self.session, course_id=self.course_name )
 		assert_that( results, has_length( 1 ) )
 		assert_that( results[0].comment_id, 'comment1' )
 		
 	def test_multiple_comments_users(self):
-		results = get_comments_for_user( self.session, user=_User(test_user_id), course_id=self.course_name )
+		results = self.db.get_comments_for_user( self.session, user=_User(test_user_id), course_id=self.course_name )
 		assert_that( results, has_length( 0 ) )
 		
 		#different user
@@ -299,11 +297,11 @@ class TestComments(unittest.TestCase):
 		self.session.add( new_comment4 )
 
 		#Deleted comments not returned
-		results = get_comments_for_user( self.session, user=_User(test_user_id), course_id=self.course_name )
+		results = self.db.get_comments_for_user( self.session, user=_User(test_user_id), course_id=self.course_name )
 		assert_that( results, has_length( 1 ) )
 		assert_that( results[0].comment_id, 'comment2' )
 		
-		results = get_comments_for_course( self.session, course_id=self.course_name )
+		results = self.db.get_comments_for_course( self.session, course_id=self.course_name )
 		assert_that( results, has_length( 2 ) )
 		results = [x.comment_id for x in results]
 		assert_that( results, has_items( 'comment1', 'comment2' ) )

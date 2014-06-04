@@ -10,9 +10,9 @@
 	<include package="zope.security" />
 
 	<meta:directives namespace="http://nextthought.com/analytics/database">
-		<meta:directive	name="registerDB"
-						schema=".zcml.IRegisterDB"
-						handler=".zcml.registerDB" />
+		<meta:directive	name="registerAnalyticsDB"
+						schema="nti.analytics.database.zcml.IRegisterAnalyticsDB"
+						handler="nti.analytics.database.zcml.registerAnalyticsDB" />
 	</meta:directives>
 	
 </configure>
