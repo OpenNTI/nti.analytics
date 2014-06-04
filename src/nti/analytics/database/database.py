@@ -49,14 +49,23 @@ from metadata import SelfAssessmentsTaken
 # We should only have a few different types of operations here:
 # - Insertions
 # - Deleted objects will modify 'deleted' column with timestamp
+# - Modify feedback column (?)
 # - Reads
 @interface.implementer(IAnalyticsDB)
 class AnalyticsDB(object):
 	
-	def __init__( self, dburi, twophase=False, autocommit=False ):
+	def __init__( self, dburi=None, twophase=False, autocommit=False, defaultSQLite=False ):
 		self.dburi = dburi
 		self.twophase = twophase
 		self.autocommit = autocommit
+		
+		if defaultSQLite:
+			data_dir = os.getenv( 'DATASERVER_DATA_DIR' ) or '/tmp'
+			data_dir = os.path.expanduser( data_dir )
+			data_file = os.path.join( data_dir, 'analytics-sqlite.db' )
+			self.dburi = "sqlite:///%s" % data_file
+			
+		logger.info( "Creating database at '%s'", self.dburi )
 		self.engine = create_engine(self.dburi, echo=False )
 		self.metadata = AnalyticsMetadata( self.engine )
 
@@ -175,14 +184,4 @@ def get_highlights_created_for_course(session, course_id):
 def get_assignment_details_for_course(session, course_id):		
 	results = session.query(AssignmentDetails).filter( course_id=course_id ).all()
 	return results
-
-def create_database( dburi=None, twophase=False, defaultSQLite=False, autocommit=False ):
-	if defaultSQLite:
-		data_dir = os.getenv( 'DATASERVER_DATA_DIR' ) or '/tmp'
-		data_dir = os.path.expanduser( data_dir )
-		data_file = os.path.join( data_dir, 'analytics-sqlite.db' )
-		dburi = "sqlite:///%s" % data_file
-		
-	logger.info( "Creating database at '%s'", dburi )	
-	return AnalyticsDB( dburi, twophase, autocommit )
 

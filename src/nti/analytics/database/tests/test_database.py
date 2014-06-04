@@ -53,7 +53,7 @@ from ..metadata import AssignmentsTaken
 from ..metadata import AssignmentDetails
 from ..metadata import SelfAssessmentsTaken
 
-from ..database import create_database
+from ..database import AnalyticsDB
 from ..database import get_comments_for_course
 from ..database import get_comments_for_user
 
@@ -69,7 +69,8 @@ class TestUsers(unittest.TestCase):
 # 		_, self.filename = mkstemp()
 # 		uri = 'sqlite:///%s' % self.filename
 # 		self.db = create_database( dburi=uri )
-		self.db = create_database( defaultSQLite=True )
+		#self.db = create_database( defaultSQLite=True )
+		self.db = AnalyticsDB( defaultSQLite=True )
 		assert_that( self.db.engine.table_names(), has_length( 25 ) )
 		
 		self.session = self.db.get_session()
@@ -132,7 +133,7 @@ class TestAnalytics(unittest.TestCase):
 	def setUp(self):
 		_, self.filename = mkstemp()
 		uri = 'sqlite:///%s' % self.filename
-		self.db = create_database( dburi=uri )
+		self.db = AnalyticsDB( dburi=uri )
 		
 		self.session = self.db.get_session()
 		user = Users( user_id=test_user_id, username='test_user1' )
@@ -167,7 +168,7 @@ class TestComments(unittest.TestCase):
 	def setUp(self):
 		_, self.filename = mkstemp()
 		uri = 'sqlite:///%s' % self.filename
-		self.db = create_database( dburi=uri )
+		self.db = AnalyticsDB( dburi=uri )
 		
 		self.session = self.db.get_session()
 		user = Users( user_id=test_user_id, username='test_user1' )
