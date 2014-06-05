@@ -19,9 +19,9 @@ from nti.ntiids import ntiids
 from .common import to_external_ntiid_oid
 
 from . import create_job
-from . import get_graph_db
+from . import get_analytics_db
 from . import get_job_queue
-from . import interfaces as graph_interfaces
+from . import interfaces as analytics_interfaces
 
 def _remove_entity(db, key, value):
 	node = db.get_indexed_node(key, value)
@@ -40,7 +40,7 @@ def _add_entity(db, oid):
 	return None, None
 
 def _process_entity_removed(db, entity):
-	adapted = graph_interfaces.IUniqueAttributeAdapter(entity)
+	adapted = analytics_interfaces.IUniqueAttributeAdapter(entity)
 	queue = get_job_queue()
 	job = create_job(_remove_entity,
 					 db=db,
@@ -48,31 +48,35 @@ def _process_entity_removed(db, entity):
 					 value=adapted.value)
 	queue.put(job)
 
-def _process_entity_added(db, entity):
+def _process_entity_added(uid, db, entity):
 	oid = to_external_ntiid_oid(entity)
-	queue = get_job_queue()
-	job = create_job(_add_entity, db=db, oid=oid)
-	queue.put(job)
+	session = db.get_session()
+	db.create_user( session, entity )
+# 	queue = get_job_queue()
+# 	job = create_job(_add_entity, db=db, oid=oid)
+# 	queue.put(job)
 
 @component.adapter(nti_interfaces.IEntity, lce_interfaces.IObjectAddedEvent)
 def _entity_added(entity, event):
-	db = get_graph_db()
+	db = get_analytics_db()
 	queue = get_job_queue()
+	#FIXME we dont have a uid here
+	uid = None
 	if 	db is not None and queue is not None:  # check queue b/c of Everyone comm
-		_process_entity_added(db, entity)
+		_process_entity_added(uid, db, entity)
 
 @component.adapter(nti_interfaces.IEntity, intid_interfaces.IIntIdRemovedEvent)
 def _entity_removed(entity, event):
-	db = get_graph_db()
+	db = get_analytics_db()
 	if db is not None:
 		_process_entity_removed(db, entity)
 
-component.moduleProvides(graph_interfaces.IObjectProcessor)
+component.moduleProvides(analytics_interfaces.IObjectProcessor)
 
-def init(db, obj):
+def init(uid, db, obj):
 	result = False
 	if nti_interfaces.IEntity.providedBy(obj) and \
 		not nti_interfaces.IFriendsList.providedBy(obj):
-		_process_entity_added(db, obj)
+		_process_entity_added(uid, db, obj)
 		result = True
 	return result

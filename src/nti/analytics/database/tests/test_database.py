@@ -64,11 +64,10 @@ test_session_id = 56
 class TestUsers(unittest.TestCase):
 
 	def setUp(self):
-# 		_, self.filename = mkstemp()
-# 		uri = 'sqlite:///%s' % self.filename
-# 		self.db = create_database( dburi=uri )
-		#self.db = create_database( defaultSQLite=True )
-		self.db = AnalyticsDB( defaultSQLite=True )
+ 		_, self.filename = mkstemp()
+		uri = 'sqlite:///%s' % self.filename
+		self.db = AnalyticsDB( dburi=uri )
+
 		assert_that( self.db.engine.table_names(), has_length( 25 ) )
 		
 		self.session = self.db.get_session()

@@ -24,9 +24,8 @@ from nti.externalization.interfaces import LocatedExternalDict
 from nti.utils.maps import CaseInsensitiveDict
 
 from . import utils
-from . import views
 from . import get_job_queue
-from . import interfaces as graph_interfaces
+from . import interfaces as analytic_interfaces
 
 def _make_min_max_btree_range(search_term):
 	min_inclusive = search_term # start here
@@ -40,40 +39,39 @@ def username_search(search_term):
 	usernames = list(_users.iterkeys(min_inclusive, max_exclusive, excludemax=True))
 	return usernames
 
-def init(db, obj):
+def init(uid, db, obj):
 	result = False
-	for _, module in component.getUtilitiesFor(graph_interfaces.IObjectProcessor):
-		result = module.init(db, obj) or result
+	for _, module in component.getUtilitiesFor(analytic_interfaces.IObjectProcessor):
+		result = module.init(uid, db, obj) or result
 	return result
 
 def init_db(db, usernames=()):
 	count = 0
-	for _, obj in utils.all_objects_iids(usernames):
-		if init(db, obj):
+	for uid, obj in utils.all_objects_iids(usernames):
+		if init(uid, db, obj):
 			count += 1
 			if count % 10000 == 0:
 				transaction.savepoint()
 	return count
 
 @view_config(route_name='objects.generic.traversal',
-			 name='init_graphdb',
+			 name='init_db',
 			 renderer='rest',
 			 request_method='POST',
-			 context=views.GraphPathAdapter,
 			 permission=nauth.ACT_MODERATE)
-def init_graphdb(request):
+def init_db(request):
 	values = json.loads(unicode(request.body, request.charset)) if request.body else {}
 	values = CaseInsensitiveDict(values)
 	site = values.get('site', u'')
-	term = values.get('term', values.get('search', None))
 	usernames = values.get('usernames', values.get('username', None))
-	if term:
-		usernames = username_search(term)
-	elif usernames:
+# 	usernames = 'josh.zuech@nextthought.com,student1'
+	
+	if usernames:
 		usernames = usernames.split(',')
 	else:
 		usernames = ()
-	db = component.getUtility(graph_interfaces.IGraphDB, name=site)
+	
+	db = component.getUtility(analytic_interfaces.IAnalyticsDB, name=site)
 
 	now = time.time()
 	total = init_db(db, usernames)
@@ -90,7 +88,6 @@ def init_graphdb(request):
 			 name='queue_info',
 			 renderer='rest',
 			 request_method='GET',
-			 context=views.GraphPathAdapter,
 			 permission=nauth.ACT_MODERATE)
 def queue_info(request):
 	queue = get_job_queue()
@@ -102,7 +99,6 @@ def queue_info(request):
 			 name='empty_queue',
 			 renderer='rest',
 			 request_method='POST',
-			 context=views.GraphPathAdapter,
 			 permission=nauth.ACT_MODERATE)
 def empty_queue(request):
 	queue = get_job_queue()

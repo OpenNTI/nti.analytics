@@ -16,7 +16,7 @@ from ZODB.POSException import POSKeyError
 
 from nti.dataserver import interfaces as nti_interfaces
 
-from .. import interfaces as graph_interfaces
+from .. import interfaces as analytic_interfaces
 
 def all_objects_iids(users=()):
     obj = intids = component.getUtility(zope.intid.IIntIds)
@@ -37,30 +37,3 @@ def all_objects_iids(users=()):
         except (TypeError, POSKeyError) as e:
             logger.error("Error processing object %s(%s); %s", type(obj), uid, e)
 
-@interface.implementer(graph_interfaces.IUniqueAttributeAdapter)
-class UniqueAttribute(object):
-
-    def __init__(self, key, value):
-        self.key = key
-        self.value = value
-
-    def __str__(self):
-        return "(%s,%s)" % (self.key, self.value)
-
-    def __repr__(self):
-        return "%s(%s,%s)" % (self.__class__.__name__, self.key, self.value)
-
-    def __eq__(self, other):
-        try:
-            return self is other or (self.key == other.key
-                                     and self.value == other.value)
-        except AttributeError:
-            return NotImplemented
-
-    def __hash__(self):
-        xhash = 47
-        xhash ^= hash(self.key)
-        xhash ^= hash(self.value)
-        return xhash
-
-PrimaryKey = UniqueAttribute
