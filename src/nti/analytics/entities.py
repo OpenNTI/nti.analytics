@@ -49,9 +49,11 @@ def _process_entity_removed(db, entity):
 	queue.put(job)
 
 def _process_entity_added(uid, db, entity):
-	oid = to_external_ntiid_oid(entity)
+	#oid = to_external_ntiid_oid(entity)
+	logger.info( "Creating entity %s (%s)" % ( entity, dir(entity) ) )
 	session = db.get_session()
-	db.create_user( session, entity )
+	db.create_user( session, uid )
+	session.commit()
 # 	queue = get_job_queue()
 # 	job = create_job(_add_entity, db=db, oid=oid)
 # 	queue.put(job)

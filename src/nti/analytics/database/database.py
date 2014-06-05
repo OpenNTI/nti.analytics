@@ -18,6 +18,8 @@ from sqlalchemy.orm import sessionmaker
 from .metadata import AnalyticsMetadata
 from .interfaces import IAnalyticsDB
 
+from nti.dataserver.users import interfaces as user_interfaces
+
 from zope import interface
 
 from .metadata import Users
@@ -25,6 +27,7 @@ from .metadata import Sessions
 from .metadata import ChatsInitiated
 from .metadata import ChatsJoined
 from .metadata import GroupsCreated
+from .metadata import GroupsRemoved
 from .metadata import DistributionListsCreated
 from .metadata import ContactsAdded
 from .metadata import ContactsRemoved
@@ -38,13 +41,17 @@ from .metadata import HighlightsCreated
 from .metadata import ForumsCreated
 from .metadata import DiscussionsCreated
 from .metadata import DiscussionsViewed
-from .metadata import CommentsCreated
+from .metadata import ForumCommentsCreated
+from .metadata import BlogCommentsCreated
+from .metadata import NoteCommentsCreated
 from .metadata import CourseCatalogViews
+from .metadata import EnrollmentTypes
 from .metadata import CourseEnrollments
 from .metadata import CourseDrops
 from .metadata import AssignmentsTaken
 from .metadata import AssignmentDetails
 from .metadata import SelfAssessmentsTaken
+from .metadata import SelfAssessmentDetails
 
 # We should only have a few different types of operations here:
 # - Insertions
@@ -73,11 +80,11 @@ class AnalyticsDB(object):
 		Session = sessionmaker(bind=self.engine)
 		return Session()
 	
-	def create_user(self, session, user):
-		user = Users( user_id=user.intid, username=user.username, email=user.email )
+	def create_user(self, session, intid):
+		user = Users( user_id=intid )
 		session.add( user )
 		
-	def create_session(self, session,user,nti_session,ip_address,version):
+	def create_session(self, session, user, nti_session, ip_address, version):
 		#TODO what objects will we have?
 		new_session = Sessions( user_id=user.intid, session_id=nti_session.intid, timestamp=nti_session.timestamp, ip_addr=ip_address, version=version )
 		session.add( new_session )		
@@ -114,14 +121,12 @@ class AnalyticsDB(object):
 		new_object = ThoughtsViewed( user_id=user.intid, session_id=nti_session.intid, timestamp=timestamp )
 		session.add( new_object )				
 			
-			
-			
 	
 	#StudentParticipationReport	
-	def get_comments_for_user(self, session, user, course_id):		
-		results = session.query(CommentsCreated).filter( 	CommentsCreated.user_id == user.intid, 
-															CommentsCreated.course_id==course_id, 
-															CommentsCreated.deleted==None ).all()
+	def get_forum_comments_for_user(self, session, user, course_id):		
+		results = session.query(ForumCommentsCreated).filter( 	ForumCommentsCreated.user_id == user.intid, 
+																ForumCommentsCreated.course_id==course_id, 
+																ForumCommentsCreated.deleted==None ).all()
 		return results
 	
 	def get_discussions_created_for_user(self, session, user, course_id):		
@@ -143,9 +148,9 @@ class AnalyticsDB(object):
 	
 	
 	#ForumReport
-	def get_comments_for_forum(self, session, forum_id):
-		results = session.query(CommentsCreated).filter( 	CommentsCreated.forum_id==forum_id, 
-															CommentsCreated.deleted==None  ).all()
+	def get_forum_comments(self, session, forum_id):
+		results = session.query(ForumCommentsCreated).filter( 	ForumCommentsCreated.forum_id==forum_id, 
+																ForumCommentsCreated.deleted==None  ).all()
 		return results
 	
 	def get_discussions_created_for_forum(self, session, forum_id):		
@@ -154,9 +159,9 @@ class AnalyticsDB(object):
 	
 	
 	#CourseReport
-	def get_comments_for_course(self, session, course_id):
-		results = session.query(CommentsCreated).filter( 	CommentsCreated.course_id==course_id, 
-															CommentsCreated.deleted==None  ).all()
+	def get_forum_comments_for_course(self, session, course_id):
+		results = session.query(ForumCommentsCreated).filter( 	ForumCommentsCreated.course_id==course_id, 
+																ForumCommentsCreated.deleted==None  ).all()
 		return results
 	
 	def get_discussions_created_for_course(self, session, course_id):		

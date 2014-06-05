@@ -23,6 +23,7 @@ from sqlalchemy import Enum
 from sqlalchemy import DateTime
 
 from sqlalchemy.schema import Index
+from sqlalchemy.schema import Sequence
 
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.declarative import declared_attr
@@ -31,64 +32,67 @@ Base = declarative_base()
 
 # This user_id should be the dataserver's intid value for this user.
 class Users(Base):
-	__tablename__ = 'users'
-	user_id = Column('user_id', Integer, primary_key=True)
-	username = Column('username', String(128), nullable=False)
-	email = Column('email', String(128))
-	alias = Column('alias', String(128))
-	realname = Column('realname', String(128))
+	__tablename__ = 'Users'
+	user_id = Column('user_id', Integer, Sequence('user_id_seq'), primary_key=True, index=True )
+	user_ds_id = Column('user_ds_id', Integer, nullable=False, unique=True, index=True)
 	
-# TODO timezone?	
-# TODO Do we want to (or can we) determine how long the session lasts?
+# TODO timezone?
+# TODO Do we need indexes here?	
 class Sessions(Base):
-	__tablename__ = 'sessions'
+	__tablename__ = 'Sessions'
 	session_id = Column('session_id', Integer, primary_key=True)
-	user_id = Column('user_id', Integer, ForeignKey("users.user_id"), nullable=False )
+	user_id = Column('user_id', Integer, ForeignKey("Users.user_id"), nullable=False )
 	ip_addr = Column('ip_addr', String(64))	
+	platform = Column('platform', String(64))
 	version = Column('version', String(64))
-	timestamp = Column('timestamp', DateTime)
+	start_time = Column('start_time', DateTime)
+	end_time = Column('end_time', DateTime)
 
 
 class BaseTableMixin(object):
 
 	@declared_attr
 	def session_id(cls):
-		return Column('session_id', Integer, ForeignKey("sessions.session_id"), primary_key=True)
+		return Column('session_id', Integer, ForeignKey("Sessions.session_id"), primary_key=True)
 	
 	@declared_attr
 	def user_id(cls):
-		return Column('user_id', Integer, ForeignKey("users.user_id"), primary_key=True, index=True)
+		return Column('user_id', Integer, ForeignKey("Users.user_id"), primary_key=True, index=True)
 	
 	# We could default the timestamp to the current time, but we may have insertion lag.
 	timestamp = Column('timestamp', DateTime, primary_key=True)
 
 
-# TODO how about inverse here? (contact_removed, groups_destroyed?)
-# TODO do social elements have course context?
+
 # This information needs to be obscured to protect privacy.	
 class ChatsInitiated(Base,BaseTableMixin):
-	__tablename__ = 'chats_initiated'
+	__tablename__ = 'ChatsInitiated'
 
 class ChatsJoined(Base,BaseTableMixin):
-	__tablename__ = 'chats_joined'
+	__tablename__ = 'ChatsJoined'
 	
 class GroupsCreated(Base,BaseTableMixin):
-	__tablename__ = 'groups_created'
+	__tablename__ = 'GroupsCreated'
+	
+class GroupsRemoved(Base,BaseTableMixin):
+	__tablename__ = 'GroupsRemoved'	
 	
 class DistributionListsCreated(Base,BaseTableMixin):
-	__tablename__ = 'distibution_lists_created'
+	__tablename__ = 'DistributionListsCreated'
 	
 class ContactsAdded(Base,BaseTableMixin):
-	__tablename__ = 'contacts_added'
-	
+	__tablename__ = 'ContactsAdded'
+
+# Contact events should(?) only reference the user-specific friends list.	
 class ContactsRemoved(Base,BaseTableMixin):
-	__tablename__ = 'contacts_removed'
+	__tablename__ = 'ContactsRemoved'
 	
 class ThoughtsCreated(Base,BaseTableMixin):
-	__tablename__ = 'thoughts_created'	
+	__tablename__ = 'ThoughtsCreated'	
 	
 class ThoughtsViewed(Base,BaseTableMixin):
-	__tablename__ = 'thoughts_viewed'					
+	__tablename__ = 'ThoughtsViewed'					
+
 
 
 
@@ -113,103 +117,141 @@ class TimeLengthMixin(object):
 class DeletedMixin(object):
 	deleted = Column('deleted', DateTime)
 
+
+
 # For meta-views into synthetic course info, we can special type the resource_id:
 #	(about|instructors|tech_support)	
 class CourseResourceViews(Base,ResourceViewMixin,TimeLengthMixin):
-	__tablename__ = 'course_resource_views'	
+	__tablename__ = 'CourseResourceViews'	
+
 
 # Would we query on these separate event types? Probably not.
 # If so, we may break them out into separate tables.	
+# TODO: Punt, should we have separate rows for start/end?
+# TODO Define questions we want to answer before we define this table.
 class VideoEvents(Base,ResourceViewMixin,TimeLengthMixin):
-	__tablename__ = 'video_events'
+	__tablename__ = 'VideoEvents'
 	video_event_type = Column('video_event_type', Enum( 'WATCH', 'SKIP' ), nullable=False )
 	video_start_time = Column('video_start_time', DateTime, nullable=False )
 	video_end_time = Column('video_end_time', DateTime, nullable=False )
 	with_transcript = Column('with_transcript', Boolean, nullable=False )
 	
 class NotesCreated(Base,ResourceMixin,DeletedMixin):	
-	__tablename__ = 'notes_created'
+	__tablename__ = 'NotesCreated'
 	sharing = Column('sharing', Enum( 'PUBLIC', 'PRIVATE', 'COURSE_ONLY' ), nullable=False )
 
-# TODO time_length?
 class NotesViewed(Base,ResourceMixin):	
-	__tablename__ = 'notes_viewed'
+	__tablename__ = 'NotesViewed'
 
 class HighlightsCreated(Base,ResourceMixin,DeletedMixin):
-	__tablename__ = 'highlights_created'
+	__tablename__ = 'HighlightsCreated'
 
 class ForumsCreated(Base,CourseMixin,DeletedMixin):		
-	__tablename__ = 'forums_created'
+	__tablename__ = 'ForumsCreated'
 	forum_id = Column('forum_id', String(256), primary_key=True)				
 
 class ForumMixin(CourseMixin):
-	#TODO is it necessary to have these foreign_keys?
 	@declared_attr
 	def forum_id(cls):
-		return Column('forum_id', String(256), ForeignKey("forums_created.forum_id"), nullable=False)
+		return Column('forum_id', String(256), ForeignKey("ForumsCreated.forum_id"), nullable=False)
 	
 class DiscussionsCreated(Base,ForumMixin,DeletedMixin):	
-	__tablename__ = 'discussions_created'
+	__tablename__ = 'DiscussionsCreated'
 	discussion_id = Column('discussion_id', String(256), primary_key=True ) 
 	
 class DiscussionMixin(ForumMixin):	
 	@declared_attr
 	def discussion_id(cls):
-		return Column('discussion_id', String(256), ForeignKey("discussions_created.discussion_id"), nullable=False)
+		return Column('discussion_id', String(256), ForeignKey("DiscussionsCreated.discussion_id"), nullable=False)
 
 class DiscussionsViewed(Base,DiscussionMixin,TimeLengthMixin):
-	__tablename__ = 'discussions_viewed'	
+	__tablename__ = 'DiscussionsViewed'	
 
-# TOOD these will not be just in forums, we may have these in thoughts...We should distinguish.
-class CommentsCreated(Base,DiscussionMixin,DeletedMixin):
-	__tablename__ = 'comments_created'		
+
+
+class CommentsMixin(DiscussionMixin,DeletedMixin):
 	# comment_id should be the DS intid
-	comment_id = Column('comment_id', Integer, nullable=False)
+	@declared_attr
+	def comment_id(cls):
+		return Column('comment_id', Integer, nullable=False)
+	
 	# parent_id should point to a parent comment, top-level comments will have null parent_ids
-	parent_id = Column('parent_id', Integer)
+	@declared_attr
+	def parent_id(cls):
+		return Column('parent_id', Integer)
 
-class CourseCatalogViews(Base,CourseMixin):	
-	#TODO time_length?	
-	__tablename__ = 'course_catalog_views'
+class ForumCommentsCreated(Base,CommentsMixin):
+	__tablename__ = 'ForumCommentsCreated'		
+	
+class BlogCommentsCreated(Base,CommentsMixin):
+	__tablename__ = 'BlogCommentsCreated'	
+	
+class NoteCommentsCreated(Base,CommentsMixin):
+	__tablename__ = 'NoteCommentsCreated'			
+
+
+
+class CourseCatalogViews(Base,CourseMixin,TimeLengthMixin):	
+	__tablename__ = 'CourseCatalogViews'
 		
 	
-# TODO Do we want instructors here at all?
-#	If not, we just have for_credit and non_credit		
+# TODO how will we populate this, at migration time based on client?	
+class EnrollmentTypes(Base):
+	__tablename__ = 'EnrollmentTypes'
+	type_id = Column( 'type_id', Integer, Sequence( 'enrollment_type_seq' ), nullable=False, primary_key=True )
+	type_name = Column( 'type_name', String(64), nullable=False )
+		
 # Dropped is redundant, but it may be useful to grab all course enrollment information here.		
 class CourseEnrollments(Base,CourseMixin):
-	__tablename__ = 'course_enrollments'
-	for_credit = Column('for_credit', Boolean, nullable=False)
-	dropped = Column('dropped', Boolean, nullable=False)
+	__tablename__ = 'CourseEnrollments'
+	type_id = Column( 'type_id', Integer, ForeignKey( 'EnrollmentTypes.type_id' ), nullable=False )
+	dropped = Column( 'dropped', Boolean, nullable=False )
 	
 class CourseDrops(Base,CourseMixin):	
-	__tablename__ = 'course_drops'
+	__tablename__ = 'CourseDrops'
 
+# TODO Is our course/user index enough here?
 class AssignmentMixin(CourseMixin,TimeLengthMixin):
 	assignment_id = Column('assignment_id', String(1048), nullable=False)
 		
-# TODO will we have self-assessment details (grades and part details)?		
 class SelfAssessmentsTaken(Base,AssignmentMixin):
-	__tablename__ = 'self_assessments_taken'
+	__tablename__ = 'SelfAssessmentsTaken'
+	submission_id = Column('submission_id', Integer, Sequence( 'self_assess_submission_id_seq' ), primary_key=True)
 		
-# TODO Should feedback have its own event tracking?
-#	It's one of the few mutable fields if not.
+# TODO Should feedback have its own event tracking? It's one of the few mutable fields if not.
 class AssignmentsTaken(Base,AssignmentMixin):
-	__tablename__ = 'assignments_taken'
+	__tablename__ = 'AssignmentsTaken'
 	grade = Column('grade', String(256))
 	feedback_count = Column('feedback_count', Integer)
+	submission_id = Column('submission_id', Integer, Sequence( 'assignment_submission_id_seq' ), primary_key=True)
 
-# TODO How do we do this with retakes, is it important to distinguish?		
-#	Perhaps we need to generate a unique id here that maps to assignment_details.
+
+class SubmissionMixin(AssignmentMixin):
+	@declared_attr
+	def question_id(cls):
+		return Column('question_id', Integer, nullable=False)
+	
+	@declared_attr
+	def question_part(cls):
+		return Column('question_part', Integer, nullable=False)
+	
+	@declared_attr
+	def submission(cls):
+		return Column('submission', String(1048), nullable=False) #(Freeform|MapEntry|Index|List)
+	
+	@declared_attr
+	def is_correct(cls):
+		return Column('is_correct', Boolean)
+	
 # TODO Can we rely on these parts/ids being integers?
-# TODO What do we do if instructor corrects an answer for a question_part?
-class AssignmentDetails(Base,AssignmentMixin):	
-	__tablename__ = 'assignment_details'
-	question_id = Column('question_id', Integer, nullable=False)
-	question_part = Column('question_part', Integer, nullable=False)
-	submission = Column('submission', String(1048), nullable=False) #(Freeform|MapEntry|Index|List)
-	is_correct = Column('is_correct', Boolean)
+# TODO What do we do if instructor corrects an answer for a question_part (syncing)?
+class AssignmentDetails(Base,SubmissionMixin):	
+	__tablename__ = 'AssignmentDetails'
+	submission_id = Column('submission_id', Integer, ForeignKey("AssignmentsTaken.submission_id"), nullable=False)
 
-
+class SelfAssessmentDetails(Base,SubmissionMixin):	
+	__tablename__ = 'SelfAssessmentDetails'
+	submission_id = Column('submission_id', Integer, ForeignKey("SelfAssessmentsTaken.submission_id"), nullable=False)
 
 
 
@@ -218,9 +260,7 @@ class AssignmentDetails(Base,AssignmentMixin):
 #	examine String limits
 #		TODO Should we use TEXT instead of String?
 #	constraints
-
-# Timestamps TEXT here?
-
+# 	Timestamps TEXT here?
 class AnalyticsMetadata(object): 
 
 	def __init__(self,engine):

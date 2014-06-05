@@ -55,11 +55,11 @@ def init_db(db, usernames=()):
 	return count
 
 @view_config(route_name='objects.generic.traversal',
-			 name='init_db',
+			 name='init_analytics_db',
 			 renderer='rest',
 			 request_method='POST',
 			 permission=nauth.ACT_MODERATE)
-def init_db(request):
+def init_analytics_db(request):
 	values = json.loads(unicode(request.body, request.charset)) if request.body else {}
 	values = CaseInsensitiveDict(values)
 	site = values.get('site', u'')
