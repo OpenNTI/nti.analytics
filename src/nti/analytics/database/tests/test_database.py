@@ -94,13 +94,14 @@ class TestUsers(unittest.TestCase):
 		assert_that( results, has_length( 1 ) )
 		
 		new_user = self.session.query(Users).one()
+		# Sequence generated
 		assert_that( new_user.user_id, 1 )
 		assert_that( new_user.user_ds_id, test_user_ds_id )
 
 		with self.assertRaises(IntegrityError):
 			user2 = Users( user_ds_id=test_user_ds_id )
 			self.session.add( user2 )
-			self.session.commit()
+			self.session.flush()
 			
 	def test_user_constraints(self):
 		results = self.session.query(Users).all()
@@ -109,17 +110,18 @@ class TestUsers(unittest.TestCase):
 		with self.assertRaises(IntegrityError):
 			new_user = Users( user_ds_id=None )
 			self.session.add( new_user )
-			self.session.commit()
+			self.session.flush()
 		
 	def test_sessions(self):
 		results = self.session.query(Sessions).all()
 		assert_that( results, has_length( 0 ) )
 		
-		user = Users( user_id=test_user_id, user_ds_id=test_user_ds_id )
+		user = Users( user_ds_id=test_user_ds_id )
 		self.session.add( user )
-		self.session.commit()
+		self.session.flush()
 		
-		new_session = Sessions( session_id=test_session_id, user_id=test_user_id, ip_addr='0.1.2.3.4', version='webapp-0.9', start_time=datetime.now() )
+		# Using new generated user_id
+		new_session = Sessions( session_id=test_session_id, user_id=user.user_id, ip_addr='0.1.2.3.4', version='webapp-0.9', start_time=datetime.now() )
 		self.session.add( new_session )
 		results = self.session.query(Sessions).all()
 		assert_that( results, has_length( 1 ) )
@@ -145,7 +147,8 @@ class TestAnalytics(unittest.TestCase):
 		
 		db_session = Sessions( session_id=test_session_id, user_id=test_user_id, ip_addr='0.1.2.3.4', version='webapp-0.9', start_time=datetime.now() )
 		self.session.add( db_session )
-		
+		self.session.flush()
+
 	def tearDown(self):
 		if self.filename:
 			os.remove( self.filename )

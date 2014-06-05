@@ -81,7 +81,7 @@ class AnalyticsDB(object):
 		return Session()
 	
 	def create_user(self, session, intid):
-		user = Users( user_id=intid )
+		user = Users( user_ds_id=intid )
 		session.add( user )
 		
 	def create_session(self, session, user, nti_session, ip_address, version):

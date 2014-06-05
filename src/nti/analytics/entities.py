@@ -50,7 +50,6 @@ def _process_entity_removed(db, entity):
 
 def _process_entity_added(uid, db, entity):
 	#oid = to_external_ntiid_oid(entity)
-	logger.info( "Creating entity %s (%s)" % ( entity, dir(entity) ) )
 	session = db.get_session()
 	db.create_user( session, uid )
 	session.commit()
