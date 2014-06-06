@@ -80,8 +80,8 @@ class AnalyticsDB(object):
 		Session = sessionmaker(bind=self.engine)
 		return Session()
 	
-	def create_user(self, session, intid):
-		user = Users( user_ds_id=intid )
+	def create_user(self, session, uid):
+		user = Users( user_ds_id=uid )
 		session.add( user )
 		
 	def create_session(self, session, user, nti_session, ip_address, version):
@@ -89,35 +89,35 @@ class AnalyticsDB(object):
 		new_session = Sessions( user_id=user.intid, session_id=nti_session.intid, timestamp=nti_session.timestamp, ip_addr=ip_address, version=version )
 		session.add( new_session )		
 		
-	def create_chat_initated(self, session,user,timestamp):
+	def create_chat_initated(self, session, user, timestamp):
 		new_object = ChatsInitiated( user_id=user.intid, session_id=nti_session.intid, timestamp=timestamp )
 		session.add( new_object )		
 		
-	def create_chat_joined(self, session,user,timestamp):
+	def create_chat_joined(self, session, user, timestamp):
 		new_object = ChatsJoined( user_id=user.intid, session_id=nti_session.intid, timestamp=timestamp )
 		session.add( new_object )	
 		
-	def create_groups(self, session,user,timestamp):
+	def create_groups(self, session, user, timestamp):
 		new_object = GroupsCreated( user_id=user.intid, session_id=nti_session.intid, timestamp=timestamp )
 		session.add( new_object )	
 		
-	def create_distribution_lists(self, session,user,timestamp):
+	def create_distribution_lists(self, session, user, timestamp):
 		new_object = DistributionListsCreated( user_id=user.intid, session_id=nti_session.intid, timestamp=timestamp )
 		session.add( new_object )	
 		
-	def create_contacts_added(self, session,user,timestamp):
+	def create_contacts_added(self, session, user, timestamp):
 		new_object = ContactsAdded( user_id=user.intid, session_id=nti_session.intid, timestamp=timestamp )
 		session.add( new_object )	
 		
-	def create_contacts_removed(self, session,user,timestamp):
+	def create_contacts_removed(self, session, user, timestamp):
 		new_object = ContactsRemoved( user_id=user.intid, session_id=nti_session.intid, timestamp=timestamp )
 		session.add( new_object )	
 		
-	def create_thoughts(self, session,user,timestamp):
+	def create_thoughts(self, session, user, timestamp):
 		new_object = ThoughtsCreated( user_id=user.intid, session_id=nti_session.intid, timestamp=timestamp )
 		session.add( new_object )	
 		
-	def create_thoughts_viewed(self, session,user,timestamp):
+	def create_thoughts_viewed(self, session, user, timestamp):
 		new_object = ThoughtsViewed( user_id=user.intid, session_id=nti_session.intid, timestamp=timestamp )
 		session.add( new_object )				
 			

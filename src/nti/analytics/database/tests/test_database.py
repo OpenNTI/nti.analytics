@@ -12,8 +12,6 @@ import unittest
 
 from datetime import datetime
 
-from tempfile import mkstemp
-
 from collections import namedtuple
 
 from hamcrest import is_
@@ -70,18 +68,11 @@ test_session_id = 56
 class TestUsers(unittest.TestCase):
 
 	def setUp(self):
-		# In-memory?
- 		_, self.filename = mkstemp()
-		uri = 'sqlite:///%s' % self.filename
-		self.db = AnalyticsDB( dburi=uri )
-
+		self.db = AnalyticsDB( dburi='sqlite://' )
+		self.session = self.db.get_session()
 		assert_that( self.db.engine.table_names(), has_length( 30 ) )
 		
-		self.session = self.db.get_session()
-		
 	def tearDown(self):
-# 		if self.filename:
-# 			os.remove( self.filename )
 		self.session.close()	
 				
 	def test_users(self):
@@ -121,7 +112,7 @@ class TestUsers(unittest.TestCase):
 		self.session.flush()
 		
 		# Using new generated user_id
-		new_session = Sessions( session_id=test_session_id, user_id=user.user_id, ip_addr='0.1.2.3.4', version='webapp-0.9', start_time=datetime.now() )
+		new_session = Sessions( session_id=test_session_id, user_id=user.user_id, ip_addr='0.1.2.3.4', version='0.9', platform='webapp', start_time=datetime.now() )
 		self.session.add( new_session )
 		results = self.session.query(Sessions).all()
 		assert_that( results, has_length( 1 ) )
@@ -130,28 +121,24 @@ class TestUsers(unittest.TestCase):
 		assert_that( new_session.user_id, test_user_id )
 		assert_that( new_session.session_id, test_session_id )
 		assert_that( new_session.ip_addr, '0.1.2.3.4' )	
-		assert_that( new_session.version, 'webapp-0.9' )	
+		assert_that( new_session.platform, 'webapp' )
+		assert_that( new_session.version, '0.9' )	
 
 _User = namedtuple('_User', ('intid',))
 
 class TestAnalytics(unittest.TestCase):
 
 	def setUp(self):
-		_, self.filename = mkstemp()
-		uri = 'sqlite:///%s' % self.filename
-		self.db = AnalyticsDB( dburi=uri )
-		
+		self.db = AnalyticsDB( dburi='sqlite://' )
 		self.session = self.db.get_session()
 		user = Users( user_id=test_user_id, user_ds_id=test_user_ds_id )
 		self.session.add( user )
 		
-		db_session = Sessions( session_id=test_session_id, user_id=test_user_id, ip_addr='0.1.2.3.4', version='webapp-0.9', start_time=datetime.now() )
+		db_session = Sessions( session_id=test_session_id, user_id=test_user_id, ip_addr='0.1.2.3.4', version='0.9', platform='webapp', start_time=datetime.now() )
 		self.session.add( db_session )
 		self.session.flush()
 
 	def tearDown(self):
-		if self.filename:
-			os.remove( self.filename )
 		self.session.close()	
 		
 	def test_chats(self):
@@ -171,9 +158,7 @@ class TestAnalytics(unittest.TestCase):
 class TestComments(unittest.TestCase):
 
 	def setUp(self):
-		_, self.filename = mkstemp()
-		uri = 'sqlite:///%s' % self.filename
-		self.db = AnalyticsDB( dburi=uri )
+		self.db = AnalyticsDB( dburi='sqlite://' )
 		
 		self.session = self.db.get_session()
 		user = Users( user_id=test_user_id, user_ds_id=test_user_ds_id )
@@ -183,6 +168,9 @@ class TestComments(unittest.TestCase):
 		self.session.add( db_session )
 		self.course_name='course1'
 		self.create_forum_and_topic( self.course_name )	
+	
+	def tearDown(self):
+		self.session.close()	
 		
 	def create_forum_and_topic(self,course_name):
 		#Forum

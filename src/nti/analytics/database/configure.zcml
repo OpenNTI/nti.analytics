@@ -10,8 +10,16 @@
 	<include package="zope.security" />
 			 		 
 	<configure zcml:condition="have devmode">
-		<include package="." file="meta.zcml" />
-		<adb:registerAnalyticsDB 	defaultSQLite="True"
-									name="janux.ou.edu" />
+		<configure zcml:condition="have testmode">
+			<include package="." file="meta.zcml" />
+			<adb:registerAnalyticsDB 	defaultSQLite="True"
+										name="janux.ou.edu" />
+		</configure>
+	</configure>
+	
+	<!-- What goes here for non-dev -->
+	<configure zcml:condition="not-have devmode">
+			<include package="." file="meta.zcml" />
+			<adb:registerAnalyticsDB name="janux.ou.edu" />
 	</configure>
 </configure>
