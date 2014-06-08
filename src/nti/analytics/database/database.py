@@ -106,7 +106,8 @@ class AnalyticsDB(object):
 		
 	def _get_or_create_user(self, session, user):	
 		# TODO We use this throughout in other transactions, is the negative case not indicative of 
-		# data incorrectness? Should we barf?
+		# data incorrectness? Should we barf? Same with enrollment_type
+		# TODO Do we have to worry about race conditions?
 		uid = self.idlookup._get_id_for_object( user )
 		found_user = session.query(Users).filter( Users.user_ds_id == uid ).one()
 		return found_user or self.create_user( session, uid )
@@ -271,7 +272,7 @@ class AnalyticsDB(object):
 	# TODO Deleted notes
 	# TODO Deleted forums
 	# TODO Deleted highlights
-	# TODO Deleted dsicussions	
+	# TODO Deleted dsicussions,comments
 	
 	# TODO handle resource, forum, and discussion ids
 	
@@ -323,6 +324,112 @@ class AnalyticsDB(object):
 											course_id=course_id,
 											forum_id=forum_id,
 											discussion_id=discussion_id )
+		session.add( new_object )	
+		
+	def create_discussion_view(self, session, user, nti_session, timestamp, course_id, forum_id, discussion_id, time_length):
+		user = self._get_or_create_user( session, user )
+		uid = user.user_id
+		sid = self.idlookup._get_id_for_session( nti_session )
+		
+		new_object = DiscussionsViewed( user_id=uid, 
+										session_id=sid, 
+										timestamp=timestamp,
+										course_id=course_id,
+										forum_id=forum_id,
+										discussion_id=discussion_id,
+										time_length=time_length )
+		session.add( new_object )	
+		
+	def create_forum_comment_created(self, session, user, nti_session, timestamp, course_id, forum_id, discussion_id, parent_id, comment_id):
+		user = self._get_or_create_user( session, user )
+		uid = user.user_id
+		sid = self.idlookup._get_id_for_session( nti_session )
+		
+		new_object = ForumCommentsCreated( 	user_id=uid, 
+											session_id=sid, 
+											timestamp=timestamp,
+											course_id=course_id,
+											forum_id=forum_id,
+											discussion_id=discussion_id,
+											parent_id=parent_id,
+											comment_id=comment_id )
+		session.add( new_object )	
+		
+	def create_blog_comment_created(self, session, user, nti_session, timestamp, course_id, forum_id, discussion_id, parent_id, comment_id):
+		user = self._get_or_create_user( session, user )
+		uid = user.user_id
+		sid = self.idlookup._get_id_for_session( nti_session )
+		
+		new_object = BlogCommentsCreated( 	user_id=uid, 
+											session_id=sid, 
+											timestamp=timestamp,
+											course_id=course_id,
+											forum_id=forum_id,
+											discussion_id=discussion_id,
+											parent_id=parent_id,
+											comment_id=comment_id )
+		session.add( new_object )	
+		
+	def create_note_comment_created(self, session, user, nti_session, timestamp, course_id, forum_id, discussion_id, parent_id, comment_id):
+		user = self._get_or_create_user( session, user )
+		uid = user.user_id
+		sid = self.idlookup._get_id_for_session( nti_session )
+		
+		new_object = NoteCommentsCreated( 	user_id=uid, 
+											session_id=sid, 
+											timestamp=timestamp,
+											course_id=course_id,
+											forum_id=forum_id,
+											discussion_id=discussion_id,
+											parent_id=parent_id,
+											comment_id=comment_id )
+		session.add( new_object )	
+		
+	def create_course_catalog_view(self, session, user, nti_session, timestamp, course_id, time_length):
+		user = self._get_or_create_user( session, user )
+		uid = user.user_id
+		sid = self.idlookup._get_id_for_session( nti_session )
+		
+		new_object = CourseCatalogView( user_id=uid, 
+										session_id=sid, 
+										timestamp=timestamp,
+										course_id=course_id,
+										time_length=time_length )
+		session.add( new_object )						
+	
+	def create_enrollment_type(self, session, name):
+		enrollment_type = EnrollmentTypes( type_name=type_name )
+		session.add( enrollment_type )
+		session.flush()
+		return enrollment_type
+	
+	def _get_enrollment_id(self, session, name):
+		enrollment_type = session.query(EnrollmentTypes).filter( EnrollmentTypes.type_name == name ).one()
+		return enrollment_type or create_enrollment_type(self,session,name)
+	
+	def create_course_enrollment(self, session, user, nti_session, timestamp, course_id, enrollment_type_name):
+		user = self._get_or_create_user( session, user )
+		uid = user.user_id
+		sid = self.idlookup._get_id_for_session( nti_session )
+		
+		type_id = self._get_enrollment_id( session, enrollment_type_name )
+		
+		new_object = CourseEnrollments( user_id=uid, 
+										session_id=sid, 
+										timestamp=timestamp,
+										course_id=course_id,
+										type_id=type_id )
+		session.add( new_object )
+		
+	def create_course_drop(self, session, user, nti_session, timestamp, course_id):
+		user = self._get_or_create_user( session, user )
+		uid = user.user_id
+		sid = self.idlookup._get_id_for_session( nti_session )
+		
+		new_object = CourseDrops( 	user_id=uid, 
+									session_id=sid, 
+									timestamp=timestamp,
+									course_id=course_id )
 		session.add( new_object )	
 	
 	# StudentParticipationReport	

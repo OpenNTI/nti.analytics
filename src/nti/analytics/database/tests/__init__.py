@@ -27,7 +27,7 @@ import zope.testing.cleanup
 
 from nti.analytics.database import database
 
-""" Patch this for testing purposes. """
+""" Override this for testing purposes. """
 class TestIDLookup(object):
 	def _get_id_for_object( self, obj ):
 		return 1

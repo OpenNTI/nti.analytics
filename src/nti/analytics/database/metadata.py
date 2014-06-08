@@ -198,6 +198,7 @@ class CourseCatalogViews(Base,CourseMixin,TimeLengthMixin):
 		
 	
 # TODO how will we populate this, at migration time based on client?	
+# or perhaps statically at first.
 class EnrollmentTypes(Base):
 	__tablename__ = 'EnrollmentTypes'
 	type_id = Column( 'type_id', Integer, Sequence( 'enrollment_type_seq' ), nullable=False, primary_key=True )
@@ -207,7 +208,7 @@ class EnrollmentTypes(Base):
 class CourseEnrollments(Base,CourseMixin):
 	__tablename__ = 'CourseEnrollments'
 	type_id = Column( 'type_id', Integer, ForeignKey( 'EnrollmentTypes.type_id' ), nullable=False )
-	dropped = Column( 'dropped', Boolean, nullable=False )
+	dropped = Column( 'dropped', Boolean, nullable=False, default=False )
 	
 class CourseDrops(Base,CourseMixin):	
 	__tablename__ = 'CourseDrops'
