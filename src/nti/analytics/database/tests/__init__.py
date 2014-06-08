@@ -25,6 +25,18 @@ from nti.dataserver.tests.mock_dataserver import DSInjectorMixin
 
 import zope.testing.cleanup
 
+from nti.analytics.database import database
+
+""" Patch this for testing purposes. """
+class TestIDLookup(object):
+	def _get_id_for_object( self, obj ):
+		return 1
+	
+	def _get_id_for_session( self, session ):
+		return 2
+
+database.IDLookup = TestIDLookup
+
 class SharedConfiguringTestLayer(ZopeComponentLayer,
                                  GCLayerMixin,
                                  ConfiguringLayerMixin,

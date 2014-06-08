@@ -21,6 +21,7 @@ from .interfaces import IAnalyticsDB
 from nti.dataserver.users import interfaces as user_interfaces
 
 from zope import interface
+from zope import component
 
 from .metadata import Users
 from .metadata import Sessions
@@ -53,10 +54,24 @@ from .metadata import AssignmentDetails
 from .metadata import SelfAssessmentsTaken
 from .metadata import SelfAssessmentDetails
 
+from zope.intid import IIntIds
+
+class IDLookup(object):
+	
+	def __init__( self ):
+		intids = component.getUtility(IIntIds)	
+		
+	def _get_id_for_object( self, obj ):
+	 return intids.getId( obj )
+	
+	def _get_id_for_session( self, session ):
+		 return _get_id_for_object( session )	
+
 # We should only have a few different types of operations here:
 # - Insertions
 # - Deleted objects will modify 'deleted' column with timestamp
 # - Modify feedback column (?)
+# - Session end timestamp
 # - Reads
 @interface.implementer(IAnalyticsDB)
 class AnalyticsDB(object):
@@ -66,7 +81,7 @@ class AnalyticsDB(object):
 		self.twophase = twophase
 		self.autocommit = autocommit
 		
-		if defaultSQLite:
+		if defaultSQLite and not dburi:
 			data_dir = os.getenv( 'DATASERVER_DATA_DIR' ) or '/tmp'
 			data_dir = os.path.expanduser( data_dir )
 			data_file = os.path.join( data_dir, 'analytics-sqlite.db' )
@@ -75,54 +90,242 @@ class AnalyticsDB(object):
 		logger.info( "Creating database at '%s'", self.dburi )
 		self.engine = create_engine(self.dburi, echo=False )
 		self.metadata = AnalyticsMetadata( self.engine )
+		self.idlookup = IDLookup()
 
 	def get_session(self):
 		Session = sessionmaker(bind=self.engine)
 		return Session()
 	
-	def create_user(self, session, uid):
+	
+	def create_user(self, session, user):
+		uid = self.idlookup._get_id_for_object( user )
 		user = Users( user_ds_id=uid )
 		session.add( user )
+		session.flush()
+		return user
 		
-	def create_session(self, session, user, nti_session, ip_address, version):
-		#TODO what objects will we have?
-		new_session = Sessions( user_id=user.intid, session_id=nti_session.intid, timestamp=nti_session.timestamp, ip_addr=ip_address, version=version )
+	def _get_or_create_user(self, session, user):	
+		# TODO We use this throughout in other transactions, is the negative case not indicative of 
+		# data incorrectness? Should we barf?
+		uid = self.idlookup._get_id_for_object( user )
+		found_user = session.query(Users).filter( Users.user_ds_id == uid ).one()
+		return found_user or self.create_user( session, uid )
+		
+	def create_session(self, session, user, nti_session, ip_address, platform, version):
+		# TODO nti_session does not exist yet, probably
+		user = self._get_or_create_user( session, user )
+		uid = user.user_id
+		sid = self.idlookup._get_id_for_session( nti_session )
+		
+		new_session = Sessions( user_id=uid, 
+								session_id=sid, 
+								timestamp=nti_session.timestamp, 
+								ip_addr=ip_address, 
+								platform=platform, 
+								version=version )
 		session.add( new_session )		
 		
-	def create_chat_initated(self, session, user, timestamp):
-		new_object = ChatsInitiated( user_id=user.intid, session_id=nti_session.intid, timestamp=timestamp )
+	def create_chat_initated(self, session, user, nti_session, timestamp):
+		user = self._get_or_create_user( session, user )
+		uid = user.user_id
+		sid = self.idlookup._get_id_for_session( nti_session )
+		
+		new_object = ChatsInitiated( 	user_id=uid, 
+										session_id=sid, 
+										timestamp=timestamp )
 		session.add( new_object )		
 		
-	def create_chat_joined(self, session, user, timestamp):
-		new_object = ChatsJoined( user_id=user.intid, session_id=nti_session.intid, timestamp=timestamp )
+	def create_chat_joined(self, session, user, nti_session, timestamp):
+		user = self._get_or_create_user( session, user )
+		uid = user.user_id
+		sid = _get_id_for_session( nti_session )
+		
+		new_object = ChatsJoined( 	user_id=uid, 
+									session_id=sid, 
+									timestamp=timestamp )
 		session.add( new_object )	
 		
-	def create_groups(self, session, user, timestamp):
-		new_object = GroupsCreated( user_id=user.intid, session_id=nti_session.intid, timestamp=timestamp )
+	def create_group(self, session, user, nti_session, timestamp):
+		user = self._get_or_create_user( session, user )
+		uid = user.user_id
+		sid = self.idlookup._get_id_for_session( nti_session )
+		
+		new_object = GroupsCreated( user_id=uid, 
+									session_id=sid, 
+									timestamp=timestamp )
 		session.add( new_object )	
 		
-	def create_distribution_lists(self, session, user, timestamp):
-		new_object = DistributionListsCreated( user_id=user.intid, session_id=nti_session.intid, timestamp=timestamp )
+	def remove_group(self, session, user, nti_session, timestamp):
+		user = self._get_or_create_user( session, user )
+		uid = user.user_id
+		sid = self.idlookup._get_id_for_session( nti_session )
+		
+		new_object = GroupsRemoved( user_id=uid, 
+									session_id=sid, 
+									timestamp=timestamp )
 		session.add( new_object )	
 		
-	def create_contacts_added(self, session, user, timestamp):
-		new_object = ContactsAdded( user_id=user.intid, session_id=nti_session.intid, timestamp=timestamp )
+	def create_distribution_list(self, session, user, nti_session, timestamp):
+		user = self._get_or_create_user( session, user )
+		uid = user.user_id
+		sid = self.idlookup._get_id_for_session( nti_session )
+		
+		new_object = DistributionListsCreated( 	user_id=uid, 
+												session_id=sid, 
+												timestamp=timestamp )
 		session.add( new_object )	
 		
-	def create_contacts_removed(self, session, user, timestamp):
-		new_object = ContactsRemoved( user_id=user.intid, session_id=nti_session.intid, timestamp=timestamp )
+	def create_contact_added(self, session, user, nti_session, timestamp):
+		user = self._get_or_create_user( session, user )
+		uid = user.user_id
+		sid = self.idlookup._get_id_for_session( nti_session )
+		
+		new_object = ContactsAdded( 	user_id=uid, 
+										session_id=sid, 
+										timestamp=timestamp )
 		session.add( new_object )	
 		
-	def create_thoughts(self, session, user, timestamp):
-		new_object = ThoughtsCreated( user_id=user.intid, session_id=nti_session.intid, timestamp=timestamp )
+	def create_contact_removed(self, session, user, nti_session, timestamp):
+		user = self._get_or_create_user( session, user )
+		uid = user.user_id
+		sid = self.idlookup._get_id_for_session( nti_session )
+		
+		new_object = ContactsRemoved( 	user_id=uid, 
+										session_id=sid, 
+										timestamp=timestamp )
 		session.add( new_object )	
 		
-	def create_thoughts_viewed(self, session, user, timestamp):
-		new_object = ThoughtsViewed( user_id=user.intid, session_id=nti_session.intid, timestamp=timestamp )
+	def create_thought(self, session, user, nti_session, timestamp):
+		user = self._get_or_create_user( session, user )
+		uid = user.user_id
+		sid = self.idlookup._get_id_for_session( nti_session )
+		
+		new_object = ThoughtsCreated( 	user_id=uid, 
+										session_id=sid, 
+										timestamp=timestamp )
+		session.add( new_object )	
+		
+	def create_thought_view(self, session, user, nti_session, timestamp):
+		user = self._get_or_create_user( session, user )
+		uid = user.user_id
+		sid = self.idlookup._get_id_for_session( nti_session )
+		
+		new_object = ThoughtsViewed( 	user_id=uid, 
+										session_id=sid, 
+										timestamp=timestamp )
 		session.add( new_object )				
 			
+			
+	def create_course_resource_view(self, session, user, nti_session, timestamp, course_id, context_path, resource_id, time_length):
+		user = self._get_or_create_user( session, user )
+		uid = user.user_id
+		sid = self.idlookup._get_id_for_session( nti_session )
+		
+		new_object = CourseResourceViews( 	user_id=uid, 
+											session_id=sid, 
+											timestamp=timestamp,
+											course_id=course_id,
+											context_path=context_path,
+											resource_id=resource_id,
+											time_length=time_length )
+		session.add( new_object )	
+		
+	def create_video_event(	self, session, user, 
+							nti_session, timestamp, 
+							course_id, context_path, 
+							resource_id, time_length,
+							video_event_type,
+							video_start_time,
+							video_end_time,
+							with_transcript ):
+		user = self._get_or_create_user( session, user )
+		uid = user.user_id
+		sid = self.idlookup._get_id_for_session( nti_session )
+		
+		new_object = VideoEvents(	user_id=uid, 
+									session_id=sid, 
+									timestamp=timestamp,
+									course_id=course_id,
+									context_path=context_path,
+									resource_id=resource_id,
+									time_length=time_length,
+									video_event_type=video_event_type,
+									video_start_time=video_start_time,
+									video_end_time=video_end_time,
+									with_transcript=with_transcript )
+		session.add( new_object )	
+			
+	def create_note(self, session, user, nti_session, timestamp, course_id, resource_id, sharing):
+		user = self._get_or_create_user( session, user )
+		uid = user.user_id
+		sid = self.idlookup._get_id_for_session( nti_session )
+		
+		new_object = NotesCreated( 	user_id=uid, 
+									session_id=sid, 
+									timestamp=timestamp,
+									course_id=course_id,
+									resource_id=resource_id,
+									sharing=sharing )
+		session.add( new_object )
+		
+	# TODO Deleted notes
+	# TODO Deleted forums
+	# TODO Deleted highlights
+	# TODO Deleted dsicussions	
 	
-	#StudentParticipationReport	
+	# TODO handle resource, forum, and discussion ids
+	
+	def create_note_view(self, session, user, nti_session, timestamp, course_id, resource_id, sharing):
+		user = self._get_or_create_user( session, user )
+		uid = user.user_id
+		sid = self.idlookup._get_id_for_session( nti_session )
+		
+		new_object = NotesViewed( 	user_id=uid, 
+									session_id=sid, 
+									timestamp=timestamp,
+									course_id=course_id,
+									resource_id=resource_id,
+									sharing=sharing )
+		session.add( new_object )
+	
+	def create_highlight(self, session, user, nti_session, timestamp, course_id, resource_id):
+		user = self._get_or_create_user( session, user )
+		uid = user.user_id
+		sid = self.idlookup._get_id_for_session( nti_session )
+		
+		new_object = HighlightsCreated( user_id=uid, 
+										session_id=sid, 
+										timestamp=timestamp,
+										course_id=course_id,
+										resource_id=resource_id)
+		session.add( new_object )
+	
+	def create_forum(self, session, user, nti_session, timestamp, course_id, forum_id):
+		user = self._get_or_create_user( session, user )
+		uid = user.user_id
+		sid = self.idlookup._get_id_for_session( nti_session )
+		
+		new_object = ForumsCreated( user_id=uid, 
+									session_id=sid, 
+									timestamp=timestamp,
+									course_id=course_id,
+									forum_id=forum_id )
+		session.add( new_object )
+		
+	def create_discussion(self, session, user, nti_session, timestamp, course_id, forum_id, discussion_id):
+		user = self._get_or_create_user( session, user )
+		uid = user.user_id
+		sid = self.idlookup._get_id_for_session( nti_session )
+		
+		new_object = DiscussionsCreated( 	user_id=uid, 
+											session_id=sid, 
+											timestamp=timestamp,
+											course_id=course_id,
+											forum_id=forum_id,
+											discussion_id=discussion_id )
+		session.add( new_object )	
+	
+	# StudentParticipationReport	
 	def get_forum_comments_for_user(self, session, user, course_id):		
 		results = session.query(ForumCommentsCreated).filter( 	ForumCommentsCreated.user_id == user.intid, 
 																ForumCommentsCreated.course_id==course_id, 

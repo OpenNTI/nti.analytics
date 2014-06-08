@@ -56,6 +56,7 @@ from ..metadata import AssignmentDetails
 from ..metadata import SelfAssessmentsTaken
 from ..metadata import SelfAssessmentDetails
 
+from nti.analytics.database import database
 from ..database import AnalyticsDB
 
 from sqlalchemy.orm.exc import FlushError
@@ -89,6 +90,7 @@ class TestUsers(unittest.TestCase):
 		assert_that( new_user.user_id, 1 )
 		assert_that( new_user.user_ds_id, test_user_ds_id )
 
+		# Dupe insert
 		with self.assertRaises(IntegrityError):
 			user2 = Users( user_ds_id=test_user_ds_id )
 			self.session.add( user2 )
@@ -159,7 +161,6 @@ class TestComments(unittest.TestCase):
 
 	def setUp(self):
 		self.db = AnalyticsDB( dburi='sqlite://' )
-		
 		self.session = self.db.get_session()
 		user = Users( user_id=test_user_id, user_ds_id=test_user_ds_id )
 		self.session.add( user )

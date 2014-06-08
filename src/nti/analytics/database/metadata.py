@@ -87,6 +87,7 @@ class ContactsAdded(Base,BaseTableMixin):
 class ContactsRemoved(Base,BaseTableMixin):
 	__tablename__ = 'ContactsRemoved'
 	
+# TODO do we want id of thought viewed? Any privacy concerns?	
 class ThoughtsCreated(Base,BaseTableMixin):
 	__tablename__ = 'ThoughtsCreated'	
 	
@@ -129,6 +130,7 @@ class CourseResourceViews(Base,ResourceViewMixin,TimeLengthMixin):
 # If so, we may break them out into separate tables.	
 # TODO: Punt, should we have separate rows for start/end?
 # TODO Define questions we want to answer before we define this table.
+# TODO We need to define what timestamp is here (start of event, end of event?)
 class VideoEvents(Base,ResourceViewMixin,TimeLengthMixin):
 	__tablename__ = 'VideoEvents'
 	video_event_type = Column('video_event_type', Enum( 'WATCH', 'SKIP' ), nullable=False )
@@ -258,7 +260,8 @@ class SelfAssessmentDetails(Base,SubmissionMixin):
 
 ## TODO LIST
 #	examine String limits
-#		TODO Should we use TEXT instead of String?
+#		-Should we use TEXT instead of String?
+#		-If we use ntiids, we should probably expand. 
 #	constraints
 # 	Timestamps TEXT here?
 class AnalyticsMetadata(object): 
