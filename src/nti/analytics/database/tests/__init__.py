@@ -32,10 +32,8 @@ class TestIDLookup(object):
 	def _get_id_for_object( self, obj ):
 		return 1
 	
-	def _get_id_for_session( self, session ):
-		return 2
-
 database.IDLookup = TestIDLookup
+
 
 class SharedConfiguringTestLayer(ZopeComponentLayer,
                                  GCLayerMixin,

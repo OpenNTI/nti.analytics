@@ -67,9 +67,11 @@ class BaseTableMixin(object):
 # This information needs to be obscured to protect privacy.	
 class ChatsInitiated(Base,BaseTableMixin):
 	__tablename__ = 'ChatsInitiated'
+	chat_id = Column('chat_id', Integer, nullable=False, index=True )		
 
 class ChatsJoined(Base,BaseTableMixin):
 	__tablename__ = 'ChatsJoined'
+	chat_id = Column('chat_id', Integer, ForeignKey("ChatsInitiated.chat_id"), nullable=False, index=True )		
 	
 class GroupsCreated(Base,BaseTableMixin):
 	__tablename__ = 'GroupsCreated'
@@ -87,12 +89,13 @@ class ContactsAdded(Base,BaseTableMixin):
 class ContactsRemoved(Base,BaseTableMixin):
 	__tablename__ = 'ContactsRemoved'
 	
-# TODO do we want id of thought viewed? Any privacy concerns?	
 class ThoughtsCreated(Base,BaseTableMixin):
 	__tablename__ = 'ThoughtsCreated'	
+	thought_id = Column('thought_id', Integer, nullable=False, index=True )
 	
 class ThoughtsViewed(Base,BaseTableMixin):
-	__tablename__ = 'ThoughtsViewed'					
+	__tablename__ = 'ThoughtsViewed'	
+	thought_id = Column('thought_id', Integer, ForeignKey("ThoughtsCreated.thought_id"), nullable=False, index=True )				
 
 
 
@@ -140,17 +143,20 @@ class VideoEvents(Base,ResourceViewMixin,TimeLengthMixin):
 	
 class NotesCreated(Base,ResourceMixin,DeletedMixin):	
 	__tablename__ = 'NotesCreated'
+	note_id = Column('note_id', Integer, nullable=False, index=True )
 	sharing = Column('sharing', Enum( 'PUBLIC', 'PRIVATE', 'COURSE_ONLY' ), nullable=False )
 
 class NotesViewed(Base,ResourceMixin):	
 	__tablename__ = 'NotesViewed'
+	note_id = Column('note_id', Integer, ForeignKey("NotesCreated.note_id"), nullable=False, index=True )
 
 class HighlightsCreated(Base,ResourceMixin,DeletedMixin):
 	__tablename__ = 'HighlightsCreated'
+	note_id = Column('highlight_id', Integer, nullable=False, index=True )
 
 class ForumsCreated(Base,CourseMixin,DeletedMixin):		
 	__tablename__ = 'ForumsCreated'
-	forum_id = Column('forum_id', String(256), primary_key=True)				
+	forum_id = Column('forum_id', String(256), primary_key=True, index=True)				
 
 class ForumMixin(CourseMixin):
 	@declared_attr
@@ -202,7 +208,7 @@ class CourseCatalogViews(Base,CourseMixin,TimeLengthMixin):
 class EnrollmentTypes(Base):
 	__tablename__ = 'EnrollmentTypes'
 	type_id = Column( 'type_id', Integer, Sequence( 'enrollment_type_seq' ), nullable=False, primary_key=True )
-	type_name = Column( 'type_name', String(64), nullable=False )
+	type_name = Column( 'type_name', String(64), nullable=False, index=True, unique=True )
 		
 # Dropped is redundant, but it may be useful to grab all course enrollment information here.		
 class CourseEnrollments(Base,CourseMixin):
@@ -213,9 +219,8 @@ class CourseEnrollments(Base,CourseMixin):
 class CourseDrops(Base,CourseMixin):	
 	__tablename__ = 'CourseDrops'
 
-# TODO Is our course/user index enough here?
 class AssignmentMixin(CourseMixin,TimeLengthMixin):
-	assignment_id = Column('assignment_id', String(1048), nullable=False)
+	assignment_id = Column('assignment_id', String(1048), nullable=False, index=True )
 		
 class SelfAssessmentsTaken(Base,AssignmentMixin):
 	__tablename__ = 'SelfAssessmentsTaken'
@@ -265,6 +270,7 @@ class SelfAssessmentDetails(Base,SubmissionMixin):
 #		-If we use ntiids, we should probably expand. 
 #	constraints
 # 	Timestamps TEXT here?
+#	Forum/Discussion ids, intids or other?
 class AnalyticsMetadata(object): 
 
 	def __init__(self,engine):
