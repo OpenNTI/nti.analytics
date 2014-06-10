@@ -64,7 +64,8 @@ class BaseTableMixin(object):
 
 
 # TODO Some of these objects do not exist in the ds, thus we'll need a sequence.  Hopefully
-# we don't need any data from the ds when retrieving this data.  If so, we need it here.
+# we don't need any data from the ds when retrieving this data.  If so, we need it here or another
+# way to look it up.
 
 # This information needs to be obscured to protect privacy.	
 class ChatsInitiated(Base,BaseTableMixin):

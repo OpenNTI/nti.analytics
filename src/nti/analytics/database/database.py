@@ -13,6 +13,8 @@ import sqlite3
 import pkg_resources
 import six
 
+from datetime import datetime
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -130,6 +132,10 @@ class AnalyticsDB(object):
 	def _get_id_for_chat(self, chat):
 		return self.idlookup._get_id_for_object( chat )
 	
+	def _get_timestamp(self, obj):
+		result = getattr( obj, 'createdTime', None )
+		return result or datetime.utcnow()
+	
 	def create_user(self, session, user):
 		uid = self._get_id_for_user( user )
 		user = Users( user_ds_id=uid )
@@ -161,11 +167,14 @@ class AnalyticsDB(object):
 								version=version )
 		session.add( new_session )		
 		
-	def create_chat_initated(self, session, user, nti_session, timestamp, chat ):
+	#nti.chatserver.meeting._Meeting	
+	def create_chat_initated(self, session, user, nti_session, chat ):
 		user = self._get_or_create_user( session, user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
 		cid = self._get_id_for_chat( chat )
+		
+		timestamp = self._get_timestamp( blog_entry )
 		
 		new_object = ChatsInitiated( 	user_id=uid, 
 										session_id=sid, 
@@ -235,11 +244,13 @@ class AnalyticsDB(object):
 										timestamp=timestamp )
 		session.add( new_object )	
 		
-	def create_thought(self, session, user, nti_session, timestamp, thought):
+	def create_thought(self, session, user, nti_session, blog_entry):
 		user = self._get_or_create_user( session, user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
-		tid = self._get_id_for_thought( thought )
+		tid = self._get_id_for_thought( blog_entry )
+		
+		timestamp = self._get_timestamp( blog_entry )
 		
 		new_object = ThoughtsCreated( 	user_id=uid, 
 										session_id=sid, 
@@ -247,11 +258,11 @@ class AnalyticsDB(object):
 										thought_id=tid )
 		session.add( new_object )	
 		
-	def create_thought_view(self, session, user, nti_session, timestamp, thought):
+	def create_thought_view(self, session, user, nti_session, timestamp, blog_entry):
 		user = self._get_or_create_user( session, user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
-		tid = self._get_id_for_thought( thought )
+		tid = self._get_id_for_thought( blog_entry )
 		
 		new_object = ThoughtsViewed( 	user_id=uid, 
 										session_id=sid, 
@@ -275,7 +286,6 @@ class AnalyticsDB(object):
 											time_length=time_length )
 		session.add( new_object )	
 		
-	# TODO resource_id lookup?
 	def create_video_event(	self, session, user, 
 							nti_session, timestamp, 
 							course_id, context_path, 
@@ -303,12 +313,18 @@ class AnalyticsDB(object):
 									with_transcript=with_transcript )
 		session.add( new_object )	
 			
-	def create_note(self, session, user, nti_session, timestamp, course_id, resource, note, sharing):
+	def create_note(self, session, user, nti_session, course_id, note, sharing):
 		user = self._get_or_create_user( session, user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
-		rid = self._get_id_for_resource( resource )
+		rid = self._get_id_for_resource( note.__parent__ )
 		nid = self._get_id_for_note(note)
+		
+		timestamp = self._get_timestamp( note )
+		# TODO 
+		# resource = note.__parent__?
+		# We'd need logic to get sharing enum (see reports)
+		# sharing = note.sharingTargets | note.sharedWith
 		
 		new_object = NotesCreated( 	user_id=uid, 
 									session_id=sid, 
@@ -325,11 +341,11 @@ class AnalyticsDB(object):
 		note.deleted=timestamp
 		session.flush()
 		
-	def create_note_view(self, session, user, nti_session, timestamp, course_id, resource, note):
+	def create_note_view(self, session, user, nti_session, timestamp, course_id, note):
 		user = self._get_or_create_user( session, user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
-		rid = self._get_id_for_resource( resource )
+		rid = self._get_id_for_resource( note.__parent__ )
 		nid = self._get_id_for_note( note )
 		
 		new_object = NotesViewed( 	user_id=uid, 
