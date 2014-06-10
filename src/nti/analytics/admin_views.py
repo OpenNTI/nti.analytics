@@ -43,10 +43,7 @@ def username_search(search_term):
 
 def init(uid, db, obj):
 	result = False
-	#FIXME remove
-	from IPython.core.debugger import Tracer;Tracer()()
 	for _, module in component.getUtilitiesFor(analytic_interfaces.IObjectProcessor):
-		Tracer()()
 		result = module.init(uid, db, obj) or result
 	return result
 

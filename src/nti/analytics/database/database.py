@@ -64,7 +64,8 @@ class IDLookup(object):
 		self.intids = component.getUtility(zope.intid.IIntIds)
 		
 	def _get_id_for_object( self, obj ):
-		return self.intids.getId( obj )
+		result = getattr( obj, '_ds_intid', None )
+		return result or self.intids.getId( obj )
 	
 # We should only have a few different types of operations here:
 # - Insertions
