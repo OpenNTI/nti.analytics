@@ -224,14 +224,14 @@ class AssignmentMixin(CourseMixin,TimeLengthMixin):
 		
 class SelfAssessmentsTaken(Base,AssignmentMixin):
 	__tablename__ = 'SelfAssessmentsTaken'
-	submission_id = Column('submission_id', Integer, Sequence( 'self_assess_submission_id_seq' ), primary_key=True)
+	submission_id = Column('submission_id', Integer, Sequence( 'self_assess_submission_id_seq' ), primary_key=True, index=True)
 		
 # TODO Should feedback have its own event tracking? It's one of the few mutable fields if not.
 class AssignmentsTaken(Base,AssignmentMixin):
 	__tablename__ = 'AssignmentsTaken'
 	grade = Column('grade', String(256))
 	feedback_count = Column('feedback_count', Integer)
-	submission_id = Column('submission_id', Integer, Sequence( 'assignment_submission_id_seq' ), primary_key=True)
+	submission_id = Column('submission_id', Integer, Sequence( 'assignment_submission_id_seq' ), primary_key=True, index=True)
 
 
 class SubmissionMixin(AssignmentMixin):

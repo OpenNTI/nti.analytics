@@ -25,7 +25,7 @@ from nti.utils.maps import CaseInsensitiveDict
 
 from . import utils
 from . import get_job_queue
-from . import interfaces as analytic_interfaces
+from nti.analytics.database import interfaces as analytic_interfaces
 
 def _make_min_max_btree_range(search_term):
 	min_inclusive = search_term # start here
@@ -41,7 +41,10 @@ def username_search(search_term):
 
 def init(uid, db, obj):
 	result = False
+	#FIXME remove
+	from IPython.core.debugger import Tracer;Tracer()()
 	for _, module in component.getUtilitiesFor(analytic_interfaces.IObjectProcessor):
+		Tracer()()
 		result = module.init(uid, db, obj) or result
 	return result
 
@@ -64,7 +67,7 @@ def init_analytics_db(request):
 	values = CaseInsensitiveDict(values)
 	site = values.get('site', u'')
 	usernames = values.get('usernames', values.get('username', None))
-# 	usernames = 'josh.zuech@nextthought.com,student1'
+ 	usernames = 'josh.zuech@nextthought.com,student1'
 	
 	if usernames:
 		usernames = usernames.split(',')

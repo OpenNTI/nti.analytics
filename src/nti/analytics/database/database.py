@@ -22,6 +22,7 @@ from nti.dataserver.users import interfaces as user_interfaces
 
 from zope import interface
 from zope import component
+import zope.intid
 
 from .metadata import Users
 from .metadata import Sessions
@@ -54,15 +55,15 @@ from .metadata import AssignmentDetails
 from .metadata import SelfAssessmentsTaken
 from .metadata import SelfAssessmentDetails
 
-from zope.intid import IIntIds
+from nti.utils.property import Lazy
 
 class IDLookup(object):
 	
 	def __init__( self ):
-		intids = component.getUtility(IIntIds)	
+		self.intids = component.getUtility(zope.intid.IIntIds)
 		
 	def _get_id_for_object( self, obj ):
-	 return intids.getId( obj )
+	 return self.intids.getId( obj )
 	
 # We should only have a few different types of operations here:
 # - Insertions
@@ -87,7 +88,10 @@ class AnalyticsDB(object):
 		logger.info( "Creating database at '%s'", self.dburi )
 		self.engine = create_engine(self.dburi, echo=False )
 		self.metadata = AnalyticsMetadata( self.engine )
-		self.idlookup = IDLookup()
+
+	@Lazy
+	def idlookup(self):
+		return IDLookup()
 
 	def get_session(self):
 		Session = sessionmaker(bind=self.engine)
@@ -141,6 +145,7 @@ class AnalyticsDB(object):
 		
 	def create_session(self, session, user, nti_session, ip_address, platform, version):
 		# TODO nti_session does not exist yet, probably
+		# ISessionService from nti.dataserver?
 		user = self._get_or_create_user( session, user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
