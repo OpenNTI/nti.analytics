@@ -148,6 +148,7 @@ class AnalyticsDB(object):
 		# data incorrectness? Should we barf? Same with enrollment_type
 		# TODO Do we have to worry about race conditions?
 		# TODO Allow for idempotency?
+		# TODO Some of these objects will not have creators/users during migration.
 		uid = self._get_id_for_user( user )
 		found_user = session.query(Users).filter( Users.user_ds_id == uid ).one()
 		return found_user or self.create_user( session, uid )
@@ -356,12 +357,14 @@ class AnalyticsDB(object):
 									note_id=nid )
 		session.add( new_object )
 	
-	def create_highlight(self, session, user, nti_session, timestamp, course_id, highlight, resource):
+	def create_highlight(self, session, user, nti_session, course_id, highlight):
 		user = self._get_or_create_user( session, user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
-		rid = self._get_id_for_resource( resource )
+		rid = self._get_id_for_resource( resource.__parent__ )
 		hid = self._get_id_for_highlight(highlight)
+		
+		timestamp = self._get_timestamp( highlight )
 		
 		new_object = HighlightsCreated( user_id=uid, 
 										session_id=sid, 
@@ -377,11 +380,14 @@ class AnalyticsDB(object):
 		highlight.deleted=timestamp
 		session.flush()	
 	
-	def create_forum(self, session, user, nti_session, timestamp, course_id, forum):
+	#nti.dataserver.contenttypes.forums.forum.CommunityForum
+	def create_forum(self, session, user, nti_session, course_id, forum):
 		user = self._get_or_create_user( session, user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
 		fid = self._get_id_for_forum(forum)
+		
+		timestamp = self._get_timestamp( forum )
 		
 		new_object = ForumsCreated( user_id=uid, 
 									session_id=sid, 
@@ -396,12 +402,15 @@ class AnalyticsDB(object):
 		forum.deleted=timestamp
 		session.flush()		
 		
-	def create_discussion(self, session, user, nti_session, timestamp, course_id, forum, discussion):
+	#nti.dataserver.contenttypes.forums.topic.CommunityHeadlineTopic	
+	def create_discussion(self, session, user, nti_session, course_id, topic):
 		user = self._get_or_create_user( session, user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
-		fid = self._get_id_for_forum(forum)
-		did = self._get_id_for_discussion(discussion)
+		fid = self._get_id_for_forum(topic.__parent__)
+		did = self._get_id_for_discussion(topic)
+		
+		timestamp = self._get_timestamp( topic )
 		
 		new_object = DiscussionsCreated( 	user_id=uid, 
 											session_id=sid, 
