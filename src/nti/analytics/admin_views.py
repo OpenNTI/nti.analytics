@@ -25,7 +25,9 @@ from nti.utils.maps import CaseInsensitiveDict
 
 from . import utils
 from . import get_job_queue
-from nti.analytics.database import interfaces as analytic_interfaces
+from . import interfaces as analytic_interfaces
+
+from nti.analytics.database import interfaces as database_interfaces
 
 def _make_min_max_btree_range(search_term):
 	min_inclusive = search_term # start here
@@ -74,7 +76,7 @@ def init_analytics_db(request):
 	else:
 		usernames = ()
 	
-	db = component.getUtility(analytic_interfaces.IAnalyticsDB, name=site)
+	db = component.getUtility(database_interfaces.IAnalyticsDB, name=site)
 
 	now = time.time()
 	total = init_db(db, usernames)

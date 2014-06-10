@@ -11,6 +11,7 @@ logger = __import__('logging').getLogger(__name__)
 import os
 import sqlite3
 import pkg_resources
+import six
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -63,7 +64,7 @@ class IDLookup(object):
 		self.intids = component.getUtility(zope.intid.IIntIds)
 		
 	def _get_id_for_object( self, obj ):
-	 return self.intids.getId( obj )
+		return self.intids.getId( obj )
 	
 # We should only have a few different types of operations here:
 # - Insertions
@@ -98,10 +99,13 @@ class AnalyticsDB(object):
 		return Session()
 	
 	def _get_id_for_user(self, user):
+		# We may already have an integer id, use it.
+		if isinstance( user, six.integer_types ):
+			return user
 		return self.idlookup._get_id_for_object( user )
 	
-	def _get_id_for_session(self, session):
-		return self.idlookup._get_id_for_object( session )
+	def _get_id_for_session(self, nti_session):
+		return self.idlookup._get_id_for_object( nti_session )
 	
 	# FIXME we define discussions and notes has having string ids,
 	# but we give back the intid here. Decide.
