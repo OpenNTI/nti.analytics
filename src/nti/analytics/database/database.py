@@ -169,13 +169,13 @@ class AnalyticsDB(object):
 		session.add( new_session )		
 		
 	#nti.chatserver.meeting._Meeting	
-	def create_chat_initated(self, session, user, nti_session, chat ):
+	def create_chat_initiated(self, session, user, nti_session, chat ):
 		user = self._get_or_create_user( session, user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
 		cid = self._get_id_for_chat( chat )
 		
-		timestamp = self._get_timestamp( blog_entry )
+		timestamp = self._get_timestamp( chat )
 		
 		new_object = ChatsInitiated( 	user_id=uid, 
 										session_id=sid, 
