@@ -71,7 +71,7 @@ class IDLookup(object):
 # - Insertions
 # - Deleted objects will modify 'deleted' column with timestamp
 # - Modify feedback column (?)
-# - Session end timestamp
+# - Modify Session end timestamp
 # - Reads
 @interface.implementer(IAnalyticsDB)
 class AnalyticsDB(object):
@@ -108,9 +108,6 @@ class AnalyticsDB(object):
 	def _get_id_for_session(self, nti_session):
 		return self.idlookup._get_id_for_object( nti_session )
 	
-	# FIXME we define discussions and notes has having string ids,
-	# but we give back the intid here. Decide.
-	
 	def _get_id_for_forum(self, forum):
 		return self.idlookup._get_id_for_object( forum )
 	
@@ -144,6 +141,7 @@ class AnalyticsDB(object):
 		# TODO We use this throughout in other transactions, is the negative case not indicative of 
 		# data incorrectness? Should we barf? Same with enrollment_type
 		# TODO Do we have to worry about race conditions?
+		# TODO Allow for idempotency?
 		uid = self._get_id_for_user( user )
 		found_user = session.query(Users).filter( Users.user_ds_id == uid ).one()
 		return found_user or self.create_user( session, uid )

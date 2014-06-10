@@ -19,6 +19,7 @@ from nti.dataserver import interfaces as nti_interfaces
 from .. import interfaces as analytic_interfaces
 
 def all_objects_iids(users=()):
+    
     obj = intids = component.getUtility(zope.intid.IIntIds)
     usernames = {getattr(user, 'username', user).lower() for user in users or ()}
     for uid in intids:
@@ -31,6 +32,12 @@ def all_objects_iids(users=()):
                 creator = getattr(obj, 'creator', None)
                 creator = getattr(creator, 'username', creator)
                 creator = creator.lower() if creator else ''
+                
+                # TODO There are some objects without a creator, do we want to try to import those?	
+                # - probably not, they wont' fit in our structure depending on what they are.
+                # How about friends list?
+                # TODO how about deleted items?
+                # - probably not also	
                 if    not nti_interfaces.IDeletedObjectPlaceholder.providedBy(obj) and \
                     (not usernames or creator in usernames):
                     yield uid, obj

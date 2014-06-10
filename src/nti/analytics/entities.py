@@ -50,7 +50,7 @@ def _process_entity_removed(db, entity):
 
 def _process_entity_added(uid, db, entity):
 	#oid = to_external_ntiid_oid(entity)
-	from IPython.core.debugger import Tracer;Tracer()()
+	#from IPython.core.debugger import Tracer;Tracer()()
 	session = db.get_session()
 	db.create_user( session, uid )
 	session.commit()

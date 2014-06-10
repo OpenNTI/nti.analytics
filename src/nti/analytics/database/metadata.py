@@ -63,6 +63,8 @@ class BaseTableMixin(object):
 	timestamp = Column('timestamp', DateTime, primary_key=True)
 
 
+# TODO Some of these objects do not exist in the ds, thus we'll need a sequence.  Hopefully
+# we don't need any data from the ds when retrieving this data.  If so, we need it here.
 
 # This information needs to be obscured to protect privacy.	
 class ChatsInitiated(Base,BaseTableMixin):
@@ -156,21 +158,21 @@ class HighlightsCreated(Base,ResourceMixin,DeletedMixin):
 
 class ForumsCreated(Base,CourseMixin,DeletedMixin):		
 	__tablename__ = 'ForumsCreated'
-	forum_id = Column('forum_id', String(256), primary_key=True, index=True)				
+	forum_id = Column('forum_id', Integer, primary_key=True, index=True)				
 
 class ForumMixin(CourseMixin):
 	@declared_attr
 	def forum_id(cls):
-		return Column('forum_id', String(256), ForeignKey("ForumsCreated.forum_id"), nullable=False)
+		return Column('forum_id', Integer, ForeignKey("ForumsCreated.forum_id"), nullable=False)
 	
 class DiscussionsCreated(Base,ForumMixin,DeletedMixin):	
 	__tablename__ = 'DiscussionsCreated'
-	discussion_id = Column('discussion_id', String(256), primary_key=True ) 
+	discussion_id = Column('discussion_id', Integer, primary_key=True ) 
 	
 class DiscussionMixin(ForumMixin):	
 	@declared_attr
 	def discussion_id(cls):
-		return Column('discussion_id', String(256), ForeignKey("DiscussionsCreated.discussion_id"), nullable=False)
+		return Column('discussion_id', Integer, ForeignKey("DiscussionsCreated.discussion_id"), nullable=False)
 
 class DiscussionsViewed(Base,DiscussionMixin,TimeLengthMixin):
 	__tablename__ = 'DiscussionsViewed'	
