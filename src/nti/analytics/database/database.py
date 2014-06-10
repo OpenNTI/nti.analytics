@@ -362,7 +362,7 @@ class AnalyticsDB(object):
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
 		rid = self._get_id_for_resource( resource.__parent__ )
-		hid = self._get_id_for_highlight(highlight)
+		hid = self._get_id_for_highlight( highlight )
 		
 		timestamp = self._get_timestamp( highlight )
 		
@@ -385,7 +385,7 @@ class AnalyticsDB(object):
 		user = self._get_or_create_user( session, user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
-		fid = self._get_id_for_forum(forum)
+		fid = self._get_id_for_forum( forum )
 		
 		timestamp = self._get_timestamp( forum )
 		
@@ -407,8 +407,8 @@ class AnalyticsDB(object):
 		user = self._get_or_create_user( session, user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
-		fid = self._get_id_for_forum(topic.__parent__)
-		did = self._get_id_for_discussion(topic)
+		fid = self._get_id_for_forum( topic.__parent__ )
+		did = self._get_id_for_discussion( topic )
 		
 		timestamp = self._get_timestamp( topic )
 		
@@ -420,18 +420,18 @@ class AnalyticsDB(object):
 											discussion_id=did )
 		session.add( new_object )	
 		
-	def delete_forum(self, session, timestamp, discussion):	
-		did = self._get_id_for_discussion(discussion)
-		discussion = session.query(DiscussionsCreated).filter( discussion_id=did ).one()
-		discussion.deleted=timestamp
+	def delete_discussion(self, session, timestamp, topic ):	
+		did = self._get_id_for_discussion( topic )
+		topic = session.query(DiscussionsCreated).filter( discussion_id=did ).one()
+		topic.deleted=timestamp
 		session.flush()			
 		
-	def create_discussion_view(self, session, user, nti_session, timestamp, course_id, forum, discussion, time_length):
+	def create_discussion_view(self, session, user, nti_session, timestamp, course_id, topic, time_length):
 		user = self._get_or_create_user( session, user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
-		fid = self._get_id_for_forum(forum)
-		did = self._get_id_for_discussion(discussion)
+		fid = self._get_id_for_forum( topic.__parent__ )
+		did = self._get_id_for_discussion( topic )
 		
 		new_object = DiscussionsViewed( user_id=uid, 
 										session_id=sid, 
@@ -442,6 +442,7 @@ class AnalyticsDB(object):
 										time_length=time_length )
 		session.add( new_object )	
 		
+	# TODO We want to check our parent type here for other comments only.
 	def create_forum_comment_created(self, session, user, nti_session, timestamp, course_id, forum, discussion, parent_id, comment):
 		user = self._get_or_create_user( session, user )
 		uid = user.user_id
