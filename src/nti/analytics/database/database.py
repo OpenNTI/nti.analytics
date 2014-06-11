@@ -30,8 +30,7 @@ from nti.dataserver.users import interfaces as user_interfaces
 
 from nti.dataserver.users.entity import Entity
 
-from nti.dataserver.contenttypes.forums.interfaces import IGeneralForumComment
-from nti.dataserver.contenttypes.forums.interfaces import IPersonalBlogComment
+from nti.dataserver.contenttypes.forums.interfaces import ICommentPost
 
 from nti.utils.property import Lazy
 
@@ -493,7 +492,7 @@ class AnalyticsDB(object):
 		cid = self._get_id_for_comment(comment)
 		pid = None
 		
-		if IGeneralForumComment.providedBy( comment.__parent__ ):
+		if ICommentPost.providedBy( comment.__parent__ ):
 			pid = self._get_id_for_comment( comment.__parent__ )
 		
 		new_object = ForumCommentsCreated( 	user_id=uid, 
@@ -521,7 +520,7 @@ class AnalyticsDB(object):
 		cid = self._get_id_for_comment(comment)
 		pid = None
 		
-		if IPersonalBlogComment.providedBy( comment.__parent__ ):
+		if ICommentPost.providedBy( comment.__parent__ ):
 			pid = self._get_id_for_comment( comment.__parent__ )
 		
 		new_object = BlogCommentsCreated( 	user_id=uid, 
@@ -549,8 +548,7 @@ class AnalyticsDB(object):
 		cid = self._get_id_for_comment(comment)
 		pid = None
 		
-		# FIXME What type should this be?
-		if IGeneralForumComment.providedBy( comment.__parent__ ):
+		if ICommentPost.providedBy( comment.__parent__ ):
 			pid = self._get_id_for_comment( comment.__parent__ )
 		
 		new_object = NoteCommentsCreated( 	user_id=uid, 
