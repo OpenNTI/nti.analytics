@@ -76,20 +76,52 @@ class ChatsJoined(Base,BaseTableMixin):
 	__tablename__ = 'ChatsJoined'
 	chat_id = Column('chat_id', Integer, ForeignKey("ChatsInitiated.chat_id"), nullable=False, index=True )		
 	
-class GroupsCreated(Base,BaseTableMixin):
-	__tablename__ = 'GroupsCreated'
+class DynamicFriendsListsCreated(Base,BaseTableMixin):
+	__tablename__ = 'DynamicFriendsListsCreated'
+	dfl_id = Column('dfl_id', Integer, nullable=False, index=True )		
 	
-class GroupsRemoved(Base,BaseTableMixin):
-	__tablename__ = 'GroupsRemoved'	
+class DynamicFriendsListMixin(object):	
+	@declared_attr
+	def dfl_id(cls):
+		return Column('dfl_id', Integer, ForeignKey("DynamicFriendsListsCreated.dfl_id"), nullable=False, index=True )
+
+class DynamicFriendsListsRemoved(Base,BaseTableMixin,DynamicFriendsListMixin):
+	__tablename__ = 'DynamicFriendsListsRemoved'	
 	
-class DistributionListsCreated(Base,BaseTableMixin):
-	__tablename__ = 'DistributionListsCreated'
+class FriendMixin(object):	
+	@declared_attr
+	def target_id(cls):
+		return Column('target_id', Integer, ForeignKey("Users.user_id"), index=True)	
 	
-class ContactsAdded(Base,BaseTableMixin):
+class DynamicFriendsListsMemberAdded(Base,BaseTableMixin,DynamicFriendsListMixin,FriendMixin):
+	__tablename__ = 'DynamicFriendsListsMemberAdded'	
+	
+class DynamicFriendsListsMemberRemoved(Base,BaseTableMixin,DynamicFriendsListMixin,FriendMixin):
+	__tablename__ = 'DynamicFriendsListsMemberRemoved'		
+
+class FriendsListsCreated(Base,BaseTableMixin):
+	__tablename__ = 'FriendsListsCreated'
+	friends_list_id = Column('friends_list_id', Integer, nullable=False, index=True )	
+	
+class FriendsListMixin(object):	
+	@declared_attr
+	def friends_list_id(cls):
+		return Column('friends_list_id', Integer, ForeignKey("FriendsListsCreated.friends_list_id"), nullable=False, index=True )	
+	
+class FriendsListsRemoved(Base,BaseTableMixin,FriendsListMixin):
+	__tablename__ = 'FriendsListsRemoved'	
+	
+class FriendsListsMemberAdded(Base,BaseTableMixin,FriendsListMixin,FriendMixin):
+	__tablename__ = 'FriendsListsMemberAdded'	
+	
+class FriendsListsMemberRemoved(Base,BaseTableMixin,FriendsListMixin,FriendMixin):
+	__tablename__ = 'FriendsListsMemberRemoved'		
+	
+# Contact events should(?) only reference the user-specific friends list.		
+class ContactsAdded(Base,BaseTableMixin,FriendMixin):
 	__tablename__ = 'ContactsAdded'
 
-# Contact events should(?) only reference the user-specific friends list.	
-class ContactsRemoved(Base,BaseTableMixin):
+class ContactsRemoved(Base,BaseTableMixin,FriendMixin):
 	__tablename__ = 'ContactsRemoved'
 	
 class ThoughtsCreated(Base,BaseTableMixin):

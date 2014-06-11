@@ -29,9 +29,14 @@ from ..metadata import Users
 from ..metadata import Sessions
 from ..metadata import ChatsInitiated
 from ..metadata import ChatsJoined
-from ..metadata import GroupsCreated
-from ..metadata import GroupsRemoved
-from ..metadata import DistributionListsCreated
+from ..metadata import DynamicFriendsListsCreated
+from ..metadata import DynamicFriendsListsRemoved
+from ..metadata import DynamicFriendsListsMemberAdded
+from ..metadata import DynamicFriendsListsMemberRemoved
+from ..metadata import FriendsListsCreated
+from ..metadata import FriendsListsRemoved
+from ..metadata import FriendsListsMemberAdded
+from ..metadata import FriendsListsMemberRemoved
 from ..metadata import ContactsAdded
 from ..metadata import ContactsRemoved
 from ..metadata import ThoughtsCreated
@@ -71,7 +76,7 @@ class TestUsers(unittest.TestCase):
 	def setUp(self):
 		self.db = AnalyticsDB( dburi='sqlite://' )
 		self.session = self.db.get_session()
-		assert_that( self.db.engine.table_names(), has_length( 30 ) )
+		assert_that( self.db.engine.table_names(), has_length( 35 ) )
 		
 	def tearDown(self):
 		self.session.close()	

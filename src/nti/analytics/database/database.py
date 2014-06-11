@@ -41,9 +41,14 @@ from .metadata import Users
 from .metadata import Sessions
 from .metadata import ChatsInitiated
 from .metadata import ChatsJoined
-from .metadata import GroupsCreated
-from .metadata import GroupsRemoved
-from .metadata import DistributionListsCreated
+from .metadata import DynamicFriendsListsCreated
+from .metadata import DynamicFriendsListsRemoved
+from .metadata import DynamicFriendsListsMemberAdded
+from .metadata import DynamicFriendsListsMemberRemoved
+from .metadata import FriendsListsCreated
+from .metadata import FriendsListsRemoved
+from .metadata import FriendsListsMemberAdded
+from .metadata import FriendsListsMemberRemoved
 from .metadata import ContactsAdded
 from .metadata import ContactsRemoved
 from .metadata import ThoughtsCreated
@@ -173,6 +178,12 @@ class AnalyticsDB(object):
 	def _get_id_for_chat(self, chat):
 		return self.idlookup._get_id_for_object( chat )
 	
+	def _get_id_for_dfl(self, dfl):
+		return self.idlookup._get_id_for_object( dfl )
+	
+	def _get_id_for_friends_list(self, friends_list):
+		return self.idlookup._get_id_for_object( friends_list )
+	
 	def _get_timestamp(self, obj):
 		result = getattr( obj, 'createdTime', None )
 		return result or datetime.utcnow()
@@ -236,54 +247,135 @@ class AnalyticsDB(object):
 									chat_id=cid )
 		session.add( new_object )	
 		
-	def create_group(self, session, user, nti_session, timestamp):
+	# DFLs	
+	def create_dynamic_friends_list(self, session, user, nti_session, timestamp, dynamic_friends_list ):
 		user = self._get_or_create_user( session, user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
+		dfl_id = self._get_id_for_dfl( dynamic_friends_list )
 		
-		new_object = GroupsCreated( user_id=uid, 
-									session_id=sid, 
-									timestamp=timestamp )
+		new_object = DynamicFriendsListsCreated( 	user_id=uid, 
+													session_id=sid, 
+													timestamp=timestamp,
+													dfl_id=dfl_id )
 		session.add( new_object )	
 		
-	def remove_group(self, session, user, nti_session, timestamp):
+	def remove_dynamic_friends_list(self, session, user, nti_session, timestamp, dynamic_friends_list ):
+		user = self._get_or_create_user( session, user )
+		uid = user.user_id
+		sid = self._get_id_for_session( nti_session )
+		dfl_id = self._get_id_for_dfl( dynamic_friends_list )
+		
+		new_object = DynamicFriendsListsRemoved( 	user_id=uid, 
+													session_id=sid, 
+													timestamp=timestamp,
+													dfl_id=dfl_id )
+		session.add( new_object )		
+		
+	def create_dynamic_friends_member(self, session, user, nti_session, timestamp, dynamic_friends_list, new_friend ):
+		user = self._get_or_create_user( session, user )
+		uid = user.user_id
+		sid = self._get_id_for_session( nti_session )
+		dfl_id = self._get_id_for_dfl( dynamic_friends_list )
+		target_id = self._get_or_create_user( session, new_friend )
+		
+		new_object = DynamicFriendsListsMemberAdded( 	user_id=uid, 
+														session_id=sid, 
+														timestamp=timestamp,
+														dfl_id=dfl_id,
+														target_id=target_id )
+		session.add( new_object )		
+		
+	# TODO For remove events, we should remove from 'added' table.	
+	def remove_dynamic_friends_member(self, session, user, nti_session, timestamp, dynamic_friends_list, new_friend ):
+		user = self._get_or_create_user( session, user )
+		uid = user.user_id
+		sid = self._get_id_for_session( nti_session )
+		dfl_id = self._get_id_for_dfl( dynamic_friends_list )
+		target_id = self._get_or_create_user( session, new_friend )
+		
+		new_object = DynamicFriendsListsMemberRemoved( 	user_id=uid, 
+														session_id=sid, 
+														timestamp=timestamp,
+														dfl_id=dfl_id,
+														target_id=target_id )
+		session.add( new_object )		
+		
+	# FLs	
+	def create_friends_list(self, session, user, nti_session, timestamp):
 		user = self._get_or_create_user( session, user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
 		
-		new_object = GroupsRemoved( user_id=uid, 
-									session_id=sid, 
-									timestamp=timestamp )
+		new_object = FriendsListsCreated( 	user_id=uid, 
+											session_id=sid, 
+											timestamp=timestamp )
 		session.add( new_object )	
 		
-	def create_distribution_list(self, session, user, nti_session, timestamp):
+	def remove_friends_list(self, session, user, nti_session, timestamp):
 		user = self._get_or_create_user( session, user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
 		
-		new_object = DistributionListsCreated( 	user_id=uid, 
+		new_object = FriendsListsRemoved( 	user_id=uid, 
+											session_id=sid, 
+											timestamp=timestamp )
+		session.add( new_object )		
+		
+	def create_friends_list_member(self, session, user, nti_session, timestamp, friends_list, new_friend ):
+		user = self._get_or_create_user( session, user )
+		uid = user.user_id
+		sid = self._get_id_for_session( nti_session )
+		friends_list_id = self._get_id_for_friends_list( friends_list )
+		target_id = self._get_or_create_user( session, new_friend )
+		
+		new_object = FriendsListsMemberAdded( 	user_id=uid, 
 												session_id=sid, 
-												timestamp=timestamp )
-		session.add( new_object )	
+												timestamp=timestamp,
+												friends_list_id=friends_list_id,
+												target_id=target_id )
+		session.add( new_object )		
 		
-	def create_contact_added(self, session, user, nti_session, timestamp):
+	def remove_friends__list_member(self, session, user, nti_session, timestamp, friends_list, new_friend ):
 		user = self._get_or_create_user( session, user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
+		friends_list_id = self._get_id_for_friends_list( friends_list )
+		target_id = self._get_or_create_user( session, new_friend )
+		
+		new_object = FriendsListsMemberRemoved( user_id=uid, 
+												session_id=sid, 
+												timestamp=timestamp,
+												friends_list_id=friends_list_id,
+												target_id=target_id )
+		session.add( new_object )		
+	
+	# Magical FL	
+	# See DefaultComputedContacts
+	# During migration, we'll want to pull this from user objects and capture events 
+	# during runtime.
+	def create_contact_added(self, session, user, nti_session, timestamp, new_contact ):
+		user = self._get_or_create_user( session, user )
+		uid = user.user_id
+		sid = self._get_id_for_session( nti_session )
+		target_id = self._get_or_create_user( session, new_contact )
 		
 		new_object = ContactsAdded( 	user_id=uid, 
 										session_id=sid, 
-										timestamp=timestamp )
+										timestamp=timestamp,
+										target_id=target_id )
 		session.add( new_object )	
 		
-	def create_contact_removed(self, session, user, nti_session, timestamp):
+	def create_contact_removed(self, session, user, nti_session, timestamp, new_contact ):
 		user = self._get_or_create_user( session, user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
+		target_id = self._get_or_create_user( session, new_contact )
 		
 		new_object = ContactsRemoved( 	user_id=uid, 
 										session_id=sid, 
-										timestamp=timestamp )
+										timestamp=timestamp,
+										target_id=target_id )
 		session.add( new_object )	
 		
 	def create_thought(self, session, user, nti_session, blog_entry):
