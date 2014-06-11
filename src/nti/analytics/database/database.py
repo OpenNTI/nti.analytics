@@ -540,7 +540,7 @@ class AnalyticsDB(object):
 		comment.deleted=timestamp
 		session.flush()			
 		
-	def create_note_comment_created(self, session, user, nti_session, timestamp, course_id, forum, discussion, parent_id, comment):
+	def create_note_comment_created(self, session, user, nti_session, timestamp, course_id, forum, discussion, comment):
 		user = self._get_or_create_user( session, user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
@@ -587,16 +587,16 @@ class AnalyticsDB(object):
 		session.flush()
 		return enrollment_type
 	
-	def _get_enrollment_id(self, session, name):
+	def _get_enrollment_type_id(self, session, name):
 		enrollment_type = session.query(EnrollmentTypes).filter( EnrollmentTypes.type_name == name ).one()
-		return enrollment_type or create_enrollment_type(self,session,name)
+		return enrollment_type or self.create_enrollment_type( session, name )
 	
 	def create_course_enrollment(self, session, user, nti_session, timestamp, course_id, enrollment_type_name):
 		user = self._get_or_create_user( session, user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
 		
-		type_id = self._get_enrollment_id( session, enrollment_type_name )
+		type_id = self._get_enrollment_type_id( session, enrollment_type_name )
 		
 		new_object = CourseEnrollments( user_id=uid, 
 										session_id=sid, 
