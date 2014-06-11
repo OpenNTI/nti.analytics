@@ -18,15 +18,26 @@ from datetime import datetime
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from .metadata import AnalyticsMetadata
-from .interfaces import IAnalyticsDB
-
-from nti.dataserver.users import interfaces as user_interfaces
-
 from zope import interface
 from zope import component
 import zope.intid
 
+from pyramid.location import lineage
+
+from nti.contenttypes.courses.interfaces import ICourseInstance
+
+from nti.dataserver.users import interfaces as user_interfaces
+
+from nti.dataserver.users.entity import Entity
+
+from nti.dataserver.contenttypes.forums.interfaces import IGeneralForumComment
+from nti.dataserver.contenttypes.forums.interfaces import IPersonalBlogComment
+
+from nti.utils.property import Lazy
+
+from .interfaces import IAnalyticsDB
+
+from .metadata import AnalyticsMetadata
 from .metadata import Users
 from .metadata import Sessions
 from .metadata import ChatsInitiated
@@ -58,8 +69,6 @@ from .metadata import AssignmentDetails
 from .metadata import SelfAssessmentsTaken
 from .metadata import SelfAssessmentDetails
 
-from nti.utils.property import Lazy
-
 class IDLookup(object):
 	
 	def __init__( self ):
@@ -68,6 +77,39 @@ class IDLookup(object):
 	def _get_id_for_object( self, obj ):
 		result = getattr( obj, '_ds_intid', None )
 		return result or self.intids.getId( obj )
+	
+def _get_course_from_lineage(obj):	
+	# TODO Verify this works
+	result = None
+	for location in lineage(self):
+		if ICourseInstance.providedBy(location):
+			result = ICourseInstance( location )
+			break
+	return result
+	
+def _get_sharing_enum(note):		
+	# Logic duped in coursewarereports.views.admin_views
+	course = _get_course_from_lineage( note )
+	if not course:
+		# TODO What do we want to do here?
+		logger.warn( 'Could not retrieve course from object (%s)', note )
+		return 'UNKNOWN'
+	
+	scopes = course.LegacyScopes
+	public = scopes['public']
+	private = scopes['restricted']
+
+	public_object = Entity.get_entity( public )
+	private_object = Entity.get_entity( private )
+	
+	result = 'OTHER'
+	
+	if public_object in note.sharingTargets:
+		result = 'PUBLIC'
+	elif private_object in note.sharingTargets:
+		result = 'COURSE'
+		
+	return result	
 	
 # We should only have a few different types of operations here:
 # - Insertions
@@ -314,7 +356,8 @@ class AnalyticsDB(object):
 									with_transcript=with_transcript )
 		session.add( new_object )	
 			
-	def create_note(self, session, user, nti_session, course_id, note, sharing):
+			
+	def create_note(self, session, user, nti_session, course_id, note):
 		user = self._get_or_create_user( session, user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
@@ -322,10 +365,9 @@ class AnalyticsDB(object):
 		nid = self._get_id_for_note(note)
 		
 		timestamp = self._get_timestamp( note )
-		# TODO 
-		# resource = note.__parent__?
-		# We'd need logic to get sharing enum (see reports)
-		# sharing = note.sharingTargets | note.sharedWith
+		# TODO verify -> resource = note.__parent__?
+		
+		sharing = _get_sharing_enum(note)
 		
 		new_object = NotesCreated( 	user_id=uid, 
 									session_id=sid, 
@@ -442,14 +484,17 @@ class AnalyticsDB(object):
 										time_length=time_length )
 		session.add( new_object )	
 		
-	# TODO We want to check our parent type here for other comments only.
-	def create_forum_comment_created(self, session, user, nti_session, timestamp, course_id, forum, discussion, parent_id, comment):
+	def create_forum_comment_created(self, session, user, nti_session, timestamp, course_id, forum, discussion, comment):
 		user = self._get_or_create_user( session, user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
 		fid = self._get_id_for_forum(forum)
 		did = self._get_id_for_discussion(discussion)
 		cid = self._get_id_for_comment(comment)
+		pid = None
+		
+		if IGeneralForumComment.providedBy( comment.__parent__ ):
+			pid = self._get_id_for_comment( comment.__parent__ )
 		
 		new_object = ForumCommentsCreated( 	user_id=uid, 
 											session_id=sid, 
@@ -457,7 +502,7 @@ class AnalyticsDB(object):
 											course_id=course_id,
 											forum_id=fid,
 											discussion_id=did,
-											parent_id=parent_id,
+											parent_id=pid,
 											comment_id=cid )
 		session.add( new_object )	
 		
@@ -467,13 +512,17 @@ class AnalyticsDB(object):
 		comment.deleted=timestamp
 		session.flush()		
 		
-	def create_blog_comment_created(self, session, user, nti_session, timestamp, course_id, forum, discussion, parent_id, comment):
+	def create_blog_comment_created(self, session, user, nti_session, timestamp, course_id, forum, discussion, comment):
 		user = self._get_or_create_user( session, user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
 		fid = self._get_id_for_forum(forum)
 		did = self._get_id_for_discussion(discussion)
 		cid = self._get_id_for_comment(comment)
+		pid = None
+		
+		if IPersonalBlogComment.providedBy( comment.__parent__ ):
+			pid = self._get_id_for_comment( comment.__parent__ )
 		
 		new_object = BlogCommentsCreated( 	user_id=uid, 
 											session_id=sid, 
@@ -481,7 +530,7 @@ class AnalyticsDB(object):
 											course_id=course_id,
 											forum_id=fid,
 											discussion_id=did,
-											parent_id=parent_id,
+											parent_id=pid,
 											comment_id=cid )
 		session.add( new_object )	
 		
@@ -498,6 +547,11 @@ class AnalyticsDB(object):
 		fid = self._get_id_for_forum(forum)
 		did = self._get_id_for_discussion(discussion)
 		cid = self._get_id_for_comment(comment)
+		pid = None
+		
+		# FIXME What type should this be?
+		if IGeneralForumComment.providedBy( comment.__parent__ ):
+			pid = self._get_id_for_comment( comment.__parent__ )
 		
 		new_object = NoteCommentsCreated( 	user_id=uid, 
 											session_id=sid, 
@@ -505,7 +559,7 @@ class AnalyticsDB(object):
 											course_id=course_id,
 											forum_id=fid,
 											discussion_id=did,
-											parent_id=parent_id,
+											parent_id=pid,
 											comment_id=cid )
 		session.add( new_object )	
 		

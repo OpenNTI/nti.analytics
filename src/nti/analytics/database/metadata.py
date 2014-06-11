@@ -147,7 +147,7 @@ class VideoEvents(Base,ResourceViewMixin,TimeLengthMixin):
 class NotesCreated(Base,ResourceMixin,DeletedMixin):	
 	__tablename__ = 'NotesCreated'
 	note_id = Column('note_id', Integer, nullable=False, index=True )
-	sharing = Column('sharing', Enum( 'PUBLIC', 'PRIVATE', 'COURSE_ONLY' ), nullable=False )
+	sharing = Column('sharing', Enum( 'PUBLIC', 'COURSE', 'OTHER', 'UNKNOWN' ), nullable=True )
 
 class NotesViewed(Base,ResourceMixin):	
 	__tablename__ = 'NotesViewed'
