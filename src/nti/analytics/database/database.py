@@ -96,16 +96,16 @@ def _get_sharing_enum(note):
 	
 	scopes = course.LegacyScopes
 	public = scopes['public']
-	private = scopes['restricted']
+	course_only = scopes['restricted']
 
 	public_object = Entity.get_entity( public )
-	private_object = Entity.get_entity( private )
+	course_only_object = Entity.get_entity( course_only )
 	
 	result = 'OTHER'
 	
 	if public_object in note.sharingTargets:
 		result = 'PUBLIC'
-	elif private_object in note.sharingTargets:
+	elif course_only_object in note.sharingTargets:
 		result = 'COURSE'
 		
 	return result	
@@ -579,15 +579,15 @@ class AnalyticsDB(object):
 										time_length=time_length )
 		session.add( new_object )						
 	
-	def create_enrollment_type(self, session, name):
+	def create_enrollment_type(self, session, type_name):
 		enrollment_type = EnrollmentTypes( type_name=type_name )
 		session.add( enrollment_type )
 		session.flush()
 		return enrollment_type
 	
-	def _get_enrollment_type_id(self, session, name):
-		enrollment_type = session.query(EnrollmentTypes).filter( EnrollmentTypes.type_name == name ).one()
-		return enrollment_type or self.create_enrollment_type( session, name )
+	def _get_enrollment_type_id(self, session, type_name):
+		enrollment_type = session.query(EnrollmentTypes).filter( EnrollmentTypes.type_name == type_name ).one()
+		return enrollment_type or self.create_enrollment_type( session, type_name )
 	
 	def create_course_enrollment(self, session, user, nti_session, timestamp, course_id, enrollment_type_name):
 		user = self._get_or_create_user( session, user )
