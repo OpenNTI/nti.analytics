@@ -183,8 +183,7 @@ class TestSocial(unittest.TestCase):
 		results = self.session.query( ChatsInitiated ).all()
 		assert_that( results, has_length( 0 ) )
 		
-		new_chat = ChatsInitiated( session_id=test_session_id, user_id=test_user_id, timestamp=datetime.now(), chat_id=101 )
-		self.session.add( new_chat )
+		self.db.create_chat_initiated( self.session, test_session_id, test_user_id, 678 )
 		results = self.session.query(ChatsInitiated).all()
 		assert_that( results, has_length( 1 ) )
 		
@@ -192,7 +191,7 @@ class TestSocial(unittest.TestCase):
 		assert_that( new_chat.user_id, test_user_id )
 		assert_that( new_chat.session_id, test_session_id )
 		assert_that( new_chat.timestamp, 0 )	
-		assert_that( new_chat.chat_id, 101 )	
+		assert_that( new_chat.chat_id, 678 )	
 	
 class TestComments(unittest.TestCase):
 
