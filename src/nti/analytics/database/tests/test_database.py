@@ -67,6 +67,9 @@ from ..database import AnalyticsDB
 from sqlalchemy.orm.exc import FlushError
 from sqlalchemy.exc import IntegrityError
 
+from nti.dataserver.users import User
+from nti.dataserver.users import FriendsList
+
 test_user_id = 01234
 test_user_ds_id = 78
 test_session_id = 56
@@ -85,21 +88,34 @@ class TestUsers(unittest.TestCase):
 		results = self.session.query(Users).all()
 		assert_that( results, has_length( 0 ) )
 		
-		user = Users( user_ds_id=test_user_ds_id )
-		self.session.add( user )
+		fooser = User( 'foo1978' )
+		
+		self.db.create_user( self.session, fooser )
+
 		results = self.session.query(Users).all()
 		assert_that( results, has_length( 1 ) )
 		
 		new_user = self.session.query(Users).one()
 		# Sequence generated
 		assert_that( new_user.user_id, 1 )
-		assert_that( new_user.user_ds_id, test_user_ds_id )
+		assert_that( new_user.user_ds_id, 101 )
 
+		# Dupe, but not inserted
+		self.db._get_or_create_user( self.session, fooser )	
+		
+		# And passing in just user ids
+		self.db.create_user( self.session, 42 )
+		results = self.session.query(Users).all()
+		assert_that( results, has_length( 2 ) )
+		
+		# New
+		self.db._get_or_create_user( self.session, 43 )	
+		results = self.session.query(Users).all()
+		assert_that( results, has_length( 3 ) )
+		
 		# Dupe insert
 		with self.assertRaises(IntegrityError):
-			user2 = Users( user_ds_id=test_user_ds_id )
-			self.session.add( user2 )
-			self.session.flush()
+			self.db.create_user( self.session, fooser )
 			
 	def test_user_constraints(self):
 		results = self.session.query(Users).all()
@@ -119,8 +135,7 @@ class TestUsers(unittest.TestCase):
 		self.session.flush()
 		
 		# Using new generated user_id
-		new_session = Sessions( session_id=test_session_id, user_id=user.user_id, ip_addr='0.1.2.3.4', version='0.9', platform='webapp', start_time=datetime.now() )
-		self.session.add( new_session )
+		self.db.create_session( self.session, user.user_id, object(), datetime.now(), '0.1.2.3.4', '0.9', 'webapp' )
 		results = self.session.query(Sessions).all()
 		assert_that( results, has_length( 1 ) )
 		
@@ -130,10 +145,26 @@ class TestUsers(unittest.TestCase):
 		assert_that( new_session.ip_addr, '0.1.2.3.4' )	
 		assert_that( new_session.platform, 'webapp' )
 		assert_that( new_session.version, '0.9' )	
+		assert_that( new_session.start_time, not_none() )
+		assert_that( new_session.end_time, none() )
+		
+		# End session
+		self.db._end_session( self.session, object(), datetime.now() )
+		results = self.session.query(Sessions).all()
+		assert_that( results, has_length( 1 ) )
+		
+		new_session = self.session.query(Sessions).one()
+		assert_that( new_session.user_id, test_user_id )
+		assert_that( new_session.session_id, test_session_id )
+		assert_that( new_session.ip_addr, '0.1.2.3.4' )	
+		assert_that( new_session.platform, 'webapp' )
+		assert_that( new_session.version, '0.9' )	
+		assert_that( new_session.start_time, not_none() )
+		assert_that( new_session.end_time, not_none() )
 
 _User = namedtuple('_User', ('intid',))
 
-class TestAnalytics(unittest.TestCase):
+class TestSocial(unittest.TestCase):
 
 	def setUp(self):
 		self.db = AnalyticsDB( dburi='sqlite://' )

@@ -30,7 +30,7 @@ from nti.analytics.database import database
 """ Override this for testing purposes. """
 class TestIDLookup(object):
 	def _get_id_for_object( self, obj ):
-		return 1
+		return 101
 	
 database.IDLookup = TestIDLookup
 

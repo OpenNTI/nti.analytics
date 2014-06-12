@@ -202,10 +202,10 @@ class AnalyticsDB(object):
 		# TODO Allow for idempotency?
 		# TODO Some of these objects will not have creators/users during migration.
 		uid = self._get_id_for_user( user )
-		found_user = session.query(Users).filter( Users.user_ds_id == uid ).one()
+		found_user = session.query(Users).filter( Users.user_ds_id == uid ).first()
 		return found_user or self.create_user( session, uid )
 		
-	def create_session(self, session, user, nti_session, ip_address, platform, version):
+	def create_session(self, session, user, nti_session, timestamp, ip_address, platform, version):
 		# TODO nti_session does not exist yet, probably
 		# ISessionService from nti.dataserver?
 		user = self._get_or_create_user( session, user )
@@ -214,11 +214,17 @@ class AnalyticsDB(object):
 		
 		new_session = Sessions( user_id=uid, 
 								session_id=sid, 
-								timestamp=nti_session.timestamp, 
+								start_time=timestamp, 
 								ip_addr=ip_address, 
 								platform=platform, 
 								version=version )
 		session.add( new_session )		
+		
+	def _end_session(self, session, nti_session, timestamp):
+		sid = self._get_id_for_session( nti_session )
+		nti_session = session.query(Sessions).filter( Sessions.session_id == sid ).first()
+		nti_session.end_time = timestamp
+		session.flush()
 		
 	#nti.chatserver.meeting._Meeting	
 	def create_chat_initiated(self, session, user, nti_session, chat ):

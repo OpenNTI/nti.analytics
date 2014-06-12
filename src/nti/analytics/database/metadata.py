@@ -37,7 +37,6 @@ class Users(Base):
 	user_ds_id = Column('user_ds_id', Integer, nullable=False, unique=True, index=True)
 	
 # TODO timezone?
-# TODO Do we need indexes here?	
 class Sessions(Base):
 	__tablename__ = 'Sessions'
 	session_id = Column('session_id', Integer, primary_key=True)
