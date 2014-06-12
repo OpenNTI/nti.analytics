@@ -286,7 +286,12 @@ class AnalyticsDB(object):
 														target_id=target_id )
 		session.add( new_object )		
 		
-	# TODO For remove events, we should remove from 'added' table.	
+	def _delete_dynamic_friend_list_member( self, session, friends_list_id, target_id ):
+		friend = session.query(DynamicFriendsListsMemberAdded).filter( 
+											DynamicFriendsListsMemberAdded.friends_list_id==friends_list_id, 
+											DynamicFriendsListsMemberAdded.target_id==target_id ).one()
+		session.delete( friend )	
+		
 	def remove_dynamic_friends_member(self, session, user, nti_session, timestamp, dynamic_friends_list, new_friend ):
 		user = self._get_or_create_user( session, user )
 		uid = user.user_id
@@ -299,7 +304,8 @@ class AnalyticsDB(object):
 														timestamp=timestamp,
 														dfl_id=dfl_id,
 														target_id=target_id )
-		session.add( new_object )		
+		session.add( new_object )	
+		self._delete_dynamic_friend_list_member( session, dfl_id, target_id )	
 		
 	# FLs	
 	def create_friends_list(self, session, user, nti_session, timestamp):
@@ -336,6 +342,11 @@ class AnalyticsDB(object):
 												target_id=target_id )
 		session.add( new_object )		
 		
+	def _delete_friend_list_member( self, session, friends_list_id, target_id ):
+		friend = session.query(FriendsListsMemberAdded).filter( FriendsListsMemberAdded.friends_list_id==friends_list_id, 
+																FriendsListsMemberAdded.target_id==target_id ).one()
+		session.delete( friend )	
+		
 	def remove_friends__list_member(self, session, user, nti_session, timestamp, friends_list, new_friend ):
 		user = self._get_or_create_user( session, user )
 		uid = user.user_id
@@ -348,13 +359,14 @@ class AnalyticsDB(object):
 												timestamp=timestamp,
 												friends_list_id=friends_list_id,
 												target_id=target_id )
-		session.add( new_object )		
+		session.add( new_object )	
+		self._delete_friend_list_member(session, friends_list_id, target_id)	
 	
 	# Magical FL	
 	# See DefaultComputedContacts
 	# During migration, we'll want to pull this from user objects and capture events 
 	# during runtime.
-	def create_contact_added(self, session, user, nti_session, timestamp, new_contact ):
+	def create_contact_added( self, session, user, nti_session, timestamp, new_contact ):
 		user = self._get_or_create_user( session, user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
@@ -365,8 +377,13 @@ class AnalyticsDB(object):
 										timestamp=timestamp,
 										target_id=target_id )
 		session.add( new_object )	
+	
+	def _delete_contact_added( self, session, user_id, target_id ):
+		contact = session.query(ContactsAdded).filter( 	ContactsAdded.user_id==user_id, 
+														ContactsAdded.target_id==target_id ).one()
+		session.delete( contact )
 		
-	def create_contact_removed(self, session, user, nti_session, timestamp, new_contact ):
+	def create_contact_removed( self, session, user, nti_session, timestamp, new_contact ):
 		user = self._get_or_create_user( session, user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
@@ -377,6 +394,7 @@ class AnalyticsDB(object):
 										timestamp=timestamp,
 										target_id=target_id )
 		session.add( new_object )	
+		self._delete_contact_added( session, uid, target_id )
 		
 	def create_thought(self, session, user, nti_session, blog_entry):
 		user = self._get_or_create_user( session, user )
@@ -599,7 +617,7 @@ class AnalyticsDB(object):
 		
 	def delete_forum_comment(self, session, timestamp, comment):	
 		cid = self._get_id_for_comment(comment)
-		comment = session.query(ForumCommentsCreated).filter( comment_id=cid ).one()
+		comment = session.query(ForumCommentsCreated).filter( ForumCommentsCreated.comment_id==cid ).one()
 		comment.deleted=timestamp
 		session.flush()		
 		
@@ -627,7 +645,7 @@ class AnalyticsDB(object):
 		
 	def delete_blog_comment(self, session, timestamp, comment):	
 		cid = self._get_id_for_comment(comment)
-		comment = session.query(BlogCommentsCreated).filter( comment_id=cid ).one()
+		comment = session.query(BlogCommentsCreated).filter( BlogCommentsCreated.comment_id==cid ).one()
 		comment.deleted=timestamp
 		session.flush()			
 		
@@ -655,7 +673,7 @@ class AnalyticsDB(object):
 		
 	def delete_note_comment(self, session, timestamp, comment):	
 		cid = self._get_id_for_comment(comment)
-		comment = session.query(NoteCommentsCreated).filter( comment_id=cid ).one()
+		comment = session.query(NoteCommentsCreated).filter( NoteCommentsCreated.comment_id==cid ).one()
 		comment.deleted=timestamp
 		session.flush()		
 		
@@ -730,15 +748,19 @@ class AnalyticsDB(object):
 		return results
 	
 	def get_discussions_created_for_user(self, session, user, course_id):		
-		results = session.query(DiscussionsCreated).filter( user_id=user.intid, course_id=course_id, deleted=None  ).all()
+		results = session.query(DiscussionsCreated).filter( DiscussionsCreated.user_id==user.intid, 
+															DiscussionsCreated.course_id==course_id, 
+															DiscussionsCreated.deleted==None  ).all()
 		return results
 	
 	def get_self_assessments_for_user(self, session, user, course_id):		
-		results = session.query(SelfAssessmentsTaken).filter( user_id=user.intid, course_id=course_id ).all()
+		results = session.query(SelfAssessmentsTaken).filter( 	SelfAssessmentsTaken.user_id==user.intid, 
+																SelfAssessmentsTaken.course_id==course_id ).all()
 		return results
 	
 	def get_assignments_for_user(self, session, user, course_id):		
-		results = session.query(AssignmentsTaken).filter( user_id=user.intid, course_id=course_id ).all()
+		results = session.query(AssignmentsTaken).filter( 	AssignmentsTaken.user_id==user.intid, 
+															AssignmentsTaken.course_id==course_id ).all()
 		return results
 	
 	#TopicReport
@@ -754,7 +776,8 @@ class AnalyticsDB(object):
 		return results
 	
 	def get_discussions_created_for_forum(self, session, forum_id):		
-		results = session.query(DiscussionsCreated).filter( forum_id=forum_id, deleted=None  ).all()
+		results = session.query(DiscussionsCreated).filter( DiscussionsCreated.forum_id==forum_id, 
+															DiscussionsCreated.deleted==None  ).all()
 		return results
 	
 	
@@ -765,28 +788,31 @@ class AnalyticsDB(object):
 		return results
 	
 	def get_discussions_created_for_course(self, session, course_id):		
-		results = session.query(DiscussionsCreated).filter( course_id=course_id, deleted=None  ).all()
+		results = session.query(DiscussionsCreated).filter( DiscussionsCreated.course_id==course_id, 
+															DiscussionsCreated.deleted==None  ).all()
 		return results
 	
 	def get_self_assessments_for_course(self, session, course_id):		
-		results = session.query(SelfAssessmentsTaken).filter( course_id=course_id ).all()
+		results = session.query(SelfAssessmentsTaken).filter( SelfAssessmentsTaken.course_id==course_id ).all()
 		return results
 	
 	def get_assignments_for_course(self, session, course_id):		
-		results = session.query(AssignmentsTaken).filter( course_id=course_id ).all()
+		results = session.query(AssignmentsTaken).filter( AssignmentsTaken.course_id==course_id ).all()
 		return results
 	
 	def get_notes_created_for_course(self, session, course_id):		
-		results = session.query(NotesCreated).filter( course_id=course_id, deleted=None  ).all()
+		results = session.query(NotesCreated).filter( 	NotesCreated.course_id==course_id, 
+														NotesCreated.deleted==None  ).all()
 		return results
 	
 	def get_highlights_created_for_course(self, session, course_id):		
-		results = session.query(HighlightsCreated).filter( course_id=course_id, deleted=None  ).all()
+		results = session.query(HighlightsCreated).filter( 	HighlightsCreated.course_id==course_id, 
+															HighlightsCreated.deleted==None  ).all()
 		return results
 	
 	
 	#AssignmentReport
 	def get_assignment_details_for_course(self, session, course_id):		
-		results = session.query(AssignmentDetails).filter( course_id=course_id ).all()
+		results = session.query(AssignmentDetails).filter( AssignmentDetails.course_id==course_id ).all()
 		return results
 
