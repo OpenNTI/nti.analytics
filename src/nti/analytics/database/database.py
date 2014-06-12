@@ -238,7 +238,7 @@ class AnalyticsDB(object):
 		new_object = ChatsInitiated( 	user_id=uid, 
 										session_id=sid, 
 										timestamp=timestamp,
-										chat_id=chat )
+										chat_id=cid )
 		session.add( new_object )		
 		
 	def create_chat_joined(self, session, user, nti_session, timestamp, chat):
@@ -283,7 +283,8 @@ class AnalyticsDB(object):
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
 		dfl_id = self._get_id_for_dfl( dynamic_friends_list )
-		target_id = self._get_or_create_user( session, new_friend )
+		target = self._get_or_create_user( session, new_friend )
+		target_id = target.user_id
 		
 		new_object = DynamicFriendsListsMemberAdded( 	user_id=uid, 
 														session_id=sid, 
@@ -303,7 +304,8 @@ class AnalyticsDB(object):
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
 		dfl_id = self._get_id_for_dfl( dynamic_friends_list )
-		target_id = self._get_or_create_user( session, new_friend )
+		target = self._get_or_create_user( session, new_friend )
+		target_id = target.user_id
 		
 		new_object = DynamicFriendsListsMemberRemoved( 	user_id=uid, 
 														session_id=sid, 
@@ -339,7 +341,8 @@ class AnalyticsDB(object):
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
 		friends_list_id = self._get_id_for_friends_list( friends_list )
-		target_id = self._get_or_create_user( session, new_friend )
+		target = self._get_or_create_user( session, new_friend )
+		target_id = target.user_id
 		
 		new_object = FriendsListsMemberAdded( 	user_id=uid, 
 												session_id=sid, 
@@ -358,7 +361,8 @@ class AnalyticsDB(object):
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
 		friends_list_id = self._get_id_for_friends_list( friends_list )
-		target_id = self._get_or_create_user( session, new_friend )
+		target = self._get_or_create_user( session, new_friend )
+		target_id = target.user_id
 		
 		new_object = FriendsListsMemberRemoved( user_id=uid, 
 												session_id=sid, 
@@ -393,7 +397,8 @@ class AnalyticsDB(object):
 		user = self._get_or_create_user( session, user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
-		target_id = self._get_or_create_user( session, new_contact )
+		target = self._get_or_create_user( session, new_contact )
+		target_id = target.user_id
 		
 		new_object = ContactsRemoved( 	user_id=uid, 
 										session_id=sid, 

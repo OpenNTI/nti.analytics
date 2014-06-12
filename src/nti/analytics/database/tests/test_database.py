@@ -70,7 +70,7 @@ from sqlalchemy.exc import IntegrityError
 from nti.dataserver.users import User
 from nti.dataserver.users import FriendsList
 
-test_user_id = 01234
+test_user_id = 	1234
 test_user_ds_id = 78
 test_session_id = 56
 
@@ -97,8 +97,8 @@ class TestUsers(unittest.TestCase):
 		
 		new_user = self.session.query(Users).one()
 		# Sequence generated
-		assert_that( new_user.user_id, 1 )
-		assert_that( new_user.user_ds_id, 101 )
+		assert_that( new_user.user_id, is_( 1 ) )
+		assert_that( new_user.user_ds_id, is_( 101 ) )
 
 		# Dupe, but not inserted
 		self.db._get_or_create_user( self.session, fooser )	
@@ -135,30 +135,31 @@ class TestUsers(unittest.TestCase):
 		self.session.flush()
 		
 		# Using new generated user_id
-		self.db.create_session( self.session, user.user_id, object(), datetime.now(), '0.1.2.3.4', '0.9', 'webapp' )
+		self.db.create_session( self.session, test_user_ds_id, test_session_id, datetime.now(), '0.1.2.3.4', 'webapp', '0.9' )
 		results = self.session.query(Sessions).all()
 		assert_that( results, has_length( 1 ) )
 		
 		new_session = self.session.query(Sessions).one()
-		assert_that( new_session.user_id, test_user_id )
-		assert_that( new_session.session_id, test_session_id )
-		assert_that( new_session.ip_addr, '0.1.2.3.4' )	
-		assert_that( new_session.platform, 'webapp' )
-		assert_that( new_session.version, '0.9' )	
+		#from IPython.core.debugger import Tracer;Tracer()()
+		assert_that( new_session.user_id, is_( user.user_id ) )
+		assert_that( new_session.session_id, is_( test_session_id ) )
+		assert_that( new_session.ip_addr, is_( '0.1.2.3.4' ) )	
+		assert_that( new_session.platform, is_( 'webapp' ) )
+		assert_that( new_session.version, is_( '0.9' ) )	
 		assert_that( new_session.start_time, not_none() )
 		assert_that( new_session.end_time, none() )
 		
 		# End session
-		self.db._end_session( self.session, object(), datetime.now() )
+		self.db._end_session( self.session, test_session_id, datetime.now() )
 		results = self.session.query(Sessions).all()
 		assert_that( results, has_length( 1 ) )
 		
 		new_session = self.session.query(Sessions).one()
-		assert_that( new_session.user_id, test_user_id )
-		assert_that( new_session.session_id, test_session_id )
-		assert_that( new_session.ip_addr, '0.1.2.3.4' )	
-		assert_that( new_session.platform, 'webapp' )
-		assert_that( new_session.version, '0.9' )	
+		assert_that( new_session.user_id, is_( user.user_id ) )
+		assert_that( new_session.session_id, is_( test_session_id ) )
+		assert_that( new_session.ip_addr, is_( '0.1.2.3.4' ) )	
+		assert_that( new_session.platform, is_( 'webapp' ) )
+		assert_that( new_session.version, is_( '0.9' ) )	
 		assert_that( new_session.start_time, not_none() )
 		assert_that( new_session.end_time, not_none() )
 
@@ -169,10 +170,10 @@ class TestSocial(unittest.TestCase):
 	def setUp(self):
 		self.db = AnalyticsDB( dburi='sqlite://' )
 		self.session = self.db.get_session()
-		user = Users( user_id=test_user_id, user_ds_id=test_user_ds_id )
+		user = Users( user_ds_id=test_user_ds_id )
 		self.session.add( user )
 		
-		db_session = Sessions( session_id=test_session_id, user_id=test_user_id, ip_addr='0.1.2.3.4', version='0.9', platform='webapp', start_time=datetime.now() )
+		db_session = Sessions( session_id=test_session_id, user_id=1, ip_addr='0.1.2.3.4', version='0.9', platform='webapp', start_time=datetime.now() )
 		self.session.add( db_session )
 		self.session.flush()
 
@@ -183,15 +184,63 @@ class TestSocial(unittest.TestCase):
 		results = self.session.query( ChatsInitiated ).all()
 		assert_that( results, has_length( 0 ) )
 		
-		self.db.create_chat_initiated( self.session, test_session_id, test_user_id, 678 )
+		test_chat_id = 999
+		
+		self.db.create_chat_initiated( self.session, test_user_ds_id, test_session_id, test_chat_id )
 		results = self.session.query(ChatsInitiated).all()
 		assert_that( results, has_length( 1 ) )
 		
 		new_chat = self.session.query(ChatsInitiated).one()
-		assert_that( new_chat.user_id, test_user_id )
-		assert_that( new_chat.session_id, test_session_id )
-		assert_that( new_chat.timestamp, 0 )	
-		assert_that( new_chat.chat_id, 678 )	
+		assert_that( new_chat.user_id, is_( 1 ) )
+		assert_that( new_chat.session_id, is_( test_session_id ) )
+		assert_that( new_chat.timestamp, not_none() )	
+		assert_that( new_chat.chat_id, is_( test_chat_id ) )	
+		
+		# Chat joined
+		self.db.create_chat_joined( self.session, test_user_ds_id, test_session_id, datetime.now(), test_chat_id )
+		results = self.session.query(ChatsJoined).all()
+		assert_that( results, has_length( 1 ) )
+		
+		new_chat = self.session.query(ChatsJoined).one()
+		assert_that( new_chat.user_id, is_( 1 ) )
+		assert_that( new_chat.session_id, is_( test_session_id ) )
+		assert_that( new_chat.timestamp, not_none() )	
+		assert_that( new_chat.chat_id, is_( test_chat_id ) )	
+
+
+	def test_dfl(self):
+		results = self.session.query( DynamicFriendsListsCreated ).all()
+		assert_that( results, has_length( 0 ) )
+		
+		test_dfl_id = 999
+		self.db.create_dynamic_friends_list( self.session, test_user_ds_id, test_session_id, datetime.now(), test_dfl_id )
+		results = self.session.query(DynamicFriendsListsCreated).all()
+		assert_that( results, has_length( 1 ) )
+		
+		# Create DFL
+		dfl = self.session.query(DynamicFriendsListsCreated).one()
+		assert_that( dfl.user_id, is_( 1 ) )
+		assert_that( dfl.session_id, is_( test_session_id ) )
+		assert_that( dfl.timestamp, not_none() )	
+		assert_that( dfl.dfl_id, is_( test_dfl_id ) )
+		
+		# Join DFL
+		self.db.create_dynamic_friends_member( self.session, test_user_ds_id, test_session_id, datetime.now(), test_dfl_id, test_user_ds_id )
+		results = self.session.query(DynamicFriendsListsMemberAdded).all()
+		assert_that( results, has_length( 1 ) )
+		
+		dfl = self.session.query(DynamicFriendsListsMemberAdded).one()
+		assert_that( dfl.user_id, is_( 1 ) )
+		assert_that( dfl.target_id, is_( 1 ) )
+		assert_that( dfl.session_id, is_( test_session_id ) )
+		assert_that( dfl.timestamp, not_none() )	
+		assert_that( dfl.dfl_id, is_( test_dfl_id ) )
+		
+		
+		# Leave DFL
+		
+		
+		# Delete DFL
 	
 class TestComments(unittest.TestCase):
 

@@ -27,9 +27,13 @@ import zope.testing.cleanup
 
 from nti.analytics.database import database
 
+from six import integer_types
+
 """ Override this for testing purposes. """
 class TestIDLookup(object):
 	def _get_id_for_object( self, obj ):
+		if isinstance( obj, integer_types ):
+			return obj
 		return 101
 	
 database.IDLookup = TestIDLookup
