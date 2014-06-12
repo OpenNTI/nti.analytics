@@ -293,10 +293,10 @@ class AnalyticsDB(object):
 														target_id=target_id )
 		session.add( new_object )		
 		
-	def _delete_dynamic_friend_list_member( self, session, friends_list_id, target_id ):
+	def _delete_dynamic_friend_list_member( self, session, dfl_id, target_id ):
 		friend = session.query(DynamicFriendsListsMemberAdded).filter( 
-											DynamicFriendsListsMemberAdded.friends_list_id==friends_list_id, 
-											DynamicFriendsListsMemberAdded.target_id==target_id ).one()
+											DynamicFriendsListsMemberAdded.dfl_id==dfl_id, 
+											DynamicFriendsListsMemberAdded.target_id==target_id ).first()
 		session.delete( friend )	
 		
 	def remove_dynamic_friends_member(self, session, user, nti_session, timestamp, dynamic_friends_list, new_friend ):
@@ -316,24 +316,28 @@ class AnalyticsDB(object):
 		self._delete_dynamic_friend_list_member( session, dfl_id, target_id )	
 		
 	# FLs	
-	def create_friends_list(self, session, user, nti_session, timestamp):
+	def create_friends_list(self, session, user, nti_session, timestamp, friends_list):
 		user = self._get_or_create_user( session, user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
+		friends_list_id = self._get_id_for_friends_list( friends_list )
 		
 		new_object = FriendsListsCreated( 	user_id=uid, 
 											session_id=sid, 
-											timestamp=timestamp )
+											timestamp=timestamp,
+											friends_list_id=friends_list_id )
 		session.add( new_object )	
 		
-	def remove_friends_list(self, session, user, nti_session, timestamp):
+	def remove_friends_list(self, session, user, nti_session, timestamp, friends_list ):
 		user = self._get_or_create_user( session, user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
+		friends_list_id = self._get_id_for_friends_list( friends_list )
 		
 		new_object = FriendsListsRemoved( 	user_id=uid, 
 											session_id=sid, 
-											timestamp=timestamp )
+											timestamp=timestamp,
+											friends_list_id=friends_list_id )
 		session.add( new_object )		
 		
 	def create_friends_list_member(self, session, user, nti_session, timestamp, friends_list, new_friend ):
@@ -353,10 +357,10 @@ class AnalyticsDB(object):
 		
 	def _delete_friend_list_member( self, session, friends_list_id, target_id ):
 		friend = session.query(FriendsListsMemberAdded).filter( FriendsListsMemberAdded.friends_list_id==friends_list_id, 
-																FriendsListsMemberAdded.target_id==target_id ).one()
+																FriendsListsMemberAdded.target_id==target_id ).first()
 		session.delete( friend )	
 		
-	def remove_friends__list_member(self, session, user, nti_session, timestamp, friends_list, new_friend ):
+	def remove_friends_list_member(self, session, user, nti_session, timestamp, friends_list, new_friend ):
 		user = self._get_or_create_user( session, user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
@@ -380,7 +384,8 @@ class AnalyticsDB(object):
 		user = self._get_or_create_user( session, user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
-		target_id = self._get_or_create_user( session, new_contact )
+		target = self._get_or_create_user( session, new_contact )
+		target_id = target.user_id
 		
 		new_object = ContactsAdded( 	user_id=uid, 
 										session_id=sid, 
@@ -390,7 +395,7 @@ class AnalyticsDB(object):
 	
 	def _delete_contact_added( self, session, user_id, target_id ):
 		contact = session.query(ContactsAdded).filter( 	ContactsAdded.user_id==user_id, 
-														ContactsAdded.target_id==target_id ).one()
+														ContactsAdded.target_id==target_id ).first()
 		session.delete( contact )
 		
 	def create_contact_removed( self, session, user, nti_session, timestamp, new_contact ):

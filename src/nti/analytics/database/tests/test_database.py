@@ -183,6 +183,8 @@ class TestSocial(unittest.TestCase):
 	def test_chats(self):
 		results = self.session.query( ChatsInitiated ).all()
 		assert_that( results, has_length( 0 ) )
+		results = self.session.query( ChatsJoined ).all()
+		assert_that( results, has_length( 0 ) )
 		
 		test_chat_id = 999
 		
@@ -211,13 +213,19 @@ class TestSocial(unittest.TestCase):
 	def test_dfl(self):
 		results = self.session.query( DynamicFriendsListsCreated ).all()
 		assert_that( results, has_length( 0 ) )
+		results = self.session.query( DynamicFriendsListsRemoved ).all()
+		assert_that( results, has_length( 0 ) )
+		results = self.session.query( DynamicFriendsListsMemberAdded ).all()
+		assert_that( results, has_length( 0 ) )
+		results = self.session.query( DynamicFriendsListsMemberRemoved ).all()
+		assert_that( results, has_length( 0 ) )
 		
 		test_dfl_id = 999
+		# Create DFL
 		self.db.create_dynamic_friends_list( self.session, test_user_ds_id, test_session_id, datetime.now(), test_dfl_id )
 		results = self.session.query(DynamicFriendsListsCreated).all()
 		assert_that( results, has_length( 1 ) )
 		
-		# Create DFL
 		dfl = self.session.query(DynamicFriendsListsCreated).one()
 		assert_that( dfl.user_id, is_( 1 ) )
 		assert_that( dfl.session_id, is_( test_session_id ) )
@@ -236,11 +244,120 @@ class TestSocial(unittest.TestCase):
 		assert_that( dfl.timestamp, not_none() )	
 		assert_that( dfl.dfl_id, is_( test_dfl_id ) )
 		
-		
 		# Leave DFL
+		self.db.remove_dynamic_friends_member( self.session, test_user_ds_id, test_session_id, datetime.now(), test_dfl_id, test_user_ds_id )
+		results = self.session.query(DynamicFriendsListsMemberAdded).all()
+		assert_that( results, has_length( 0 ) )
+		results = self.session.query(DynamicFriendsListsMemberRemoved).all()
+		assert_that( results, has_length( 1 ) )
 		
+		dfl = self.session.query(DynamicFriendsListsMemberRemoved).one()
+		assert_that( dfl.user_id, is_( 1 ) )
+		assert_that( dfl.target_id, is_( 1 ) )
+		assert_that( dfl.session_id, is_( test_session_id ) )
+		assert_that( dfl.timestamp, not_none() )	
+		assert_that( dfl.dfl_id, is_( test_dfl_id ) )
 		
 		# Delete DFL
+		self.db.remove_dynamic_friends_list( self.session, test_user_ds_id, test_session_id, datetime.now(), test_dfl_id )
+		results = self.session.query(DynamicFriendsListsRemoved).all()
+		assert_that( results, has_length( 1 ) )
+		
+		dfl = self.session.query(DynamicFriendsListsRemoved).one()
+		assert_that( dfl.user_id, is_( 1 ) )
+		assert_that( dfl.session_id, is_( test_session_id ) )
+		assert_that( dfl.timestamp, not_none() )	
+		assert_that( dfl.dfl_id, is_( test_dfl_id ) )
+		
+	def test_friends_list(self):
+		results = self.session.query( FriendsListsCreated ).all()
+		assert_that( results, has_length( 0 ) )
+		results = self.session.query( FriendsListsRemoved ).all()
+		assert_that( results, has_length( 0 ) )
+		results = self.session.query( FriendsListsMemberAdded ).all()
+		assert_that( results, has_length( 0 ) )
+		results = self.session.query( FriendsListsMemberRemoved ).all()
+		assert_that( results, has_length( 0 ) )
+		
+		test_fl_id = 999
+		# Create FL
+		self.db.create_friends_list( self.session, test_user_ds_id, test_session_id, datetime.now(), test_fl_id )
+		results = self.session.query(FriendsListsCreated).all()
+		assert_that( results, has_length( 1 ) )
+		
+		fl = self.session.query(FriendsListsCreated).one()
+		assert_that( fl.user_id, is_( 1 ) )
+		assert_that( fl.session_id, is_( test_session_id ) )
+		assert_that( fl.timestamp, not_none() )	
+		assert_that( fl.friends_list_id, is_( test_fl_id ) )
+		
+		# Join FL
+		self.db.create_friends_list_member( self.session, test_user_ds_id, test_session_id, datetime.now(), test_fl_id, test_user_ds_id )
+		results = self.session.query(FriendsListsMemberAdded).all()
+		assert_that( results, has_length( 1 ) )
+		
+		fl = self.session.query(FriendsListsMemberAdded).one()
+		assert_that( fl.user_id, is_( 1 ) )
+		assert_that( fl.target_id, is_( 1 ) )
+		assert_that( fl.session_id, is_( test_session_id ) )
+		assert_that( fl.timestamp, not_none() )	
+		assert_that( fl.friends_list_id, is_( test_fl_id ) )
+		
+		# Leave FL
+		self.db.remove_friends_list_member( self.session, test_user_ds_id, test_session_id, datetime.now(), test_fl_id, test_user_ds_id )
+		results = self.session.query(FriendsListsMemberAdded).all()
+		assert_that( results, has_length( 0 ) )
+		results = self.session.query(FriendsListsMemberRemoved).all()
+		assert_that( results, has_length( 1 ) )
+		
+		fl = self.session.query(FriendsListsMemberRemoved).one()
+		assert_that( fl.user_id, is_( 1 ) )
+		assert_that( fl.target_id, is_( 1 ) )
+		assert_that( fl.session_id, is_( test_session_id ) )
+		assert_that( fl.timestamp, not_none() )	
+		assert_that( fl.friends_list_id, is_( test_fl_id ) )
+		
+		# Delete FL
+		self.db.remove_friends_list( self.session, test_user_ds_id, test_session_id, datetime.now(), test_fl_id )
+		results = self.session.query(FriendsListsRemoved).all()
+		assert_that( results, has_length( 1 ) )
+		
+		fl = self.session.query(FriendsListsRemoved).one()
+		assert_that( fl.user_id, is_( 1 ) )
+		assert_that( fl.session_id, is_( test_session_id ) )
+		assert_that( fl.timestamp, not_none() )	
+		assert_that( fl.friends_list_id, is_( test_fl_id ) )	
+	
+	def test_contacts(self):
+		results = self.session.query( ContactsAdded ).all()
+		assert_that( results, has_length( 0 ) )
+		results = self.session.query( ContactsRemoved ).all()
+		assert_that( results, has_length( 0 ) )
+		
+		# Add contact
+		new_contact_user_id = 999
+		self.db.create_contact_added( self.session, test_user_ds_id, test_session_id, datetime.now(), new_contact_user_id )
+		results = self.session.query(ContactsAdded).all()
+		assert_that( results, has_length( 1 ) )
+		
+		contact = self.session.query(ContactsAdded).one()
+		assert_that( contact.user_id, is_( 1 ) )
+		assert_that( contact.target_id, is_( 2 ) )
+		assert_that( contact.session_id, is_( test_session_id ) )
+		assert_that( contact.timestamp, not_none() )	
+		
+		# Remove contact
+		self.db.create_contact_removed( self.session, test_user_ds_id, test_session_id, datetime.now(), new_contact_user_id )
+		results = self.session.query(ContactsAdded).all()
+		assert_that( results, has_length( 0 ) )
+		results = self.session.query(ContactsRemoved).all()
+		assert_that( results, has_length( 1 ) )
+		
+		fl = self.session.query(ContactsRemoved).one()
+		assert_that( contact.user_id, is_( 1 ) )
+		assert_that( contact.target_id, is_( 2 ) )
+		assert_that( contact.session_id, is_( test_session_id ) )
+		assert_that( contact.timestamp, not_none() )	
 	
 class TestComments(unittest.TestCase):
 
