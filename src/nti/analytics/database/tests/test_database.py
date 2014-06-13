@@ -11,6 +11,7 @@ import os
 import unittest
 
 from datetime import datetime
+from datetime import timedelta
 
 from collections import namedtuple
 
@@ -170,8 +171,7 @@ class TestSocial(unittest.TestCase):
 	def setUp(self):
 		self.db = AnalyticsDB( dburi='sqlite://' )
 		self.session = self.db.get_session()
-		user = Users( user_ds_id=test_user_ds_id )
-		self.session.add( user )
+		self.db.create_user( self.session, test_user_ds_id )
 		
 		db_session = Sessions( session_id=test_session_id, user_id=1, ip_addr='0.1.2.3.4', version='0.9', platform='webapp', start_time=datetime.now() )
 		self.session.add( db_session )
@@ -359,23 +359,123 @@ class TestSocial(unittest.TestCase):
 		assert_that( contact.session_id, is_( test_session_id ) )
 		assert_that( contact.timestamp, not_none() )	
 	
+	def test_create_blog(self):
+		results = self.session.query( ThoughtsCreated ).all()
+		assert_that( results, has_length( 0 ) )
+		
+		# Add blog
+		new_blog_id = 999
+		self.db.create_thought( self.session, test_user_ds_id, test_session_id, new_blog_id )
+		results = self.session.query(ThoughtsCreated).all()
+		assert_that( results, has_length( 1 ) )
+		
+		contact = self.session.query(ThoughtsCreated).one()
+		assert_that( contact.user_id, is_( 1 ) )
+		assert_that( contact.thought_id, is_( 999 ) )
+		assert_that( contact.session_id, is_( test_session_id ) )
+		assert_that( contact.timestamp, not_none() )	
+		
+		# Create blog view
+		results = self.session.query( ThoughtsViewed ).all()
+		assert_that( results, has_length( 0 ) )
+		
+		self.db.create_thought_view( self.session, test_user_ds_id, test_session_id, datetime.now(), new_blog_id )
+		results = self.session.query(ThoughtsViewed).all()
+		assert_that( results, has_length( 1 ) )
+		
+		contact = self.session.query(ThoughtsViewed).one()
+		assert_that( contact.user_id, is_( 1 ) )
+		assert_that( contact.thought_id, is_( 999 ) )
+		assert_that( contact.session_id, is_( test_session_id ) )
+		assert_that( contact.timestamp, not_none() )	
+	
+class TestCourseResources(unittest.TestCase):
+
+	def setUp(self):
+		self.db = AnalyticsDB( dburi='sqlite://' )
+		self.session = self.db.get_session()
+		self.db.create_user( self.session, test_user_ds_id )
+		
+		db_session = Sessions( session_id=test_session_id, user_id=1, ip_addr='0.1.2.3.4', version='webapp-0.9', start_time=datetime.now() )
+		self.session.add( db_session )
+		self.course_name='course1'	
+		self.context_path='overview'
+	
+	def tearDown(self):
+		self.session.close()	
+		
+	def test_resource_view(self):
+		results = self.session.query( CourseResourceViews ).all()
+		assert_that( results, has_length( 0 ) )
+		
+		resource_id = 'ntiid:course_resource'
+		time_length = 30
+		self.db.create_course_resource_view( self.session, test_user_ds_id, 
+											test_session_id, datetime.now(), 
+											self.course_name, self.context_path, 
+											resource_id, time_length )
+		results = self.session.query(CourseResourceViews).all()
+		assert_that( results, has_length( 1 ) )
+		
+		resource_view = self.session.query(CourseResourceViews).one()
+		assert_that( resource_view.user_id, is_( 1 ) )
+		assert_that( resource_view.session_id, is_( test_session_id ) )
+		assert_that( resource_view.timestamp, not_none() )
+		assert_that( resource_view.course_id, is_( self.course_name ) )	
+		assert_that( resource_view.context_path, is_( self.context_path ) )	
+		assert_that( resource_view.resource_id, is_( resource_id ) )	
+		assert_that( resource_view.time_length, is_( time_length ) )	
+		
+	def test_video_view(self):
+		results = self.session.query( VideoEvents ).all()
+		assert_that( results, has_length( 0 ) )
+		
+		resource_id = 'ntiid:course_video'
+		time_length = 30
+		video_event_type = 'WATCH'
+		video_start_time = datetime.now()
+		video_delta = 30
+		video_end_time = video_start_time + timedelta( seconds=video_delta )
+		with_transcript = True
+		self.db.create_video_event( self.session, test_user_ds_id, 
+									test_session_id, datetime.now(), 
+									self.course_name, self.context_path, 
+									video_delta,
+									video_event_type, video_start_time,
+									video_end_time, resource_id, with_transcript )
+		results = self.session.query(VideoEvents).all()
+		assert_that( results, has_length( 1 ) )
+		
+		resource_view = self.session.query(VideoEvents).one()
+		assert_that( resource_view.user_id, is_( 1 ) )
+		assert_that( resource_view.session_id, is_( test_session_id ) )
+		assert_that( resource_view.timestamp, not_none() )
+		assert_that( resource_view.course_id, is_( self.course_name ) )	
+		assert_that( resource_view.context_path, is_( self.context_path ) )	
+		assert_that( resource_view.resource_id, is_( resource_id ) )	
+		assert_that( resource_view.video_event_type, is_( video_event_type ) )	
+		assert_that( resource_view.video_start_time, is_( video_start_time ) )	
+		assert_that( resource_view.video_end_time, is_( video_end_time ) )	
+		assert_that( resource_view.time_length, is_( video_delta ) )	
+		assert_that( resource_view.with_transcript )		
+			
+	
 class TestComments(unittest.TestCase):
 
 	def setUp(self):
 		self.db = AnalyticsDB( dburi='sqlite://' )
 		self.session = self.db.get_session()
-		user = Users( user_id=test_user_id, user_ds_id=test_user_ds_id )
-		self.session.add( user )
+		self.db.create_user( self.session, test_user_ds_id )
 		
-		db_session = Sessions( session_id=test_session_id, user_id=test_user_id, ip_addr='0.1.2.3.4', version='webapp-0.9', start_time=datetime.now() )
+		db_session = Sessions( session_id=test_session_id, user_id=1, ip_addr='0.1.2.3.4', version='webapp-0.9', start_time=datetime.now() )
 		self.session.add( db_session )
 		self.course_name='course1'
-		self.create_forum_and_topic( self.course_name )	
+		self._create_forum_and_topic( self.course_name )	
 	
 	def tearDown(self):
 		self.session.close()	
 		
-	def create_forum_and_topic(self,course_name):
+	def _create_forum_and_topic(self,course_name):
 		#Forum
 		new_forum = ForumsCreated( 	session_id=test_session_id, 
 									user_id=test_user_id, 

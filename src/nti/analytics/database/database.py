@@ -11,7 +11,8 @@ logger = __import__('logging').getLogger(__name__)
 import os
 import sqlite3
 import pkg_resources
-import six
+from six import integer_types
+from six import string_types
 
 from datetime import datetime
 
@@ -149,7 +150,7 @@ class AnalyticsDB(object):
 	
 	def _get_id_for_user(self, user):
 		# We may already have an integer id, use it.
-		if isinstance( user, six.integer_types ):
+		if isinstance( user, integer_types ):
 			return user
 		return self.idlookup._get_id_for_object( user )
 	
@@ -170,7 +171,11 @@ class AnalyticsDB(object):
 	
 	def _get_id_for_resource(self, resource):
 		""" Resource could be a video or content piece. """
-		return self.idlookup._get_id_for_object( resource )
+		if isinstance( resource, string_types ):
+			result = resource
+		else:
+			result = getattr( resource, 'ntiid', None )
+		return result
 	
 	def _get_id_for_thought(self, thought):
 		return self.idlookup._get_id_for_object( thought )
@@ -457,7 +462,7 @@ class AnalyticsDB(object):
 	def create_video_event(	self, session, user, 
 							nti_session, timestamp, 
 							course_id, context_path, 
-							resource_id, time_length,
+							time_length,
 							video_event_type,
 							video_start_time,
 							video_end_time,
