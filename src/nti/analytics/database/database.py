@@ -645,12 +645,11 @@ class AnalyticsDB(object):
 		comment.deleted=timestamp
 		session.flush()		
 		
-	def create_blog_comment_created(self, session, user, nti_session, timestamp, course_id, forum, discussion, comment):
+	def create_blog_comment_created(self, session, user, nti_session, timestamp, blog, comment):
 		user = self._get_or_create_user( session, user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
-		fid = self._get_id_for_forum(forum)
-		did = self._get_id_for_discussion(discussion)
+		bid = self._get_id_for_thought(blog)
 		cid = self._get_id_for_comment(comment)
 		pid = None
 		
@@ -660,9 +659,7 @@ class AnalyticsDB(object):
 		new_object = BlogCommentsCreated( 	user_id=uid, 
 											session_id=sid, 
 											timestamp=timestamp,
-											course_id=course_id,
-											forum_id=fid,
-											discussion_id=did,
+											thought_id=bid,
 											parent_id=pid,
 											comment_id=cid )
 		session.add( new_object )	
@@ -673,12 +670,12 @@ class AnalyticsDB(object):
 		comment.deleted=timestamp
 		session.flush()			
 		
-	def create_note_comment_created(self, session, user, nti_session, timestamp, course_id, forum, discussion, comment):
+	def create_note_comment_created(self, session, user, nti_session, timestamp, course_id, note, comment):
 		user = self._get_or_create_user( session, user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
-		fid = self._get_id_for_forum(forum)
-		did = self._get_id_for_discussion(discussion)
+		nid = self._get_id_for_note(note)
+		rid = self._get_id_for_resource( note.__parent__ )
 		cid = self._get_id_for_comment(comment)
 		pid = None
 		
@@ -689,8 +686,8 @@ class AnalyticsDB(object):
 											session_id=sid, 
 											timestamp=timestamp,
 											course_id=course_id,
-											forum_id=fid,
-											discussion_id=did,
+											note_id=nid,
+											resource_id=rid,
 											parent_id=pid,
 											comment_id=cid )
 		session.add( new_object )	

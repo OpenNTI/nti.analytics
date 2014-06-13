@@ -30,7 +30,7 @@ from sqlalchemy.orm.exc import FlushError
 from sqlalchemy.exc import IntegrityError
 
 from . import MockParent
-MockNote = MockHighlight = MockDiscussion = MockComment = MockParent
+MockNote = MockHighlight = MockDiscussion = MockComment = MockThought = MockParent
 
 from ..metadata import Users
 from ..metadata import Sessions
@@ -684,8 +684,6 @@ class TestForumComments(AnalyticsTestBase):
 		self.session.close()	
 		
 	def test_comments(self):
-		results = self.session.query( ForumCommentsCreated ).all()
-		assert_that( results, has_length( 0 ) )
 		results = self.db.get_forum_comments_for_user( self.session, test_user_ds_id, self.course_name )
 		assert_that( results, has_length( 0 ) )
 		
@@ -716,6 +714,7 @@ class TestForumComments(AnalyticsTestBase):
 		assert_that( result.course_id, is_( self.course_name ) )
 		assert_that( result.parent_id, none() )
 		assert_that( result.deleted, none() )
+		
 		
 	def test_comment_with_parent(self):
 		results = self.session.query( ForumCommentsCreated ).all()
@@ -825,4 +824,146 @@ class TestForumComments(AnalyticsTestBase):
 		assert_that( results, has_length( 2 ) )
 		results = [x.comment_id for x in results]
 		assert_that( results, has_items( new_comment1.intid, new_comment2.intid ) )
+	
+class TestBlogComments(AnalyticsTestBase):
+
+	def setUp(self):
+		super( TestBlogComments, self ).setUp()
+		self.blog_id = 999
+		self.db.create_thought( self.session, test_user_ds_id, test_session_id, self.blog_id )
+	
+	def tearDown(self):
+		self.session.close()	
+		
+	def test_comments(self):
+		results = self.session.query( BlogCommentsCreated ).all()
+		assert_that( results, has_length( 0 ) )
+		
+		# Empty parent
+		comment_id = DEFAULT_INTID
+		my_comment = MockComment( MockThought( None ) )
+		
+		self.db.create_blog_comment_created( 	self.session, test_user_ds_id,
+												test_session_id, datetime.now(),
+												self.blog_id, my_comment )
+
+		results = self.session.query( BlogCommentsCreated ).all()
+		assert_that( results, has_length( 1 ) )
+		
+		blog_comment = self.session.query( BlogCommentsCreated ).one()
+		assert_that( blog_comment.thought_id, is_( self.blog_id ) )
+		assert_that( blog_comment.comment_id, is_( comment_id ) )
+		assert_that( blog_comment.session_id, is_( test_session_id ) )
+		assert_that( blog_comment.user_id, is_( 1 ) )
+		assert_that( blog_comment.parent_id, none() )
+		assert_that( blog_comment.deleted, none() )
+		
+		self.db.delete_blog_comment( self.session, datetime.now(), comment_id )
+		blog_comment = self.session.query( BlogCommentsCreated ).one()
+		assert_that( blog_comment.thought_id, is_( self.blog_id ) )
+		assert_that( blog_comment.comment_id, is_( comment_id ) )
+		assert_that( blog_comment.deleted, not_none() )
+		
+		
+	def test_comment_with_parent(self):
+		results = self.session.query( BlogCommentsCreated ).all()
+		assert_that( results, has_length( 0 ) )
+		
+		# Comment parent
+		comment_id = DEFAULT_INTID
+		my_comment = MockComment( CommentPost() )
+		
+		self.db.create_blog_comment_created( 	self.session, test_user_ds_id,
+												test_session_id, datetime.now(),
+												self.blog_id, my_comment )
+
+		results = self.session.query( BlogCommentsCreated ).all()
+		assert_that( results, has_length( 1 ) )
+		
+		blog_comment = self.session.query( BlogCommentsCreated ).one()
+		assert_that( blog_comment.thought_id, is_( self.blog_id ) )
+		assert_that( blog_comment.comment_id, is_( comment_id ) )
+		assert_that( blog_comment.session_id, is_( test_session_id ) )
+		assert_that( blog_comment.user_id, is_( 1 ) )
+		assert_that( blog_comment.parent_id, not_none() )
+		assert_that( blog_comment.deleted, none() )
+		
+		self.db.delete_blog_comment( self.session, datetime.now(), comment_id )
+		blog_comment = self.session.query( BlogCommentsCreated ).one()
+		assert_that( blog_comment.thought_id, is_( self.blog_id ) )
+		assert_that( blog_comment.comment_id, is_( comment_id ) )
+		assert_that( blog_comment.deleted, not_none() )
+		
+class TestNoteComments(AnalyticsTestBase):
+
+	def setUp(self):
+		super( TestNoteComments, self ).setUp()
+		self.course_name='course1'
+		resource_id = 'ntiid:course_resource'
+		self.note = MockNote( resource_id )
+		self.db.create_note( self.session, test_user_ds_id, test_session_id, self.course_name, self.note )
+	
+	def tearDown(self):
+		self.session.close()	
+		
+	def test_comments(self):
+		results = self.session.query( NoteCommentsCreated ).all()
+		assert_that( results, has_length( 0 ) )
+		
+		# Empty parent
+		comment_id = DEFAULT_INTID
+		my_comment = MockComment( self.note )
+		
+		self.db.create_note_comment_created( 	self.session, test_user_ds_id,
+												test_session_id, datetime.now(),
+												self.course_name,
+												self.note, my_comment )
+
+		results = self.session.query( NoteCommentsCreated ).all()
+		assert_that( results, has_length( 1 ) )
+		
+		note_comment = self.session.query( NoteCommentsCreated ).one()
+		assert_that( note_comment.note_id, is_( DEFAULT_INTID ) )
+		assert_that( note_comment.comment_id, is_( comment_id ) )
+		assert_that( note_comment.session_id, is_( test_session_id ) )
+		assert_that( note_comment.user_id, is_( 1 ) )
+		assert_that( note_comment.parent_id, none() )
+		assert_that( note_comment.deleted, none() )
+		
+		self.db.delete_note_comment( self.session, datetime.now(), comment_id )
+		note_comment = self.session.query( NoteCommentsCreated ).one()
+		assert_that( note_comment.note_id, is_( DEFAULT_INTID ) )
+		assert_that( note_comment.comment_id, is_( comment_id ) )
+		assert_that( note_comment.deleted, not_none() )
+		
+		
+	def test_comment_with_parent(self):
+		results = self.session.query( NoteCommentsCreated ).all()
+		assert_that( results, has_length( 0 ) )
+		
+		# Comment parent
+		comment_id = DEFAULT_INTID
+		my_comment = MockComment( CommentPost() )
+		
+		self.db.create_note_comment_created( 	self.session, test_user_ds_id,
+												test_session_id, datetime.now(),
+												self.course_name,
+												self.note, my_comment )
+
+		results = self.session.query( NoteCommentsCreated ).all()
+		assert_that( results, has_length( 1 ) )
+		
+		note_comment = self.session.query( NoteCommentsCreated ).one()
+		assert_that( note_comment.note_id, is_( DEFAULT_INTID ) )
+		assert_that( note_comment.comment_id, is_( comment_id ) )
+		assert_that( note_comment.session_id, is_( test_session_id ) )
+		assert_that( note_comment.user_id, is_( 1 ) )
+		assert_that( note_comment.parent_id, not_none() )
+		assert_that( note_comment.deleted, none() )
+		
+		self.db.delete_note_comment( self.session, datetime.now(), comment_id )
+		note_comment = self.session.query( NoteCommentsCreated ).one()
+		assert_that( note_comment.note_id, is_( DEFAULT_INTID ) )
+		assert_that( note_comment.comment_id, is_( comment_id ) )
+		assert_that( note_comment.deleted, not_none() )		
 	

@@ -123,17 +123,18 @@ class ContactsAdded(Base,BaseTableMixin,FriendMixin):
 class ContactsRemoved(Base,BaseTableMixin,FriendMixin):
 	__tablename__ = 'ContactsRemoved'
 	
+class ThoughtMixin(BaseTableMixin):	
+	
+	@declared_attr
+	def thought_id(cls):
+		return Column('thought_id', Integer, ForeignKey("ThoughtsCreated.thought_id"), nullable=False, index=True )
+	
 class ThoughtsCreated(Base,BaseTableMixin):
 	__tablename__ = 'ThoughtsCreated'	
 	thought_id = Column('thought_id', Integer, nullable=False, index=True )
 	
-class ThoughtsViewed(Base,BaseTableMixin):
+class ThoughtsViewed(Base,ThoughtMixin):
 	__tablename__ = 'ThoughtsViewed'	
-	thought_id = Column('thought_id', Integer, ForeignKey("ThoughtsCreated.thought_id"), nullable=False, index=True )				
-
-
-
-
 
 class CourseMixin(BaseTableMixin):
 	course_id = Column('course_id', String(64), nullable=False, index=True)
@@ -175,14 +176,19 @@ class VideoEvents(Base,ResourceViewMixin,TimeLengthMixin):
 	video_end_time = Column('video_end_time', DateTime, nullable=False )
 	with_transcript = Column('with_transcript', Boolean, nullable=False )
 	
+class NoteMixin(ResourceMixin):
+	
+	@declared_attr
+	def note_id(cls):	
+		return Column('note_id', Integer, ForeignKey("NotesCreated.note_id"), nullable=False, index=True )
+	
 class NotesCreated(Base,ResourceMixin,DeletedMixin):	
 	__tablename__ = 'NotesCreated'
 	note_id = Column('note_id', Integer, nullable=False, index=True )
 	sharing = Column('sharing', Enum( 'PUBLIC', 'COURSE', 'OTHER', 'UNKNOWN' ), nullable=False )
 
-class NotesViewed(Base,ResourceMixin):	
+class NotesViewed(Base,NoteMixin):	
 	__tablename__ = 'NotesViewed'
-	note_id = Column('note_id', Integer, ForeignKey("NotesCreated.note_id"), nullable=False, index=True )
 
 class HighlightsCreated(Base,ResourceMixin,DeletedMixin):
 	__tablename__ = 'HighlightsCreated'
@@ -209,9 +215,7 @@ class DiscussionMixin(ForumMixin):
 class DiscussionsViewed(Base,DiscussionMixin,TimeLengthMixin):
 	__tablename__ = 'DiscussionsViewed'	
 
-
-
-class CommentsMixin(DiscussionMixin,DeletedMixin):
+class CommentsMixin(DeletedMixin):
 	# comment_id should be the DS intid
 	@declared_attr
 	def comment_id(cls):
@@ -222,20 +226,18 @@ class CommentsMixin(DiscussionMixin,DeletedMixin):
 	def parent_id(cls):
 		return Column('parent_id', Integer)
 
-class ForumCommentsCreated(Base,CommentsMixin):
+class ForumCommentsCreated(Base,CommentsMixin,DiscussionMixin):
 	__tablename__ = 'ForumCommentsCreated'		
 	
-class BlogCommentsCreated(Base,CommentsMixin):
+class BlogCommentsCreated(Base,CommentsMixin,ThoughtMixin):
 	__tablename__ = 'BlogCommentsCreated'	
 	
-class NoteCommentsCreated(Base,CommentsMixin):
+class NoteCommentsCreated(Base,CommentsMixin,NoteMixin):
 	__tablename__ = 'NoteCommentsCreated'			
-
 
 
 class CourseCatalogViews(Base,CourseMixin,TimeLengthMixin):	
 	__tablename__ = 'CourseCatalogViews'
-		
 	
 # TODO how will we populate this, at migration time based on client?	
 # or perhaps statically at first.
