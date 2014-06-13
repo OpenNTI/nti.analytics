@@ -14,6 +14,8 @@ import tempfile
 from nti.dataserver.tests.mock_dataserver import WithMockDS
 from nti.dataserver.tests.mock_dataserver import mock_db_trans
 
+from nti.contenttypes.courses.interfaces import ICourseInstance
+
 from nti.app.testing.application_webtest import ApplicationTestLayer
 
 from nti.testing.layers import find_test
@@ -87,3 +89,4 @@ class MockNote(object):
 	
 	def __init__(self, parent):    
 		self.__parent__ = parent  
+		

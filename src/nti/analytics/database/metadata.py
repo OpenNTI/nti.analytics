@@ -186,7 +186,7 @@ class NotesViewed(Base,ResourceMixin):
 
 class HighlightsCreated(Base,ResourceMixin,DeletedMixin):
 	__tablename__ = 'HighlightsCreated'
-	note_id = Column('highlight_id', Integer, nullable=False, index=True )
+	highlight_id = Column('highlight_id', Integer, nullable=False, index=True )
 
 class ForumsCreated(Base,CourseMixin,DeletedMixin):		
 	__tablename__ = 'ForumsCreated'

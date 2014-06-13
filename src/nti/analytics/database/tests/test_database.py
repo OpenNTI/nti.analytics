@@ -30,6 +30,7 @@ from sqlalchemy.orm.exc import FlushError
 from sqlalchemy.exc import IntegrityError
 
 from . import MockNote
+MockHighlight = MockNote
 
 from ..metadata import Users
 from ..metadata import Sessions
@@ -72,6 +73,8 @@ from ..database import AnalyticsDB
 from nti.analytics.database import database
 from nti.dataserver.users import User
 from nti.dataserver.users import FriendsList
+
+from nti.contenttypes.courses import courses
 
 test_user_id = 	1234
 test_user_ds_id = 78
@@ -463,17 +466,21 @@ class TestCourseResources(unittest.TestCase):
 		assert_that( resource_view.time_length, is_( video_delta ) )	
 		assert_that( resource_view.with_transcript )		
 	
-	def test_create_note(self):
+	def test_note(self):
 		results = self.session.query( NotesCreated ).all()
+		assert_that( results, has_length( 0 ) )
+		results = self.session.query( NotesViewed ).all()
 		assert_that( results, has_length( 0 ) )
 		
 		resource_id = 'ntiid:course_resource'
 		note_id = DEFAULT_INTID
-		note = MockNote( resource_id )
-		self.db.create_note( 	self.session, test_user_ds_id, 
-								test_session_id, self.course_name, note )
+		my_note = MockNote( resource_id )
 		
-		results = self.session.query(NotesCreated).all()
+		# Create note
+		self.db.create_note( 	self.session, test_user_ds_id, 
+								test_session_id, self.course_name, my_note )
+		
+		results = self.db.get_notes_created_for_course( self.session, self.course_name )
 		assert_that( results, has_length( 1 ) )
 		
 		note = self.session.query(NotesCreated).one()
@@ -482,8 +489,75 @@ class TestCourseResources(unittest.TestCase):
 		assert_that( note.course_id, is_( self.course_name ) )	
 		assert_that( note.note_id, is_( note_id ) )
 		assert_that( note.resource_id, is_( resource_id ) )
-		# FIXME 'UNKNOWN' since we cannot access course and it's scopes.
+		# 'UNKNOWN' since we cannot access course and it's scopes.
 		assert_that( note.sharing, is_( 'UNKNOWN' ) )
+		assert_that( note.deleted, none() )
+		assert_that( note.timestamp, not_none() )
+		
+		# Note view
+		self.db.create_note_view( 	self.session, test_user_ds_id, 
+									test_session_id, datetime.now(), 
+									self.course_name, my_note )
+		results = self.session.query( NotesViewed ).all()
+		assert_that( results, has_length( 1 ) )
+		
+		note = self.session.query(NotesViewed).one()
+		assert_that( note.user_id, is_( 1 ) )
+		assert_that( note.session_id, is_( test_session_id ) )
+		assert_that( note.course_id, is_( self.course_name ) )	
+		assert_that( note.note_id, is_( note_id ) )
+		assert_that( note.resource_id, is_( resource_id ) )
+		assert_that( note.timestamp, not_none() )
+		
+		# Delete note
+		self.db.delete_note( self.session, datetime.now(), my_note )
+		
+		results = self.session.query(NotesCreated).all()
+		assert_that( results, has_length( 1 ) )
+		
+		results = self.db.get_notes_created_for_course( self.session, self.course_name )
+		assert_that( results, has_length( 0 ) )
+		
+		note = self.session.query(NotesCreated).one()
+		assert_that( note.note_id, is_( note_id ) )
+		assert_that( note.deleted, not_none() )
+		
+	def test_highlight(self):
+		results = self.session.query( HighlightsCreated ).all()
+		assert_that( results, has_length( 0 ) )
+		
+		resource_id = 'ntiid:course_resource'
+		highlight_id = DEFAULT_INTID
+		my_highlight = MockHighlight( resource_id )
+		
+		# Create highlight
+		self.db.create_highlight( 	self.session, test_user_ds_id, 
+									test_session_id, self.course_name, my_highlight )
+		
+		results = self.db.get_highlights_created_for_course( self.session, self.course_name )
+		assert_that( results, has_length( 1 ) )
+		
+		highlight = self.session.query(HighlightsCreated).one()
+		assert_that( highlight.user_id, is_( 1 ) )
+		assert_that( highlight.session_id, is_( test_session_id ) )
+		assert_that( highlight.course_id, is_( self.course_name ) )	
+		assert_that( highlight.highlight_id, is_( highlight_id ) )
+		assert_that( highlight.resource_id, is_( resource_id ) )
+		assert_that( highlight.deleted, none() )
+		assert_that( highlight.timestamp, not_none() )
+		
+		# Delete highlight
+		self.db.delete_highlight( self.session, datetime.now(), my_highlight )
+		
+		results = self.session.query(HighlightsCreated).all()
+		assert_that( results, has_length( 1 ) )
+		
+		results = self.db.get_highlights_created_for_course( self.session, self.course_name )
+		assert_that( results, has_length( 0 ) )
+		
+		highlight = self.session.query(HighlightsCreated).one()
+		assert_that( highlight.highlight_id, is_( highlight_id ) )
+		assert_that( highlight.deleted, not_none() )	
 	
 class TestComments(unittest.TestCase):
 

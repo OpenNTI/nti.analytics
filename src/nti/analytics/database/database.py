@@ -510,7 +510,7 @@ class AnalyticsDB(object):
 		
 	def delete_note(self, session, timestamp, note):	
 		nid = self._get_id_for_note(note)
-		note = session.query(NotesCreated).filter( note_id=nid ).one()
+		note = session.query(NotesCreated).filter( NotesCreated.note_id==nid ).one()
 		note.deleted=timestamp
 		session.flush()
 		
@@ -533,7 +533,7 @@ class AnalyticsDB(object):
 		user = self._get_or_create_user( session, user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
-		rid = self._get_id_for_resource( resource.__parent__ )
+		rid = self._get_id_for_resource( highlight.__parent__ )
 		hid = self._get_id_for_highlight( highlight )
 		
 		timestamp = self._get_timestamp( highlight )
@@ -548,7 +548,7 @@ class AnalyticsDB(object):
 		
 	def delete_highlight(self, session, timestamp, highlight):	
 		hid = self._get_id_for_highlight(highlight)
-		highlight = session.query(HighlightsCreated).filter( highlight_id=hid ).one()
+		highlight = session.query(HighlightsCreated).filter( HighlightsCreated.highlight_id==hid ).one()
 		highlight.deleted=timestamp
 		session.flush()	
 	
