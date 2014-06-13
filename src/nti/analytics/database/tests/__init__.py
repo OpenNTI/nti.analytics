@@ -33,10 +33,13 @@ from six import integer_types
 
 """ Override this for testing purposes. """
 class TestIDLookup(object):
+	
 	def _get_id_for_object( self, obj ):
+		result = 101
 		if isinstance( obj, integer_types ):
-			return obj
-		return 101
+			result = obj
+		attr = getattr( obj, 'intid', result )
+		return attr or result
 	
 database.IDLookup = TestIDLookup
 
@@ -85,8 +88,9 @@ class NTIAnalyticsApplicationTestLayer(ApplicationTestLayer):
     def tearDown(cls):
         pass
        
-class MockNote(object): 
+class MockParent(object): 
 	
-	def __init__(self, parent):    
+	def __init__(self, parent, intid = None ):    
 		self.__parent__ = parent  
+		self.intid = intid
 		

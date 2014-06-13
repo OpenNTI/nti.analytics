@@ -29,8 +29,8 @@ from hamcrest import has_items
 from sqlalchemy.orm.exc import FlushError
 from sqlalchemy.exc import IntegrityError
 
-from . import MockNote
-MockHighlight = MockNote
+from . import MockParent
+MockNote = MockHighlight = MockDiscussion = MockComment = MockParent
 
 from ..metadata import Users
 from ..metadata import Sessions
@@ -80,6 +80,8 @@ test_user_id = 	1234
 test_user_ds_id = 78
 test_session_id = 56
 
+# For new objects, this is the default intid stored in the database.
+# For subsequent objects, this will increase by one.
 DEFAULT_INTID = 101
 
 class TestUsers(unittest.TestCase):
@@ -158,7 +160,7 @@ class TestUsers(unittest.TestCase):
 		assert_that( new_session.end_time, none() )
 		
 		# End session
-		self.db._end_session( self.session, test_session_id, datetime.now() )
+		self.db.end_session( self.session, test_session_id, datetime.now() )
 		results = self.session.query(Sessions).all()
 		assert_that( results, has_length( 1 ) )
 		
@@ -171,10 +173,9 @@ class TestUsers(unittest.TestCase):
 		assert_that( new_session.start_time, not_none() )
 		assert_that( new_session.end_time, not_none() )
 
-_User = namedtuple('_User', ('intid',))
-
-class TestSocial(unittest.TestCase):
-
+class AnalyticsTestBase(unittest.TestCase):
+	""" A base class that simply creates a user and session"""
+	
 	def setUp(self):
 		self.db = AnalyticsDB( dburi='sqlite://' )
 		self.session = self.db.get_session()
@@ -183,6 +184,11 @@ class TestSocial(unittest.TestCase):
 		db_session = Sessions( session_id=test_session_id, user_id=1, ip_addr='0.1.2.3.4', version='0.9', platform='webapp', start_time=datetime.now() )
 		self.session.add( db_session )
 		self.session.flush()
+
+class TestSocial(AnalyticsTestBase):
+
+	def setUp(self):
+		super( TestSocial, self ).setUp()
 
 	def tearDown(self):
 		self.session.close()	
@@ -396,15 +402,10 @@ class TestSocial(unittest.TestCase):
 		assert_that( contact.session_id, is_( test_session_id ) )
 		assert_that( contact.timestamp, not_none() )	
 	
-class TestCourseResources(unittest.TestCase):
+class TestCourseResources(AnalyticsTestBase):
 
 	def setUp(self):
-		self.db = AnalyticsDB( dburi='sqlite://' )
-		self.session = self.db.get_session()
-		self.db.create_user( self.session, test_user_ds_id )
-		
-		db_session = Sessions( session_id=test_session_id, user_id=1, ip_addr='0.1.2.3.4', version='webapp-0.9', start_time=datetime.now() )
-		self.session.add( db_session )
+		super( TestCourseResources, self ).setUp()
 		self.course_name='course1'	
 		self.context_path='overview'
 	
@@ -558,150 +559,237 @@ class TestCourseResources(unittest.TestCase):
 		highlight = self.session.query(HighlightsCreated).one()
 		assert_that( highlight.highlight_id, is_( highlight_id ) )
 		assert_that( highlight.deleted, not_none() )	
-	
-class TestComments(unittest.TestCase):
 
+class TestForums(AnalyticsTestBase):
+	
 	def setUp(self):
-		self.db = AnalyticsDB( dburi='sqlite://' )
-		self.session = self.db.get_session()
-		self.db.create_user( self.session, test_user_ds_id )
-		
-		db_session = Sessions( session_id=test_session_id, user_id=1, ip_addr='0.1.2.3.4', version='webapp-0.9', start_time=datetime.now() )
-		self.session.add( db_session )
+		super( TestForums, self ).setUp()
 		self.course_name='course1'
-		self._create_forum_and_topic( self.course_name )	
 	
 	def tearDown(self):
 		self.session.close()	
 		
-	def _create_forum_and_topic(self,course_name):
-		#Forum
-		new_forum = ForumsCreated( 	session_id=test_session_id, 
-									user_id=test_user_id, 
-									timestamp=datetime.now(),
-									forum_id='forum1',
-									course_id=course_name )
-		self.session.add( new_forum )
+	def test_forums(self):
+		results = self.session.query( ForumsCreated ).all()
+		assert_that( results, has_length( 0 ) )
 		
-		#Discussion
-		new_discussion = DiscussionsCreated( 	session_id=test_session_id, 
-												user_id=test_user_id, 
-												timestamp=datetime.now(),
-												forum_id='forum1',
-												discussion_id='discussion1',
-												course_id=course_name )
-		self.session.add( new_discussion )
-		# FIXME finish this test
+		forum_id = 999
+		
+		# Create forum
+		self.db.create_forum( 	self.session, test_user_ds_id, 
+								test_session_id, self.course_name, forum_id )
+		
+		results = self.session.query( ForumsCreated ).all()
+		assert_that( results, has_length( 1 ) )
+		
+		forum = self.session.query(ForumsCreated).one()
+		assert_that( forum.user_id, is_( 1 ) )
+		assert_that( forum.session_id, is_( test_session_id ) )
+		assert_that( forum.course_id, is_( self.course_name ) )	
+		assert_that( forum.forum_id, is_( forum_id ) )
+		assert_that( forum.timestamp, not_none() )
+		assert_that( forum.deleted, none() )	
+		
+		# Delete forum
+		self.db.delete_forum( self.session, datetime.now(), forum_id )
+		
+		results = self.session.query(ForumsCreated).all()
+		assert_that( results, has_length( 1 ) )
+		
+		forum = self.session.query(ForumsCreated).one()
+		assert_that( forum.forum_id, is_( forum_id ) )
+		assert_that( forum.deleted, not_none() )	
+		
+class TestDiscussions(AnalyticsTestBase):
+	
+	def setUp(self):
+		super( TestDiscussions, self ).setUp()
+		self.course_name = 'course1'
+		self.forum_id = 999
+		self.db.create_forum( 	self.session, test_user_ds_id, 
+								test_session_id, self.course_name, self.forum_id )
+	
+	def tearDown(self):
+		self.session.close()	
+		
+	def test_discussions(self):
+		results = self.session.query( DiscussionsCreated ).all()
+		assert_that( results, has_length( 0 ) )
+		results = self.session.query( DiscussionsViewed ).all()
+		assert_that( results, has_length( 0 ) )
+		
+		discussion_id = DEFAULT_INTID
+		my_discussion = MockDiscussion( self.forum_id )
+		# Create discussion
+		self.db.create_discussion( 	self.session, test_user_ds_id, 
+									test_session_id, self.course_name, my_discussion )
+		
+		results = self.session.query( DiscussionsCreated ).all()
+		assert_that( results, has_length( 1 ) )
+		
+		discussion = self.session.query( DiscussionsCreated ).one()
+		assert_that( discussion.user_id, is_( 1 ) )
+		assert_that( discussion.session_id, is_( test_session_id ) )
+		assert_that( discussion.course_id, is_( self.course_name ) )	
+		assert_that( discussion.forum_id, is_( self.forum_id ) )
+		assert_that( discussion.discussion_id, is_( discussion_id ) )
+		assert_that( discussion.timestamp, not_none() )
+		assert_that( discussion.deleted, none() )	
+		
+		# View discussion
+		time_length = 30
+		self.db.create_discussion_view( self.session, test_user_ds_id, 
+										test_session_id, datetime.now(),
+										self.course_name, my_discussion,
+										time_length )
+		
+		results = self.session.query( DiscussionsViewed ).all()
+		assert_that( results, has_length( 1 ) )
+		
+		discussion = self.session.query( DiscussionsViewed ).one()
+		assert_that( discussion.user_id, is_( 1 ) )
+		assert_that( discussion.session_id, is_( test_session_id ) )
+		assert_that( discussion.course_id, is_( self.course_name ) )	
+		assert_that( discussion.forum_id, is_( self.forum_id ) )
+		assert_that( discussion.discussion_id, is_( discussion_id ) )
+		assert_that( discussion.timestamp, not_none() )
+		assert_that( discussion.time_length, is_( 30 ) )	
+		
+		# Delete discussion
+		self.db.delete_discussion( self.session, datetime.now(), discussion.discussion_id )
+		
+		results = self.session.query(DiscussionsCreated).all()
+		assert_that( results, has_length( 1 ) )
+		
+		discussion = self.session.query(DiscussionsCreated).one()
+		assert_that( discussion.discussion_id, is_( discussion_id ) )
+		assert_that( discussion.deleted, not_none() )			
+	
+class TestForumComments(AnalyticsTestBase):
+
+	def setUp(self):
+		super( TestForumComments, self ).setUp()
+		self.course_name='course1'
+		self.forum_id = 999
+		self.discussion_id = DEFAULT_INTID
+		self.db.create_forum( 	self.session, test_user_ds_id, 
+								test_session_id, self.course_name, self.forum_id )
+		self.db.create_discussion( 	self.session, test_user_ds_id, 
+									test_session_id, self.course_name, MockDiscussion( self.forum_id ) )
+	
+	def tearDown(self):
+		self.session.close()	
 		
 	def test_comments(self):
 		results = self.session.query( ForumCommentsCreated ).all()
 		assert_that( results, has_length( 0 ) )
-		results = self.db.get_forum_comments_for_user( self.session, user=_User(test_user_id), course_id=self.course_name)
+		results = self.db.get_forum_comments_for_user( self.session, test_user_ds_id, self.course_name )
 		assert_that( results, has_length( 0 ) )
 		
-		new_comment = ForumCommentsCreated( session_id=test_session_id, 
-											user_id=test_user_id, 
-											timestamp=datetime.now(),
-											forum_id='forum1',
-											discussion_id='discussion1',
-											comment_id='comment1',
-											course_id=self.course_name )
-		self.session.add( new_comment )
+		# Discussion parent
+		comment_id = DEFAULT_INTID
+		my_comment = MockComment( MockDiscussion( None ) )
+		
+		self.db.create_forum_comment_created( 	self.session, test_user_ds_id,
+												test_session_id, datetime.now(),
+												self.course_name, self.forum_id,
+												self.discussion_id, my_comment )
 
-		results = self.db.get_forum_comments_for_user( self.session, user=_User(test_user_id), course_id=self.course_name )
+		results = self.session.query( ForumCommentsCreated ).all()
+		assert_that( results, has_length( 1 ) )
+
+		results = self.db.get_forum_comments_for_user( self.session, test_user_ds_id, self.course_name )
 		assert_that( results, has_length( 1 ) )
 		
-		results = self.db.get_forum_comments_for_course( self.session, course_id=self.course_name )
+		results = self.db.get_forum_comments_for_course( self.session, self.course_name )
 		assert_that( results, has_length( 1 ) )
 		
 		result = results[0]
-		assert_that( result.forum_id, 'forum1' )
-		assert_that( result.discussion_id, 'discussion1' )
-		assert_that( result.comment_id, 'comment1' )
-		assert_that( result.session_id, test_session_id )
-		assert_that( result.user_id, test_user_id )
-		assert_that( result.course_id, self.course_name )
+		assert_that( result.forum_id, is_( self.forum_id ) )
+		assert_that( result.discussion_id, is_( self.discussion_id ) )
+		assert_that( result.comment_id, is_( comment_id ) )
+		assert_that( result.session_id, is_( test_session_id ) )
+		assert_that( result.user_id, is_( 1 ) )
+		assert_that( result.course_id, is_( self.course_name ) )
+		assert_that( result.parent_id, none() )
+		assert_that( result.deleted, none() )
 		
 	def test_multiple_comments(self):
-		results = self.db.get_forum_comments_for_user( self.session, user=_User(test_user_id), course_id=self.course_name )
+		results = self.db.get_forum_comments_for_user( self.session, test_user_ds_id, self.course_name )
 		assert_that( results, has_length( 0 ) )
 		
-		new_comment1 = ForumCommentsCreated( session_id=test_session_id, 
-											user_id=test_user_id, 
-											timestamp=datetime.now(),
-											forum_id='forum1',
-											discussion_id='discussion1',
-											comment_id='comment1',
-											course_id=self.course_name )
-		new_comment2 = ForumCommentsCreated( session_id=test_session_id, 
-											user_id=test_user_id, 
-											timestamp=datetime.now(),
-											forum_id='forum1',
-											discussion_id='discussion1',
-											comment_id='comment2',
-											deleted=datetime.now(),
-											course_id=self.course_name )
-		self.session.add( new_comment1 )
-		self.session.add( new_comment2 )
-
-		#Deleted comments not returned
-		results = self.db.get_forum_comments_for_user( self.session, user=_User(test_user_id), course_id=self.course_name )
-		assert_that( results, has_length( 1 ) )
-		assert_that( results[0].comment_id, 'comment1' )
+		new_comment1 = MockComment( MockDiscussion( None ), intid=19 )
+		new_comment2 = MockComment( MockDiscussion( None ), intid=20 )
 		
-		results = self.db.get_forum_comments_for_course( self.session, course_id=self.course_name )
+		self.db.create_forum_comment_created( 	self.session, test_user_ds_id,
+												test_session_id, datetime.now(),
+												self.course_name, self.forum_id,
+												self.discussion_id, new_comment1 )
+		
+		self.db.create_forum_comment_created( 	self.session, test_user_ds_id,
+												test_session_id, datetime.now(),
+												self.course_name, self.forum_id,
+												self.discussion_id, new_comment2 )
+
+		results = self.db.get_forum_comments_for_user( self.session, test_user_ds_id, self.course_name )
+		assert_that( results, has_length( 2 ) )
+		
+		results = self.db.get_forum_comments_for_course( self.session, self.course_name )
+		assert_that( results, has_length( 2 ) )
+		
+		#Deleted comments not returned
+		self.db.delete_forum_comment( self.session, datetime.now(), new_comment1 )
+		
+		results = self.db.get_forum_comments_for_user( self.session, test_user_ds_id, self.course_name )
 		assert_that( results, has_length( 1 ) )
-		assert_that( results[0].comment_id, 'comment1' )
+		assert_that( results[0].comment_id, new_comment2.intid )
+		
+		results = self.db.get_forum_comments_for_course( self.session, self.course_name )
+		assert_that( results, has_length( 1 ) )
+		assert_that( results[0].comment_id, new_comment2.intid )
 		
 	def test_multiple_comments_users(self):
-		results = self.db.get_forum_comments_for_user( self.session, user=_User(test_user_id), course_id=self.course_name )
+		results = self.db.get_forum_comments_for_user( self.session, test_user_ds_id, self.course_name )
 		assert_that( results, has_length( 0 ) )
 		
-		#different user
-		new_comment1 = ForumCommentsCreated( session_id=test_session_id, 
-											user_id='test_user_2', 
-											timestamp=datetime.now(),
-											forum_id='forum1',
-											discussion_id='discussion1',
-											comment_id='comment1',
-											course_id=self.course_name )
-		new_comment2 = ForumCommentsCreated( session_id=test_session_id, 
-											user_id=test_user_id, 
-											timestamp=datetime.now(),
-											forum_id='forum1',
-											discussion_id='discussion1',
-											comment_id='comment2',
-											course_id=self.course_name )
-		#deleted
-		new_comment3 = ForumCommentsCreated( session_id=test_session_id, 
-											user_id=test_user_id, 
-											timestamp=datetime.now(),
-											forum_id='forum1',
-											discussion_id='discussion1',
-											comment_id='comment3',
-											deleted=datetime.now(),
-											course_id=self.course_name )
-		#Different course
-		new_comment4 = ForumCommentsCreated( session_id=test_session_id, 
-											user_id=test_user_id, 
-											timestamp=datetime.now(),
-											forum_id='forum1',
-											discussion_id='discussion1',
-											comment_id='comment4',
-											course_id='course_2' )
-		self.session.add( new_comment1 )
-		self.session.add( new_comment2 )
-		self.session.add( new_comment3 )
-		self.session.add( new_comment4 )
-
-		#Deleted comments not returned
-		results = self.db.get_forum_comments_for_user( self.session, user=_User(test_user_id), course_id=self.course_name )
-		assert_that( results, has_length( 1 ) )
-		assert_that( results[0].comment_id, 'comment2' )
+		test_user_ds_id2 = 9999
+		course_name2 = 'different course'
 		
-		results = self.db.get_forum_comments_for_course( self.session, course_id=self.course_name )
+		new_comment1 = MockComment( MockDiscussion( None ), intid=19 )
+		new_comment2 = MockComment( MockDiscussion( None ), intid=20 )
+		new_comment3 = MockComment( MockDiscussion( None ), intid=21 )
+		new_comment4 = MockComment( MockDiscussion( None ), intid=22 )
+		
+		# Different user
+		self.db.create_forum_comment_created( 	self.session, test_user_ds_id2,
+												test_session_id, datetime.now(),
+												self.course_name, self.forum_id,
+												self.discussion_id, new_comment1 )
+		
+		self.db.create_forum_comment_created( 	self.session, test_user_ds_id,
+												test_session_id, datetime.now(),
+												self.course_name, self.forum_id,
+												self.discussion_id, new_comment2 )
+		# Deleted
+		self.db.create_forum_comment_created( 	self.session, test_user_ds_id,
+												test_session_id, datetime.now(),
+												self.course_name, self.forum_id,
+												self.discussion_id, new_comment3 )
+		self.db.delete_forum_comment( self.session, datetime.now(), new_comment3 )
+		# Different course
+		self.db.create_forum_comment_created( 	self.session, test_user_ds_id,
+												test_session_id, datetime.now(),
+												course_name2, self.forum_id,
+												self.discussion_id, new_comment4 )
+
+		# Only non-deleted comment for user in course
+		results = self.db.get_forum_comments_for_user( self.session, test_user_ds_id, self.course_name )
+		assert_that( results, has_length( 1 ) )
+		assert_that( results[0].comment_id, new_comment2.intid )
+		
+		results = self.db.get_forum_comments_for_course( self.session, self.course_name )
 		assert_that( results, has_length( 2 ) )
 		results = [x.comment_id for x in results]
-		assert_that( results, has_items( 'comment1', 'comment2' ) )
+		assert_that( results, has_items( new_comment1.intid, new_comment2.intid ) )
 	
 
