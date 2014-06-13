@@ -75,6 +75,7 @@ from nti.dataserver.users import User
 from nti.dataserver.users import FriendsList
 
 from nti.dataserver.contenttypes.forums.interfaces import ICommentPost
+from nti.dataserver.contenttypes.forums.post import CommentPost
 
 from nti.contenttypes.courses import courses
 
@@ -724,16 +725,12 @@ class TestForumComments(AnalyticsTestBase):
 		
 		# Comment parent
 		comment_id = DEFAULT_INTID
-		from unittest.mock import Mock
-		my_comment = MockComment( Mock(spec=ICommentPost) )
+		my_comment = MockComment( CommentPost() )
 		
 		self.db.create_forum_comment_created( 	self.session, test_user_ds_id,
 												test_session_id, datetime.now(),
 												self.course_name, self.forum_id,
 												self.discussion_id, my_comment )
-
-		results = self.session.query( ForumCommentsCreated ).all()
-		assert_that( results, has_length( 1 ) )
 
 		results = self.db.get_forum_comments_for_user( self.session, test_user_ds_id, self.course_name )
 		assert_that( results, has_length( 1 ) )
@@ -748,7 +745,7 @@ class TestForumComments(AnalyticsTestBase):
 		assert_that( result.session_id, is_( test_session_id ) )
 		assert_that( result.user_id, is_( 1 ) )
 		assert_that( result.course_id, is_( self.course_name ) )
-		assert_that( result.parent_id, none() )
+		assert_that( result.parent_id, is_( DEFAULT_INTID ) )
 		assert_that( result.deleted, none() )	
 		
 	def test_multiple_comments(self):
@@ -829,4 +826,3 @@ class TestForumComments(AnalyticsTestBase):
 		results = [x.comment_id for x in results]
 		assert_that( results, has_items( new_comment1.intid, new_comment2.intid ) )
 	
-
