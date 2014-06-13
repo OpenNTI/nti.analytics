@@ -74,6 +74,8 @@ from nti.analytics.database import database
 from nti.dataserver.users import User
 from nti.dataserver.users import FriendsList
 
+from nti.dataserver.contenttypes.forums.interfaces import ICommentPost
+
 from nti.contenttypes.courses import courses
 
 test_user_id = 	1234
@@ -713,6 +715,41 @@ class TestForumComments(AnalyticsTestBase):
 		assert_that( result.course_id, is_( self.course_name ) )
 		assert_that( result.parent_id, none() )
 		assert_that( result.deleted, none() )
+		
+	def test_comment_with_parent(self):
+		results = self.session.query( ForumCommentsCreated ).all()
+		assert_that( results, has_length( 0 ) )
+		results = self.db.get_forum_comments_for_user( self.session, test_user_ds_id, self.course_name )
+		assert_that( results, has_length( 0 ) )
+		
+		# Comment parent
+		comment_id = DEFAULT_INTID
+		from unittest.mock import Mock
+		my_comment = MockComment( Mock(spec=ICommentPost) )
+		
+		self.db.create_forum_comment_created( 	self.session, test_user_ds_id,
+												test_session_id, datetime.now(),
+												self.course_name, self.forum_id,
+												self.discussion_id, my_comment )
+
+		results = self.session.query( ForumCommentsCreated ).all()
+		assert_that( results, has_length( 1 ) )
+
+		results = self.db.get_forum_comments_for_user( self.session, test_user_ds_id, self.course_name )
+		assert_that( results, has_length( 1 ) )
+		
+		results = self.db.get_forum_comments_for_course( self.session, self.course_name )
+		assert_that( results, has_length( 1 ) )
+		
+		result = results[0]
+		assert_that( result.forum_id, is_( self.forum_id ) )
+		assert_that( result.discussion_id, is_( self.discussion_id ) )
+		assert_that( result.comment_id, is_( comment_id ) )
+		assert_that( result.session_id, is_( test_session_id ) )
+		assert_that( result.user_id, is_( 1 ) )
+		assert_that( result.course_id, is_( self.course_name ) )
+		assert_that( result.parent_id, none() )
+		assert_that( result.deleted, none() )	
 		
 	def test_multiple_comments(self):
 		results = self.db.get_forum_comments_for_user( self.session, test_user_ds_id, self.course_name )
