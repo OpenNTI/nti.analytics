@@ -26,6 +26,11 @@ from hamcrest import has_property
 from hamcrest import contains
 from hamcrest import has_items
 
+from sqlalchemy.orm.exc import FlushError
+from sqlalchemy.exc import IntegrityError
+
+from . import MockNote
+
 from ..metadata import Users
 from ..metadata import Sessions
 from ..metadata import ChatsInitiated
@@ -62,18 +67,17 @@ from ..metadata import AssignmentDetails
 from ..metadata import SelfAssessmentsTaken
 from ..metadata import SelfAssessmentDetails
 
-from nti.analytics.database import database
 from ..database import AnalyticsDB
 
-from sqlalchemy.orm.exc import FlushError
-from sqlalchemy.exc import IntegrityError
-
+from nti.analytics.database import database
 from nti.dataserver.users import User
 from nti.dataserver.users import FriendsList
 
 test_user_id = 	1234
 test_user_ds_id = 78
 test_session_id = 56
+
+DEFAULT_INTID = 101
 
 class TestUsers(unittest.TestCase):
 
@@ -99,7 +103,7 @@ class TestUsers(unittest.TestCase):
 		new_user = self.session.query(Users).one()
 		# Sequence generated
 		assert_that( new_user.user_id, is_( 1 ) )
-		assert_that( new_user.user_ds_id, is_( 101 ) )
+		assert_that( new_user.user_ds_id, is_( DEFAULT_INTID ) )
 
 		# Dupe, but not inserted
 		self.db._get_or_create_user( self.session, fooser )	
@@ -458,7 +462,28 @@ class TestCourseResources(unittest.TestCase):
 		assert_that( resource_view.video_end_time, is_( video_end_time ) )	
 		assert_that( resource_view.time_length, is_( video_delta ) )	
 		assert_that( resource_view.with_transcript )		
-			
+	
+	def test_create_note(self):
+		results = self.session.query( NotesCreated ).all()
+		assert_that( results, has_length( 0 ) )
+		
+		resource_id = 'ntiid:course_resource'
+		note_id = DEFAULT_INTID
+		note = MockNote( resource_id )
+		self.db.create_note( 	self.session, test_user_ds_id, 
+								test_session_id, self.course_name, note )
+		
+		results = self.session.query(NotesCreated).all()
+		assert_that( results, has_length( 1 ) )
+		
+		note = self.session.query(NotesCreated).one()
+		assert_that( note.user_id, is_( 1 ) )
+		assert_that( note.session_id, is_( test_session_id ) )
+		assert_that( note.course_id, is_( self.course_name ) )	
+		assert_that( note.note_id, is_( note_id ) )
+		assert_that( note.resource_id, is_( resource_id ) )
+		# FIXME 'UNKNOWN' since we cannot access course and it's scopes.
+		assert_that( note.sharing, is_( 'UNKNOWN' ) )
 	
 class TestComments(unittest.TestCase):
 

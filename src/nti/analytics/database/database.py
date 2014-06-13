@@ -83,11 +83,11 @@ class IDLookup(object):
 		result = getattr( obj, '_ds_intid', None )
 		return result or self.intids.getId( obj )
 	
-def _get_course_from_lineage(obj):	
+def _get_course_from_lineage( obj ):	
 	# TODO Verify this works
 	result = None
-	for location in lineage(self):
-		if ICourseInstance.providedBy(location):
+	for location in lineage( obj ):
+		if ICourseInstance.providedBy( location ):
 			result = ICourseInstance( location )
 			break
 	return result
@@ -492,7 +492,7 @@ class AnalyticsDB(object):
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
 		rid = self._get_id_for_resource( note.__parent__ )
-		nid = self._get_id_for_note(note)
+		nid = self._get_id_for_note( note )
 		
 		timestamp = self._get_timestamp( note )
 		# TODO verify -> resource = note.__parent__?

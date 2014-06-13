@@ -82,3 +82,8 @@ class NTIAnalyticsApplicationTestLayer(ApplicationTestLayer):
     @classmethod
     def tearDown(cls):
         pass
+       
+class MockNote(object): 
+	
+	def __init__(self, parent):    
+		self.__parent__ = parent  
