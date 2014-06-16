@@ -910,7 +910,7 @@ class TestNoteComments(AnalyticsTestBase):
 		results = self.session.query( NoteCommentsCreated ).all()
 		assert_that( results, has_length( 0 ) )
 		
-		# Empty parent
+		# Note parent
 		comment_id = DEFAULT_INTID
 		my_comment = MockComment( self.note )
 		
@@ -966,4 +966,88 @@ class TestNoteComments(AnalyticsTestBase):
 		assert_that( note_comment.note_id, is_( DEFAULT_INTID ) )
 		assert_that( note_comment.comment_id, is_( comment_id ) )
 		assert_that( note_comment.deleted, not_none() )		
+		
+class TestCourseViews(AnalyticsTestBase):
+
+	def setUp(self):
+		super( TestCourseViews, self ).setUp()
+		self.course_name='course1'
+	
+	def tearDown(self):
+		self.session.close()	
+		
+	def test_course_catalog_views(self):
+		results = self.session.query( CourseCatalogViews ).all()
+		assert_that( results, has_length( 0 ) )		
+		
+		time_length = 30
+		self.db.create_course_catalog_view( self.session, test_user_ds_id, test_session_id, datetime.now(), self.course_name, time_length )
+		
+		results = self.session.query( CourseCatalogViews ).all()
+		assert_that( results, has_length( 1 ) )
+		
+		catalog_view = self.session.query( CourseCatalogViews ).one()
+		assert_that( catalog_view.session_id, is_( test_session_id ) )
+		assert_that( catalog_view.user_id, is_( 1 ) )
+		assert_that( catalog_view.course_id, is_( self.course_name ) )
+		assert_that( catalog_view.time_length, is_( 30 ) )
+		assert_that( catalog_view.timestamp, not_none() )
+		
+	def test_enrollment(self):
+		results = self.session.query( CourseEnrollments ).all()
+		assert_that( results, has_length( 0 ) )	
+		results = self.session.query( EnrollmentTypes ).all()
+		assert_that( results, has_length( 0 ) )			
+		
+		for_credit = 'for_credit'
+		self.db.create_course_enrollment( self.session, test_user_ds_id, test_session_id, datetime.now(), self.course_name, for_credit )
+		
+		results = self.session.query( CourseEnrollments ).all()
+		assert_that( results, has_length( 1 ) )
+		
+		enrollment = self.session.query( CourseEnrollments ).one()
+		assert_that( enrollment.session_id, is_( test_session_id ) )
+		assert_that( enrollment.user_id, is_( 1 ) )
+		assert_that( enrollment.course_id, is_( self.course_name ) )
+		assert_that( enrollment.timestamp, not_none() )
+		assert_that( enrollment.type_id, is_( 1 ) )	
+		assert_that( enrollment.dropped, none() )
+		
+		# EnrollmentType
+		results = self.session.query( EnrollmentTypes ).all()
+		assert_that( results, has_length( 1 ) )
+		
+		enrollment_type = self.session.query( EnrollmentTypes ).one()
+		assert_that( enrollment_type.type_name, is_( for_credit ) )
+		
+		# Another enrollment
+		self.db.create_course_enrollment( self.session, test_user_ds_id + 1, test_session_id, datetime.now(), self.course_name, for_credit )
+		
+		results = self.session.query( CourseEnrollments ).all()
+		assert_that( results, has_length( 2 ) )
+		
+		results = self.session.query( EnrollmentTypes ).all()
+		assert_that( results, has_length( 1 ) )
+		
+		# Drop
+		self.db.create_course_drop( self.session, test_user_ds_id, test_session_id, datetime.now(), self.course_name )
+	
+		results = self.session.query( CourseEnrollments ).all()
+		assert_that( results, has_length( 2 ) )
+		
+		results = self.session.query( CourseDrops ).all()
+		assert_that( results, has_length( 1 ) )
+		drop = self.session.query( CourseDrops ).one()
+		assert_that( drop.session_id, is_( test_session_id ) )
+		assert_that( drop.user_id, is_( 1 ) )
+		assert_that( drop.course_id, is_( self.course_name ) )
+		assert_that( drop.timestamp, not_none() )
+		
+		enrollment = self.session.query( CourseEnrollments ).filter( CourseEnrollments.user_id == 1, CourseEnrollments.course_id==self.course_name ).one()
+		assert_that( enrollment.session_id, is_( test_session_id ) )
+		assert_that( enrollment.user_id, is_( 1 ) )
+		assert_that( enrollment.course_id, is_( self.course_name ) )
+		assert_that( enrollment.timestamp, not_none() )
+		assert_that( enrollment.type_id, is_( 1 ) )	
+		assert_that( enrollment.dropped, not_none() )	
 	

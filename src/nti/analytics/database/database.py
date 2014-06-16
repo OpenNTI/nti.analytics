@@ -703,11 +703,11 @@ class AnalyticsDB(object):
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
 		
-		new_object = CourseCatalogView( user_id=uid, 
-										session_id=sid, 
-										timestamp=timestamp,
-										course_id=course_id,
-										time_length=time_length )
+		new_object = CourseCatalogViews( 	user_id=uid, 
+											session_id=sid, 
+											timestamp=timestamp,
+											course_id=course_id,
+											time_length=time_length )
 		session.add( new_object )						
 	
 	def create_enrollment_type(self, session, type_name):
@@ -717,7 +717,7 @@ class AnalyticsDB(object):
 		return enrollment_type
 	
 	def _get_enrollment_type_id(self, session, type_name):
-		enrollment_type = session.query(EnrollmentTypes).filter( EnrollmentTypes.type_name == type_name ).one()
+		enrollment_type = session.query(EnrollmentTypes).filter( EnrollmentTypes.type_name == type_name ).first()
 		return enrollment_type or self.create_enrollment_type( session, type_name )
 	
 	def create_course_enrollment(self, session, user, nti_session, timestamp, course_id, enrollment_type_name):
@@ -725,7 +725,8 @@ class AnalyticsDB(object):
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
 		
-		type_id = self._get_enrollment_type_id( session, enrollment_type_name )
+		enrollment_type = self._get_enrollment_type_id( session, enrollment_type_name )
+		type_id = enrollment_type.type_id
 		
 		new_object = CourseEnrollments( user_id=uid, 
 										session_id=sid, 
@@ -744,6 +745,10 @@ class AnalyticsDB(object):
 									timestamp=timestamp,
 									course_id=course_id )
 		session.add( new_object )	
+		
+		enrollment = session.query(CourseEnrollments).filter( 	CourseEnrollments.user_id == uid,
+																CourseEnrollments.course_id == course_id ).first()
+		enrollment.dropped = timestamp
 		
 	def create_self_assessment_taken(self, session, user, nti_session, timestamp, course_id, self_assessment_id, time_length, questions, submission ):
 		user = self._get_or_create_user( session, user )

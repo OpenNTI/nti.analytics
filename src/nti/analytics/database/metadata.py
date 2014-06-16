@@ -250,7 +250,7 @@ class EnrollmentTypes(Base):
 class CourseEnrollments(Base,CourseMixin):
 	__tablename__ = 'CourseEnrollments'
 	type_id = Column( 'type_id', Integer, ForeignKey( 'EnrollmentTypes.type_id' ), nullable=False )
-	dropped = Column( 'dropped', Boolean, nullable=False, default=False )
+	dropped = Column( 'dropped', DateTime, nullable=True )
 	
 class CourseDrops(Base,CourseMixin):	
 	__tablename__ = 'CourseDrops'
