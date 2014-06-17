@@ -14,6 +14,8 @@ import pkg_resources
 from six import integer_types
 from six import string_types
 
+from contextlib import contextmanager
+
 from datetime import datetime
 
 from sqlalchemy import create_engine
@@ -172,11 +174,11 @@ class AnalyticsDB(object):
 			
 		return result
 
+	
 	@Lazy
 	def session(self):
 		# This property proxies into a thread-local session.
-		result = scoped_session( self.sessionmaker )
-		return result
+		return scoped_session( self.sessionmaker )
 
 	@Lazy
 	def idlookup(self):

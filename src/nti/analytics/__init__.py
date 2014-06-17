@@ -14,12 +14,13 @@ import six
 import logging
 
 from zope import component
+from zc.blist import BList
 
 from pyramid.threadlocal import get_current_request
 
 from .database import interfaces as analytic_interfaces
 
-from .async import create_job
+from .async import create_job as create_job_async
 from .async import get_job_queue
 
 def get_possible_site_names(request=None, include_default=True):
@@ -41,3 +42,30 @@ def get_analytics_db(names=None, request=None):
 		if app is not None:
 			return app
 	return None
+
+def _execute_job( *args, **kwargs ):
+	""" Execute our job, giving it a db and wrapping it with a session as we go. """
+	# FIXME how do we get our site here? Possibly as one of the args...
+	db = get_analytics_db()
+	effective_kwargs = dict( kwargs )
+	effective_kwargs['db'] = db
+	
+	args = BList( args )
+	func = args.pop( 0 )
+	
+	__traceback_info__ = func, func.__name__, args, effective_kwargs
+
+	session = db.session
+	try:
+		func( *args, **effective_kwargs )
+		session.commit()
+	except:
+		session.rollback()
+		# TODO Do we want to raise here, or catch and log?
+		raise
+	finally:
+		session.close()
+
+def create_job(func, *args, **kwargs):
+	return create_job_async( _execute_job, [func] + list(args) )
+
