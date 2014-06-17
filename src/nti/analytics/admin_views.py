@@ -41,16 +41,16 @@ def username_search(search_term):
 	usernames = list(_users.iterkeys(min_inclusive, max_exclusive, excludemax=True))
 	return usernames
 
-def init(uid, db, obj):
+def init(db, obj):
 	result = False
 	for _, module in component.getUtilitiesFor(analytic_interfaces.IObjectProcessor):
-		result = module.init(uid, db, obj) or result
+		result = module.init(db, obj) or result
 	return result
 
 def init_db(db, usernames=()):
 	count = 0
 	for uid, obj in utils.all_objects_iids(usernames):
-		if init(uid, db, obj):
+		if init(db, obj):
 			count += 1
 			if count % 10000 == 0:
 				transaction.savepoint()

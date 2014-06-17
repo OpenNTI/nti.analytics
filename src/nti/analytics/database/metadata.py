@@ -50,9 +50,12 @@ class Sessions(Base):
 
 class BaseTableMixin(object):
 
+	# FIXME Foreign key for sessions? It's highly likely we won't have this for migrations.
+	# Might have to make this optional.
+	# Does the same apply to users?  Perhaps we don't have a 'creator' stored.
 	@declared_attr
 	def session_id(cls):
-		return Column('session_id', Integer, ForeignKey("Sessions.session_id"), primary_key=True)
+		return Column('session_id', Integer, ForeignKey("Sessions.session_id"), nullable=True )
 	
 	@declared_attr
 	def user_id(cls):
@@ -71,6 +74,7 @@ class ChatsInitiated(Base,BaseTableMixin):
 	__tablename__ = 'ChatsInitiated'
 	chat_id = Column('chat_id', Integer, nullable=False, index=True )		
 
+# Note, we're not tracking when users leave chat rooms.
 class ChatsJoined(Base,BaseTableMixin):
 	__tablename__ = 'ChatsJoined'
 	chat_id = Column('chat_id', Integer, ForeignKey("ChatsInitiated.chat_id"), nullable=False, index=True )		

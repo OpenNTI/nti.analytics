@@ -15,47 +15,16 @@ from zope.lifecycleevent import interfaces as lce_interfaces
 from nti.dataserver import users
 from nti.dataserver import interfaces as nti_interfaces
 
+from datetime import datetime
+
 from nti.ntiids import ntiids
 
-from .common import get_entity
 from .common import to_external_ntiid_oid
 
 from . import create_job
-from . import get_graph_db
+from . import get_analytics_db
 from . import get_job_queue
-from . import relationships
-from . import interfaces as graph_interfaces
-
-class _Relationship(object):
-
-	def __init__(self, _from, _to, **kwargs):
-		self._to = _to
-		self._from = _from
-		self.__dict__.update(kwargs)
-
-	def __eq__(self, other):
-		try:
-			return self is other or (self._from == other._from
-									 and self._to == other._to)
-		except AttributeError:
-			return NotImplemented
-
-	def __hash__(self):
-		xhash = 47
-		xhash ^= hash(self._from)
-		xhash ^= hash(self._to)
-		return xhash
-
-def _get_graph_connections(db, entity, rel_type):
-	result = set()
-	rels = db.match(start=entity, rel_type=rel_type)
-	for rel in rels:
-		end = db.get_node(rel.end)
-		username = end.properties.get('username') if end is not None else u''
-		friend = users.User.get_user(username or u'')
-		if friend is not None:
-			result.add(_Relationship(entity, friend, rel=rel))
-	return result
+from . import interfaces as analytics_interfaces
 
 def _update_connections(db, entity, graph_relations_func, db_relations_func, rel_type):
 	# computer db/graph relationships
@@ -91,10 +60,6 @@ def _update_connections(db, entity, graph_relations_func, db_relations_func, rel
 
 # friendship
 
-def graph_friends(db, entity):
-	result = _get_graph_connections(db, entity, rel_type=relationships.FriendOf())
-	return result
-
 def db_friends(entity):
 	result = set()
 	friendlists = getattr(entity, 'friendsLists', {}).values()
@@ -119,38 +84,32 @@ def _process_friendslist_event(db, obj):
 	job = create_job(update_friendships, db=db, entity=username)
 	queue.put(job)
 
+def _process_friends_list_created(db, obj):
+	if nti_interfaces.IDynamicSharingTargetFriendsList.providedBy(obj):
+		return # pragma no cover
+
+	username = getattr(obj.creator, 'username', obj.creator)
+	queue = get_job_queue()
+	job = create_job(update_friendships, db=db, entity=username)
+	queue.put(job)
+ 
 @component.adapter(nti_interfaces.IFriendsList, lce_interfaces.IObjectAddedEvent)
 def _friendslist_added(obj, event):
-	db = get_graph_db()
+	db = get_analytics_db()
 	if db is not None:
 		_process_friendslist_event(db, obj)
 
 @component.adapter(nti_interfaces.IFriendsList, lce_interfaces.IObjectModifiedEvent)
 def _friendslist_modified(obj, event):
-	db = get_graph_db()
+	db = get_analytics_db()
 	if db is not None:
 		_process_friendslist_event(db, obj)
 
 @component.adapter(nti_interfaces.IFriendsList, intid_interfaces.IIntIdRemovedEvent)
 def _friendslist_deleted(obj, event):
-	db = get_graph_db()
+	db = get_analytics_db()
 	if db is not None:
 		_process_friendslist_event(db, obj)
-
-# membership
-
-def graph_memberships(db, entity):
-	result = _get_graph_connections(db, entity, rel_type=relationships.MemberOf())
-	return result
-
-def db_memberships(entity):
-	result = set()
-	everyone = users.Entity.get_entity('Everyone')
-	memberships = getattr(entity, 'dynamic_memberships', ())
-	for x in memberships:
-		if x != everyone:
-			result.add(_Relationship(entity, x))
-	return result
 
 def update_memberships(db, entity):
 	result = _update_connections(db, entity,
@@ -163,21 +122,23 @@ def process_start_membership(db, source, target):
 	source = users.Entity.get_entity(source)
 	target = ntiids.find_object_with_ntiid(target)
 	if source and target:
-		rel = db.create_relationship(source, target, relationships.MemberOf())
-		logger.debug("entity membership relationship %s created", rel)
-		return rel
-	return None
+		session = db.get_session()
+		nti_session = None
+		timestamp = None
+		rel = db.create_dynamic_friends_member( session, nti_session, source, timestamp, target, source )
+		session.commit()
+		logger.debug("DFL joined by (%s)", rel)
 
 def process_stop_membership(db, source, target):
 	source = users.Entity.get_entity(source)
 	target = ntiids.find_object_with_ntiid(target)
 	if source and target:
-		rels = db.match(start=source, end=target, rel_type=relationships.MemberOf())
-		if rels:
-			db.delete_relationships(*rels)
-			logger.debug("%s entity membership relationship(s) removed", len(rels))
-			return True
-	return False
+		session = db.get_session()
+		nti_session = None
+		timestamp = None
+		rel = db.remove_dynamic_friends_member( session, nti_session, source, timestamp, target, source )
+		session.commit()
+		logger.debug("DFL left by (%s)", rel)
 
 def _process_membership_event(db, event):
 	source, target = event.object, event.target
@@ -198,64 +159,67 @@ def _process_membership_event(db, event):
 
 @component.adapter(nti_interfaces.IStartDynamicMembershipEvent)
 def _start_dynamic_membership_event(event):
-	db = get_graph_db()
+	db = get_analytics_db()
 	if db is not None:
 		_process_membership_event(db, event)
 
 @component.adapter(nti_interfaces.IStopDynamicMembershipEvent)
 def _stop_dynamic_membership_event(event):
-	db = get_graph_db()
+	db = get_analytics_db()
 	if db is not None:
 		_process_membership_event(db, event)
 
-def _delete_index_relationship(db, keyref):
-	for key, value in keyref.items():
-		rel = db.delete_indexed_relationship(key, value)
-		if rel is not None:
-			logger.debug("relationship %s deleted", rel)
-			
 def _do_membership_deletions(db, keyref):
 	queue = get_job_queue()
 	job = create_job(_delete_index_relationship, db=db, keyref=keyref)
 	queue.put(job)
 
+def _process_deleted_dfl( db, dfl, timestamp ):
+	session = db.get_session()
+	nti_session = None
+	db.remove_dynamic_friends_list( session, user, nti_session, timestamp, dfl )
+	session.commit()
+
 @component.adapter(nti_interfaces.IDynamicSharingTargetFriendsList,
 				   intid_interfaces.IIntIdRemovedEvent)
 def _dfl_deleted(obj, event):
-	db = get_graph_db()
-	if db is not None:
-		result = {}
-		rel_type = relationships.MemberOf()
-		for user in obj:
-			adapted = component.queryMultiAdapter(
-										(user, obj, rel_type),
-										graph_interfaces.IUniqueAttributeAdapter)
-			if adapted:
-				result[adapted.key] = adapted.value
-		if result:
-			_do_membership_deletions(db, result)
+	# FIXME why persist db?
+	# FIXME where is dfl added event?
+	# FIXME user
+	# TODO how about dfl intid? Or is this a string entity?
+	db = get_analytics_db()
+	queue = get_job_queue()
+	job = create_job( 	_process_deleted_dfl, 
+						db=db, dfl=obj, 
+						timestamp=datetime.utcnow() )
+	queue.put(job)
+	
 
-# follow/unfollow
+# Contacts
 
 def process_follow(db, source, followed):
 	source = users.Entity.get_entity(source)
 	followed = users.Entity.get_entity(followed)
 	if source and followed:
-		rel = db.create_relationship(source, followed, relationships.Follow())
-		logger.debug("follow relationship %s created", rel)
-		return rel
+		session = db.get_session()
+		nti_session = None
+		timestamp = None
+		db.create_contact_added( session, source, nti_session, timestamp, followed )
+		session.commit()
+		logger.debug("Contact added (%s->%s)", source, followed)
 	return None
 
 def process_unfollow(db, source, followed):
 	source = users.Entity.get_entity(source)
 	followed = users.Entity.get_entity(followed)
 	if source and followed:
-		rels = db.match(start=source, end=followed, rel_type=relationships.Follow())
-		if rels:
-			db.delete_relationships(*rels)
-			logger.debug("%s follow relationship(s) removed", len(rels))
-			return True
-	return False
+		session = db.get_session()
+		nti_session = None
+		timestamp = None
+		db.create_contact_removed( session, source, nti_session, timestamp, followed )
+		session.commit()
+		logger.debug("Contact removed (%s->%s)", source, followed)
+	return None
 
 def _process_follow_event(db, event):
 	source = getattr(event.object, 'username', event.object)
@@ -272,36 +236,17 @@ def _process_follow_event(db, event):
 
 @component.adapter(nti_interfaces.IEntityFollowingEvent)
 def _start_following_event(event):
-	db = get_graph_db()
+	db = get_analytics_db()
 	if db is not None:
 		_process_follow_event(db, event)
 
 @component.adapter(nti_interfaces.IStopFollowingEvent)
 def _stop_following_event(event):
-	db = get_graph_db()
+	db = get_analytics_db()
 	if db is not None:
 		_process_follow_event(db, event)
 
-def graph_following(db, entity):
-	result = _get_graph_connections(db, entity, rel_type=relationships.Follow())
-	return result
-
-def db_following(entity):
-	result = set()
-	entities_followed = getattr(entity, 'entities_followed', ())
-	for followed in entities_followed:
-		result.add(_Relationship(entity, followed))
-	return result
-
-def update_following(db, entity):
-	result = _update_connections(db, entity,
-								 graph_following,
-								 db_following,
-								 relationships.Follow())
-	return result
-
-# utils
-
+# Contact
 def _process_following(db, user):
 	source = user.username
 	queue = get_job_queue()
@@ -317,8 +262,9 @@ def _process_memberships(db, user):
 	for target in getattr(user, 'dynamic_memberships', ()):
 		if target != everyone:
 			target = to_external_ntiid_oid(target)
-			job = create_job(process_start_membership, db=db, source=source,
-							 target=target)
+			job = create_job(	process_start_membership, db=db, 
+								source=source,
+								target=target)
 			queue.put(job)
 
 def _process_friendships(db, user):
@@ -326,7 +272,7 @@ def _process_friendships(db, user):
 	job = create_job(update_friendships, db=db, entity=user.username)
 	queue.put(job)
 
-component.moduleProvides(graph_interfaces.IObjectProcessor)
+component.moduleProvides(analytic_interfaces.IObjectProcessor)
 
 def init(db, obj):
 	result = False

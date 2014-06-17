@@ -23,62 +23,33 @@ from . import get_analytics_db
 from . import get_job_queue
 from . import interfaces as analytics_interfaces
 
-def _remove_entity(db, key, value):
-	node = db.get_indexed_node(key, value)
-	if node is not None:
-		db.delete_node(node)
-		logger.debug("node %s deleted", node)
-		return True
-	return False
-
 def _add_entity(db, oid):
 	entity = ntiids.find_object_with_ntiid(oid)
 	if entity is not None:
-		node = db.get_or_create_node(entity)
-		logger.debug("entity node %s created/retrieved", node)
-		return entity, node
-	return None, None
+		session = db.get_session()
+		db.create_user( session, uid )
+		session.commit()
+		logger.debug("Entity node %s created/retrieved", node)
+		return entity
 
-def _process_entity_removed(db, entity):
-	adapted = analytics_interfaces.IUniqueAttributeAdapter(entity)
+def _process_entity_added(db, entity):
+	oid = to_external_ntiid_oid(entity)
 	queue = get_job_queue()
-	job = create_job(_remove_entity,
-					 db=db,
-					 key=adapted.key,
-					 value=adapted.value)
+	job = create_job(_add_entity, db=db, oid=oid)
 	queue.put(job)
-
-def _process_entity_added(uid, db, entity):
-	#oid = to_external_ntiid_oid(entity)
-	#from IPython.core.debugger import Tracer;Tracer()()
-	session = db.get_session()
-	db.create_user( session, uid )
-	session.commit()
-# 	queue = get_job_queue()
-# 	job = create_job(_add_entity, db=db, oid=oid)
-# 	queue.put(job)
 
 @component.adapter(nti_interfaces.IEntity, lce_interfaces.IObjectAddedEvent)
 def _entity_added(entity, event):
 	db = get_analytics_db()
 	queue = get_job_queue()
-	#FIXME we dont have a uid here
-	uid = None
 	if 	db is not None and queue is not None:  # check queue b/c of Everyone comm
-		_process_entity_added(uid, db, entity)
-
-@component.adapter(nti_interfaces.IEntity, intid_interfaces.IIntIdRemovedEvent)
-def _entity_removed(entity, event):
-	db = get_analytics_db()
-	if db is not None:
-		_process_entity_removed(db, entity)
+		_process_entity_added(db, entity)
 
 component.moduleProvides(analytics_interfaces.IObjectProcessor)
-
-def init(uid, db, obj):
+def init(db, obj):
 	result = False
 	if nti_interfaces.IEntity.providedBy(obj) and \
 		not nti_interfaces.IFriendsList.providedBy(obj):
-		_process_entity_added(uid, db, obj)
+		_process_entity_added(db, obj)
 		result = True
 	return result
