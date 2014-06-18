@@ -49,22 +49,11 @@ def _execute_job( *args, **kwargs ):
 	db = get_analytics_db()
 	effective_kwargs = dict( kwargs )
 	effective_kwargs['db'] = db
-	
 	args = BList( args )
 	func = args.pop( 0 )
 	
 	__traceback_info__ = func, func.__name__, args, effective_kwargs
-
-	session = db.session
-	try:
-		func( *args, **effective_kwargs )
-		session.commit()
-	except:
-		session.rollback()
-		# TODO Do we want to raise here, or catch and log?
-		raise
-	finally:
-		session.close()
+	func( *args, **effective_kwargs )
 
 def create_job(func, *args, **kwargs):
 	return create_job_async( _execute_job, [func] + list(args) )

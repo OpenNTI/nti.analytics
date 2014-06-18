@@ -57,23 +57,10 @@ class TestJob(nti.testing.base.ConfiguringTestBase):
 		# Database arg passed in
 		session = db.session()
 		return session.query(Users).all()		
-				
-	def _good_call( self, db ) :
-		# Modify database
-		fooser = User( 'foo1978' )
-		db.create_user( fooser )
-	
-	def _raise_call(self, db ):
-		# Dupe user throws
-		fooser = User( 'foo1978' )
-		db.create_user( fooser )
 		
-	def _rollback_call(self, db, valid_new_user ):
+	def _good_call(self, db, valid_new_user ):
 		# New valid user
 		db.create_user( valid_new_user )
-		# Dupe user throws
-		fooser = User( 'foo1978' )
-		db.create_user( fooser )	
 	
 	def test_job(self):
 		db = get_analytics_db()
@@ -87,25 +74,13 @@ class TestJob(nti.testing.base.ConfiguringTestBase):
 		_execute_job( self._read_call )
 		
 		# Successful insert
-		_execute_job( self._good_call )
-		results = session.query(Users).all()
-		assert_that( results, has_length( 1 ) )
-		
-		# Raise and rollback
-		with self.assertRaises(IntegrityError):
-			_execute_job( self._raise_call )
-		
-		# Raise and rollback with arg
 		valid_new_user = 9999
-			
-		with self.assertRaises(IntegrityError):
-			_execute_job( self._rollback_call, valid_new_user=9999 )	
-			
+		_execute_job( self._good_call, valid_new_user=valid_new_user )
 		results = session.query(Users).all()
 		assert_that( results, has_length( 1 ) )
 		
 		result = session.query(Users).one()
 		assert_that( result.user_id, is_( 1 ) )
-		assert_that( result.user_ds_id, is_( DEFAULT_INTID ) )
+		assert_that( result.user_ds_id, is_( valid_new_user ) )
 		
 

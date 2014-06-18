@@ -160,17 +160,15 @@ class AnalyticsDB(object):
 	
 	@Lazy
 	def sessionmaker(self):
-		# TODO How do we want to manage sessions?  Do we need the ZTE?
-		# As a standalone process, we are not really concerned about 
-		# request-level transactions.
 		if self.autocommit:
 			result = sessionmaker(bind=self.engine,
 							  	  twophase=self.twophase)
 		else:
+			# Use the ZTE for transaction handling.
 			result = sessionmaker(bind=self.engine,
 								  autoflush=True,
-							  	  twophase=self.twophase )
-							  	#  extension=ZopeTransactionExtension()
+							  	  twophase=self.twophase,
+							  	  extension=ZopeTransactionExtension() )
 			
 		return result
 
