@@ -48,6 +48,28 @@ ZCML_STRING = """
 
 """
 
+ZCML_STRING_SITE = """
+<configure	xmlns="http://namespaces.zope.org/zope"
+			xmlns:i18n="http://namespaces.zope.org/i18n"
+			xmlns:zcml="http://namespaces.zope.org/zcml"
+			xmlns:adb="http://nextthought.com/analytics/database">
+
+	<include package="zope.component" file="meta.zcml" />
+	<include package="zope.security" file="meta.zcml" />
+	<include package="zope.component" />
+	<include package="nti.analytics.database" file="meta.zcml" />
+			 		 
+	<configure>
+		<adb:registerAnalyticsDB 	defaultSQLite="True"
+									dburi="sqlite://"
+									name="janux.ou.edu"
+									twophase="False"
+									autocommit="False" />
+	</configure>
+</configure>
+
+"""
+
 class TestJob(nti.testing.base.ConfiguringTestBase):
 
 	def setUp(self):
@@ -83,4 +105,40 @@ class TestJob(nti.testing.base.ConfiguringTestBase):
 		assert_that( result.user_id, is_( 1 ) )
 		assert_that( result.user_ds_id, is_( valid_new_user ) )
 		
+		
+class TestJobWithSite(nti.testing.base.ConfiguringTestBase):
+
+	def setUp(self):
+		self.configure_string(ZCML_STRING_SITE)
+		
+	def _read_call( self, db ):	
+		# Database arg passed in
+		session = db.session()
+		return session.query(Users).all()		
+		
+	def _good_call(self, db, valid_new_user ):
+		# New valid user
+		db.create_user( valid_new_user )
+	
+	def test_job(self):
+		site = 'janux.ou.edu'
+		db = get_analytics_db( names=site )
+		session = db.session()
+		results = session.query(Users).all()
+		assert_that( results, has_length( 0 ) )
+		
+		# Multiple calls
+		_execute_job( self._read_call, site=site )
+		_execute_job( self._read_call, site=site )
+		_execute_job( self._read_call, site=site )
+		
+		# Successful insert
+		valid_new_user = 9999
+		_execute_job( self._good_call, site=site, valid_new_user=valid_new_user )
+		results = session.query(Users).all()
+		assert_that( results, has_length( 1 ) )
+		
+		result = session.query(Users).one()
+		assert_that( result.user_id, is_( 1 ) )
+		assert_that( result.user_ds_id, is_( valid_new_user ) )		
 

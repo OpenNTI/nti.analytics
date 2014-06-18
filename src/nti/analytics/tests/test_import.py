@@ -10,6 +10,8 @@ logger = __import__('logging').getLogger(__name__)
 
 import unittest
 
+from zope import component
+
 from tempfile import mkstemp
 
 from nti.app.testing.decorators import WithSharedApplicationMockDS
@@ -22,14 +24,16 @@ from nti.analytics.admin_views import init
 
 import nti.testing.base
 
-from ..database import AnalyticsDB
-from ..metadata import Users
+from nti.analytics.database import interfaces as analytic_interfaces
+
+from nti.analytics.database.database import AnalyticsDB
+from nti.analytics.database.metadata import Users
 
 from hamcrest import assert_that
 from hamcrest import has_length
 from hamcrest import none
 from hamcrest import not_none
-from hamcrest import has_property
+from hamcrest import is_
 
 from nti.dataserver.tests.mock_dataserver import SharedConfiguringTestLayer, WithMockDSTrans
 
@@ -42,8 +46,18 @@ ZCML_STRING = """
 	<include package="zope.component" file="meta.zcml" />
 	<include package="zope.security" file="meta.zcml" />
 	<include package="zope.component" />
+	<include package="nti.analytics.database" file="meta.zcml" />
 	
-	<utility component="nti.analytics.entities" provides="nti.analytics.interfaces.IObjectProcessor" name="entities"/>
+	<utility 	component="nti.analytics.entities" 
+				provides="nti.analytics.interfaces.IObjectProcessor" 
+				name="entities"/>
+	
+	<configure>
+		<adb:registerAnalyticsDB 	defaultSQLite="True"
+									dburi="sqlite://"
+									twophase="False"
+									autocommit="False" />
+	</configure>
 	
 </configure>
 """
@@ -90,12 +104,34 @@ ZCML_STRING = """
 # 		results = session.query(Users).all()
 # 		assert_that( results, has_length( 1 ) )
 
+class _ImmediateQueueRunner(object):
+	
+	def put( self, job ):
+		return job()
+
+def _get_job_queue():
+	return _ImmediateQueueRunner()
+
+nti.analytics.get_job_queue = _get_job_queue
+
+def _to_external_id( obj ):
+	return 101 
+
+from nti.analytics import common
+common.to_external_ntiid_oid = _to_external_id
+
+def _find_object( ntiid ):
+	return User( 'new_user_101')
+
+from nti.ntiids import ntiids
+ntiids.find_object_with_ntiid = _find_object 
+
 class TestImport(nti.testing.base.ConfiguringTestBase):
 	
 	def setUp(self):
-		self.db = AnalyticsDB( dburi='sqlite://' )
-		self.session = self.db.session
 		self.configure_string(ZCML_STRING)
+		self.db = component.queryUtility( analytic_interfaces.IAnalyticsDB, name='' )
+		self.session = self.db.session
 	
 	def tearDown(self):
 		self.session.close()
@@ -104,14 +140,12 @@ class TestImport(nti.testing.base.ConfiguringTestBase):
 		results = self.session.query(Users).all()
 		assert_that( results, has_length( 0 ) )
 		
-		
-	# TODO Need to mock queueing	
-# 		init( self.db, User( username='test@nextthought' ) )		
-# 		
-# 		results = self.session.query(Users).all()
-# 		assert_that( results, has_length( 1 ) )
-# 		
-# 		new_user = self.session.query(Users).one()
-# 		assert_that( new_user, has_property( 'user_ds_id', uid ) )
-# 		assert_that( new_user, has_property( 'user_id' ), 1 )
+ 		init( '', User( 'new_user_101' ) )		
+ 		
+ 		results = self.session.query(Users).all()
+ 		assert_that( results, has_length( 1 ) )
+ 		
+ 		new_user = self.session.query(Users).one()
+ 		assert_that( new_user.user_ds_id, is_( 101 ) )
+ 		assert_that( new_user.user_id, is_( 1 ) )
 		

@@ -40,25 +40,27 @@ def get_analytics_db(names=None, request=None):
 	names = names.split() if isinstance(names, six.string_types) else names
 	names = names or get_possible_site_names(request=request)
 	for site in names:
-		app = component.queryUtility( analytic_interfaces.IAnalyticsDB, name=site )
-		if app is not None:
-			return app
+		db = component.queryUtility( analytic_interfaces.IAnalyticsDB, name=site )
+		if db is not None:
+			return db
 	return None
 
 def _execute_job( *args, **kwargs ):
 	""" Execute our job, giving it a db and wrapping it with a session as we go. """
-	# FIXME how do we get our site here? Possibly as one of the args...
-	db = get_analytics_db()
 	effective_kwargs = dict( kwargs )
+	site = effective_kwargs.pop( 'site', '' )
+	
+	# TODO raise if we don't have a database? Log and return?
+	db = get_analytics_db( names=site )
 	effective_kwargs['db'] = db
 	args = BList( args )
 	func = args.pop( 0 )
 	
-	__traceback_info__ = func, func.__name__, args, effective_kwargs
 	func( *args, **effective_kwargs )
 
 def create_job(func, *args, **kwargs):
-	return create_job_async( _execute_job, [func] + list(args) )
+	args = [func] + list(args)
+	return create_job_async( _execute_job, *args, **kwargs )
 
 def get_job_queue():
 	return async_queue( QUEUE_NAME )

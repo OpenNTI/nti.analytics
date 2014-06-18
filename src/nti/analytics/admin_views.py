@@ -41,16 +41,16 @@ def username_search(search_term):
 	usernames = list(_users.iterkeys(min_inclusive, max_exclusive, excludemax=True))
 	return usernames
 
-def init(db, obj):
+def init( site, obj ):
 	result = False
 	for _, module in component.getUtilitiesFor(analytic_interfaces.IObjectProcessor):
-		result = module.init(db, obj) or result
+		result = module.init( site, obj ) or result
 	return result
 
-def init_db(db, usernames=()):
+def init_db( site, usernames=() ):
 	count = 0
 	for uid, obj in utils.all_objects_iids(usernames):
-		if init(db, obj):
+		if init( site, obj ):
 			count += 1
 			if count % 10000 == 0:
 				transaction.savepoint()
@@ -73,10 +73,8 @@ def init_analytics_db(request):
 	else:
 		usernames = ()
 	
-	db = component.getUtility(database_interfaces.IAnalyticsDB, name=site)
-
 	now = time.time()
-	total = init_db(db, usernames)
+	total = init_db( site, usernames )
 	elapsed = time.time() - now
 
 	logger.info("Total objects processed %s(%s)", total, elapsed)

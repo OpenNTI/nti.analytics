@@ -24,32 +24,32 @@ from . import get_job_queue
 from . import interfaces as analytics_interfaces
 
 def _add_entity(db, oid):
+	logger.debug( "Creating oid (%s)", oid )
 	entity = ntiids.find_object_with_ntiid(oid)
 	if entity is not None:
-		session = db.get_session()
-		db.create_user( session, uid )
-		session.commit()
-		logger.debug("Entity node %s created/retrieved", node)
+		logger.debug( "Creating entity (%s)", entity )
+		db.create_user( entity )
 		return entity
 
-def _process_entity_added(db, entity):
+def _process_entity_added( site, entity ):
 	oid = to_external_ntiid_oid(entity)
 	queue = get_job_queue()
-	job = create_job(_add_entity, db=db, oid=oid)
+	job = create_job(_add_entity, site=site, oid=oid)
 	queue.put(job)
 
 @component.adapter(nti_interfaces.IEntity, lce_interfaces.IObjectAddedEvent)
 def _entity_added(entity, event):
-	db = get_analytics_db()
 	queue = get_job_queue()
-	if 	db is not None and queue is not None:  # check queue b/c of Everyone comm
-		_process_entity_added(db, entity)
+	site = None
+	#FIXME get site
+	if 	queue is not None:  # check queue b/c of Everyone comm
+		_process_entity_added( site, entity )
 
 component.moduleProvides(analytics_interfaces.IObjectProcessor)
-def init(db, obj):
+def init( site, obj ):
 	result = False
 	if nti_interfaces.IEntity.providedBy(obj) and \
 		not nti_interfaces.IFriendsList.providedBy(obj):
-		_process_entity_added(db, obj)
+		_process_entity_added( site, obj )
 		result = True
 	return result
