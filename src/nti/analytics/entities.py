@@ -24,10 +24,8 @@ from . import get_job_queue
 from . import interfaces as analytics_interfaces
 
 def _add_entity(db, oid):
-	logger.debug( "Creating oid (%s)", oid )
 	entity = ntiids.find_object_with_ntiid(oid)
 	if entity is not None:
-		logger.debug( "Creating entity (%s)", entity )
 		db.create_user( entity )
 		return entity
 
@@ -41,7 +39,6 @@ def _process_entity_added( site, entity ):
 def _entity_added(entity, event):
 	queue = get_job_queue()
 	site = None
-	#FIXME get site
 	if 	queue is not None:  # check queue b/c of Everyone comm
 		_process_entity_added( site, entity )
 

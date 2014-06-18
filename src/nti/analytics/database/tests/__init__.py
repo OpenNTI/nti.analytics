@@ -31,11 +31,13 @@ from nti.analytics.database import database
 
 from six import integer_types
 
+DEFAULT_INTID = 101
+
 """ Override this for testing purposes. """
 class TestIDLookup(object):
 	
 	def _get_id_for_object( self, obj ):
-		result = 101
+		result = DEFAULT_INTID
 		if isinstance( obj, integer_types ):
 			result = obj
 		attr = getattr( obj, 'intid', result )

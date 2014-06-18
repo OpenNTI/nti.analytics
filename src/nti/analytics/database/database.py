@@ -231,7 +231,6 @@ class AnalyticsDB(object):
 		return result or datetime.utcnow()
 	
 	def create_user(self, user):
-		logger.debug( "Creating user (%s)", user )
 		uid = self._get_id_for_user( user )
 		user = Users( user_ds_id=uid )
 		self.session.add( user )

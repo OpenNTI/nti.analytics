@@ -23,7 +23,7 @@ from .database import interfaces as analytic_interfaces
 from nti.async import create_job as create_job_async
 from nti.async import get_job_queue as async_queue
 
-QUEUE_NAME = 'nti.analytics'
+QUEUE_NAME = '++etc++analytics++queue'
 
 def get_possible_site_names(request=None, include_default=True):
 	request = request or get_current_request()

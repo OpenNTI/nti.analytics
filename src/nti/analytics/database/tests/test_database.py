@@ -85,7 +85,7 @@ test_session_id = 56
 
 # For new objects, this is the default intid stored in the database.
 # For subsequent objects, this will increase by one.
-DEFAULT_INTID = 101
+from . import DEFAULT_INTID
 
 class TestUsers(unittest.TestCase):
 
