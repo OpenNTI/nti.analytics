@@ -15,15 +15,17 @@ from zope.generations.generations import SchemaManager
 
 import zope.intid
 
-from ..async import queue
-from ..async import interfaces as asyc_interfaces
+from nti.async import queue
+from nti.async import interfaces as asyc_interfaces
 
-class _GraphDBSchemaManager(SchemaManager):
+from .. import QUEUE_NAME
+
+class _AnalyticsDBSchemaManager(SchemaManager):
 	"""
 	A schema manager that we can register as a utility in ZCML.
 	"""
 	def __init__(self):
-		super(_GraphDBSchemaManager, self).__init__(
+		super(_AnalyticsDBSchemaManager, self).__init__(
 											generation=generation,
 											minimum_generation=generation,
 											package_name='nti.analytics.generations')
@@ -42,9 +44,9 @@ def install_queue(context):
 # 	result = queue.Queue()
 # 	result.__parent__ = dataserver_folder
 # 	##FIXME what's this
-# 	result.__name__ = '++etc++graphdb++queue'
+# 	result.__name__ = QUEUE_NAME
 # 	intids.register(result)
-# 	lsm.registerUtility(result, provided=asyc_interfaces.IQueue)
+# 	lsm.registerUtility(result, provided=asyc_interfaces.IQueue, name='nti.analytics')
 # 	
 # # 	lsm.unregisterUtility( result, provided=asyc_interfaces.IQueue )
 

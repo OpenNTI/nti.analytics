@@ -31,7 +31,8 @@ setup(
 	package_dir={'': 'src'},
 	namespace_packages=['nti'],
 	install_requires=[
-		'setuptools'
+		'setuptools',
+		'nti.async'
 	],
 	entry_points=entry_points
 )

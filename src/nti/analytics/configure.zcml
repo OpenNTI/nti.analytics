@@ -7,6 +7,10 @@
 	<include package="zope.component" file="meta.zcml" />
 	<include package="zope.security" file="meta.zcml" />
 	<include package="zope.component" />
+	
+	<!-- Job runner -->
+	
+	<include package="nti.async" />
 
 	<!-- access to the views under .../analytics/ -->
 	
@@ -15,9 +19,6 @@
 			 factory=".views.AnalyticsPathAdapter"
 			 provides="zope.traversing.interfaces.IPathAdapter" />
 
-	<!-- Job runner -->
-			  
-	<include package=".async" file="configure.zcml" />
 	
 	<!-- database -->
 	

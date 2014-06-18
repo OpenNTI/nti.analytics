@@ -20,8 +20,10 @@ from pyramid.threadlocal import get_current_request
 
 from .database import interfaces as analytic_interfaces
 
-from .async import create_job as create_job_async
-from .async import get_job_queue
+from nti.async import create_job as create_job_async
+from nti.async import get_job_queue as async_queue
+
+QUEUE_NAME = 'nti.analytics'
 
 def get_possible_site_names(request=None, include_default=True):
 	request = request or get_current_request()
@@ -57,4 +59,7 @@ def _execute_job( *args, **kwargs ):
 
 def create_job(func, *args, **kwargs):
 	return create_job_async( _execute_job, [func] + list(args) )
+
+def get_job_queue():
+	return async_queue( QUEUE_NAME )
 
