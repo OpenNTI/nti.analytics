@@ -19,7 +19,6 @@ from nti.ntiids import ntiids
 from .common import to_external_ntiid_oid
 
 from . import create_job
-from . import get_analytics_db
 from . import get_job_queue
 from . import interfaces as analytics_interfaces
 
@@ -29,24 +28,23 @@ def _add_entity(db, oid):
 		db.create_user( entity )
 		return entity
 
-def _process_entity_added( site, entity ):
+def _process_entity_added( entity ):
 	oid = to_external_ntiid_oid(entity)
 	queue = get_job_queue()
-	job = create_job(_add_entity, site=site, oid=oid)
+	job = create_job(_add_entity, oid=oid)
 	queue.put(job)
 
 @component.adapter(nti_interfaces.IEntity, lce_interfaces.IObjectAddedEvent)
 def _entity_added(entity, event):
 	queue = get_job_queue()
-	site = None
 	if 	queue is not None:  # check queue b/c of Everyone comm
-		_process_entity_added( site, entity )
+		_process_entity_added( entity )
 
 component.moduleProvides(analytics_interfaces.IObjectProcessor)
-def init( site, obj ):
+def init( obj ):
 	result = False
 	if nti_interfaces.IEntity.providedBy(obj) and \
 		not nti_interfaces.IFriendsList.providedBy(obj):
-		_process_entity_added( site, obj )
+		_process_entity_added( obj )
 		result = True
 	return result

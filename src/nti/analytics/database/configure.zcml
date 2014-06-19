@@ -25,7 +25,8 @@
 		</configure>
 	</configure>
 	
-	<!-- What goes here for non-dev? -->
+	<!-- TODO What goes here for non-dev? -->
+	<!-- Also, we shouldn't register by site anymore, right? -->
 	<configure zcml:condition="not-have devmode">
 			<include package="." file="meta.zcml" />
 			<adb:registerAnalyticsDB name="janux.ou.edu" />

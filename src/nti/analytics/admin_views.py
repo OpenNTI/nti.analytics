@@ -41,16 +41,16 @@ def username_search(search_term):
 	usernames = list(_users.iterkeys(min_inclusive, max_exclusive, excludemax=True))
 	return usernames
 
-def init( site, obj ):
+def init( obj ):
 	result = False
 	for _, module in component.getUtilitiesFor(analytic_interfaces.IObjectProcessor):
-		result = module.init( site, obj ) or result
+		result = module.init( obj ) or result
 	return result
 
-def init_db( site, usernames=() ):
+def init_db( usernames=() ):
 	count = 0
 	for uid, obj in utils.all_objects_iids(usernames):
-		if init( site, obj ):
+		if init( obj ):
 			count += 1
 			if count % 10000 == 0:
 				transaction.savepoint()
@@ -64,7 +64,6 @@ def init_db( site, usernames=() ):
 def init_analytics_db(request):
 	values = json.loads(unicode(request.body, request.charset)) if request.body else {}
 	values = CaseInsensitiveDict(values)
-	site = values.get('site', u'')
 	usernames = values.get('usernames', values.get('username', None))
  	usernames = 'josh.zuech@nextthought.com,student1'
 	
@@ -74,7 +73,7 @@ def init_analytics_db(request):
 		usernames = ()
 	
 	now = time.time()
-	total = init_db( site, usernames )
+	total = init_db( usernames )
 	elapsed = time.time() - now
 
 	logger.info("Total objects processed %s(%s)", total, elapsed)

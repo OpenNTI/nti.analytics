@@ -35,7 +35,6 @@ ZCML_STRING = """
 			 		 
 	<configure>
 		<adb:registerAnalyticsDB 	defaultSQLite="True"
-									name="janux.ou.edu"
 									twophase="True"
 									autocommit="False" />
 	</configure>
@@ -49,15 +48,9 @@ class TestZcml(nti.testing.base.ConfiguringTestBase):
 		self.configure_string(ZCML_STRING)
 
 		db = component.queryUtility(IAnalyticsDB)
-		assert_that(db, none())
-		
-		db = component.queryUtility(IAnalyticsDB, name='janux.ou.edu')
 		assert_that(db, not_none())
 		
 		db = get_analytics_db()
-		assert_that(db, none())
-		
-		db = get_analytics_db( names=['janux.ou.edu'] )
 		assert_that(db, not_none())
 		assert_that( db, has_property('twophase', True ) )
 		assert_that( db, has_property('autocommit', False ) )

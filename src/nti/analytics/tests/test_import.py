@@ -121,7 +121,7 @@ from nti.analytics import common
 common.to_external_ntiid_oid = _to_external_id
 
 def _find_object( ntiid ):
-	return User( 'new_user_101')
+	return User( 'new_user_101' )
 
 from nti.ntiids import ntiids
 ntiids.find_object_with_ntiid = _find_object 
@@ -140,7 +140,7 @@ class TestImport(nti.testing.base.ConfiguringTestBase):
 		results = self.session.query(Users).all()
 		assert_that( results, has_length( 0 ) )
 		
- 		init( '', User( 'new_user_101' ) )		
+ 		init( User( 'new_user_101' ) )		
  		
  		results = self.session.query(Users).all()
  		assert_that( results, has_length( 1 ) )
