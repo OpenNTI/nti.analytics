@@ -23,13 +23,12 @@ from nti.async import get_job_queue as async_queue
 QUEUE_NAME = '++etc++analytics++queue'
 
 def get_analytics_db():
-	return component.queryUtility( analytic_interfaces.IAnalyticsDB )
+	return component.getUtility( analytic_interfaces.IAnalyticsDB )
 
 def _execute_job( *args, **kwargs ):
 	""" Execute our job, giving it a db and wrapping it with a session as we go. """
-	# TODO we should raise if we don't have DB.  
-	# We aren't likely to have one for the next job either.
 	db = get_analytics_db()
+	
 	effective_kwargs = dict( kwargs )
 	effective_kwargs['db'] = db
 	args = BList( args )
