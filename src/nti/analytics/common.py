@@ -15,6 +15,8 @@ from nti.dataserver import interfaces as nti_interfaces
 
 from nti.externalization import externalization
 
+from datetime import datetime
+
 def get_entity(entity):
     if not nti_interfaces.IEntity.providedBy(entity):
         entity = Entity.get_entity(str(entity))
@@ -27,6 +29,15 @@ def get_creator(obj):
         return creator
     except (TypeError, POSKeyError):
         return None
+       
+def get_nti_session():
+	# FIXME Need this
+	return None
+
+def get_deleted_time( obj ):
+	# Try for last modified, otherwise take whatever time we have now
+	deleted_time = getattr( obj, 'lastModified', datetime.utcnow() )
+	return deleted_time
 
 def to_external_ntiid_oid(obj):
     ntiid = externalization.to_external_ntiid_oid(obj) if obj is not None else None

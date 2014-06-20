@@ -26,13 +26,14 @@ def _add_entity(db, oid):
 	entity = ntiids.find_object_with_ntiid(oid)
 	if entity is not None:
 		db.create_user( entity )
-		return entity
 
 def _process_entity_added( entity ):
 	oid = to_external_ntiid_oid(entity)
 	queue = get_job_queue()
 	job = create_job(_add_entity, oid=oid)
 	queue.put(job)
+
+# Note: We are not handling entity removal. I'm not sure we need to.
 
 @component.adapter(nti_interfaces.IEntity, lce_interfaces.IObjectAddedEvent)
 def _entity_added(entity, event):
@@ -43,7 +44,7 @@ def _entity_added(entity, event):
 component.moduleProvides(analytics_interfaces.IObjectProcessor)
 def init( obj ):
 	result = False
-	if nti_interfaces.IEntity.providedBy(obj) and \
+	if 	nti_interfaces.IEntity.providedBy(obj) and \
 		not nti_interfaces.IFriendsList.providedBy(obj):
 		_process_entity_added( obj )
 		result = True

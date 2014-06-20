@@ -421,11 +421,11 @@ class TestSocial(AnalyticsTestBase):
 		
 		# Add blog
 		new_blog_id = 999
-		self.db.create_thought( test_user_ds_id, test_session_id, new_blog_id )
-		results = self.session.query(ThoughtsCreated).all()
+		self.db.create_blog( test_user_ds_id, test_session_id, new_blog_id )
+		results = self.session.query( ThoughtsCreated ).all()
 		assert_that( results, has_length( 1 ) )
 		
-		contact = self.session.query(ThoughtsCreated).one()
+		contact = self.session.query( ThoughtsCreated ).one()
 		assert_that( contact.user_id, is_( 1 ) )
 		assert_that( contact.thought_id, is_( 999 ) )
 		assert_that( contact.session_id, is_( test_session_id ) )
@@ -435,11 +435,11 @@ class TestSocial(AnalyticsTestBase):
 		results = self.session.query( ThoughtsViewed ).all()
 		assert_that( results, has_length( 0 ) )
 		
-		self.db.create_thought_view( test_user_ds_id, test_session_id, datetime.now(), new_blog_id )
-		results = self.session.query(ThoughtsViewed).all()
+		self.db.create_blog_view( test_user_ds_id, test_session_id, datetime.now(), new_blog_id )
+		results = self.session.query( ThoughtsViewed ).all()
 		assert_that( results, has_length( 1 ) )
 		
-		contact = self.session.query(ThoughtsViewed).one()
+		contact = self.session.query( ThoughtsViewed ).one()
 		assert_that( contact.user_id, is_( 1 ) )
 		assert_that( contact.thought_id, is_( 999 ) )
 		assert_that( contact.session_id, is_( test_session_id ) )
@@ -731,10 +731,8 @@ class TestForumComments(AnalyticsTestBase):
 		comment_id = DEFAULT_INTID
 		my_comment = MockComment( MockDiscussion( None ) )
 		
-		self.db.create_forum_comment_created( 	test_user_ds_id,
-												test_session_id, datetime.now(),
-												self.course_name, self.forum_id,
-												self.discussion_id, my_comment )
+		self.db.create_forum_comment( 	test_user_ds_id, test_session_id, self.course_name, self.forum_id,
+										self.discussion_id, my_comment )
 
 		results = self.session.query( ForumCommentsCreated ).all()
 		assert_that( results, has_length( 1 ) )
@@ -766,10 +764,9 @@ class TestForumComments(AnalyticsTestBase):
 		comment_id = DEFAULT_INTID
 		my_comment = MockComment( CommentPost() )
 		
-		self.db.create_forum_comment_created( 	test_user_ds_id,
-												test_session_id, datetime.now(),
-												self.course_name, self.forum_id,
-												self.discussion_id, my_comment )
+		self.db.create_forum_comment( 	test_user_ds_id,
+										test_session_id, self.course_name, self.forum_id,
+										self.discussion_id, my_comment )
 
 		results = self.db.get_forum_comments_for_user( test_user_ds_id, self.course_name )
 		assert_that( results, has_length( 1 ) )
@@ -794,15 +791,15 @@ class TestForumComments(AnalyticsTestBase):
 		new_comment1 = MockComment( MockDiscussion( None ), intid=19 )
 		new_comment2 = MockComment( MockDiscussion( None ), intid=20 )
 		
-		self.db.create_forum_comment_created( 	test_user_ds_id,
-												test_session_id, datetime.now(),
-												self.course_name, self.forum_id,
-												self.discussion_id, new_comment1 )
+		self.db.create_forum_comment( 	test_user_ds_id,
+										test_session_id,
+										self.course_name, self.forum_id,
+										self.discussion_id, new_comment1 )
 		
-		self.db.create_forum_comment_created( 	test_user_ds_id,
-												test_session_id, datetime.now(),
-												self.course_name, self.forum_id,
-												self.discussion_id, new_comment2 )
+		self.db.create_forum_comment( 	test_user_ds_id,
+										test_session_id,
+										self.course_name, self.forum_id,
+										self.discussion_id, new_comment2 )
 
 		results = self.db.get_forum_comments_for_user( test_user_ds_id, self.course_name )
 		assert_that( results, has_length( 2 ) )
@@ -834,26 +831,26 @@ class TestForumComments(AnalyticsTestBase):
 		new_comment4 = MockComment( MockDiscussion( None ), intid=22 )
 		
 		# Different user
-		self.db.create_forum_comment_created( 	test_user_ds_id2,
-												test_session_id, datetime.now(),
-												self.course_name, self.forum_id,
-												self.discussion_id, new_comment1 )
+		self.db.create_forum_comment( 	test_user_ds_id2,
+										test_session_id,
+										self.course_name, self.forum_id,
+										self.discussion_id, new_comment1 )
 		
-		self.db.create_forum_comment_created( 	test_user_ds_id,
-												test_session_id, datetime.now(),
-												self.course_name, self.forum_id,
-												self.discussion_id, new_comment2 )
+		self.db.create_forum_comment( 	test_user_ds_id,
+										test_session_id, 
+										self.course_name, self.forum_id,
+										self.discussion_id, new_comment2 )
 		# Deleted
-		self.db.create_forum_comment_created( 	test_user_ds_id,
-												test_session_id, datetime.now(),
-												self.course_name, self.forum_id,
-												self.discussion_id, new_comment3 )
+		self.db.create_forum_comment( 	test_user_ds_id,
+										test_session_id,
+										self.course_name, self.forum_id,
+										self.discussion_id, new_comment3 )
 		self.db.delete_forum_comment( datetime.now(), new_comment3 )
 		# Different course
-		self.db.create_forum_comment_created( 	test_user_ds_id,
-												test_session_id, datetime.now(),
-												course_name2, self.forum_id,
-												self.discussion_id, new_comment4 )
+		self.db.create_forum_comment( 	test_user_ds_id,
+										test_session_id,
+										course_name2, self.forum_id,
+										self.discussion_id, new_comment4 )
 
 		# Only non-deleted comment for user in course
 		results = self.db.get_forum_comments_for_user( test_user_ds_id, self.course_name )
@@ -870,7 +867,7 @@ class TestBlogComments(AnalyticsTestBase):
 	def setUp(self):
 		super( TestBlogComments, self ).setUp()
 		self.blog_id = 999
-		self.db.create_thought( test_user_ds_id, test_session_id, self.blog_id )
+		self.db.create_blog( test_user_ds_id, test_session_id, self.blog_id )
 	
 	def tearDown(self):
 		self.session.close()	
@@ -883,9 +880,7 @@ class TestBlogComments(AnalyticsTestBase):
 		comment_id = DEFAULT_INTID
 		my_comment = MockComment( MockThought( None ) )
 		
-		self.db.create_blog_comment_created( 	test_user_ds_id,
-												test_session_id, datetime.now(),
-												self.blog_id, my_comment )
+		self.db.create_blog_comment( test_user_ds_id, test_session_id, self.blog_id, my_comment )
 
 		results = self.session.query( BlogCommentsCreated ).all()
 		assert_that( results, has_length( 1 ) )
@@ -913,9 +908,7 @@ class TestBlogComments(AnalyticsTestBase):
 		comment_id = DEFAULT_INTID
 		my_comment = MockComment( CommentPost() )
 		
-		self.db.create_blog_comment_created( 	test_user_ds_id,
-												test_session_id, datetime.now(),
-												self.blog_id, my_comment )
+		self.db.create_blog_comment( test_user_ds_id, test_session_id, self.blog_id, my_comment )
 
 		results = self.session.query( BlogCommentsCreated ).all()
 		assert_that( results, has_length( 1 ) )
@@ -954,10 +947,7 @@ class TestNoteComments(AnalyticsTestBase):
 		comment_id = DEFAULT_INTID
 		my_comment = MockComment( self.note )
 		
-		self.db.create_note_comment_created( 	test_user_ds_id,
-												test_session_id, datetime.now(),
-												self.course_name,
-												self.note, my_comment )
+		self.db.create_note_comment( test_user_ds_id, test_session_id, self.course_name, self.note, my_comment )
 
 		results = self.session.query( NoteCommentsCreated ).all()
 		assert_that( results, has_length( 1 ) )
@@ -985,10 +975,8 @@ class TestNoteComments(AnalyticsTestBase):
 		comment_id = DEFAULT_INTID
 		my_comment = MockComment( CommentPost() )
 		
-		self.db.create_note_comment_created( 	test_user_ds_id,
-												test_session_id, datetime.now(),
-												self.course_name,
-												self.note, my_comment )
+		self.db.create_note_comment( test_user_ds_id, test_session_id, self.course_name,
+									self.note, my_comment )
 
 		results = self.session.query( NoteCommentsCreated ).all()
 		assert_that( results, has_length( 1 ) )

@@ -36,7 +36,7 @@ def all_objects_iids(users=()):
                 # TODO There are some objects without a creator, do we want to try to import those?	
                 # - probably not, they wont' fit in our structure depending on what they are.
                 # How about friends list?
-                # TODO how about deleted items?
+                # TODO how about deleted items?  We probably want deleted items.
                 # - probably not also	
                 if    not nti_interfaces.IDeletedObjectPlaceholder.providedBy(obj) and \
                     (not usernames or creator in usernames):

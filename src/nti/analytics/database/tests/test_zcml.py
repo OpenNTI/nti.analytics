@@ -47,10 +47,10 @@ class TestZcml(nti.testing.base.ConfiguringTestBase):
 	def test_registration(self):
 		self.configure_string(ZCML_STRING)
 
-		db = component.queryUtility(IAnalyticsDB)
-		assert_that(db, not_none())
+		db = component.queryUtility( IAnalyticsDB )
+		assert_that( db, not_none() )
 		
 		db = get_analytics_db()
-		assert_that(db, not_none())
+		assert_that( db, not_none() )
 		assert_that( db, has_property('twophase', True ) )
 		assert_that( db, has_property('autocommit', False ) )

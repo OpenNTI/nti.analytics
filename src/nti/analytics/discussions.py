@@ -278,7 +278,7 @@ def _forum_removed(forum, event):
 
 component.moduleProvides(graph_interfaces.IObjectProcessor)
 
-def init(db, obj):
+def init( db, obj ):
 	result = True
 	if frm_interfaces.IForum.providedBy(obj):
 		_process_forum_add_mod_event(db, obj, graph_interfaces.ADD_EVENT)
