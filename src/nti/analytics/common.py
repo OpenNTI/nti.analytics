@@ -13,6 +13,8 @@ from ZODB.POSException import POSKeyError
 from nti.dataserver.users import Entity
 from nti.dataserver import interfaces as nti_interfaces
 
+from nti.contenttypes.courses.interfaces import ICourseInstance
+
 from nti.externalization import externalization
 
 from datetime import datetime
@@ -35,6 +37,7 @@ def get_nti_session():
 	return None
 
 def get_comment_root( comment, type ):
+	""" Work up the comment parent tree looking for 'type', returning None if not found. """
 	result = None
 	obj = comment
 	while obj:
@@ -55,3 +58,12 @@ def to_external_ntiid_oid(obj):
     if len(parts) > 4:  # check if intid is in the oid
         ntiid = ':'.join(parts[:4])
     return ntiid
+
+def get_course( obj ):	
+	# TODO Verify this works
+	result = None
+	for location in lineage( obj ):
+		if ICourseInstance.providedBy( location ):
+			result = ICourseInstance( location )
+			break
+	return result

@@ -28,8 +28,6 @@ from zope.sqlalchemy import ZopeTransactionExtension
 
 from pyramid.location import lineage
 
-from nti.contenttypes.courses.interfaces import ICourseInstance
-
 from nti.dataserver.users import interfaces as user_interfaces
 
 from nti.dataserver.users.entity import Entity
@@ -86,19 +84,10 @@ class IDLookup(object):
 		result = getattr( obj, '_ds_intid', None )
 		return result or self.intids.getId( obj )
 	
-def _get_course_from_lineage( obj ):	
-	# TODO Verify this works
-	result = None
-	for location in lineage( obj ):
-		if ICourseInstance.providedBy( location ):
-			result = ICourseInstance( location )
-			break
-	return result
-	
-def _get_sharing_enum(note):		
+def _get_sharing_enum( note, course ):		
 	# Logic duped in coursewarereports.views.admin_views
-	course = _get_course_from_lineage( note )
-	if not course:
+	if 		not course \
+		or 	isinstance( course, ( integer_types, string_types ) ):
 		# TODO What do we want to do here?
 		logger.warn( 'Could not retrieve course from object (%s)', note )
 		return 'UNKNOWN'
@@ -194,6 +183,13 @@ class AnalyticsDB(object):
 		if not nti_session:
 			return None
 		return self.idlookup._get_id_for_object( nti_session )
+	
+	def _get_id_for_course( self, course ):
+		# FIXME what do we want here? ntiid (does it have one)
+		# Needs to be unique by semester...
+		if isinstance( course, ( integer_types, string_types ) ):
+			return course
+		return self.idlookup._get_id_for_object( course )
 	
 	def _get_id_for_comment(self, comment):
 		return self.idlookup._get_id_for_object( comment )
@@ -344,7 +340,7 @@ class AnalyticsDB(object):
 		self.session.add( new_object )		
 		
 	def _delete_dynamic_friend_list_member( self, dfl_id, target_id ):
-		friend = self.session.query(DynamicFriendsListsMemberAdded).filter( 
+		friend = self.session.query( DynamicFriendsListsMemberAdded ).filter( 
 											DynamicFriendsListsMemberAdded.dfl_id==dfl_id, 
 											DynamicFriendsListsMemberAdded.target_id==target_id ).first()
 		self.session.delete( friend )	
@@ -489,11 +485,12 @@ class AnalyticsDB(object):
 		self.session.add( new_object )				
 			
 			
-	def create_course_resource_view(self, user, nti_session, timestamp, course_id, context_path, resource, time_length):
+	def create_course_resource_view(self, user, nti_session, timestamp, course, context_path, resource, time_length):
 		user = self._get_or_create_user( user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
 		rid = self._get_id_for_resource( resource )
+		course_id = self._get_id_for_course( course )
 		
 		new_object = CourseResourceViews( 	user_id=uid, 
 											session_id=sid, 
@@ -506,7 +503,7 @@ class AnalyticsDB(object):
 		
 	def create_video_event(	self, user, 
 							nti_session, timestamp, 
-							course_id, context_path, 
+							course, context_path, 
 							time_length,
 							video_event_type,
 							video_start_time,
@@ -517,6 +514,7 @@ class AnalyticsDB(object):
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
 		vid = self._get_id_for_resource( video_resource )
+		course_id = self._get_id_for_course( course )
 		
 		new_object = VideoEvents(	user_id=uid, 
 									session_id=sid, 
@@ -532,17 +530,18 @@ class AnalyticsDB(object):
 		self.session.add( new_object )	
 			
 			
-	def create_note(self, user, nti_session, course_id, note):
+	def create_note(self, user, nti_session, course, note):
 		user = self._get_or_create_user( user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
 		rid = self._get_id_for_resource( note.__parent__ )
 		nid = self._get_id_for_note( note )
+		course_id = self._get_id_for_course( course )
 		
 		timestamp = self._get_timestamp( note )
 		# TODO verify -> resource = note.__parent__?
 		
-		sharing = _get_sharing_enum(note)
+		sharing = _get_sharing_enum( note, course )
 		
 		new_object = NotesCreated( 	user_id=uid, 
 									session_id=sid, 
@@ -559,12 +558,13 @@ class AnalyticsDB(object):
 		note.deleted=timestamp
 		self.session.flush()
 		
-	def create_note_view(self, user, nti_session, timestamp, course_id, note):
+	def create_note_view(self, user, nti_session, timestamp, course, note):
 		user = self._get_or_create_user( user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
 		rid = self._get_id_for_resource( note.__parent__ )
 		nid = self._get_id_for_note( note )
+		course_id = self._get_id_for_course( course )
 		
 		new_object = NotesViewed( 	user_id=uid, 
 									session_id=sid, 
@@ -574,12 +574,13 @@ class AnalyticsDB(object):
 									note_id=nid )
 		self.session.add( new_object )
 	
-	def create_highlight(self, user, nti_session, course_id, highlight):
+	def create_highlight(self, user, nti_session, course, highlight):
 		user = self._get_or_create_user( user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
 		rid = self._get_id_for_resource( highlight.__parent__ )
 		hid = self._get_id_for_highlight( highlight )
+		course_id = self._get_id_for_course( course )
 		
 		timestamp = self._get_timestamp( highlight )
 		
@@ -598,11 +599,12 @@ class AnalyticsDB(object):
 		self.session.flush()	
 	
 	#nti.dataserver.contenttypes.forums.forum.CommunityForum
-	def create_forum(self, user, nti_session, course_id, forum):
+	def create_forum(self, user, nti_session, course, forum):
 		user = self._get_or_create_user( user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
 		fid = self._get_id_for_forum( forum )
+		course_id = self._get_id_for_course( course )
 		
 		timestamp = self._get_timestamp( forum )
 		
@@ -620,12 +622,13 @@ class AnalyticsDB(object):
 		self.session.flush()		
 		
 	#nti.dataserver.contenttypes.forums.topic.CommunityHeadlineTopic	
-	def create_discussion(self, user, nti_session, course_id, topic):
+	def create_discussion(self, user, nti_session, course, topic):
 		user = self._get_or_create_user( user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
 		fid = self._get_id_for_forum( topic.__parent__ )
 		did = self._get_id_for_discussion( topic )
+		course_id = self._get_id_for_course( course )
 		
 		timestamp = self._get_timestamp( topic )
 		
@@ -643,12 +646,13 @@ class AnalyticsDB(object):
 		topic.deleted=timestamp
 		self.session.flush()			
 		
-	def create_discussion_view(self, user, nti_session, timestamp, course_id, topic, time_length):
+	def create_discussion_view(self, user, nti_session, timestamp, course, topic, time_length):
 		user = self._get_or_create_user( user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
 		fid = self._get_id_for_forum( topic.__parent__ )
 		did = self._get_id_for_discussion( topic )
+		course_id = self._get_id_for_course( course )
 		
 		new_object = DiscussionsViewed( user_id=uid, 
 										session_id=sid, 
@@ -659,13 +663,14 @@ class AnalyticsDB(object):
 										time_length=time_length )
 		self.session.add( new_object )	
 		
-	def create_forum_comment(self, user, nti_session, course_id, forum, discussion, comment):
+	def create_forum_comment(self, user, nti_session, course, forum, discussion, comment):
 		user = self._get_or_create_user( user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
 		fid = self._get_id_for_forum(forum)
 		did = self._get_id_for_discussion(discussion)
 		cid = self._get_id_for_comment(comment)
+		course_id = self._get_id_for_course( course )
 		pid = None
 		
 		timestamp = self._get_timestamp( comment )
@@ -716,7 +721,7 @@ class AnalyticsDB(object):
 		comment.deleted=timestamp
 		self.session.flush()			
 		
-	def create_note_comment(self, user, nti_session, course_id, note, comment):
+	def create_note_comment(self, user, nti_session, course, note, comment):
 		user = self._get_or_create_user( user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
@@ -724,6 +729,7 @@ class AnalyticsDB(object):
 		rid = self._get_id_for_resource( note.__parent__ )
 		cid = self._get_id_for_comment( comment )
 		pid = None
+		course_id = self._get_id_for_course( course )
 		
 		timestamp = self._get_timestamp( comment )
 		
@@ -746,10 +752,11 @@ class AnalyticsDB(object):
 		comment.deleted=timestamp
 		self.session.flush()		
 		
-	def create_course_catalog_view(self, user, nti_session, timestamp, course_id, time_length):
+	def create_course_catalog_view(self, user, nti_session, timestamp, course, time_length):
 		user = self._get_or_create_user( user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
+		course_id = self._get_id_for_course( course )
 		
 		new_object = CourseCatalogViews( 	user_id=uid, 
 											session_id=sid, 
@@ -768,10 +775,11 @@ class AnalyticsDB(object):
 		enrollment_type = self.session.query(EnrollmentTypes).filter( EnrollmentTypes.type_name == type_name ).first()
 		return enrollment_type or self.create_enrollment_type( type_name )
 	
-	def create_course_enrollment(self, user, nti_session, timestamp, course_id, enrollment_type_name):
+	def create_course_enrollment(self, user, nti_session, timestamp, course, enrollment_type_name):
 		user = self._get_or_create_user( user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
+		course_id = self._get_id_for_course( course )
 		
 		enrollment_type = self._get_enrollment_type_id( enrollment_type_name )
 		type_id = enrollment_type.type_id
@@ -783,10 +791,11 @@ class AnalyticsDB(object):
 										type_id=type_id )
 		self.session.add( new_object )
 		
-	def create_course_drop(self, user, nti_session, timestamp, course_id):
+	def create_course_drop(self, user, nti_session, timestamp, course):
 		user = self._get_or_create_user( user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
+		course_id = self._get_id_for_course( course )
 		
 		new_object = CourseDrops( 	user_id=uid, 
 									session_id=sid, 
@@ -798,10 +807,11 @@ class AnalyticsDB(object):
 																CourseEnrollments.course_id == course_id ).first()
 		enrollment.dropped = timestamp
 		
-	def create_self_assessment_taken(self, user, nti_session, timestamp, course_id, self_assessment_id, time_length, questions, submission ):
+	def create_self_assessment_taken(self, user, nti_session, timestamp, course, self_assessment_id, time_length, questions, submission ):
 		user = self._get_or_create_user( user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
+		course_id = self._get_id_for_course( course )
 		
 		new_object = SelfAssessmentsTaken( 	user_id=uid, 
 											session_id=sid, 
@@ -815,32 +825,36 @@ class AnalyticsDB(object):
 		# TODO What objects will we have here?
 	
 	# StudentParticipationReport	
-	def get_forum_comments_for_user(self, user, course_id):	
+	def get_forum_comments_for_user(self, user, course):	
 		user = self._get_or_create_user( user )
 		uid = user.user_id
+		course_id = self._get_id_for_course( course )
 		results = self.session.query(ForumCommentsCreated).filter( 	ForumCommentsCreated.user_id == uid, 
 																ForumCommentsCreated.course_id == course_id, 
 																ForumCommentsCreated.deleted == None ).all()
 		return results
 	
-	def get_discussions_created_for_user(self, user, course_id):
+	def get_discussions_created_for_user(self, user, course):
 		user = self._get_or_create_user( user )
 		uid = user.user_id			
+		course_id = self._get_id_for_course( course )
 		results = self.session.query(DiscussionsCreated).filter( DiscussionsCreated.user_id == uid, 
 															DiscussionsCreated.course_id == course_id, 
 															DiscussionsCreated.deleted == None  ).all()
 		return results
 	
-	def get_self_assessments_for_user(self, user, course_id):	
+	def get_self_assessments_for_user(self, user, course):	
 		user = self._get_or_create_user( user )
-		uid = user.user_id		
+		uid = user.user_id	
+		course_id = self._get_id_for_course( course )	
 		results = self.session.query(SelfAssessmentsTaken).filter( 	SelfAssessmentsTaken.user_id == uid, 
 																	SelfAssessmentsTaken.course_id == course_id ).all()
 		return results
 	
-	def get_assignments_for_user(self, user, course_id):	
+	def get_assignments_for_user(self, user, course):	
 		user = self._get_or_create_user( user )
 		uid = user.user_id	
+		course_id = self._get_id_for_course( course )
 		results = self.session.query(AssignmentsTaken).filter( 	AssignmentsTaken.user_id == uid, 
 																AssignmentsTaken.course_id == course_id ).all()
 		return results
@@ -867,37 +881,44 @@ class AnalyticsDB(object):
 	
 	
 	#CourseReport
-	def get_forum_comments_for_course(self, course_id):
+	def get_forum_comments_for_course(self, course):
+		course_id = self._get_id_for_course( course )
 		results = self.session.query(ForumCommentsCreated).filter( 	ForumCommentsCreated.course_id == course_id, 
 																	ForumCommentsCreated.deleted == None  ).all()
 		return results
 	
-	def get_discussions_created_for_course(self, course_id):		
+	def get_discussions_created_for_course(self, course):		
+		course_id = self._get_id_for_course( course )
 		results = self.session.query(DiscussionsCreated).filter( 	DiscussionsCreated.course_id == course_id, 
 																	DiscussionsCreated.deleted == None  ).all()
 		return results
 	
-	def get_self_assessments_for_course(self, course_id):		
+	def get_self_assessments_for_course(self, course):		
+		course_id = self._get_id_for_course( course )
 		results = self.session.query(SelfAssessmentsTaken).filter( SelfAssessmentsTaken.course_id == course_id ).all()
 		return results
 	
-	def get_assignments_for_course(self, course_id):		
+	def get_assignments_for_course(self, course):	
+		course_id = self._get_id_for_course( course )	
 		results = self.session.query(AssignmentsTaken).filter( AssignmentsTaken.course_id == course_id ).all()
 		return results
 	
-	def get_notes_created_for_course(self, course_id):		
+	def get_notes_created_for_course(self, course):	
+		course_id = self._get_id_for_course( course )	
 		results = self.session.query(NotesCreated).filter( 	NotesCreated.course_id == course_id, 
 															NotesCreated.deleted == None  ).all()
 		return results
 	
-	def get_highlights_created_for_course(self, course_id):		
+	def get_highlights_created_for_course(self, course):	
+		course_id = self._get_id_for_course( course )	
 		results = self.session.query(HighlightsCreated).filter( HighlightsCreated.course_id == course_id, 
 																HighlightsCreated.deleted == None  ).all()
 		return results
 	
 	
 	#AssignmentReport
-	def get_assignment_details_for_course(self, course_id):		
+	def get_assignment_details_for_course(self, course ):		
+		course_id = self._get_id_for_course( course )
 		results = self.session.query(AssignmentDetails).filter( AssignmentDetails.course_id == course_id ).all()
 		return results
 

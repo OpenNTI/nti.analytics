@@ -39,7 +39,18 @@ def _execute_job( *args, **kwargs ):
 def create_job(func, *args, **kwargs):
 	args = [func] + list(args)
 	return create_job_async( _execute_job, *args, **kwargs )
+# 
+# FIXME
+# def get_job_queue():
+# 	return async_queue( QUEUE_NAME )
 
-def get_job_queue():
-	return async_queue( QUEUE_NAME )
 
+class _ImmediateQueueRunner(object):
+	
+	def put( self, job ):
+		return job()
+
+def _get_job_queue():
+	return _ImmediateQueueRunner()
+
+get_job_queue = _get_job_queue

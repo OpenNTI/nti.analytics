@@ -26,6 +26,8 @@ import nti.testing.base
 
 from nti.analytics.database import interfaces as analytic_interfaces
 
+from nti.dataserver import users
+
 from nti.analytics.database.database import AnalyticsDB
 from nti.analytics.database.metadata import Users
 
@@ -36,6 +38,8 @@ from hamcrest import not_none
 from hamcrest import is_
 
 from nti.dataserver.tests.mock_dataserver import SharedConfiguringTestLayer, WithMockDSTrans
+from nti.app.testing.base import TestBaseMixin
+from nti.app.testing.application_webtest import AppTestBaseMixin,ApplicationLayerTest
 
 ZCML_STRING = """
 <configure	xmlns="http://namespaces.zope.org/zope"
@@ -136,7 +140,7 @@ class TestImport(nti.testing.base.ConfiguringTestBase):
 	def tearDown(self):
 		self.session.close()
 	
-	def test_import(self):
+	def test_import_user(self):
 		results = self.session.query(Users).all()
 		assert_that( results, has_length( 0 ) )
 		
@@ -148,4 +152,5 @@ class TestImport(nti.testing.base.ConfiguringTestBase):
  		new_user = self.session.query(Users).one()
  		assert_that( new_user.user_ds_id, is_( 101 ) )
  		assert_that( new_user.user_id, is_( 1 ) )
+ 	
 		
