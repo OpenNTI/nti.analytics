@@ -720,9 +720,9 @@ class AnalyticsDB(object):
 		user = self._get_or_create_user( user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
-		nid = self._get_id_for_note(note)
+		nid = self._get_id_for_note( note )
 		rid = self._get_id_for_resource( note.__parent__ )
-		cid = self._get_id_for_comment(comment)
+		cid = self._get_id_for_comment( comment )
 		pid = None
 		
 		timestamp = self._get_timestamp( comment )

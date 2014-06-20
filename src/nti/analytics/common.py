@@ -34,6 +34,16 @@ def get_nti_session():
 	# FIXME Need this
 	return None
 
+def get_comment_root( comment, type ):
+	result = None
+	obj = comment
+	while obj:
+		obj = getattr( obj, '__parent__', None )
+		if isinstance( obj, type ):
+			result = obj
+			break
+	return result
+
 def get_deleted_time( obj ):
 	# Try for last modified, otherwise take whatever time we have now
 	deleted_time = getattr( obj, 'lastModified', datetime.utcnow() )
