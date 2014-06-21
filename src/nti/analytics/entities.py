@@ -16,7 +16,7 @@ from nti.dataserver import interfaces as nti_interfaces
 
 from nti.ntiids import ntiids
 
-from .common import to_external_ntiid_oid
+from .common import process_event
 
 from . import create_job
 from . import get_job_queue
@@ -27,25 +27,20 @@ def _add_entity(db, oid):
 	if entity is not None:
 		db.create_user( entity )
 
-def _process_entity_added( entity ):
-	oid = to_external_ntiid_oid(entity)
-	queue = get_job_queue()
-	job = create_job(_add_entity, oid=oid)
-	queue.put(job)
-
 # Note: We are not handling entity removal. I'm not sure we need to.
 
 @component.adapter(nti_interfaces.IEntity, lce_interfaces.IObjectAddedEvent)
 def _entity_added(entity, event):
-	queue = get_job_queue()
-	if 	queue is not None:  # check queue b/c of Everyone comm
-		_process_entity_added( entity )
+	# TODO Hmmm, why is this check here?
+# 	queue = get_job_queue()
+# 	if 	queue is not None:  # check queue b/c of Everyone comm
+	process_event( entity, _add_entity )
 
 component.moduleProvides(analytics_interfaces.IObjectProcessor)
 def init( obj ):
 	result = False
 	if 	nti_interfaces.IEntity.providedBy(obj) and \
 		not nti_interfaces.IFriendsList.providedBy(obj):
-		_process_entity_added( obj )
+		process_event( obj, _add_entity )
 		result = True
 	return result

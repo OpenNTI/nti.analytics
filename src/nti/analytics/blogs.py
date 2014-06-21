@@ -22,6 +22,7 @@ from .common import get_nti_session
 from .common import to_external_ntiid_oid
 from .common import get_deleted_time
 from .common import get_comment_root
+from .common import process_event
 
 from . import utils
 from . import create_job
@@ -37,31 +38,18 @@ def _add_comment( db, oid ):
 		nti_session = get_nti_session()
 		blog = get_comment_root( comment, 
 								( frm_interfaces.IPersonalBlogEntry, frm_interfaces.IPersonalBlogEntryPost ) )
-		
 		if blog:
 			db.create_blog_comment( user, nti_session, blog, comment )
 
-def _delete_comment( db, oid, timestamp ):
+def _remove_comment( db, oid, timestamp ):
 	comment = ntiids.find_object_with_ntiid( oid )
 	if comment:
 		db.delete_blog_comment( timestamp, comment )
 
-def _process_comment_removed( comment, timestamp ):
-	queue = get_job_queue()
-	oid = to_external_ntiid_oid( comment )
-	job = create_job( _delete_comment, oid=oid, timestamp=timestamp )
-	queue.put( job )
-
-def _process_comment_added( comment ):
-	queue = get_job_queue()
-	oid = to_external_ntiid_oid( comment )
-	job = create_job( _add_comment, oid=oid )
-	queue.put( job )
-	
 @component.adapter( frm_interfaces.IPersonalBlogComment, 
 					lce_interfaces.IObjectAddedEvent)
 def _add_personal_blog_comment(comment, event):
-	_process_comment_added( comment )
+	process_event( comment, _add_comment )
 
 
 @component.adapter(frm_interfaces.IPersonalBlogComment,
@@ -71,7 +59,7 @@ def _modify_personal_blog_comment(comment, event):
 	if nti_interfaces.IDeletedObjectPlaceholder.providedBy( comment ):
 		# TODO Can we get this time from the event?
 		timestamp = get_deleted_time( comment )
-		_process_comment_removed( comment, timestamp )
+		process_event( comment, _remove_comment, timestamp=timestamp )
 
 
 # Blogs
@@ -82,18 +70,11 @@ def _add_blog( oid ):
 		nti_session = get_nti_session()
 		db.create_thought( user, nti_session, blog )
 
-def _process_blog_added( blog, event ):
-	oid = to_external_ntiid_oid( blog )
-	queue = get_job_queue()
-	job = create_job( _add_blog, oid=oid )
-	queue.put( job )
-
 @component.adapter(	frm_interfaces.IPersonalBlogEntry, 
 					frm_interfaces.IPersonalBlogEntryPost,
 					lce_interfaces.IObjectAddedEvent )
 def _blog_added( blog, event ):
-	if db is not None:
-		_process_blog_added( blog )
+	process_event( blog, _add_blog )
 		
 # NOTE: We do not expect blog removed events.
 
@@ -104,10 +85,10 @@ def init( obj ):
 	if 		frm_interfaces.IPersonalBlogEntry.providedBy( obj ) \
 		or 	frm_interfaces.IPersonalBlogEntryPost( obj ):
 		
-		_process_blog_added( obj )
+		process_event( obj, _add_blog )
 	elif frm_interfaces.IPersonalBlogComment.providedBy( obj ):
 		
-		_process_comment_added( obj )
+		process_event( obj, _add_comment )
 	else:
 		result = False
 	return result
