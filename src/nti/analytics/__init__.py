@@ -41,6 +41,7 @@ def create_job(func, *args, **kwargs):
 	return create_job_async( _execute_job, *args, **kwargs )
 # 
 # FIXME
+# Can we toggle this based on dev/test mode?
 # def get_job_queue():
 # 	return async_queue( QUEUE_NAME )
 

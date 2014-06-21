@@ -19,6 +19,9 @@ from nti.externalization import externalization
 
 from datetime import datetime
 
+from . import create_job
+from . import get_job_queue
+
 def get_entity(entity):
     if not nti_interfaces.IEntity.providedBy(entity):
         entity = Entity.get_entity(str(entity))
@@ -67,3 +70,10 @@ def get_course( obj ):
 			result = ICourseInstance( location )
 			break
 	return result
+
+def process_event( obj, object_op, **kwargs ):
+	oid = to_external_ntiid_oid( obj )
+	queue = get_job_queue()
+	job = create_job( object_op, oid=oid, **kwargs )
+	queue.put( job )
+	

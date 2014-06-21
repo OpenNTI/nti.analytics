@@ -30,7 +30,7 @@ from sqlalchemy.orm.exc import FlushError
 from sqlalchemy.exc import IntegrityError
 
 from . import MockParent
-MockNote = MockHighlight = MockDiscussion = MockComment = MockThought = MockParent
+MockNote = MockHighlight = MockDiscussion = MockComment = MockThought = MockForum = MockParent
 
 from ..metadata import Users
 from ..metadata import Sessions
@@ -715,6 +715,8 @@ class TestForumComments(AnalyticsTestBase):
 		self.course_name='course1'
 		self.forum_id = 999
 		self.discussion_id = DEFAULT_INTID
+		forum = MockForum( None, intid=self.forum_id )
+		self.discussion = MockDiscussion( forum )
 		self.db.create_forum( 	test_user_ds_id, 
 								test_session_id, self.course_name, self.forum_id )
 		self.db.create_discussion( 	test_user_ds_id, 
@@ -729,10 +731,10 @@ class TestForumComments(AnalyticsTestBase):
 		
 		# Discussion parent
 		comment_id = DEFAULT_INTID
-		my_comment = MockComment( MockDiscussion( None ) )
+		my_comment = MockComment( self.discussion )
 		
-		self.db.create_forum_comment( 	test_user_ds_id, test_session_id, self.course_name, self.forum_id,
-										self.discussion_id, my_comment )
+		self.db.create_forum_comment( 	test_user_ds_id, test_session_id, self.course_name,
+										self.discussion, my_comment )
 
 		results = self.session.query( ForumCommentsCreated ).all()
 		assert_that( results, has_length( 1 ) )
@@ -765,8 +767,8 @@ class TestForumComments(AnalyticsTestBase):
 		my_comment = MockComment( CommentPost() )
 		
 		self.db.create_forum_comment( 	test_user_ds_id,
-										test_session_id, self.course_name, self.forum_id,
-										self.discussion_id, my_comment )
+										test_session_id, self.course_name,
+										self.discussion, my_comment )
 
 		results = self.db.get_forum_comments_for_user( test_user_ds_id, self.course_name )
 		assert_that( results, has_length( 1 ) )
@@ -788,18 +790,18 @@ class TestForumComments(AnalyticsTestBase):
 		results = self.db.get_forum_comments_for_user( test_user_ds_id, self.course_name )
 		assert_that( results, has_length( 0 ) )
 		
-		new_comment1 = MockComment( MockDiscussion( None ), intid=19 )
-		new_comment2 = MockComment( MockDiscussion( None ), intid=20 )
+		new_comment1 = MockComment( self.discussion, intid=19 )
+		new_comment2 = MockComment( self.discussion, intid=20 )
 		
 		self.db.create_forum_comment( 	test_user_ds_id,
 										test_session_id,
-										self.course_name, self.forum_id,
-										self.discussion_id, new_comment1 )
+										self.course_name,
+										self.discussion, new_comment1 )
 		
 		self.db.create_forum_comment( 	test_user_ds_id,
 										test_session_id,
-										self.course_name, self.forum_id,
-										self.discussion_id, new_comment2 )
+										self.course_name,
+										self.discussion, new_comment2 )
 
 		results = self.db.get_forum_comments_for_user( test_user_ds_id, self.course_name )
 		assert_that( results, has_length( 2 ) )
@@ -825,32 +827,32 @@ class TestForumComments(AnalyticsTestBase):
 		test_user_ds_id2 = 9999
 		course_name2 = 'different course'
 		
-		new_comment1 = MockComment( MockDiscussion( None ), intid=19 )
-		new_comment2 = MockComment( MockDiscussion( None ), intid=20 )
-		new_comment3 = MockComment( MockDiscussion( None ), intid=21 )
-		new_comment4 = MockComment( MockDiscussion( None ), intid=22 )
+		new_comment1 = MockComment( self.discussion, intid=19 )
+		new_comment2 = MockComment( self.discussion, intid=20 )
+		new_comment3 = MockComment( self.discussion, intid=21 )
+		new_comment4 = MockComment( self.discussion, intid=22 )
 		
 		# Different user
 		self.db.create_forum_comment( 	test_user_ds_id2,
 										test_session_id,
-										self.course_name, self.forum_id,
-										self.discussion_id, new_comment1 )
+										self.course_name,
+										self.discussion, new_comment1 )
 		
 		self.db.create_forum_comment( 	test_user_ds_id,
 										test_session_id, 
-										self.course_name, self.forum_id,
-										self.discussion_id, new_comment2 )
+										self.course_name,
+										self.discussion, new_comment2 )
 		# Deleted
 		self.db.create_forum_comment( 	test_user_ds_id,
 										test_session_id,
-										self.course_name, self.forum_id,
-										self.discussion_id, new_comment3 )
+										self.course_name,
+										self.discussion, new_comment3 )
 		self.db.delete_forum_comment( datetime.now(), new_comment3 )
 		# Different course
 		self.db.create_forum_comment( 	test_user_ds_id,
 										test_session_id,
-										course_name2, self.forum_id,
-										self.discussion_id, new_comment4 )
+										course_name2,
+										self.discussion, new_comment4 )
 
 		# Only non-deleted comment for user in course
 		results = self.db.get_forum_comments_for_user( test_user_ds_id, self.course_name )

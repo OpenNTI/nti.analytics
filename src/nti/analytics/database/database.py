@@ -619,6 +619,7 @@ class AnalyticsDB(object):
 		fid = self._get_id_for_forum(forum)
 		forum = self.session.query(ForumsCreated).filter( ForumsCreated.forum_id==fid ).one()
 		forum.deleted=timestamp
+		# FIXME delete topics and comments too
 		self.session.flush()		
 		
 	#nti.dataserver.contenttypes.forums.topic.CommunityHeadlineTopic	
@@ -663,10 +664,11 @@ class AnalyticsDB(object):
 										time_length=time_length )
 		self.session.add( new_object )	
 		
-	def create_forum_comment(self, user, nti_session, course, forum, discussion, comment):
+	def create_forum_comment(self, user, nti_session, course, discussion, comment):
 		user = self._get_or_create_user( user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
+		forum = discussion.__parent__
 		fid = self._get_id_for_forum(forum)
 		did = self._get_id_for_discussion(discussion)
 		cid = self._get_id_for_comment(comment)
