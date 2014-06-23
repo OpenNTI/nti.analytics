@@ -30,7 +30,7 @@ from . import interfaces as analytic_interfaces
 # Comments
 def _add_comment( db, oid ):
 	comment = ntiids.find_object_with_ntiid( oid )
-	if comment:
+	if comment is not None:
 		user = get_creator( comment )
 		nti_session = get_nti_session()
 		discussion = get_comment_root( comment, frm_interfaces.ITopic )
@@ -40,7 +40,7 @@ def _add_comment( db, oid ):
 
 def _remove_comment( db, oid, timestamp ):
 	comment = ntiids.find_object_with_ntiid( oid )
-	if comment:
+	if comment is not None:
 		db.delete_forum_comment( timestamp, comment )
 	
 @component.adapter( frm_interfaces.IGeneralForumComment, 
@@ -59,7 +59,7 @@ def _modify_general_forum_comment(comment, event):
 # Topic
 def _add_topic( db, oid ):
 	topic = ntiids.find_object_with_ntiid( oid )
-	if topic:
+	if topic is not None:
 		user = get_creator( topic )
 		nti_session = get_nti_session()
 		course = get_course( topic )
@@ -71,7 +71,7 @@ def _modify_topic( db, oid ):
 
 def _remove_topic( db, oid, timestamp ):
 	topic = ntiids.find_object_with_ntiid( oid )
-	if topic:
+	if topic is not None:
 		db.delete_discussion( user, timestamp, topic )
 
 @component.adapter( frm_interfaces.ITopic, lce_interfaces.IObjectAddedEvent )
@@ -91,12 +91,12 @@ def _topic_removed( topic, event ):
 # Forum
 def _remove_forum( db, oid, timestamp ):
 	forum = ntiids.find_object_with_ntiid( oid )
-	if forum:
+	if forum is not None:
 		db.delete_forum( user, timestamp, forum )
 
 def _add_forum( db, oid ):
 	forum = ntiids.find_object_with_ntiid( oid )
-	if forum:
+	if forum is not None:
 		user = get_creator( forum )
 		nti_session = get_nti_session()
 		course = get_course( forum )

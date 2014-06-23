@@ -32,7 +32,7 @@ from . import interfaces as analytic_interfaces
 # Comments
 def _add_comment( db, oid ):
 	comment = ntiids.find_object_with_ntiid( oid )
-	if comment:
+	if comment is not None:
 		user = get_creator( blog )
 		nti_session = get_nti_session()
 		blog = get_comment_root( comment, 
@@ -42,7 +42,7 @@ def _add_comment( db, oid ):
 
 def _remove_comment( db, oid, timestamp ):
 	comment = ntiids.find_object_with_ntiid( oid )
-	if comment:
+	if comment is not None:
 		db.delete_blog_comment( timestamp, comment )
 
 @component.adapter( frm_interfaces.IPersonalBlogComment, 
@@ -64,7 +64,7 @@ def _modify_personal_blog_comment(comment, event):
 # Blogs
 def _add_blog( db, oid ):
 	blog = ntiids.find_object_with_ntiid( oid )
-	if blog:
+	if blog is not None:
 		user = get_creator( blog )
 		nti_session = get_nti_session()
 		db.create_thought( user, nti_session, blog )
