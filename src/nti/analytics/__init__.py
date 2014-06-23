@@ -15,6 +15,7 @@ import logging
 from zope import component
 from zc.blist import BList
 
+from nti.dataserver import interfaces as nti_interfaces
 from .database import interfaces as analytic_interfaces
 
 from nti.async import create_job as create_job_async
@@ -50,15 +51,12 @@ def create_job(func, *args, **kwargs):
 class _ImmediateQueueRunner(object):
 	
 	def put( self, job ):
-		db = get_analytics_db()
+		transaction_runner = \
+				component.getUtility(nti_interfaces.IDataserverTransactionRunner)
 		try:
-			job()
-			db.session.commit()
+			transaction_runner( job )
 		except Exception as e:
 			logger.error( 'While migrating job (%s)', job, e )
-			db.session.rollback()
-		finally:
-			db.session.remove()
 
 def _get_job_queue():
 	return _ImmediateQueueRunner()

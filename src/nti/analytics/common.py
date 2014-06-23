@@ -65,18 +65,11 @@ def to_external_ntiid_oid(obj):
     return ntiid
 
 def get_course( obj ):	
-	# TODO Verify this works
 	result = None
 	for location in lineage( obj ):
-		if ICourseInstance.providedBy( location ):
-			result = ICourseInstance( location )
+		result = ICourseInstance( location, None )
+		if result is not None:
 			break
-		else:
-			try:
-				result = ICourseInstance( location )
-				break
-			except TypeError:
-				continue
 	return result
 
 def process_event( obj, object_op, **kwargs ):

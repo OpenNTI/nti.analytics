@@ -229,6 +229,9 @@ class AnalyticsDB(object):
 	
 	def _get_timestamp(self, obj):
 		result = getattr( obj, 'createdTime', None )
+		if result:
+			# FIXME need datetime for mod too
+			result = datetime.utcfromtimestamp( result )
 		return result or datetime.utcnow()
 	
 	def create_user(self, user):
@@ -238,9 +241,7 @@ class AnalyticsDB(object):
 		try:
 			self.session.flush()
 		except IntegrityError:
-			logger.info( 'User (%s) already exists on attempted insert', uid )
-			# TODO What to do with session here?
-			pass
+			logger.debug( 'User (%s) already exists on attempted insert', uid )
 		return user
 		
 	def _get_or_create_user(self, user):	
@@ -636,6 +637,8 @@ class AnalyticsDB(object):
 		fid = self._get_id_for_forum( topic.__parent__ )
 		did = self._get_id_for_discussion( topic )
 		course_id = self._get_id_for_course( course )
+		
+		from IPython.core.debugger import Tracer;Tracer()()
 		
 		timestamp = self._get_timestamp( topic )
 		
