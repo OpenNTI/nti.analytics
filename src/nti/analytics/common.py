@@ -65,6 +65,7 @@ def to_external_ntiid_oid(obj):
 def get_course( obj ):	
 	# TODO Verify this works
 	result = None
+	from IPython.core.debugger import Tracer;Tracer()()
 	for location in lineage( obj ):
 		if ICourseInstance.providedBy( location ):
 			result = ICourseInstance( location )

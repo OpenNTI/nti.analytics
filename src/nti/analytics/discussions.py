@@ -25,7 +25,6 @@ from .common import get_course
 from .common import process_event
 
 from . import utils
-from . import get_user_from_object
 from . import interfaces as analytic_interfaces
 
 # Comments
@@ -35,8 +34,9 @@ def _add_comment( db, oid ):
 		user = get_creator( comment )
 		nti_session = get_nti_session()
 		discussion = get_comment_root( comment, frm_interfaces.ITopic )
+		course = get_course( discussion )
 		if discussion:
-			db.create_forum_comment( user, nti_session, discussion, comment )
+			db.create_forum_comment( user, nti_session, course, discussion, comment )
 
 def _remove_comment( db, oid, timestamp ):
 	comment = ntiids.find_object_with_ntiid( oid )
@@ -57,19 +57,19 @@ def _modify_general_forum_comment(comment, event):
 		process_event( comment, _remove_comment, timestamp=timestamp )
 
 # Topic
-def _add_topic( oid ):
-	forum = ntiids.find_object_with_ntiid( oid )
-	if forum:
-		user = get_creator( forum )
+def _add_topic( db, oid ):
+	topic = ntiids.find_object_with_ntiid( oid )
+	if topic:
+		user = get_creator( topic )
 		nti_session = get_nti_session()
-		course = get_course( forum )
+		course = get_course( topic )
 		db.create_discussion( user, nti_session, course, topic )
 
-def _modify_topic( oid ):
+def _modify_topic( db, oid ):
 	# TODO
 	pass
 
-def _remove_topic( oid, timestamp ):
+def _remove_topic( db, oid, timestamp ):
 	topic = ntiids.find_object_with_ntiid( oid )
 	if topic:
 		db.delete_discussion( user, timestamp, topic )
@@ -134,4 +134,5 @@ def init( obj ):
 		process_event( obj, _add_comment )
 	else:
 		result = False
+		
 	return result

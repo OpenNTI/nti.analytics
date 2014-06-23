@@ -42,6 +42,7 @@ def create_job(func, *args, **kwargs):
 # 
 # FIXME
 # Can we toggle this based on dev/test mode?
+# If so, we need to handle transactions/errors here.
 # def get_job_queue():
 # 	return async_queue( QUEUE_NAME )
 
@@ -49,7 +50,15 @@ def create_job(func, *args, **kwargs):
 class _ImmediateQueueRunner(object):
 	
 	def put( self, job ):
-		return job()
+		db = get_analytics_db()
+		try:
+			job()
+			db.session.commit()
+		except Exception as e:
+			logger.error( 'While migrating job (%s)', job, e )
+			db.session.rollback()
+		finally:
+			db.session.remove()
 
 def _get_job_queue():
 	return _ImmediateQueueRunner()

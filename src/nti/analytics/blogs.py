@@ -27,7 +27,6 @@ from .common import process_event
 from . import utils
 from . import create_job
 from . import get_job_queue
-from . import get_user_from_object
 from . import interfaces as analytic_interfaces
 
 # Comments
@@ -63,7 +62,7 @@ def _modify_personal_blog_comment(comment, event):
 
 
 # Blogs
-def _add_blog( oid ):
+def _add_blog( db, oid ):
 	blog = ntiids.find_object_with_ntiid( oid )
 	if blog:
 		user = get_creator( blog )
@@ -83,7 +82,7 @@ component.moduleProvides(analytic_interfaces.IObjectProcessor)
 def init( obj ):
 	result = True
 	if 		frm_interfaces.IPersonalBlogEntry.providedBy( obj ) \
-		or 	frm_interfaces.IPersonalBlogEntryPost( obj ):
+		or 	frm_interfaces.IPersonalBlogEntryPost.providedBy( obj ):
 		
 		process_event( obj, _add_blog )
 	elif frm_interfaces.IPersonalBlogComment.providedBy( obj ):

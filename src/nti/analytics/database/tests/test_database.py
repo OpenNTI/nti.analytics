@@ -126,9 +126,8 @@ class TestUsers(unittest.TestCase):
 		results = self.session.query(Users).all()
 		assert_that( results, has_length( 3 ) )
 		
-		# Dupe insert
-		with self.assertRaises(IntegrityError):
-			self.db.create_user( fooser )
+		# Idempotent
+		self.db.create_user( fooser )
 			
 	def test_user_constraints(self):
 		results = self.session.query(Users).all()
@@ -153,7 +152,6 @@ class TestUsers(unittest.TestCase):
 		assert_that( results, has_length( 1 ) )
 		
 		new_session = self.session.query(Sessions).one()
-		#from IPython.core.debugger import Tracer;Tracer()()
 		assert_that( new_session.user_id, is_( user.user_id ) )
 		assert_that( new_session.session_id, is_( test_session_id ) )
 		assert_that( new_session.ip_addr, is_( '0.1.2.3.4' ) )	

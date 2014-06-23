@@ -20,6 +20,7 @@ from datetime import datetime
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
+from sqlalchemy.exc import IntegrityError
 
 import zope.intid
 from zope import interface
@@ -234,7 +235,12 @@ class AnalyticsDB(object):
 		uid = self._get_id_for_user( user )
 		user = Users( user_ds_id=uid )
 		self.session.add( user )
-		self.session.flush()
+		try:
+			self.session.flush()
+		except IntegrityError:
+			logger.info( 'User (%s) already exists on attempted insert', uid )
+			# TODO What to do with session here?
+			pass
 		return user
 		
 	def _get_or_create_user(self, user):	

@@ -30,7 +30,6 @@ class _AnalyticsDBSchemaManager(SchemaManager):
 											minimum_generation=generation,
 											package_name='nti.analytics.generations')
 def evolve(context):
-	# ### from IPython.core.debugger import Tracer; Tracer()()
 	install_queue(context)
 
 def install_queue(context):
@@ -41,13 +40,11 @@ def install_queue(context):
 	lsm = dataserver_folder.getSiteManager()
 	intids = lsm.getUtility(zope.intid.IIntIds)
 
-# 	result = queue.Queue()
-# 	result.__parent__ = dataserver_folder
-# 	##FIXME what's this
-# 	result.__name__ = QUEUE_NAME
-# 	intids.register(result)
-# 	lsm.registerUtility(result, provided=asyc_interfaces.IQueue, name='nti.analytics')
-# 	
-# # 	lsm.unregisterUtility( result, provided=asyc_interfaces.IQueue )
+	result = queue.Queue()
+	result.__parent__ = dataserver_folder
+	result.__name__ = QUEUE_NAME
+	intids.register( result )
+	lsm.registerUtility( result, provided=asyc_interfaces.IQueue, name=QUEUE_NAME )
+# 	lsm.unregisterUtility( result, provided=asyc_interfaces.IQueue )
 
 	return result
