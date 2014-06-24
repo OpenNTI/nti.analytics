@@ -606,6 +606,7 @@ class TestForums(AnalyticsTestBase):
 	def setUp(self):
 		super( TestForums, self ).setUp()
 		self.course_name='course1'
+		self.forum_id = 999
 	
 	def tearDown(self):
 		self.session.close()	
@@ -613,12 +614,10 @@ class TestForums(AnalyticsTestBase):
 	def test_forums(self):
 		results = self.session.query( ForumsCreated ).all()
 		assert_that( results, has_length( 0 ) )
-		
-		forum_id = 999
-		
+		my_forum = MockForum( None, intid=self.forum_id )
 		# Create forum
 		self.db.create_forum( 	test_user_ds_id, 
-								test_session_id, self.course_name, forum_id )
+								test_session_id, self.course_name, my_forum )
 		
 		results = self.session.query( ForumsCreated ).all()
 		assert_that( results, has_length( 1 ) )
@@ -627,19 +626,73 @@ class TestForums(AnalyticsTestBase):
 		assert_that( forum.user_id, is_( 1 ) )
 		assert_that( forum.session_id, is_( test_session_id ) )
 		assert_that( forum.course_id, is_( self.course_name ) )	
-		assert_that( forum.forum_id, is_( forum_id ) )
+		assert_that( forum.forum_id, is_( self.forum_id ) )
 		assert_that( forum.timestamp, not_none() )
 		assert_that( forum.deleted, none() )	
 		
 		# Delete forum
-		self.db.delete_forum( datetime.now(), forum_id )
+		self.db.delete_forum( datetime.now(), my_forum )
 		
 		results = self.session.query(ForumsCreated).all()
 		assert_that( results, has_length( 1 ) )
 		
 		forum = self.session.query(ForumsCreated).one()
-		assert_that( forum.forum_id, is_( forum_id ) )
+		assert_that( forum.forum_id, is_( self.forum_id ) )
 		assert_that( forum.deleted, not_none() )	
+		
+	def test_chain_delete(self):
+		forum = MockForum( None, intid=self.forum_id )
+		discussion = MockDiscussion( forum )
+		self.db.create_forum( 	test_user_ds_id, 
+								test_session_id, self.course_name, self.forum_id )
+		self.db.create_discussion( 	test_user_ds_id, 
+									test_session_id, self.course_name, MockDiscussion( self.forum_id ) )	
+		
+		new_comment1 = MockComment( discussion, intid=21 )
+		new_comment2 = MockComment( discussion, intid=22 )
+		
+		# Create relationships
+		forum.children = [ discussion ]
+		discussion.children = [ new_comment1, new_comment2 ]
+		
+		self.db.create_forum_comment( 	test_user_ds_id,
+										test_session_id,
+										self.course_name,
+										discussion, new_comment1 )
+		
+		self.db.create_forum_comment( 	test_user_ds_id,
+										test_session_id, 
+										self.course_name,
+										discussion, new_comment2 )	
+		
+		results = self.session.query( ForumsCreated ).all()
+		assert_that( results, has_length( 1 ) )
+		assert_that( results[0].deleted, none() )
+		
+		results = self.session.query( DiscussionsCreated ).all()
+		assert_that( results, has_length( 1 ) )
+		assert_that( results[0].deleted, none() )
+		
+		results = self.session.query( ForumCommentsCreated ).all()
+		assert_that( results, has_length( 2 ) )
+		assert_that( results[0].deleted, none() )
+		assert_that( results[1].deleted, none() )
+		
+		# Delete forum and everything goes with it
+		self.db.delete_forum( datetime.now(), forum )
+		
+		results = self.session.query( ForumsCreated ).all()
+		assert_that( results, has_length( 1 ) )
+		assert_that( results[0].deleted, not_none() )
+		
+		results = self.session.query( DiscussionsCreated ).all()
+		assert_that( results, has_length( 1 ) )
+		assert_that( results[0].deleted, not_none() )
+		
+		results = self.session.query( ForumCommentsCreated ).all()
+		assert_that( results, has_length( 2 ) )
+		assert_that( results[0].deleted, not_none() )
+		assert_that( results[1].deleted, not_none() )
 		
 class TestDiscussions(AnalyticsTestBase):
 	
@@ -647,8 +700,9 @@ class TestDiscussions(AnalyticsTestBase):
 		super( TestDiscussions, self ).setUp()
 		self.course_name = 'course1'
 		self.forum_id = 999
+		self.forum = MockForum( None, intid=self.forum_id )
 		self.db.create_forum( 	test_user_ds_id, 
-								test_session_id, self.course_name, self.forum_id )
+								test_session_id, self.course_name, self.forum )
 	
 	def tearDown(self):
 		self.session.close()	
@@ -660,7 +714,7 @@ class TestDiscussions(AnalyticsTestBase):
 		assert_that( results, has_length( 0 ) )
 		
 		discussion_id = DEFAULT_INTID
-		my_discussion = MockDiscussion( self.forum_id )
+		my_discussion = MockDiscussion( self.forum )
 		# Create discussion
 		self.db.create_discussion( 	test_user_ds_id, 
 									test_session_id, self.course_name, my_discussion )
@@ -697,7 +751,7 @@ class TestDiscussions(AnalyticsTestBase):
 		assert_that( discussion.time_length, is_( 30 ) )	
 		
 		# Delete discussion
-		self.db.delete_discussion( datetime.now(), discussion.discussion_id )
+		self.db.delete_discussion( datetime.now(), my_discussion )
 		
 		results = self.session.query(DiscussionsCreated).all()
 		assert_that( results, has_length( 1 ) )

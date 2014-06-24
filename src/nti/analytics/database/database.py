@@ -646,9 +646,11 @@ class AnalyticsDB(object):
 	def delete_forum(self, timestamp, forum):
 		timestamp = _timestamp_type( timestamp )	
 		fid = self._get_id_for_forum(forum)
-		forum = self.session.query(ForumsCreated).filter( ForumsCreated.forum_id==fid ).one()
-		forum.deleted=timestamp
-		# FIXME delete topics and comments too
+		db_forum = self.session.query(ForumsCreated).filter( ForumsCreated.forum_id==fid ).one()
+		db_forum.deleted=timestamp
+
+		for topic in forum.values():
+			self.delete_discussion(timestamp, topic)
 		self.session.flush()		
 		
 	#nti.dataserver.contenttypes.forums.topic.CommunityHeadlineTopic	
@@ -670,11 +672,14 @@ class AnalyticsDB(object):
 											discussion_id=did )
 		self.session.add( new_object )	
 		
-	def delete_discussion(self, timestamp, topic ):	
+	def delete_discussion(self, timestamp, topic):	
 		timestamp = _timestamp_type( timestamp )
 		did = self._get_id_for_discussion( topic )
-		topic = self.session.query(DiscussionsCreated).filter( DiscussionsCreated.discussion_id==did ).one()
-		topic.deleted=timestamp
+		db_topic = self.session.query(DiscussionsCreated).filter( DiscussionsCreated.discussion_id==did ).one()
+		db_topic.deleted=timestamp
+		
+		for comment in topic.values():
+			self.delete_forum_comment(timestamp, comment)
 		self.session.flush()			
 		
 	def create_discussion_view(self, user, nti_session, timestamp, course, topic, time_length):

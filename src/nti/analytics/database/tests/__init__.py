@@ -95,4 +95,8 @@ class MockParent(object):
 	def __init__(self, parent, intid = None ):    
 		self.__parent__ = parent  
 		self.intid = intid
+		self.children = list()
+		
+	def values(self):
+		return self.children
 		
