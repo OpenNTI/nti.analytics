@@ -26,6 +26,7 @@ def _add_entity(db, oid):
 	entity = ntiids.find_object_with_ntiid(oid)
 	if entity is not None:
 		db.create_user( entity )
+		logger.debug( "User created (%s)", entity )
 
 # Note: We are not handling entity removal. I'm not sure we need to.
 

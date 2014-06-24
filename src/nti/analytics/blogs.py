@@ -33,17 +33,19 @@ from . import interfaces as analytic_interfaces
 def _add_comment( db, oid ):
 	comment = ntiids.find_object_with_ntiid( oid )
 	if comment is not None:
-		user = get_creator( blog )
+		user = get_creator( comment )
 		nti_session = get_nti_session()
 		blog = get_comment_root( comment, 
 								( frm_interfaces.IPersonalBlogEntry, frm_interfaces.IPersonalBlogEntryPost ) )
 		if blog:
 			db.create_blog_comment( user, nti_session, blog, comment )
+			logger.debug( "Blog comment created (user=%s) (blog=%s)", user, blog )
 
 def _remove_comment( db, oid, timestamp ):
 	comment = ntiids.find_object_with_ntiid( oid )
 	if comment is not None:
 		db.delete_blog_comment( timestamp, comment )
+		logger.debug( "Blog comment deleted (blog=%s)", blog )
 
 @component.adapter( frm_interfaces.IPersonalBlogComment, 
 					lce_interfaces.IObjectAddedEvent)
@@ -68,6 +70,7 @@ def _add_blog( db, oid ):
 		user = get_creator( blog )
 		nti_session = get_nti_session()
 		db.create_thought( user, nti_session, blog )
+		logger.debug( "Blog created (user=%s) (blog=%s)", user, blog )
 
 @component.adapter(	frm_interfaces.IPersonalBlogEntry, 
 					frm_interfaces.IPersonalBlogEntryPost,

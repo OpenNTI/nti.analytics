@@ -37,11 +37,15 @@ def _add_comment( db, oid ):
 		course = get_course( discussion )
 		if discussion:
 			db.create_forum_comment( user, nti_session, course, discussion, comment )
+			logger.debug( 	"Forum comment created (user=%s) (discussion=%s) (course=%s)", 
+							user, discussion, course )
 
 def _remove_comment( db, oid, timestamp ):
 	comment = ntiids.find_object_with_ntiid( oid )
 	if comment is not None:
 		db.delete_forum_comment( timestamp, comment )
+		logger.debug( 	"Forum comment deleted (comment=%s)", 
+						comment )
 	
 @component.adapter( frm_interfaces.IGeneralForumComment, 
 					lce_interfaces.IObjectAddedEvent )
@@ -64,6 +68,8 @@ def _add_topic( db, oid ):
 		nti_session = get_nti_session()
 		course = get_course( topic )
 		db.create_discussion( user, nti_session, course, topic )
+		logger.debug( 	"Discussion created (user=%s) (discussion=%s)", 
+						user, topic )
 
 def _modify_topic( db, oid ):
 	# TODO
@@ -72,7 +78,9 @@ def _modify_topic( db, oid ):
 def _remove_topic( db, oid, timestamp ):
 	topic = ntiids.find_object_with_ntiid( oid )
 	if topic is not None:
-		db.delete_discussion( user, timestamp, topic )
+		db.delete_discussion( timestamp, topic )
+		logger.debug( 	"Discussion deleted (discussion=%s)", 
+						topic )
 
 @component.adapter( frm_interfaces.ITopic, lce_interfaces.IObjectAddedEvent )
 def _topic_added( topic, event ):
@@ -92,7 +100,8 @@ def _topic_removed( topic, event ):
 def _remove_forum( db, oid, timestamp ):
 	forum = ntiids.find_object_with_ntiid( oid )
 	if forum is not None:
-		db.delete_forum( user, timestamp, forum )
+		db.delete_forum( timestamp, forum )
+		logger.debug( "Forum deleted (forum=%s)", forum )
 
 def _add_forum( db, oid ):
 	forum = ntiids.find_object_with_ntiid( oid )
@@ -101,6 +110,8 @@ def _add_forum( db, oid ):
 		nti_session = get_nti_session()
 		course = get_course( forum )
 		db.create_forum( user, nti_session, course, forum )
+		logger.debug( 	"Forum created (user=%s) (forum=%s) (course=%s)", 
+						user, forum, course )
 
 def _modify_forum( db, oid ):
 	# TODO How do we handle these modify events?

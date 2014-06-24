@@ -78,3 +78,13 @@ def process_event( obj, object_op, **kwargs ):
 	job = create_job( object_op, oid=oid, **kwargs )
 	queue.put( job )
 	
+def get_created_timestamp(obj):
+	result = getattr( obj, 'createdTime', None )
+	result = timestamp_type( result )
+	return result or datetime.utcnow()	
+	
+def timestamp_type(timestamp):
+	result = timestamp
+	if isinstance( timestamp, float ):
+		result = datetime.utcfromtimestamp( timestamp )
+	return result	

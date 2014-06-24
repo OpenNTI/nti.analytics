@@ -76,6 +76,9 @@ from .metadata import AssignmentDetails
 from .metadata import SelfAssessmentsTaken
 from .metadata import SelfAssessmentDetails
 
+from nti.analytics.common import get_created_timestamp
+from nti.analytics.common import timestamp_type
+
 class IDLookup(object):
 	
 	def __init__( self ):
@@ -109,17 +112,6 @@ def _get_sharing_enum( note, course ):
 		
 	return result	
 
-def _get_timestamp(obj):
-	result = getattr( obj, 'createdTime', None )
-	result = _timestamp_type( result )
-	return result or datetime.utcnow()	
-	
-def _timestamp_type(timestamp):
-	result = timestamp
-	if isinstance( timestamp, float ):
-		result = datetime.utcfromtimestamp( timestamp )
-	return result
-	
 # We should only have a few different types of operations here:
 # - Insertions
 # - Deleted objects will modify 'deleted' column with timestamp
@@ -284,7 +276,7 @@ class AnalyticsDB(object):
 		sid = self._get_id_for_session( nti_session )
 		cid = self._get_id_for_chat( chat )
 		
-		timestamp = _get_timestamp( chat )
+		timestamp = get_created_timestamp( chat )
 		
 		new_object = ChatsInitiated( 	user_id=uid, 
 										session_id=sid, 
@@ -297,13 +289,18 @@ class AnalyticsDB(object):
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
 		cid = self._get_id_for_chat( chat )
-		timestamp = _timestamp_type( timestamp )
+		timestamp = timestamp_type( timestamp )
 		
 		new_object = ChatsJoined( 	user_id=uid, 
 									session_id=sid, 
 									timestamp=timestamp,
 									chat_id=cid )
 		self.session.add( new_object )	
+		try:
+			self.session.flush()
+		except IntegrityError:
+			logger.debug( 'User (%s) already exists in chat (%s)', uid, chat )
+		return user
 		
 	# DFLs	
 	def create_dynamic_friends_list(self, user, nti_session, timestamp, dynamic_friends_list ):
@@ -311,7 +308,7 @@ class AnalyticsDB(object):
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
 		dfl_id = self._get_id_for_dfl( dynamic_friends_list )
-		timestamp = _timestamp_type( timestamp )
+		timestamp = timestamp_type( timestamp )
 		
 		new_object = DynamicFriendsListsCreated( 	user_id=uid, 
 													session_id=sid, 
@@ -324,7 +321,7 @@ class AnalyticsDB(object):
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
 		dfl_id = self._get_id_for_dfl( dynamic_friends_list )
-		timestamp = _timestamp_type( timestamp )
+		timestamp = timestamp_type( timestamp )
 		
 		new_object = DynamicFriendsListsRemoved( 	user_id=uid, 
 													session_id=sid, 
@@ -345,7 +342,7 @@ class AnalyticsDB(object):
 		dfl_id = self._get_id_for_dfl( dynamic_friends_list )
 		target = self._get_or_create_user( new_friend )
 		target_id = target.user_id
-		timestamp = _timestamp_type( timestamp )
+		timestamp = timestamp_type( timestamp )
 		
 		new_object = DynamicFriendsListsMemberAdded( 	user_id=uid, 
 														session_id=sid, 
@@ -367,7 +364,7 @@ class AnalyticsDB(object):
 		dfl_id = self._get_id_for_dfl( dynamic_friends_list )
 		target = self._get_or_create_user( new_friend )
 		target_id = target.user_id
-		timestamp = _timestamp_type( timestamp )
+		timestamp = timestamp_type( timestamp )
 		
 		new_object = DynamicFriendsListsMemberRemoved( 	user_id=uid, 
 														session_id=sid, 
@@ -383,7 +380,7 @@ class AnalyticsDB(object):
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
 		friends_list_id = self._get_id_for_friends_list( friends_list )
-		timestamp = _timestamp_type( timestamp )
+		timestamp = timestamp_type( timestamp )
 		
 		new_object = FriendsListsCreated( 	user_id=uid, 
 											session_id=sid, 
@@ -396,7 +393,7 @@ class AnalyticsDB(object):
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
 		friends_list_id = self._get_id_for_friends_list( friends_list )
-		timestamp = _timestamp_type( timestamp )
+		timestamp = timestamp_type( timestamp )
 		
 		new_object = FriendsListsRemoved( 	user_id=uid, 
 											session_id=sid, 
@@ -411,7 +408,7 @@ class AnalyticsDB(object):
 		friends_list_id = self._get_id_for_friends_list( friends_list )
 		target = self._get_or_create_user( new_friend )
 		target_id = target.user_id
-		timestamp = _timestamp_type( timestamp )
+		timestamp = timestamp_type( timestamp )
 		
 		new_object = FriendsListsMemberAdded( 	user_id=uid, 
 												session_id=sid, 
@@ -432,7 +429,7 @@ class AnalyticsDB(object):
 		friends_list_id = self._get_id_for_friends_list( friends_list )
 		target = self._get_or_create_user( new_friend )
 		target_id = target.user_id
-		timestamp = _timestamp_type( timestamp )
+		timestamp = timestamp_type( timestamp )
 		
 		new_object = FriendsListsMemberRemoved( user_id=uid, 
 												session_id=sid, 
@@ -452,7 +449,7 @@ class AnalyticsDB(object):
 		sid = self._get_id_for_session( nti_session )
 		target = self._get_or_create_user( new_contact )
 		target_id = target.user_id
-		timestamp = _timestamp_type( timestamp )
+		timestamp = timestamp_type( timestamp )
 		
 		new_object = ContactsAdded( 	user_id=uid, 
 										session_id=sid, 
@@ -471,7 +468,7 @@ class AnalyticsDB(object):
 		sid = self._get_id_for_session( nti_session )
 		target = self._get_or_create_user( new_contact )
 		target_id = target.user_id
-		timestamp = _timestamp_type( timestamp )
+		timestamp = timestamp_type( timestamp )
 		
 		new_object = ContactsRemoved( 	user_id=uid, 
 										session_id=sid, 
@@ -486,7 +483,7 @@ class AnalyticsDB(object):
 		sid = self._get_id_for_session( nti_session )
 		tid = self._get_id_for_thought( blog_entry )
 		
-		timestamp = _get_timestamp( blog_entry )
+		timestamp = get_created_timestamp( blog_entry )
 		
 		new_object = ThoughtsCreated( 	user_id=uid, 
 										session_id=sid, 
@@ -499,7 +496,7 @@ class AnalyticsDB(object):
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
 		tid = self._get_id_for_thought( blog_entry )
-		timestamp = _timestamp_type( timestamp )
+		timestamp = timestamp_type( timestamp )
 		
 		new_object = ThoughtsViewed( 	user_id=uid, 
 										session_id=sid, 
@@ -514,7 +511,7 @@ class AnalyticsDB(object):
 		sid = self._get_id_for_session( nti_session )
 		rid = self._get_id_for_resource( resource )
 		course_id = self._get_id_for_course( course )
-		timestamp = _timestamp_type( timestamp )
+		timestamp = timestamp_type( timestamp )
 		
 		new_object = CourseResourceViews( 	user_id=uid, 
 											session_id=sid, 
@@ -539,7 +536,7 @@ class AnalyticsDB(object):
 		sid = self._get_id_for_session( nti_session )
 		vid = self._get_id_for_resource( video_resource )
 		course_id = self._get_id_for_course( course )
-		timestamp = _timestamp_type( timestamp )
+		timestamp = timestamp_type( timestamp )
 		
 		new_object = VideoEvents(	user_id=uid, 
 									session_id=sid, 
@@ -563,7 +560,7 @@ class AnalyticsDB(object):
 		nid = self._get_id_for_note( note )
 		course_id = self._get_id_for_course( course )
 		
-		timestamp = _get_timestamp( note )
+		timestamp = get_created_timestamp( note )
 		# TODO verify -> resource = note.__parent__?
 		
 		sharing = _get_sharing_enum( note, course )
@@ -578,7 +575,7 @@ class AnalyticsDB(object):
 		self.session.add( new_object )
 		
 	def delete_note(self, timestamp, note):
-		timestamp = _timestamp_type( timestamp )	
+		timestamp = timestamp_type( timestamp )	
 		nid = self._get_id_for_note(note)
 		note = self.session.query(NotesCreated).filter( NotesCreated.note_id==nid ).one()
 		note.deleted=timestamp
@@ -591,7 +588,7 @@ class AnalyticsDB(object):
 		rid = self._get_id_for_resource( note.__parent__ )
 		nid = self._get_id_for_note( note )
 		course_id = self._get_id_for_course( course )
-		timestamp = _timestamp_type( timestamp )
+		timestamp = timestamp_type( timestamp )
 		
 		new_object = NotesViewed( 	user_id=uid, 
 									session_id=sid, 
@@ -609,7 +606,7 @@ class AnalyticsDB(object):
 		hid = self._get_id_for_highlight( highlight )
 		course_id = self._get_id_for_course( course )
 		
-		timestamp = _get_timestamp( highlight )
+		timestamp = get_created_timestamp( highlight )
 		
 		new_object = HighlightsCreated( user_id=uid, 
 										session_id=sid, 
@@ -620,7 +617,7 @@ class AnalyticsDB(object):
 		self.session.add( new_object )
 		
 	def delete_highlight(self, timestamp, highlight):	
-		timestamp = _timestamp_type( timestamp )
+		timestamp = timestamp_type( timestamp )
 		hid = self._get_id_for_highlight(highlight)
 		highlight = self.session.query(HighlightsCreated).filter( HighlightsCreated.highlight_id==hid ).one()
 		highlight.deleted=timestamp
@@ -634,7 +631,7 @@ class AnalyticsDB(object):
 		fid = self._get_id_for_forum( forum )
 		course_id = self._get_id_for_course( course )
 		
-		timestamp = _get_timestamp( forum )
+		timestamp = get_created_timestamp( forum )
 		
 		new_object = ForumsCreated( user_id=uid, 
 									session_id=sid, 
@@ -644,7 +641,7 @@ class AnalyticsDB(object):
 		self.session.add( new_object )
 		
 	def delete_forum(self, timestamp, forum):
-		timestamp = _timestamp_type( timestamp )	
+		timestamp = timestamp_type( timestamp )	
 		fid = self._get_id_for_forum(forum)
 		db_forum = self.session.query(ForumsCreated).filter( ForumsCreated.forum_id==fid ).one()
 		db_forum.deleted=timestamp
@@ -662,7 +659,7 @@ class AnalyticsDB(object):
 		did = self._get_id_for_discussion( topic )
 		course_id = self._get_id_for_course( course )
 		
-		timestamp = _get_timestamp( topic )
+		timestamp = get_created_timestamp( topic )
 		
 		new_object = DiscussionsCreated( 	user_id=uid, 
 											session_id=sid, 
@@ -673,7 +670,7 @@ class AnalyticsDB(object):
 		self.session.add( new_object )	
 		
 	def delete_discussion(self, timestamp, topic):	
-		timestamp = _timestamp_type( timestamp )
+		timestamp = timestamp_type( timestamp )
 		did = self._get_id_for_discussion( topic )
 		db_topic = self.session.query(DiscussionsCreated).filter( DiscussionsCreated.discussion_id==did ).one()
 		db_topic.deleted=timestamp
@@ -689,7 +686,7 @@ class AnalyticsDB(object):
 		fid = self._get_id_for_forum( topic.__parent__ )
 		did = self._get_id_for_discussion( topic )
 		course_id = self._get_id_for_course( course )
-		timestamp = _timestamp_type( timestamp )
+		timestamp = timestamp_type( timestamp )
 		
 		new_object = DiscussionsViewed( user_id=uid, 
 										session_id=sid, 
@@ -710,7 +707,7 @@ class AnalyticsDB(object):
 		cid = self._get_id_for_comment(comment)
 		course_id = self._get_id_for_course( course )
 		pid = None
-		timestamp = _get_timestamp( comment )
+		timestamp = get_created_timestamp( comment )
 		
 		if ICommentPost.providedBy( comment.__parent__ ):
 			pid = self._get_id_for_comment( comment.__parent__ )
@@ -726,7 +723,7 @@ class AnalyticsDB(object):
 		self.session.add( new_object )	
 		
 	def delete_forum_comment(self, timestamp, comment):	
-		timestamp = _timestamp_type( timestamp )
+		timestamp = timestamp_type( timestamp )
 		cid = self._get_id_for_comment(comment)
 		comment = self.session.query(ForumCommentsCreated).filter( ForumCommentsCreated.comment_id==cid ).one()
 		comment.deleted=timestamp
@@ -740,7 +737,7 @@ class AnalyticsDB(object):
 		cid = self._get_id_for_comment( comment )
 		pid = None
 		
-		timestamp = _get_timestamp( comment )
+		timestamp = get_created_timestamp( comment )
 		
 		if ICommentPost.providedBy( comment.__parent__ ):
 			pid = self._get_id_for_comment( comment.__parent__ )
@@ -754,7 +751,7 @@ class AnalyticsDB(object):
 		self.session.add( new_object )	
 		
 	def delete_blog_comment(self, timestamp, comment):	
-		timestamp = _timestamp_type( timestamp )
+		timestamp = timestamp_type( timestamp )
 		cid = self._get_id_for_comment(comment)
 		comment = self.session.query(BlogCommentsCreated).filter( BlogCommentsCreated.comment_id==cid ).one()
 		comment.deleted=timestamp
@@ -770,7 +767,7 @@ class AnalyticsDB(object):
 		pid = None
 		course_id = self._get_id_for_course( course )
 		
-		timestamp = _get_timestamp( comment )
+		timestamp = get_created_timestamp( comment )
 		
 		if ICommentPost.providedBy( comment.__parent__ ):
 			pid = self._get_id_for_comment( comment.__parent__ )
@@ -786,7 +783,7 @@ class AnalyticsDB(object):
 		self.session.add( new_object )	
 		
 	def delete_note_comment(self, timestamp, comment):
-		timestamp = _timestamp_type( timestamp )	
+		timestamp = timestamp_type( timestamp )	
 		cid = self._get_id_for_comment(comment)
 		comment = self.session.query(NoteCommentsCreated).filter( NoteCommentsCreated.comment_id==cid ).one()
 		comment.deleted=timestamp
@@ -797,7 +794,7 @@ class AnalyticsDB(object):
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
 		course_id = self._get_id_for_course( course )
-		timestamp = _timestamp_type( timestamp )
+		timestamp = timestamp_type( timestamp )
 		
 		new_object = CourseCatalogViews( 	user_id=uid, 
 											session_id=sid, 
@@ -821,7 +818,7 @@ class AnalyticsDB(object):
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
 		course_id = self._get_id_for_course( course )
-		timestamp = _timestamp_type( timestamp )
+		timestamp = timestamp_type( timestamp )
 		
 		enrollment_type = self._get_enrollment_type_id( enrollment_type_name )
 		type_id = enrollment_type.type_id
@@ -838,7 +835,7 @@ class AnalyticsDB(object):
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
 		course_id = self._get_id_for_course( course )
-		timestamp = _timestamp_type( timestamp )
+		timestamp = timestamp_type( timestamp )
 		
 		new_object = CourseDrops( 	user_id=uid, 
 									session_id=sid, 
@@ -855,7 +852,7 @@ class AnalyticsDB(object):
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
 		course_id = self._get_id_for_course( course )
-		timestamp = _timestamp_type( timestamp )
+		timestamp = timestamp_type( timestamp )
 		
 		new_object = SelfAssessmentsTaken( 	user_id=uid, 
 											session_id=sid, 
