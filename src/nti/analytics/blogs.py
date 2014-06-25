@@ -50,7 +50,7 @@ def _remove_comment( db, oid, timestamp ):
 @component.adapter( frm_interfaces.IPersonalBlogComment, 
 					lce_interfaces.IObjectAddedEvent)
 def _add_personal_blog_comment(comment, event):
-	process_event( comment, _add_comment )
+	process_event( _add_comment, comment )
 
 
 @component.adapter(frm_interfaces.IPersonalBlogComment,
@@ -60,7 +60,7 @@ def _modify_personal_blog_comment(comment, event):
 	if nti_interfaces.IDeletedObjectPlaceholder.providedBy( comment ):
 		# TODO Can we get this time from the event?
 		timestamp = get_deleted_time( comment )
-		process_event( comment, _remove_comment, timestamp=timestamp )
+		process_event( _remove_comment, comment, timestamp=timestamp )
 
 
 # Blogs
@@ -76,7 +76,7 @@ def _add_blog( db, oid ):
 					frm_interfaces.IPersonalBlogEntryPost,
 					lce_interfaces.IObjectAddedEvent )
 def _blog_added( blog, event ):
-	process_event( blog, _add_blog )
+	process_event( _add_blog, blog )
 		
 # NOTE: We do not expect blog removed events.
 
@@ -87,10 +87,10 @@ def init( obj ):
 	if 		frm_interfaces.IPersonalBlogEntry.providedBy( obj ) \
 		or 	frm_interfaces.IPersonalBlogEntryPost.providedBy( obj ):
 		
-		process_event( obj, _add_blog )
+		process_event( _add_blog, obj )
 	elif frm_interfaces.IPersonalBlogComment.providedBy( obj ):
 		
-		process_event( obj, _add_comment )
+		process_event( _add_comment, obj )
 	else:
 		result = False
 	return result

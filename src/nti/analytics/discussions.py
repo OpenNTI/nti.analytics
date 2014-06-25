@@ -50,7 +50,7 @@ def _remove_comment( db, oid, timestamp ):
 @component.adapter( frm_interfaces.IGeneralForumComment, 
 					lce_interfaces.IObjectAddedEvent )
 def _add_general_forum_comment(comment, event):
-	process_event( comment, _add_comment )
+	process_event( _add_comment, comment )
 
 @component.adapter(frm_interfaces.IGeneralForumComment,
 				   lce_interfaces.IObjectModifiedEvent)
@@ -58,7 +58,7 @@ def _modify_general_forum_comment(comment, event):
 	if nti_interfaces.IDeletedObjectPlaceholder.providedBy( comment ):
 		# TODO Can we get this time from the event?
 		timestamp = get_deleted_time( comment )
-		process_event( comment, _remove_comment, timestamp=timestamp )
+		process_event( _remove_comment, comment, timestamp=timestamp )
 
 # Topic
 def _add_topic( db, oid ):
@@ -84,17 +84,17 @@ def _remove_topic( db, oid, timestamp ):
 
 @component.adapter( frm_interfaces.ITopic, lce_interfaces.IObjectAddedEvent )
 def _topic_added( topic, event ):
-	process_event( topic, _add_topic )
+	process_event( _add_topic, topic )
 
 @component.adapter( frm_interfaces.ITopic, lce_interfaces.IObjectModifiedEvent )
 def _topic_modified( topic, event ):
-	process_event( topic, _modify_topic )
+	process_event( _modify_topic, topic )
 
 @component.adapter( frm_interfaces.ITopic, intid_interfaces.IIntIdRemovedEvent )
 def _topic_removed( topic, event ):
 	# Can this event occur for topics?
 	timestamp = get_deleted_time( topic )
-	process_event( topic, _remove_topic, timestamp=timestamp )
+	process_event( _remove_topic, topic, timestamp=timestamp )
 
 # Forum
 def _remove_forum( db, oid, timestamp ):
@@ -119,16 +119,16 @@ def _modify_forum( db, oid ):
 
 @component.adapter( frm_interfaces.IForum, lce_interfaces.IObjectAddedEvent )
 def _forum_added( forum, event ):
-	process_event( forum, _add_forum )
+	process_event( _add_forum, forum )
 
 @component.adapter( frm_interfaces.IForum, lce_interfaces.IObjectModifiedEvent )
 def _forum_modified( forum, event ):
-	process_event( forum, _modify_forum )
+	process_event( _modify_forum, forum )
 
 @component.adapter( frm_interfaces.IForum, intid_interfaces.IIntIdRemovedEvent )
 def _forum_removed( forum, event ):
 	timestamp = get_deleted_time( forum )
-	process_event( forum, _remove_forum, timestamp=timestamp )
+	process_event( _remove_forum, forum, timestamp=timestamp )
 		
 component.moduleProvides(analytic_interfaces.IObjectProcessor)
 
@@ -136,13 +136,13 @@ def init( obj ):
 	# TODO Note comments may end up here...
 	result = True
 	if frm_interfaces.IForum.providedBy(obj):
-		process_event( obj, _add_forum )
+		process_event( _add_forum, obj )
 	
 	elif frm_interfaces.ITopic.providedBy(obj):
-		process_event( obj, _add_topic )
+		process_event( _add_topic, obj )
 	
 	elif frm_interfaces.IGeneralForumComment.providedBy( obj ):
-		process_event( obj, _add_comment )
+		process_event( _add_comment, obj )
 	else:
 		result = False
 		

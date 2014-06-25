@@ -37,11 +37,9 @@ from ..metadata import Sessions
 from ..metadata import ChatsInitiated
 from ..metadata import ChatsJoined
 from ..metadata import DynamicFriendsListsCreated
-from ..metadata import DynamicFriendsListsRemoved
 from ..metadata import DynamicFriendsListsMemberAdded
 from ..metadata import DynamicFriendsListsMemberRemoved
 from ..metadata import FriendsListsCreated
-from ..metadata import FriendsListsRemoved
 from ..metadata import FriendsListsMemberAdded
 from ..metadata import FriendsListsMemberRemoved
 from ..metadata import ContactsAdded
@@ -92,7 +90,7 @@ class TestUsers(unittest.TestCase):
 	def setUp(self):
 		self.db = AnalyticsDB( dburi='sqlite://' )
 		self.session = self.db.session
-		assert_that( self.db.engine.table_names(), has_length( 35 ) )
+		assert_that( self.db.engine.table_names(), has_length( 33 ) )
 		
 	def tearDown(self):
 		self.session.close()
@@ -224,8 +222,6 @@ class TestSocial(AnalyticsTestBase):
 	def test_dfl(self):
 		results = self.session.query( DynamicFriendsListsCreated ).all()
 		assert_that( results, has_length( 0 ) )
-		results = self.session.query( DynamicFriendsListsRemoved ).all()
-		assert_that( results, has_length( 0 ) )
 		results = self.session.query( DynamicFriendsListsMemberAdded ).all()
 		assert_that( results, has_length( 0 ) )
 		results = self.session.query( DynamicFriendsListsMemberRemoved ).all()
@@ -233,7 +229,7 @@ class TestSocial(AnalyticsTestBase):
 		
 		test_dfl_id = 999
 		# Create DFL
-		self.db.create_dynamic_friends_list( test_user_ds_id, test_session_id, datetime.now(), test_dfl_id )
+		self.db.create_dynamic_friends_list( test_user_ds_id, test_session_id, test_dfl_id )
 		results = self.session.query(DynamicFriendsListsCreated).all()
 		assert_that( results, has_length( 1 ) )
 		
@@ -242,6 +238,7 @@ class TestSocial(AnalyticsTestBase):
 		assert_that( dfl.session_id, is_( test_session_id ) )
 		assert_that( dfl.timestamp, not_none() )	
 		assert_that( dfl.dfl_id, is_( test_dfl_id ) )
+		assert_that( dfl.deleted, none() )
 		
 		# Join DFL
 		self.db.create_dynamic_friends_member( test_user_ds_id, test_session_id, datetime.now(), test_dfl_id, test_user_ds_id )
@@ -270,23 +267,20 @@ class TestSocial(AnalyticsTestBase):
 		assert_that( dfl.dfl_id, is_( test_dfl_id ) )
 		
 		# Delete DFL
-		self.db.remove_dynamic_friends_list( test_user_ds_id, test_session_id, datetime.now(), test_dfl_id )
-		results = self.session.query(DynamicFriendsListsRemoved).all()
-		assert_that( results, has_length( 1 ) )
+		self.db.remove_dynamic_friends_list( datetime.now(), test_dfl_id )
 		
 		results = self.session.query(DynamicFriendsListsMemberAdded).all()
 		assert_that( results, has_length( 0 ) )
 		
-		dfl = self.session.query(DynamicFriendsListsRemoved).one()
+		dfl = self.session.query(DynamicFriendsListsCreated).one()
 		assert_that( dfl.user_id, is_( 1 ) )
 		assert_that( dfl.session_id, is_( test_session_id ) )
 		assert_that( dfl.timestamp, not_none() )	
 		assert_that( dfl.dfl_id, is_( test_dfl_id ) )
+		assert_that( dfl.deleted, not_none() )
 		
 	def test_dfl_multiple_members(self):
 		results = self.session.query( DynamicFriendsListsCreated ).all()
-		assert_that( results, has_length( 0 ) )
-		results = self.session.query( DynamicFriendsListsRemoved ).all()
 		assert_that( results, has_length( 0 ) )
 		results = self.session.query( DynamicFriendsListsMemberAdded ).all()
 		assert_that( results, has_length( 0 ) )
@@ -296,16 +290,15 @@ class TestSocial(AnalyticsTestBase):
 		test_dfl_id = 999
 		test_dfl_id2 = 1000
 		# Create DFL
-		self.db.create_dynamic_friends_list( test_user_ds_id, test_session_id, datetime.now(), test_dfl_id )
-		self.db.create_dynamic_friends_list( test_user_ds_id, test_session_id, datetime.now(), test_dfl_id2 )
+		self.db.create_dynamic_friends_list( test_user_ds_id, test_session_id, test_dfl_id )
+		self.db.create_dynamic_friends_list( test_user_ds_id, test_session_id, test_dfl_id2 )
 		results = self.session.query(DynamicFriendsListsCreated).all()
 		assert_that( results, has_length( 2 ) )
 		
 		# Delete empty DFL
-		self.db.remove_dynamic_friends_list( test_user_ds_id, test_session_id, datetime.now(), test_dfl_id )
+		self.db.remove_dynamic_friends_list( datetime.now(), test_dfl_id )
 		results = self.session.query(DynamicFriendsListsCreated).all()
 		assert_that( results, has_length( 2 ) )
-		self.db.create_dynamic_friends_list( test_user_ds_id, test_session_id, datetime.now(), test_dfl_id )
 		
 		# Join DFLs; 3 dfl1, 1 dfl2
 		self.db.create_dynamic_friends_member( test_user_ds_id, test_session_id, datetime.now(), test_dfl_id, test_user_ds_id )
@@ -316,17 +309,15 @@ class TestSocial(AnalyticsTestBase):
 		assert_that( results, has_length( 4 ) )
 
 		# Delete DFL1
-		self.db.remove_dynamic_friends_list( test_user_ds_id, test_session_id, datetime.now(), test_dfl_id )
-		results = self.session.query(DynamicFriendsListsRemoved).all()
+		self.db.remove_dynamic_friends_list( datetime.now(), test_dfl_id )
+		results = self.session.query(DynamicFriendsListsCreated).all()
 		assert_that( results, has_length( 2 ) )
 		
 		results = self.session.query(DynamicFriendsListsMemberAdded).all()
-		assert_that( results, has_length( 1 ) )
+		assert_that( results, has_length( 4 ) )
 		
 	def test_friends_list(self):
 		results = self.session.query( FriendsListsCreated ).all()
-		assert_that( results, has_length( 0 ) )
-		results = self.session.query( FriendsListsRemoved ).all()
 		assert_that( results, has_length( 0 ) )
 		results = self.session.query( FriendsListsMemberAdded ).all()
 		assert_that( results, has_length( 0 ) )
@@ -344,6 +335,7 @@ class TestSocial(AnalyticsTestBase):
 		assert_that( fl.session_id, is_( test_session_id ) )
 		assert_that( fl.timestamp, not_none() )	
 		assert_that( fl.friends_list_id, is_( test_fl_id ) )
+		assert_that( fl.deleted, none() )
 		
 		# Join FL
 		self.db.create_friends_list_member( test_user_ds_id, test_session_id, datetime.now(), test_fl_id, test_user_ds_id )
@@ -372,15 +364,14 @@ class TestSocial(AnalyticsTestBase):
 		assert_that( fl.friends_list_id, is_( test_fl_id ) )
 		
 		# Delete FL
-		self.db.remove_friends_list( test_user_ds_id, test_session_id, datetime.now(), test_fl_id )
-		results = self.session.query(FriendsListsRemoved).all()
-		assert_that( results, has_length( 1 ) )
+		self.db.remove_friends_list( datetime.now(), test_fl_id )
 		
-		fl = self.session.query(FriendsListsRemoved).one()
+		fl = self.session.query(FriendsListsCreated).one()
 		assert_that( fl.user_id, is_( 1 ) )
 		assert_that( fl.session_id, is_( test_session_id ) )
 		assert_that( fl.timestamp, not_none() )	
-		assert_that( fl.friends_list_id, is_( test_fl_id ) )	
+		assert_that( fl.friends_list_id, is_( test_fl_id ) )
+		assert_that( fl.deleted, not_none() )	
 	
 	def test_contacts(self):
 		results = self.session.query( ContactsAdded ).all()
@@ -401,7 +392,7 @@ class TestSocial(AnalyticsTestBase):
 		assert_that( contact.timestamp, not_none() )	
 		
 		# Remove contact
-		self.db.create_contact_removed( test_user_ds_id, test_session_id, datetime.now(), new_contact_user_id )
+		self.db.contact_removed( test_user_ds_id, test_session_id, datetime.now(), new_contact_user_id )
 		results = self.session.query(ContactsAdded).all()
 		assert_that( results, has_length( 0 ) )
 		results = self.session.query(ContactsRemoved).all()

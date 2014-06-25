@@ -72,7 +72,7 @@ def get_course( obj ):
 			break
 	return result
 
-def process_event( obj, object_op, **kwargs ):
+def process_event( object_op, obj=None, **kwargs ):
 	oid = to_external_ntiid_oid( obj )
 	queue = get_job_queue()
 	job = create_job( object_op, oid=oid, **kwargs )
@@ -88,3 +88,4 @@ def timestamp_type(timestamp):
 	if isinstance( timestamp, float ):
 		result = datetime.utcfromtimestamp( timestamp )
 	return result	
+	

@@ -35,13 +35,13 @@ def _entity_added(entity, event):
 	# TODO Hmmm, why is this check here?
 # 	queue = get_job_queue()
 # 	if 	queue is not None:  # check queue b/c of Everyone comm
-	process_event( entity, _add_entity )
+	process_event( _add_entity, entity )
 
 component.moduleProvides(analytics_interfaces.IObjectProcessor)
 def init( obj ):
 	result = False
 	if 	nti_interfaces.IEntity.providedBy(obj) and \
 		not nti_interfaces.IFriendsList.providedBy(obj):
-		process_event( obj, _add_entity )
+		process_event( _add_entity, obj )
 		result = True
 	return result

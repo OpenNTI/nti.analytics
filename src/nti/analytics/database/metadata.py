@@ -79,7 +79,10 @@ class ChatsJoined(Base,BaseTableMixin):
 	__tablename__ = 'ChatsJoined'
 	chat_id = Column('chat_id', Integer, ForeignKey("ChatsInitiated.chat_id"), nullable=False, index=True )		
 	
-class DynamicFriendsListsCreated(Base,BaseTableMixin):
+class DeletedMixin(object):
+	deleted = Column('deleted', DateTime)	
+	
+class DynamicFriendsListsCreated(Base,BaseTableMixin,DeletedMixin):
 	__tablename__ = 'DynamicFriendsListsCreated'
 	dfl_id = Column('dfl_id', Integer, nullable=False, index=True )		
 	
@@ -88,9 +91,6 @@ class DynamicFriendsListMixin(object):
 	def dfl_id(cls):
 		return Column('dfl_id', Integer, ForeignKey("DynamicFriendsListsCreated.dfl_id"), nullable=False, index=True )
 
-class DynamicFriendsListsRemoved(Base,BaseTableMixin,DynamicFriendsListMixin):
-	__tablename__ = 'DynamicFriendsListsRemoved'	
-	
 class FriendMixin(object):	
 	@declared_attr
 	def target_id(cls):
@@ -102,7 +102,7 @@ class DynamicFriendsListsMemberAdded(Base,BaseTableMixin,DynamicFriendsListMixin
 class DynamicFriendsListsMemberRemoved(Base,BaseTableMixin,DynamicFriendsListMixin,FriendMixin):
 	__tablename__ = 'DynamicFriendsListsMemberRemoved'		
 
-class FriendsListsCreated(Base,BaseTableMixin):
+class FriendsListsCreated(Base,BaseTableMixin,DeletedMixin):
 	__tablename__ = 'FriendsListsCreated'
 	friends_list_id = Column('friends_list_id', Integer, nullable=False, index=True )	
 	
@@ -110,9 +110,6 @@ class FriendsListMixin(object):
 	@declared_attr
 	def friends_list_id(cls):
 		return Column('friends_list_id', Integer, ForeignKey("FriendsListsCreated.friends_list_id"), nullable=False, index=True )	
-	
-class FriendsListsRemoved(Base,BaseTableMixin,FriendsListMixin):
-	__tablename__ = 'FriendsListsRemoved'	
 	
 class FriendsListsMemberAdded(Base,BaseTableMixin,FriendsListMixin,FriendMixin):
 	__tablename__ = 'FriendsListsMemberAdded'	
@@ -157,10 +154,6 @@ class ResourceViewMixin(ResourceMixin):
 class TimeLengthMixin(object):
 	time_length = Column('time_length', Integer)
 	
-class DeletedMixin(object):
-	deleted = Column('deleted', DateTime)
-
-
 
 # For meta-views into synthetic course info, we can special type the resource_id:
 #	(about|instructors|tech_support)	

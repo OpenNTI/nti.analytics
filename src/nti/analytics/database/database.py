@@ -45,11 +45,9 @@ from .metadata import Sessions
 from .metadata import ChatsInitiated
 from .metadata import ChatsJoined
 from .metadata import DynamicFriendsListsCreated
-from .metadata import DynamicFriendsListsRemoved
 from .metadata import DynamicFriendsListsMemberAdded
 from .metadata import DynamicFriendsListsMemberRemoved
 from .metadata import FriendsListsCreated
-from .metadata import FriendsListsRemoved
 from .metadata import FriendsListsMemberAdded
 from .metadata import FriendsListsMemberRemoved
 from .metadata import ContactsAdded
@@ -303,12 +301,12 @@ class AnalyticsDB(object):
 		return user
 		
 	# DFLs	
-	def create_dynamic_friends_list(self, user, nti_session, timestamp, dynamic_friends_list ):
+	def create_dynamic_friends_list(self, user, nti_session, dynamic_friends_list):
 		user = self._get_or_create_user( user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
 		dfl_id = self._get_id_for_dfl( dynamic_friends_list )
-		timestamp = timestamp_type( timestamp )
+		timestamp = get_created_timestamp( dynamic_friends_list )
 		
 		new_object = DynamicFriendsListsCreated( 	user_id=uid, 
 													session_id=sid, 
@@ -316,24 +314,15 @@ class AnalyticsDB(object):
 													dfl_id=dfl_id )
 		self.session.add( new_object )
 		
-	def remove_dynamic_friends_list(self, user, nti_session, timestamp, dynamic_friends_list ):
-		user = self._get_or_create_user( user )
-		uid = user.user_id
-		sid = self._get_id_for_session( nti_session )
-		dfl_id = self._get_id_for_dfl( dynamic_friends_list )
-		timestamp = timestamp_type( timestamp )
-		
-		new_object = DynamicFriendsListsRemoved( 	user_id=uid, 
-													session_id=sid, 
-													timestamp=timestamp,
-													dfl_id=dfl_id )
-		self.session.add( new_object )		
-		# TODO remove from created table?  We lose information if so.
-		# This question comes up a lot.
-		
-		# Remove members from dfl
-		self.session.query(DynamicFriendsListsMemberAdded).filter( 
-										DynamicFriendsListsMemberAdded.dfl_id==dfl_id ).delete()
+	# Note: with this and friends_list, we're leaving members in their
+	# (now deleted) groups.  This could be useful (or we can remove 
+	# them at a later date).	
+	def remove_dynamic_friends_list(self, timestamp, dynamic_friends_list):
+		timestamp = timestamp_type( timestamp )	
+		dfl_id = self._get_id_for_dfl(dynamic_friends_list)
+		db_dfl = self.session.query(DynamicFriendsListsCreated).filter( DynamicFriendsListsCreated.dfl_id==dfl_id ).one()
+		db_dfl.deleted=timestamp
+		self.session.flush()
 		
 	def create_dynamic_friends_member(self, user, nti_session, timestamp, dynamic_friends_list, new_friend ):
 		user = self._get_or_create_user( user )
@@ -388,18 +377,12 @@ class AnalyticsDB(object):
 											friends_list_id=friends_list_id )
 		self.session.add( new_object )	
 		
-	def remove_friends_list(self, user, nti_session, timestamp, friends_list ):
-		user = self._get_or_create_user( user )
-		uid = user.user_id
-		sid = self._get_id_for_session( nti_session )
-		friends_list_id = self._get_id_for_friends_list( friends_list )
-		timestamp = timestamp_type( timestamp )
-		
-		new_object = FriendsListsRemoved( 	user_id=uid, 
-											session_id=sid, 
-											timestamp=timestamp,
-											friends_list_id=friends_list_id )
-		self.session.add( new_object )		
+	def remove_friends_list(self, timestamp, friends_list):
+		timestamp = timestamp_type( timestamp )	
+		fid = self._get_id_for_friends_list(friends_list)
+		db_friends_list = self.session.query(FriendsListsCreated).filter( FriendsListsCreated.friends_list_id==fid ).one()
+		db_friends_list.deleted=timestamp
+		self.session.flush()
 		
 	def create_friends_list_member(self, user, nti_session, timestamp, friends_list, new_friend ):
 		user = self._get_or_create_user( user )
@@ -443,11 +426,11 @@ class AnalyticsDB(object):
 	# See DefaultComputedContacts
 	# During migration, we'll want to pull this from user objects and capture events 
 	# during runtime.
-	def create_contact_added( self, user, nti_session, timestamp, new_contact ):
+	def create_contact_added( self, user, nti_session, timestamp, target ):
 		user = self._get_or_create_user( user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
-		target = self._get_or_create_user( new_contact )
+		target = self._get_or_create_user( target )
 		target_id = target.user_id
 		timestamp = timestamp_type( timestamp )
 		
@@ -458,15 +441,15 @@ class AnalyticsDB(object):
 		self.session.add( new_object )	
 	
 	def _delete_contact_added( self, user_id, target_id ):
-		contact = self.session.query(ContactsAdded).filter( 	ContactsAdded.user_id==user_id, 
-														ContactsAdded.target_id==target_id ).first()
+		contact = self.session.query(ContactsAdded).filter( ContactsAdded.user_id==user_id, 
+															ContactsAdded.target_id==target_id ).first()
 		self.session.delete( contact )
 		
-	def create_contact_removed( self, user, nti_session, timestamp, new_contact ):
+	def contact_removed( self, user, nti_session, timestamp, target ):
 		user = self._get_or_create_user( user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
-		target = self._get_or_create_user( new_contact )
+		target = self._get_or_create_user( target )
 		target_id = target.user_id
 		timestamp = timestamp_type( timestamp )
 		
