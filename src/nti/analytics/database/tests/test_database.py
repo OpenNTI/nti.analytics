@@ -208,7 +208,7 @@ class TestSocial(AnalyticsTestBase):
 		assert_that( new_chat.chat_id, is_( test_chat_id ) )	
 		
 		# Chat joined
-		self.db.create_chat_joined( test_user_ds_id, test_session_id, datetime.now(), test_chat_id )
+		self.db.chat_joined( test_user_ds_id, test_session_id, datetime.now(), test_chat_id )
 		results = self.session.query(ChatsJoined).all()
 		assert_that( results, has_length( 1 ) )
 		

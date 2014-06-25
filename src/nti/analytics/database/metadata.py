@@ -50,8 +50,7 @@ class Sessions(Base):
 
 class BaseTableMixin(object):
 
-	# FIXME Foreign key for sessions? It's highly likely we won't have this for migrations.
-	# Might have to make this optional.
+	# For migrating data, we may not have sessions (or timestamps); thus this is optional.
 	# Does the same apply to users?  Perhaps we don't have a 'creator' stored.
 	@declared_attr
 	def session_id(cls):
@@ -59,11 +58,22 @@ class BaseTableMixin(object):
 	
 	@declared_attr
 	def user_id(cls):
-		return Column('user_id', Integer, ForeignKey("Users.user_id"), primary_key=True, index=True)
+		return Column('user_id', Integer, ForeignKey("Users.user_id"), index=True, primary_key=True )
 	
-	# We could default the timestamp to the current time, but we may have insertion lag.
-	timestamp = Column('timestamp', DateTime, primary_key=True)
+	timestamp = Column('timestamp', DateTime, nullable=True )
 
+class BaseViewMixin(object):
+
+	# For resource views, we need timestamp to be non-null for primary key purposes.
+	@declared_attr
+	def session_id(cls):
+		return Column('session_id', Integer, ForeignKey("Sessions.session_id"), nullable=True )
+	
+	@declared_attr
+	def user_id(cls):
+		return Column('user_id', Integer, ForeignKey("Users.user_id"), index=True, primary_key=True )
+	
+	timestamp = Column('timestamp', DateTime, primary_key=True )
 
 # TODO Some of these objects do not exist in the ds, thus we'll need a sequence.  Hopefully
 # we don't need any data from the ds when retrieving this data.  If so, we need it here or another
@@ -72,29 +82,29 @@ class BaseTableMixin(object):
 # This information needs to be obscured to protect privacy.	
 class ChatsInitiated(Base,BaseTableMixin):
 	__tablename__ = 'ChatsInitiated'
-	chat_id = Column('chat_id', Integer, nullable=False, index=True )		
+	chat_id = Column('chat_id', Integer, nullable=False, index=True, primary_key=True )		
 
 # Note, we're not tracking when users leave chat rooms.
 class ChatsJoined(Base,BaseTableMixin):
 	__tablename__ = 'ChatsJoined'
-	chat_id = Column('chat_id', Integer, ForeignKey("ChatsInitiated.chat_id"), nullable=False, index=True )		
+	chat_id = Column('chat_id', Integer, ForeignKey("ChatsInitiated.chat_id"), nullable=False, index=True, primary_key=True )		
 	
 class DeletedMixin(object):
 	deleted = Column('deleted', DateTime)	
 	
 class DynamicFriendsListsCreated(Base,BaseTableMixin,DeletedMixin):
 	__tablename__ = 'DynamicFriendsListsCreated'
-	dfl_id = Column('dfl_id', Integer, nullable=False, index=True )		
+	dfl_id = Column('dfl_id', Integer, nullable=False, index=True, primary_key=True )		
 	
 class DynamicFriendsListMixin(object):	
 	@declared_attr
 	def dfl_id(cls):
-		return Column('dfl_id', Integer, ForeignKey("DynamicFriendsListsCreated.dfl_id"), nullable=False, index=True )
+		return Column('dfl_id', Integer, ForeignKey("DynamicFriendsListsCreated.dfl_id"), nullable=False, index=True, primary_key=True )
 
 class FriendMixin(object):	
 	@declared_attr
 	def target_id(cls):
-		return Column('target_id', Integer, ForeignKey("Users.user_id"), index=True)	
+		return Column('target_id', Integer, ForeignKey("Users.user_id"), index=True, primary_key=True)	
 	
 class DynamicFriendsListsMemberAdded(Base,BaseTableMixin,DynamicFriendsListMixin,FriendMixin):
 	__tablename__ = 'DynamicFriendsListsMemberAdded'	
@@ -104,12 +114,12 @@ class DynamicFriendsListsMemberRemoved(Base,BaseTableMixin,DynamicFriendsListMix
 
 class FriendsListsCreated(Base,BaseTableMixin,DeletedMixin):
 	__tablename__ = 'FriendsListsCreated'
-	friends_list_id = Column('friends_list_id', Integer, nullable=False, index=True )	
+	friends_list_id = Column('friends_list_id', Integer, nullable=False, index=True, primary_key=True )	
 	
 class FriendsListMixin(object):	
 	@declared_attr
 	def friends_list_id(cls):
-		return Column('friends_list_id', Integer, ForeignKey("FriendsListsCreated.friends_list_id"), nullable=False, index=True )	
+		return Column('friends_list_id', Integer, ForeignKey("FriendsListsCreated.friends_list_id"), nullable=False, index=True, primary_key=True )	
 	
 class FriendsListsMemberAdded(Base,BaseTableMixin,FriendsListMixin,FriendMixin):
 	__tablename__ = 'FriendsListsMemberAdded'	
@@ -124,28 +134,28 @@ class ContactsAdded(Base,BaseTableMixin,FriendMixin):
 class ContactsRemoved(Base,BaseTableMixin,FriendMixin):
 	__tablename__ = 'ContactsRemoved'
 	
-class ThoughtMixin(BaseTableMixin):	
+class ThoughtMixin(BaseViewMixin):	
 	
 	@declared_attr
 	def thought_id(cls):
-		return Column('thought_id', Integer, ForeignKey("ThoughtsCreated.thought_id"), nullable=False, index=True )
+		return Column('thought_id', Integer, ForeignKey("ThoughtsCreated.thought_id"), nullable=False, index=True, primary_key=True )
 	
 class ThoughtsCreated(Base,BaseTableMixin):
 	__tablename__ = 'ThoughtsCreated'	
-	thought_id = Column('thought_id', Integer, nullable=False, index=True )
+	thought_id = Column('thought_id', Integer, nullable=False, index=True, primary_key=True )
 	
 class ThoughtsViewed(Base,ThoughtMixin):
 	__tablename__ = 'ThoughtsViewed'	
 
-class CourseMixin(BaseTableMixin):
-	course_id = Column('course_id', String(64), nullable=False, index=True)
+class CourseMixin(object):
+	course_id = Column('course_id', String(64), nullable=False, index=True, primary_key=True)
 	
 	@declared_attr
 	def __table_args__(cls):
 		return (Index('ix_%s_user_course' % cls.__tablename__, 'user_id', 'course_id'),)
 
-class ResourceMixin(CourseMixin):
-	resource_id = Column('resource_id', String(1048), nullable=False)
+class ResourceMixin(CourseMixin,BaseViewMixin):
+	resource_id = Column('resource_id', String(1048), nullable=False, primary_key=True)
 	
 class ResourceViewMixin(ResourceMixin):
 	context_path = Column('context_path', String(1048), nullable=False)
@@ -177,11 +187,11 @@ class NoteMixin(ResourceMixin):
 	
 	@declared_attr
 	def note_id(cls):	
-		return Column('note_id', Integer, ForeignKey("NotesCreated.note_id"), nullable=False, index=True )
+		return Column('note_id', Integer, ForeignKey("NotesCreated.note_id"), nullable=False, index=True, primary_key=True )
 	
 class NotesCreated(Base,ResourceMixin,DeletedMixin):	
 	__tablename__ = 'NotesCreated'
-	note_id = Column('note_id', Integer, nullable=False, index=True )
+	note_id = Column('note_id', Integer, nullable=False, index=True, primary_key=True )
 	sharing = Column('sharing', Enum( 'PUBLIC', 'COURSE', 'OTHER', 'UNKNOWN' ), nullable=False )
 
 class NotesViewed(Base,NoteMixin):	
@@ -189,34 +199,34 @@ class NotesViewed(Base,NoteMixin):
 
 class HighlightsCreated(Base,ResourceMixin,DeletedMixin):
 	__tablename__ = 'HighlightsCreated'
-	highlight_id = Column('highlight_id', Integer, nullable=False, index=True )
+	highlight_id = Column('highlight_id', Integer, nullable=False, index=True, primary_key=True )
 
-class ForumsCreated(Base,CourseMixin,DeletedMixin):		
+class ForumsCreated(Base,BaseTableMixin,CourseMixin,DeletedMixin):		
 	__tablename__ = 'ForumsCreated'
 	forum_id = Column('forum_id', Integer, primary_key=True, index=True)				
 
 class ForumMixin(CourseMixin):
 	@declared_attr
 	def forum_id(cls):
-		return Column('forum_id', Integer, ForeignKey("ForumsCreated.forum_id"), nullable=False)
+		return Column('forum_id', Integer, ForeignKey("ForumsCreated.forum_id"), nullable=False, primary_key=True)
 	
-class DiscussionsCreated(Base,ForumMixin,DeletedMixin):	
+class DiscussionsCreated(Base,BaseTableMixin,ForumMixin,DeletedMixin):	
 	__tablename__ = 'DiscussionsCreated'
 	discussion_id = Column('discussion_id', Integer, primary_key=True ) 
 	
 class DiscussionMixin(ForumMixin):	
 	@declared_attr
 	def discussion_id(cls):
-		return Column('discussion_id', Integer, ForeignKey("DiscussionsCreated.discussion_id"), nullable=False)
+		return Column('discussion_id', Integer, ForeignKey("DiscussionsCreated.discussion_id"), nullable=False, primary_key=True)
 
-class DiscussionsViewed(Base,DiscussionMixin,TimeLengthMixin):
+class DiscussionsViewed(Base,BaseViewMixin,DiscussionMixin,TimeLengthMixin):
 	__tablename__ = 'DiscussionsViewed'	
 
-class CommentsMixin(DeletedMixin):
+class CommentsMixin(BaseTableMixin,DeletedMixin):
 	# comment_id should be the DS intid
 	@declared_attr
 	def comment_id(cls):
-		return Column('comment_id', Integer, nullable=False)
+		return Column('comment_id', Integer, nullable=False, primary_key=True)
 	
 	# parent_id should point to a parent comment, top-level comments will have null parent_ids
 	@declared_attr
@@ -233,7 +243,7 @@ class NoteCommentsCreated(Base,CommentsMixin,NoteMixin):
 	__tablename__ = 'NoteCommentsCreated'			
 
 
-class CourseCatalogViews(Base,CourseMixin,TimeLengthMixin):	
+class CourseCatalogViews(Base,BaseViewMixin,CourseMixin,TimeLengthMixin):	
 	__tablename__ = 'CourseCatalogViews'
 	
 # TODO how will we populate this, at migration time based on client?	
@@ -244,37 +254,37 @@ class EnrollmentTypes(Base):
 	type_name = Column( 'type_name', String(64), nullable=False, index=True, unique=True )
 		
 # Dropped is redundant, but it may be useful to grab all course enrollment information here.		
-class CourseEnrollments(Base,CourseMixin):
+class CourseEnrollments(Base,BaseTableMixin,CourseMixin):
 	__tablename__ = 'CourseEnrollments'
 	type_id = Column( 'type_id', Integer, ForeignKey( 'EnrollmentTypes.type_id' ), nullable=False )
 	dropped = Column( 'dropped', DateTime, nullable=True )
 	
-class CourseDrops(Base,CourseMixin):	
+class CourseDrops(Base,BaseTableMixin,CourseMixin):	
 	__tablename__ = 'CourseDrops'
 
-class AssignmentMixin(CourseMixin,TimeLengthMixin):
-	assignment_id = Column('assignment_id', String(1048), nullable=False, index=True )
+class AssignmentMixin(BaseTableMixin,CourseMixin,TimeLengthMixin):
+	assignment_id = Column('assignment_id', String(1048), nullable=False, index=True, primary_key=True )
 		
 class SelfAssessmentsTaken(Base,AssignmentMixin):
 	__tablename__ = 'SelfAssessmentsTaken'
-	submission_id = Column('submission_id', Integer, Sequence( 'self_assess_submission_id_seq' ), primary_key=True, index=True)
+	submission_id = Column('submission_id', Integer, Sequence( 'self_assess_submission_id_seq' ), primary_key=True, index=True )
 		
 # TODO Should feedback have its own event tracking? It's one of the few mutable fields if not.
 class AssignmentsTaken(Base,AssignmentMixin):
 	__tablename__ = 'AssignmentsTaken'
 	grade = Column('grade', String(256))
 	feedback_count = Column('feedback_count', Integer)
-	submission_id = Column('submission_id', Integer, Sequence( 'assignment_submission_id_seq' ), primary_key=True, index=True)
+	submission_id = Column('submission_id', Integer, Sequence( 'assignment_submission_id_seq' ), primary_key=True, index=True )
 
 
 class SubmissionMixin(AssignmentMixin):
 	@declared_attr
 	def question_id(cls):
-		return Column('question_id', Integer, nullable=False)
+		return Column('question_id', Integer, nullable=False, primary_key=True)
 	
 	@declared_attr
 	def question_part(cls):
-		return Column('question_part', Integer, nullable=False)
+		return Column('question_part', Integer, nullable=False, primary_key=True)
 	
 	@declared_attr
 	def submission(cls):
@@ -288,11 +298,11 @@ class SubmissionMixin(AssignmentMixin):
 # TODO What do we do if instructor corrects an answer for a question_part (syncing)?
 class AssignmentDetails(Base,SubmissionMixin):	
 	__tablename__ = 'AssignmentDetails'
-	submission_id = Column('submission_id', Integer, ForeignKey("AssignmentsTaken.submission_id"), nullable=False)
+	submission_id = Column('submission_id', Integer, ForeignKey("AssignmentsTaken.submission_id"), nullable=False, primary_key=True)
 
 class SelfAssessmentDetails(Base,SubmissionMixin):	
 	__tablename__ = 'SelfAssessmentDetails'
-	submission_id = Column('submission_id', Integer, ForeignKey("SelfAssessmentsTaken.submission_id"), nullable=False)
+	submission_id = Column('submission_id', Integer, ForeignKey("SelfAssessmentsTaken.submission_id"), nullable=False, primary_key=True)
 
 
 

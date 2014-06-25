@@ -282,7 +282,7 @@ class AnalyticsDB(object):
 										chat_id=cid )
 		self.session.add( new_object )		
 		
-	def create_chat_joined(self, user, nti_session, timestamp, chat):
+	def chat_joined(self, user, nti_session, timestamp, chat):
 		user = self._get_or_create_user( user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
@@ -346,12 +346,12 @@ class AnalyticsDB(object):
 											DynamicFriendsListsMemberAdded.target_id==target_id ).first()
 		self.session.delete( friend )	
 		
-	def remove_dynamic_friends_member(self, user, nti_session, timestamp, dynamic_friends_list, new_friend ):
+	def remove_dynamic_friends_member(self, user, nti_session, timestamp, dynamic_friends_list, target ):
 		user = self._get_or_create_user( user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
 		dfl_id = self._get_id_for_dfl( dynamic_friends_list )
-		target = self._get_or_create_user( new_friend )
+		target = self._get_or_create_user( target )
 		target_id = target.user_id
 		timestamp = timestamp_type( timestamp )
 		

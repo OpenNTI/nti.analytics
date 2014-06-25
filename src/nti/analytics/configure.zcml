@@ -29,6 +29,7 @@
 	<utility component=".entities" provides=".interfaces.IObjectProcessor" name="entities"/>
 	<utility component=".blogs" provides=".interfaces.IObjectProcessor" name="blogs"/>
 	<utility component=".discussions" provides=".interfaces.IObjectProcessor" name="discussions"/>
+	<utility component=".social" provides=".interfaces.IObjectProcessor" name="social"/>
 	
 <!--	
 	<utility component=".connections" provides=".interfaces.IObjectProcessor" name="connections"/>
