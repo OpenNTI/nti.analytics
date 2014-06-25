@@ -155,7 +155,6 @@ def _friendslist_deleted(obj, event):
 
 
 # DFL
-# TODO events for creating DFLs?
 def _add_dfl( db, oid ):
 	dfl = ntiids.find_object_with_ntiid(oid)
 	if dfl is not None:
@@ -205,7 +204,6 @@ def _dfl_deleted(obj, event):
 
 @component.adapter(nti_interfaces.IStartDynamicMembershipEvent)
 def _start_dynamic_membership_event(event):
-	# TODO Will DFL's have username, or do we need oid?
 	source = getattr(event.object, 'username', event.object)
 	target = event.target
 	target = getattr(target, 'username', target)

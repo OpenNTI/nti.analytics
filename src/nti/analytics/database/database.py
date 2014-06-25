@@ -231,11 +231,14 @@ class AnalyticsDB(object):
 	def create_user(self, user):
 		uid = self._get_id_for_user( user )
 		user = Users( user_ds_id=uid )
+		# We'd like to use 'merge' here, but we cannot (in sqlite) if our primary key
+		# is a sequence.
 		self.session.add( user )
 		try:
 			self.session.flush()
 		except IntegrityError:
-			logger.debug( 'User (%s) already exists on attempted insert', uid )
+			# TODO if we have a race condition, we'll need to fetch the current user entry.
+			logger.debug( 'User (%s) (db_id=%s) already exists on attempted insert', uid, user.user_id )
 		return user
 		
 	def _get_or_create_user(self, user):	

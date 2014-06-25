@@ -33,8 +33,8 @@ Base = declarative_base()
 # This user_id should be the dataserver's intid value for this user.
 class Users(Base):
 	__tablename__ = 'Users'
-	user_id = Column('user_id', Integer, Sequence('user_id_seq'), primary_key=True, index=True )
-	user_ds_id = Column('user_ds_id', Integer, nullable=False, unique=True, index=True)
+	user_id = Column('user_id', Integer, Sequence('user_id_seq'), index=True, nullable=False, primary_key=True )
+	user_ds_id = Column('user_ds_id', Integer, nullable=False, unique=True, index=True )
 	
 # TODO timezone?
 class Sessions(Base):
@@ -65,6 +65,7 @@ class BaseTableMixin(object):
 class BaseViewMixin(object):
 
 	# For resource views, we need timestamp to be non-null for primary key purposes.
+	# It will have to be fine-grain to avoid collisions.
 	@declared_attr
 	def session_id(cls):
 		return Column('session_id', Integer, ForeignKey("Sessions.session_id"), nullable=True )
