@@ -21,6 +21,9 @@ from datetime import datetime
 
 from pyramid.location import lineage
 
+import zope.intid
+from zope import component
+
 from . import create_job
 from . import get_job_queue
 
@@ -47,7 +50,7 @@ def get_comment_root( comment, type ):
 	obj = comment
 	while obj:
 		obj = getattr( obj, '__parent__', None )
-		if isinstance( obj, type ):
+		if type.providedBy( obj ):
 			result = obj
 			break
 	return result
@@ -88,4 +91,14 @@ def timestamp_type(timestamp):
 	if isinstance( timestamp, float ):
 		result = datetime.utcfromtimestamp( timestamp )
 	return result	
+
+class IDLookup(object):
+	""" Defines a unique identifier for objects that can be used for storage."""	
+	
+	def __init__( self ):
+		self.intids = component.getUtility(zope.intid.IIntIds)
+		
+	def get_id_for_object( self, obj ):
+		result = getattr( obj, '_ds_intid', None )
+		return result or self.intids.getId( obj )
 	

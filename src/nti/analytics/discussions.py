@@ -23,6 +23,7 @@ from .common import get_deleted_time
 from .common import get_comment_root
 from .common import get_course
 from .common import process_event
+from .common import IDLookup
 
 from . import utils
 from . import interfaces as analytic_interfaces
@@ -92,7 +93,7 @@ def _topic_modified( topic, event ):
 
 @component.adapter( frm_interfaces.ITopic, intid_interfaces.IIntIdRemovedEvent )
 def _topic_removed( topic, event ):
-	# Can this event occur for topics?
+	# TODO Can this event occur for topics?
 	timestamp = get_deleted_time( topic )
 	process_event( _remove_topic, topic, timestamp=timestamp )
 
@@ -133,15 +134,21 @@ def _forum_removed( forum, event ):
 component.moduleProvides(analytic_interfaces.IObjectProcessor)
 
 def init( obj ):
+	# Exclude blogs
 	# TODO Note comments may end up here...
 	result = True
 	if frm_interfaces.IForum.providedBy(obj):
 		process_event( _add_forum, obj )
 	
-	elif frm_interfaces.ITopic.providedBy(obj):
+	elif frm_interfaces.ITopic.providedBy(obj) \
+		and not (	frm_interfaces.IPersonalBlogEntry.providedBy( obj ) \
+				or 	frm_interfaces.IPersonalBlogEntryPost.providedBy( obj ) ):
+		
 		process_event( _add_topic, obj )
 	
-	elif frm_interfaces.IGeneralForumComment.providedBy( obj ):
+	elif frm_interfaces.IGeneralForumComment.providedBy( obj ) \
+		and not frm_interfaces.IPersonalBlogComment.providedBy( obj ):
+		
 		process_event( _add_comment, obj )
 	else:
 		result = False

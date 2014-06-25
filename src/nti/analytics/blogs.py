@@ -57,6 +57,7 @@ def _add_personal_blog_comment(comment, event):
 				   lce_interfaces.IObjectModifiedEvent)
 def _modify_personal_blog_comment(comment, event):
 	# FIXME Could these be changes in sharing? Perhaps different by object type.
+	# IObjectSharingModifiedEvent	
 	if nti_interfaces.IDeletedObjectPlaceholder.providedBy( comment ):
 		# TODO Can we get this time from the event?
 		timestamp = get_deleted_time( comment )
@@ -69,7 +70,7 @@ def _add_blog( db, oid ):
 	if blog is not None:
 		user = get_creator( blog )
 		nti_session = get_nti_session()
-		db.create_thought( user, nti_session, blog )
+		db.create_blog( user, nti_session, blog )
 		logger.debug( "Blog created (user=%s) (blog=%s)", user, blog )
 
 @component.adapter(	frm_interfaces.IPersonalBlogEntry, 

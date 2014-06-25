@@ -24,7 +24,6 @@ from sqlalchemy.exc import IntegrityError
 
 import zope.intid
 from zope import interface
-from zope import component
 from zope.sqlalchemy import ZopeTransactionExtension
 
 from pyramid.location import lineage
@@ -76,16 +75,8 @@ from .metadata import SelfAssessmentDetails
 
 from nti.analytics.common import get_created_timestamp
 from nti.analytics.common import timestamp_type
+from nti.analytics.common import IDLookup
 
-class IDLookup(object):
-	
-	def __init__( self ):
-		self.intids = component.getUtility(zope.intid.IIntIds)
-		
-	def _get_id_for_object( self, obj ):
-		result = getattr( obj, '_ds_intid', None )
-		return result or self.intids.getId( obj )
-	
 def _get_sharing_enum( note, course ):		
 	# Logic duped in coursewarereports.views.admin_views
 	if 		not course \
@@ -179,34 +170,33 @@ class AnalyticsDB(object):
 		# We may already have an integer id, use it.
 		if isinstance( user, integer_types ):
 			return user
-		return self.idlookup._get_id_for_object( user )
+		return self.idlookup.get_id_for_object( user )
 	
 	def _get_id_for_session(self, nti_session):
 		if not nti_session:
 			return None
-		return self.idlookup._get_id_for_object( nti_session )
+		return self.idlookup.get_id_for_object( nti_session )
 	
 	def _get_id_for_course( self, course ):
-		# FIXME what do we want here? ntiid (does it have one)
-		# Needs to be unique by semester...
+		# ID needs to be unique by semester...
 		if isinstance( course, ( integer_types, string_types ) ):
 			return course
-		return self.idlookup._get_id_for_object( course )
+		return self.idlookup.get_id_for_object( course )
 	
 	def _get_id_for_comment(self, comment):
-		return self.idlookup._get_id_for_object( comment )
+		return self.idlookup.get_id_for_object( comment )
 	
 	def _get_id_for_forum(self, forum):
-		return self.idlookup._get_id_for_object( forum )
+		return self.idlookup.get_id_for_object( forum )
 	
 	def _get_id_for_discussion(self, discussion):
-		return self.idlookup._get_id_for_object( discussion )
+		return self.idlookup.get_id_for_object( discussion )
 	
 	def _get_id_for_note(self, note):
-		return self.idlookup._get_id_for_object( note )
+		return self.idlookup.get_id_for_object( note )
 	
 	def _get_id_for_highlight(self, highlight):
-		return self.idlookup._get_id_for_object( highlight )
+		return self.idlookup.get_id_for_object( highlight )
 	
 	def _get_id_for_resource(self, resource):
 		""" Resource could be a video or content piece. """
@@ -217,16 +207,16 @@ class AnalyticsDB(object):
 		return result
 	
 	def _get_id_for_thought(self, thought):
-		return self.idlookup._get_id_for_object( thought )
+		return self.idlookup.get_id_for_object( thought )
 	
 	def _get_id_for_chat(self, chat):
-		return self.idlookup._get_id_for_object( chat )
+		return self.idlookup.get_id_for_object( chat )
 	
 	def _get_id_for_dfl(self, dfl):
-		return self.idlookup._get_id_for_object( dfl )
+		return self.idlookup.get_id_for_object( dfl )
 	
 	def _get_id_for_friends_list(self, friends_list):
-		return self.idlookup._get_id_for_object( friends_list )
+		return self.idlookup.get_id_for_object( friends_list )
 	
 	def create_user(self, user):
 		uid = self._get_id_for_user( user )
@@ -320,9 +310,8 @@ class AnalyticsDB(object):
 	# Note: with this and friends_list, we're leaving members in their
 	# (now deleted) groups.  This could be useful (or we can remove 
 	# them at a later date).	
-	def remove_dynamic_friends_list(self, timestamp, dynamic_friends_list):
+	def remove_dynamic_friends_list(self, timestamp, dfl_id):
 		timestamp = timestamp_type( timestamp )	
-		dfl_id = self._get_id_for_dfl(dynamic_friends_list)
 		db_dfl = self.session.query(DynamicFriendsListsCreated).filter( DynamicFriendsListsCreated.dfl_id==dfl_id ).one()
 		db_dfl.deleted=timestamp
 		self.session.flush()
@@ -380,10 +369,9 @@ class AnalyticsDB(object):
 											friends_list_id=friends_list_id )
 		self.session.add( new_object )	
 		
-	def remove_friends_list(self, timestamp, friends_list):
+	def remove_friends_list(self, timestamp, friends_list_id):
 		timestamp = timestamp_type( timestamp )	
-		fid = self._get_id_for_friends_list(friends_list)
-		db_friends_list = self.session.query(FriendsListsCreated).filter( FriendsListsCreated.friends_list_id==fid ).one()
+		db_friends_list = self.session.query(FriendsListsCreated).filter( FriendsListsCreated.friends_list_id==friends_list_id ).one()
 		db_friends_list.deleted=timestamp
 		self.session.flush()
 		

@@ -27,7 +27,7 @@ from nti.dataserver.tests.mock_dataserver import DSInjectorMixin
 
 import zope.testing.cleanup
 
-from nti.analytics.database import database
+from nti.analytics import common
 
 from six import integer_types
 
@@ -36,14 +36,14 @@ DEFAULT_INTID = 101
 """ Override this for testing purposes. """
 class TestIDLookup(object):
 	
-	def _get_id_for_object( self, obj ):
+	def get_id_for_object( self, obj ):
 		result = DEFAULT_INTID
 		if isinstance( obj, integer_types ):
 			result = obj
 		attr = getattr( obj, 'intid', result )
 		return attr or result
 	
-database.IDLookup = TestIDLookup
+common.IDLookup = TestIDLookup
 
 
 class SharedConfiguringTestLayer(ZopeComponentLayer,

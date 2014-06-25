@@ -27,6 +27,7 @@ from .common import get_course
 from .common import process_event
 from .common import get_created_timestamp
 from .common import get_entity
+from .common import IDLookup
 
 from . import utils
 from . import interfaces as analytic_interfaces
@@ -39,7 +40,7 @@ def _add_meeting(db, oid):
 		# Idempotent if we also have participant joining events
 		creator = get_creator( new_chat )
 		nti_session = None
-		db.chat_initiated( session, creator, nti_session, new_chat )
+		db.create_chat_initiated( session, creator, nti_session, new_chat )
 		logger.debug( "Meeting created (user=%s) (meeting=%s)", creator, new_chat )
 		
 		timestamp = get_created_timestamp( new_chat )
@@ -123,13 +124,9 @@ def _add_friends_list(db, oid):
 		# FIXME add members
 		logger.debug( "FriendsList created (user=%s) (friends_list=%s)", user, friends_list )		
 
-def _remove_friends_list(db, oid, timestamp=None):
-	# TODO For removal events like this, will these objects exist?
-	# This also comes up a lot.
-	friends_list = ntiids.find_object_with_ntiid(oid)
-	if friends_list is not None:
-		db.remove_friends_list( timestamp, friends_list )
-		logger.debug( "FriendsList removed (friends_list=%s)", friends_list )
+def _remove_friends_list(db, friends_list_id, timestamp=None):
+	db.remove_friends_list( timestamp, friends_list_id )
+	logger.debug( "FriendsList removed (friends_list=%s)", friends_list )
 
 
 def _modified_friends_list( db, oid, timestamp=None ):
@@ -151,7 +148,9 @@ def _friendslist_modified(obj, event):
 
 @component.adapter(nti_interfaces.IFriendsList, intid_interfaces.IIntIdRemovedEvent)
 def _friendslist_deleted(obj, event):
-	process_event( _remove_friends_list, obj )
+	id_lookup = IDLookup()
+	id = id_lookup.get_id_for_object( obj )
+	process_event( _remove_friends_list, friends_list_id=id )
 
 
 # DFL
@@ -165,12 +164,9 @@ def _add_dfl( db, oid ):
 		# FIXME add members
 		logger.debug( "DFL created (user=%s) (dfl=%s)", user, dfl )		
 
-def _remove_dfl( db, oid, timestamp=None ):
-	# TODO For removal events like this, will these objects exist?
-	dfl = ntiids.find_object_with_ntiid(oid)
-	if dfl is not None:
-		db.remove_friends_list( timestamp, dfl )
-		logger.debug( "DFL destroyed (dfl=%s)", dfl )
+def _remove_dfl( db, dfl_id, timestamp=None ):
+	db.remove_dynamic_friends_list( timestamp, dfl_id )
+	logger.debug( "DFL destroyed (dfl=%s)", dfl )
 
 def _add_dfl_member( db, source, target, username=None, timestamp=None ):
 	dfl = get_entity( target )
@@ -200,7 +196,9 @@ def _dfl_added(obj, event):
 @component.adapter(nti_interfaces.IDynamicSharingTargetFriendsList,
 				  lce_interfaces.IObjectAddedEvent)
 def _dfl_deleted(obj, event):	
-	process_event( _remove_dfl, obj)
+	id_lookup = IDLookup()
+	id = id_lookup.get_id_for_object( obj )
+	process_event( _remove_dfl, dfl_id=id )
 
 @component.adapter(nti_interfaces.IStartDynamicMembershipEvent)
 def _start_dynamic_membership_event(event):
@@ -224,8 +222,14 @@ def init( obj ):
 		from IPython.core.debugger import Tracer;Tracer()()
 		process_event( _add_meeting, obj )
 	elif nti_interfaces.IDynamicSharingTargetFriendsList.providedBy( obj ):
+		from IPython.core.debugger import Tracer;Tracer()()
 		process_event( _add_dfl, obj )
-	elif nti_interfaces.IFriendsList.providedBy( obj ):
+		
+	# Exclude 'mycontacts', better way to do this?	
+	elif 	nti_interfaces.IFriendsList.providedBy( obj ) \
+		and 'mycontacts' not in obj.__name__:
+		
+		from IPython.core.debugger import Tracer;Tracer()()
 		process_event( _add_friends_list, obj )
 	elif nti_interfaces.IUser.providedBy(obj):
 		process_event( _add_contacts, obj )
