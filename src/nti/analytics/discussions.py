@@ -70,8 +70,7 @@ def _add_topic( db, oid ):
 		nti_session = get_nti_session()
 		course = get_course( topic )
 		db.create_discussion( user, nti_session, course, topic )
-		logger.debug( 	"Discussion created (user=%s) (discussion=%s)", 
-						user, topic )
+		logger.debug( "Discussion created (user=%s) (discussion=%s)", user, topic )
 
 def _modify_topic( db, oid, timestamp=None ):
 	# TODO
@@ -81,8 +80,7 @@ def _remove_topic( db, oid, timestamp=None ):
 	topic = ntiids.find_object_with_ntiid( oid )
 	if topic is not None:
 		db.delete_discussion( timestamp, topic )
-		logger.debug( 	"Discussion deleted (discussion=%s)", 
-						topic )
+		logger.debug( "Discussion deleted (discussion=%s)", topic )
 
 @component.adapter( frm_interfaces.ITopic, lce_interfaces.IObjectAddedEvent )
 def _topic_added( topic, event ):
@@ -90,12 +88,12 @@ def _topic_added( topic, event ):
 
 @component.adapter( frm_interfaces.ITopic, lce_interfaces.IObjectModifiedEvent )
 def _topic_modified( topic, event ):
+	# What's this?
 	timestamp = datetime.utcnow()
 	process_event( _modify_topic, topic, timestamp=timestamp )
 
 @component.adapter( frm_interfaces.ITopic, intid_interfaces.IIntIdRemovedEvent )
 def _topic_removed( topic, event ):
-	# TODO Does this event occur for topics?
 	timestamp = datetime.utcnow()
 	process_event( _remove_topic, topic, timestamp=timestamp )
 
