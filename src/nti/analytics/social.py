@@ -151,13 +151,15 @@ def _friendslist_added(obj, event):
 @component.adapter(nti_interfaces.IFriendsList, lce_interfaces.IObjectModifiedEvent)
 def _friendslist_modified(obj, event):
 	# Should be joins/removals
-	process_event( _modified_friends_list, obj )
+	timestamp = datetime.utcnow()
+	process_event( _modified_friends_list, obj, timestamp=timestamp )
 
 @component.adapter(nti_interfaces.IFriendsList, intid_interfaces.IIntIdRemovedEvent)
 def _friendslist_deleted(obj, event):
 	id_lookup = IDLookup()
 	id = id_lookup.get_id_for_object( obj )
-	process_event( _remove_friends_list, friends_list_id=id )
+	timestamp = datetime.utcnow()
+	process_event( _remove_friends_list, friends_list_id=id, timestamp=timestamp )
 
 
 # DFL
@@ -205,23 +207,26 @@ def _dfl_added(obj, event):
 @component.adapter(nti_interfaces.IDynamicSharingTargetFriendsList,
 				  lce_interfaces.IObjectAddedEvent)
 def _dfl_deleted(obj, event):	
+	timestamp = datetime.utcnow()
 	id_lookup = IDLookup()
 	id = id_lookup.get_id_for_object( obj )
-	process_event( _remove_dfl, dfl_id=id )
+	process_event( _remove_dfl, dfl_id=id, timestamp=timestamp )
 
 @component.adapter(nti_interfaces.IStartDynamicMembershipEvent)
 def _start_dynamic_membership_event(event):
+	timestamp = datetime.utcnow()
 	source = getattr(event.object, 'username', event.object)
 	target = event.target
 	target = getattr(target, 'username', target)
-	process_event( _add_dfl_member, source=source, target=target )
+	process_event( _add_dfl_member, source=source, target=target, timestamp=timestamp )
 
 @component.adapter(nti_interfaces.IStopDynamicMembershipEvent)
 def _stop_dynamic_membership_event(event):
+	timestamp = datetime.utcnow()
 	source = getattr(event.object, 'username', event.object)
 	target = event.target
 	target = getattr(target, 'username', target)
-	process_event( _remove_dfl_member, source=source, target=target )
+	process_event( _remove_dfl_member, source=source, target=target, timestamp=timestamp )
 
 
 component.moduleProvides(analytic_interfaces.IObjectProcessor)

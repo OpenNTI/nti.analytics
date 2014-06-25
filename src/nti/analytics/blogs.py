@@ -41,7 +41,7 @@ def _add_comment( db, oid ):
 			db.create_blog_comment( user, nti_session, blog, comment )
 			logger.debug( "Blog comment created (user=%s) (blog=%s)", user, blog )
 
-def _remove_comment( db, oid, timestamp ):
+def _remove_comment( db, oid, timestamp=None ):
 	comment = ntiids.find_object_with_ntiid( oid )
 	if comment is not None:
 		db.delete_blog_comment( timestamp, comment )
@@ -59,8 +59,7 @@ def _modify_personal_blog_comment(comment, event):
 	# FIXME Could these be changes in sharing? Perhaps different by object type.
 	# IObjectSharingModifiedEvent	
 	if nti_interfaces.IDeletedObjectPlaceholder.providedBy( comment ):
-		# TODO Can we get this time from the event?
-		timestamp = get_deleted_time( comment )
+		timestamp = datetime.utcnow()
 		process_event( _remove_comment, comment, timestamp=timestamp )
 
 

@@ -17,6 +17,8 @@ from nti.dataserver.contenttypes.forums import interfaces as frm_interfaces
 
 from nti.ntiids import ntiids
 
+from datetime import datetime
+
 from .common import get_creator
 from .common import get_nti_session
 from .common import get_deleted_time
@@ -57,8 +59,7 @@ def _add_general_forum_comment(comment, event):
 				   lce_interfaces.IObjectModifiedEvent)
 def _modify_general_forum_comment(comment, event):
 	if nti_interfaces.IDeletedObjectPlaceholder.providedBy( comment ):
-		# TODO Can we get this time from the event?
-		timestamp = get_deleted_time( comment )
+		timestamp = datetime.utcnow()
 		process_event( _remove_comment, comment, timestamp=timestamp )
 
 # Topic
@@ -72,11 +73,11 @@ def _add_topic( db, oid ):
 		logger.debug( 	"Discussion created (user=%s) (discussion=%s)", 
 						user, topic )
 
-def _modify_topic( db, oid ):
+def _modify_topic( db, oid, timestamp=None ):
 	# TODO
 	pass
 
-def _remove_topic( db, oid, timestamp ):
+def _remove_topic( db, oid, timestamp=None ):
 	topic = ntiids.find_object_with_ntiid( oid )
 	if topic is not None:
 		db.delete_discussion( timestamp, topic )
@@ -89,12 +90,13 @@ def _topic_added( topic, event ):
 
 @component.adapter( frm_interfaces.ITopic, lce_interfaces.IObjectModifiedEvent )
 def _topic_modified( topic, event ):
-	process_event( _modify_topic, topic )
+	timestamp = datetime.utcnow()
+	process_event( _modify_topic, topic, timestamp=timestamp )
 
 @component.adapter( frm_interfaces.ITopic, intid_interfaces.IIntIdRemovedEvent )
 def _topic_removed( topic, event ):
 	# TODO Does this event occur for topics?
-	timestamp = get_deleted_time( topic )
+	timestamp = datetime.utcnow()
 	process_event( _remove_topic, topic, timestamp=timestamp )
 
 # Forum
@@ -124,10 +126,12 @@ def _forum_added( forum, event ):
 
 @component.adapter( frm_interfaces.IForum, lce_interfaces.IObjectModifiedEvent )
 def _forum_modified( forum, event ):
+	timestamp = datetime.utcnow()
 	process_event( _modify_forum, forum )
 
 @component.adapter( frm_interfaces.IForum, intid_interfaces.IIntIdRemovedEvent )
 def _forum_removed( forum, event ):
+	timestamp = datetime.utcnow()
 	timestamp = get_deleted_time( forum )
 	process_event( _remove_forum, forum, timestamp=timestamp )
 		
