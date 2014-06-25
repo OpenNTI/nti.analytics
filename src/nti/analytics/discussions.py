@@ -93,7 +93,7 @@ def _topic_modified( topic, event ):
 
 @component.adapter( frm_interfaces.ITopic, intid_interfaces.IIntIdRemovedEvent )
 def _topic_removed( topic, event ):
-	# TODO Can this event occur for topics?
+	# TODO Does this event occur for topics?
 	timestamp = get_deleted_time( topic )
 	process_event( _remove_topic, topic, timestamp=timestamp )
 

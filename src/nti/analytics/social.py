@@ -17,6 +17,8 @@ from nti.dataserver import interfaces as nti_interfaces
 from nti.dataserver import users
 from nti.ntiids import ntiids
 
+from datetime import datetime
+
 from .common import to_external_ntiid_oid
 
 from .common import get_creator
@@ -98,19 +100,19 @@ def _remove_contact( db, source, target, timestamp=None ):
 
 @component.adapter(nti_interfaces.IEntityFollowingEvent)
 def _start_following_event(event):
-	from IPython.core.debugger import Tracer;Tracer()()
-	# TODO timestamp
+	timestamp = datetime.utcnow()
 	source = getattr( event.object, 'username', event.object )
 	followed = event.now_following
 	followed = getattr( followed, 'username', followed )
-	process_event( _add_contact, source=source, target=followed )
+	process_event( _add_contact, source=source, target=followed, timestamp=timestamp )
 
 @component.adapter(nti_interfaces.IStopFollowingEvent)
 def _stop_following_event(event):
+	timestamp = datetime.utcnow()
 	source = getattr(event.object, 'username', event.object)
 	followed = event.not_following
 	followed = getattr(followed, 'username', followed)
-	process_event( _remove_contact, source=source, target=followed )
+	process_event( _remove_contact, source=source, target=followed, timestamp=timestamp )
 
 # Friends List
 def _add_friends_list(db, oid):
@@ -121,8 +123,13 @@ def _add_friends_list(db, oid):
 		user = get_creator( friends_list )
 		timestamp = get_created_timestamp( friends_list )
 		db.create_friends_list( user, nti_session, timestamp, friends_list )
-		# FIXME add members
-		logger.debug( "FriendsList created (user=%s) (friends_list=%s)", user, friends_list )		
+		for member in friends_list:
+			member = get_entity( member )
+			db.create_friends_list_member( user, nti_session, None, friends_list, member )
+		logger.debug( 	"FriendsList created (user=%s) (friends_list=%s) (count=%s", 
+						user, 
+						friends_list,
+						len( friends_list ) )		
 
 def _remove_friends_list(db, friends_list_id, timestamp=None):
 	db.remove_friends_list( timestamp, friends_list_id )
@@ -161,8 +168,10 @@ def _add_dfl( db, oid ):
 		nti_session = None
 		user = get_creator( dfl )
 		db.create_dynamic_friends_list( user, nti_session, dfl )
-		# FIXME add members
-		logger.debug( "DFL created (user=%s) (dfl=%s)", user, dfl )		
+		for member in dfl:
+			member = get_entity( member )
+			db.create_dynamic_friends_member( user, nti_session, None, dfl, member )
+		logger.debug( "DFL created (user=%s) (dfl=%s) (count=%s)", user, dfl, len( dfl ) )		
 
 def _remove_dfl( db, dfl_id, timestamp=None ):
 	db.remove_dynamic_friends_list( timestamp, dfl_id )

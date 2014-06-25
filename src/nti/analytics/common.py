@@ -76,9 +76,15 @@ def get_course( obj ):
 	return result
 
 def process_event( object_op, obj=None, **kwargs ):
-	oid = to_external_ntiid_oid( obj )
+	effective_kwargs = kwargs
+	if obj is not None:
+		# If we have an object, grab its ID by default.
+		oid = to_external_ntiid_oid( obj )
+		effective_kwargs = dict( kwargs )
+		effective_kwargs['oid'] = oid
+	
 	queue = get_job_queue()
-	job = create_job( object_op, oid=oid, **kwargs )
+	job = create_job( object_op, **effective_kwargs )
 	queue.put( job )
 	
 def get_created_timestamp(obj):
