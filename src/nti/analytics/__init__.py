@@ -56,7 +56,7 @@ class _ImmediateQueueRunner(object):
 		try:
 			transaction_runner( job )
 		except Exception as e:
-			logger.error( 'While migrating job (%s)', job, e )
+			logger.exception( 'While migrating job (%s)', job )
 
 def _get_job_queue():
 	return _ImmediateQueueRunner()
