@@ -138,6 +138,7 @@ component.moduleProvides(analytic_interfaces.IObjectProcessor)
 def init( obj ):
 	# Exclude blogs
 	# TODO Note comments may end up here...
+	# FIXME need to filter out by type in event handlers.
 	result = True
 	if frm_interfaces.IForum.providedBy(obj):
 		process_event( _add_forum, obj )

@@ -65,7 +65,7 @@ def init_analytics_db(request):
 	values = json.loads(unicode(request.body, request.charset)) if request.body else {}
 	values = CaseInsensitiveDict(values)
 	usernames = values.get('usernames', values.get('username', None))
- 	#usernames = 'josh.zuech@nextthought.com,student1'
+ 	usernames = 'josh.zuech@nextthought.com,student1'
 	
 	if usernames:
 		usernames = usernames.split(',')

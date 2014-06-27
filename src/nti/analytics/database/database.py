@@ -530,12 +530,10 @@ class AnalyticsDB(object):
 		user = self._get_or_create_user( user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
-		rid = self._get_id_for_resource( note.__parent__ )
+		rid = self._get_id_for_resource( note.containerId )
 		nid = self._get_id_for_note( note )
 		course_id = self._get_id_for_course( course )
-		
 		timestamp = get_created_timestamp( note )
-		# TODO verify -> resource = note.__parent__?
 		
 		sharing = _get_sharing_enum( note, course )
 		
@@ -559,7 +557,7 @@ class AnalyticsDB(object):
 		user = self._get_or_create_user( user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
-		rid = self._get_id_for_resource( note.__parent__ )
+		rid = self._get_id_for_resource( note.containerId )
 		nid = self._get_id_for_note( note )
 		course_id = self._get_id_for_course( course )
 		timestamp = timestamp_type( timestamp )
@@ -576,7 +574,7 @@ class AnalyticsDB(object):
 		user = self._get_or_create_user( user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
-		rid = self._get_id_for_resource( highlight.__parent__ )
+		rid = self._get_id_for_resource( highlight.containerId )
 		hid = self._get_id_for_highlight( highlight )
 		course_id = self._get_id_for_course( course )
 		
