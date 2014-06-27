@@ -14,6 +14,7 @@ from nti.dataserver.users import Entity
 from nti.dataserver import interfaces as nti_interfaces
 
 from nti.contenttypes.courses.interfaces import ICourseInstance
+from nti.contentlibrary import interfaces as lib_interfaces
 
 from nti.externalization import externalization
 
@@ -73,7 +74,25 @@ def get_course( obj ):
 		result = ICourseInstance( location, None )
 		if result is not None:
 			break
+	# TODO Should we fall back and look up by ntiid here?
 	return result
+
+# Copied from nti.store.content_utils
+def _get_paths(ntiid, library=None, registry=component):
+    library = registry.queryUtility(lib_interfaces.IContentPackageLibrary) \
+              if library is None else library
+    paths = library.pathToNTIID(ntiid) if library and ntiid else ()
+    return paths or ()
+
+def _get_collection_root(ntiid, library=None, registry=component):
+    paths = _get_paths(ntiid, library, registry)
+    return paths[0] if paths else None
+
+def get_course_by_ntiid( ntiid ):
+	course = _get_collection_root( ntiid )
+	return ICourseInstance( course )
+
+
 
 def process_event( object_op, obj=None, **kwargs ):
 	effective_kwargs = kwargs

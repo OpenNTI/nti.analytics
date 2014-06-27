@@ -23,19 +23,15 @@ from .common import to_external_ntiid_oid
 from .common import get_deleted_time
 from .common import get_comment_root
 from .common import process_event
+from .common import get_course_by_ntiid
 
 from . import utils
 from . import create_job
 from . import get_job_queue
 from . import interfaces as analytic_interfaces
 
-# FIXME Unfortunately, we cannot find our course via
-# our note object.  We do have our container though.
-# Should we look up containers for *every* course 
-# and attempt to find where ours comes from?  There 
-# is likely a better way.
 def get_course( obj ):
-	return 'NOT_A_COURSE'
+	return get_course_by_ntiid( obj.containerId )
 
 # Notes
 def _add_note( db, oid ):
