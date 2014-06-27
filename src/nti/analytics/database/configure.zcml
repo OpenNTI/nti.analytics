@@ -16,6 +16,12 @@
 										name="janux.ou.edu" />
 		</configure>
 		
+		<configure zcml:condition="have testmode">
+			<include package="." file="meta.zcml" />
+			<adb:registerAnalyticsDB 	defaultSQLite="True"
+										dburi="sqlite://" />
+		</configure>
+		
 		<configure zcml:condition="not-have testmode">
 			<include package="." file="meta.zcml" />
 			<adb:registerAnalyticsDB 	defaultSQLite="True"

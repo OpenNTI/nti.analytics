@@ -48,6 +48,9 @@ def create_job(func, *args, **kwargs):
 # 	return async_queue( QUEUE_NAME )
 
 
+# Hmm, this won't work for locally added objects.  The objects are not committed 
+# at the time we try to retrieve them.  A bit surprising since I would think
+# they exist for this thread's session at least.
 class _ImmediateQueueRunner(object):
 	
 	def put( self, job ):

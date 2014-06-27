@@ -32,10 +32,12 @@ def _add_entity(db, oid):
 
 @component.adapter(nti_interfaces.IEntity, lce_interfaces.IObjectAddedEvent)
 def _entity_added(entity, event):
+	# TODO We only want users here right? What's the inclusive check?
 	# TODO Hmmm, why is this check here?
 # 	queue = get_job_queue()
 # 	if 	queue is not None:  # check queue b/c of Everyone comm
-	process_event( _add_entity, entity )
+	if not nti_interfaces.IFriendsList.providedBy( entity ):
+		process_event( _add_entity, entity )
 
 component.moduleProvides(analytics_interfaces.IObjectProcessor)
 def init( obj ):

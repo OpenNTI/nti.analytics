@@ -42,7 +42,7 @@
 
 	<subscriber handler=".blogs._add_personal_blog_comment" />
 	<subscriber handler=".blogs._modify_personal_blog_comment" />
-	
+
 	<subscriber handler=".social._friendslist_added" />
 	<subscriber handler=".social._friendslist_modified" />
 	<subscriber handler=".social._friendslist_deleted" />
@@ -56,7 +56,7 @@
 	<subscriber handler=".social._stop_following_event" />
 	
 	<subscriber handler=".social._meeting_created" />
-	
+	<subscriber handler=".social._meeting_joined" />
 	
 	<!-- utils -->
 	

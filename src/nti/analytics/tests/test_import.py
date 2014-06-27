@@ -65,48 +65,6 @@ ZCML_STRING = """
 	
 </configure>
 """
-# 
-# class TestImportFromDS(ApplicationLayerTest):
-# 	@WithSharedApplicationMockDS(users=True,testapp=True,default_authenticate=True)
-# 	def test_import(self):
-# 		
-# 		#sj = 'sjohnson@nextthought.com'
-# 		
-# 		# ComponentLookupError: (<InterfaceClass zope.intid.interfaces.IIntIds>, '')?
-# 		# Mock DS does not have this component?
-# 		#init_db( self.db, usernames=[sj] )
-# 		
-# 		uid = 01
-# 		entity = user1 = User.create_user( self.ds, username='foo@bar' )
-# 		init( uid, self.db, entity )
-		
-# class TestImportFromDS(unittest.TestCase):
-# 
-# 	layer = SharedConfiguringTestLayer
-# 	
-# 	def setUp(self):
-#  		_, self.filename = mkstemp()
-# 		uri = 'sqlite:///%s' % self.filename
-# 		self.db = AnalyticsDB( dburi=uri )	
-# 
-# 	@WithMockDSTrans
-# 	def test_import(self):
-# 		session = self.db.get_session()
-# 		results = session.query(Users).all()
-# 		assert_that( results, has_length( 0 ) )
-# 		#sj = 'sjohnson@nextthought.com'
-# 		
-# 		# ComponentLookupError: (<InterfaceClass zope.intid.interfaces.IIntIds>, '')?
-# 		# Mock DS does not have this component?
-# 		#init_db( self.db, usernames=[sj] )
-# 		
-# 		uid = 01
-# 		entity = User.create_user( self.ds, 'foo@bar' )
-# 		init( uid, self.db, entity )		
-# 		
-# 		session = self.db.get_session()
-# 		results = session.query(Users).all()
-# 		assert_that( results, has_length( 1 ) )
 
 class _ImmediateQueueRunner(object):
 	

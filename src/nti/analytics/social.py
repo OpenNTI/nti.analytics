@@ -13,6 +13,7 @@ from zope.intid import interfaces as intid_interfaces
 from zope.lifecycleevent import interfaces as lce_interfaces
 
 from nti.chatserver import interfaces as chat_interfaces
+from nti.chatserver.meeting import EVT_ENTERED_ROOM
 from nti.dataserver import interfaces as nti_interfaces
 from nti.dataserver import users
 from nti.ntiids import ntiids
@@ -34,6 +35,8 @@ from .common import IDLookup
 from . import utils
 from . import interfaces as analytic_interfaces
 
+
+
 # Chat
 def _add_meeting(db, oid):
 	new_chat = ntiids.find_object_with_ntiid(oid)
@@ -54,20 +57,23 @@ def _add_meeting(db, oid):
 			db.chat_joined( user_joined, nti_session, timestamp, new_chat )
 		logger.debug( "Meeting joined by users (count=%s)", count )
 
-# def _join_meeting(db, user, oid):
-# 	chat = ntiids.find_object_with_ntiid(oid)
-# 	if chat is not None:
-# 		# FIXME timestamp, session
-# 		nti_session = None
-# 		join_timestamp = None
-# 		user_joined = get_entity(user)
-# 		db.create_chat_joined( session, user_joined, nti_session, join_timestamp, chat)
+def _join_meeting(db, oid, timestamp):
+	chat = ntiids.find_object_with_ntiid(oid)
+	if chat is not None:
+		# FIXME session
+		nti_session = None
+		db.create_chat_joined( session, user_joined, nti_session, timestamp, chat)
 
 @component.adapter(chat_interfaces.IMeeting, lce_interfaces.IObjectAddedEvent)
 def _meeting_created(meeting, event):
-	# FIXME We need event for participants, IObjectModifiedEvent?
-	# self.emit_enteredRoom( name, self )
 	process_event( _add_meeting, meeting )
+
+@component.adapter( chat_interfaces.IMeeting, lce_interfaces.IObjectModifiedEvent )
+def _meeting_joined( meeting, event):
+	# TODO Verify/implement this...
+	#from IPython.core.debugger import Tracer;Tracer()()
+	timestamp = datetime.utcnow()
+	process_event( _join_meeting, meeting, timestamp=timestamp )
 
 # Contacts	
 def _add_contacts( db, oid, timestamp=None ):
@@ -100,6 +106,8 @@ def _remove_contact( db, source, target, timestamp=None ):
 
 @component.adapter(nti_interfaces.IEntityFollowingEvent)
 def _start_following_event(event):
+	if nti_interfaces.IDynamicSharingTargetFriendsList.providedBy( event.now_following ):
+		return
 	timestamp = datetime.utcnow()
 	source = getattr( event.object, 'username', event.object )
 	followed = event.now_following
@@ -108,6 +116,8 @@ def _start_following_event(event):
 
 @component.adapter(nti_interfaces.IStopFollowingEvent)
 def _stop_following_event(event):
+	if nti_interfaces.IDynamicSharingTargetFriendsList.providedBy( event.not_following ):
+		return
 	timestamp = datetime.utcnow()
 	source = getattr(event.object, 'username', event.object)
 	followed = event.not_following
@@ -146,16 +156,22 @@ def _modified_friends_list( db, oid, timestamp=None ):
 
 @component.adapter(nti_interfaces.IFriendsList, lce_interfaces.IObjectAddedEvent)
 def _friendslist_added(obj, event):
+	if nti_interfaces.IDynamicSharingTargetFriendsList.providedBy( obj ):
+		return
 	process_event( _add_friends_list, obj )
 
 @component.adapter(nti_interfaces.IFriendsList, lce_interfaces.IObjectModifiedEvent)
 def _friendslist_modified(obj, event):
+	if nti_interfaces.IDynamicSharingTargetFriendsList.providedBy( obj ):
+		return
 	# Should be joins/removals
 	timestamp = datetime.utcnow()
 	process_event( _modified_friends_list, obj, timestamp=timestamp )
 
 @component.adapter(nti_interfaces.IFriendsList, intid_interfaces.IIntIdRemovedEvent)
 def _friendslist_deleted(obj, event):
+	if nti_interfaces.IDynamicSharingTargetFriendsList.providedBy( obj ):
+		return
 	id_lookup = IDLookup()
 	id = id_lookup.get_id_for_object( obj )
 	timestamp = datetime.utcnow()
@@ -205,7 +221,7 @@ def _dfl_added(obj, event):
 	process_event( _add_dfl, obj)
 	
 @component.adapter(nti_interfaces.IDynamicSharingTargetFriendsList,
-				  lce_interfaces.IObjectAddedEvent)
+				  lce_interfaces.IObjectRemovedEvent)
 def _dfl_deleted(obj, event):	
 	timestamp = datetime.utcnow()
 	id_lookup = IDLookup()
@@ -233,19 +249,17 @@ component.moduleProvides(analytic_interfaces.IObjectProcessor)
 def init( obj ):
 	result = True
 	if chat_interfaces.IMeeting.providedBy(obj):
-		from IPython.core.debugger import Tracer;Tracer()()
 		process_event( _add_meeting, obj )
 	elif nti_interfaces.IDynamicSharingTargetFriendsList.providedBy( obj ):
-		from IPython.core.debugger import Tracer;Tracer()()
 		process_event( _add_dfl, obj )
 		
 	# Exclude 'mycontacts', better way to do this?	
 	elif 	nti_interfaces.IFriendsList.providedBy( obj ) \
 		and 'mycontacts' not in obj.__name__:
 		
-		from IPython.core.debugger import Tracer;Tracer()()
 		process_event( _add_friends_list, obj )
 	elif nti_interfaces.IUser.providedBy(obj):
+		
 		process_event( _add_contacts, obj )
 	else:
 		result = False
