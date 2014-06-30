@@ -92,9 +92,10 @@ class NTIAnalyticsApplicationTestLayer(ApplicationTestLayer):
        
 class MockParent(object): 
 	
-	def __init__(self, parent, intid = None ):    
+	def __init__(self, parent, intid = None, containerId = None ):    
 		self.__parent__ = parent  
 		self.intid = intid
+		self.containerId = containerId
 		self.children = list()
 		
 	def values(self):

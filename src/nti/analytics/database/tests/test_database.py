@@ -507,7 +507,7 @@ class TestCourseResources(AnalyticsTestBase):
 		
 		resource_id = 'ntiid:course_resource'
 		note_id = DEFAULT_INTID
-		my_note = MockNote( resource_id )
+		my_note = MockNote( resource_id, containerId=resource_id )
 		
 		# Create note
 		self.db.create_note( 	test_user_ds_id, 
@@ -561,7 +561,7 @@ class TestCourseResources(AnalyticsTestBase):
 		
 		resource_id = 'ntiid:course_resource'
 		highlight_id = DEFAULT_INTID
-		my_highlight = MockHighlight( resource_id )
+		my_highlight = MockHighlight( resource_id, containerId=resource_id )
 		
 		# Create highlight
 		self.db.create_highlight( 	test_user_ds_id, 
@@ -978,7 +978,7 @@ class TestNoteComments(AnalyticsTestBase):
 		super( TestNoteComments, self ).setUp()
 		self.course_name='course1'
 		resource_id = 'ntiid:course_resource'
-		self.note = MockNote( resource_id )
+		self.note = MockNote( resource_id, containerId=resource_id )
 		self.db.create_note( test_user_ds_id, test_session_id, self.course_name, self.note )
 	
 	def tearDown(self):
