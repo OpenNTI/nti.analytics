@@ -77,7 +77,7 @@ def _find_object( ntiid ):
 from nti.ntiids import ntiids
 ntiids.find_object_with_ntiid = _find_object 
 
-class TestImport(nti.testing.base.ConfiguringTestBase):
+class TestImport(nti.testing.base.ConfiguringTestBase,ApplicationLayerTest):
 	
 	def setUp(self):
 		self.configure_string(ZCML_STRING)
