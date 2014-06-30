@@ -561,7 +561,7 @@ class TestCourseResources(AnalyticsTestBase):
 		
 		resource_id = 'ntiid:course_resource'
 		highlight_id = DEFAULT_INTID
-		my_highlight = MockHighlight( resource_id, containerId=resource_id )
+		my_highlight = MockHighlight( resource_id, intid=highlight_id, containerId=resource_id )
 		
 		# Create highlight
 		self.db.create_highlight( 	test_user_ds_id, 
@@ -633,7 +633,7 @@ class TestForums(AnalyticsTestBase):
 		
 	def test_chain_delete(self):
 		forum = MockForum( None, intid=self.forum_id )
-		discussion = MockDiscussion( forum )
+		discussion = MockDiscussion( forum, intid=DEFAULT_INTID )
 		self.db.create_forum( 	test_user_ds_id, 
 								test_session_id, self.course_name, self.forum_id )
 		self.db.create_discussion( 	test_user_ds_id, 

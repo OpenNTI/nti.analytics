@@ -222,7 +222,7 @@ class AnalyticsDB(object):
 	def create_user(self, user):
 		uid = self._get_id_for_user( user )
 		if not uid:
-			# Nothing we can do, not sure how we got here
+			# FIXME Nothing we can do, not sure how we got here
 			logger.debug( 'User has no user_id and cannot be inserted (uid=%s) (user=%s)', uid, user )
 			return
 		user = Users( user_ds_id=uid )

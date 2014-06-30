@@ -36,12 +36,20 @@ DEFAULT_INTID = 101
 """ Override this for testing purposes. """
 class TestIDLookup(object):
 	
+	def __init__(self):
+		self.default_intid = DEFAULT_INTID
+	
 	def get_id_for_object( self, obj ):
-		result = DEFAULT_INTID
+		result = None
 		if isinstance( obj, integer_types ):
 			result = obj
-		attr = getattr( obj, 'intid', result )
-		return attr or result
+		elif hasattr( obj, 'intid' ):
+			result = getattr( obj, 'intid', None )
+		
+		if result is None:
+			result = self.default_intid
+			self.default_intid += 1
+		return result
 	
 common.IDLookup = TestIDLookup
 
