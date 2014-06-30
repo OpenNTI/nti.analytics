@@ -19,6 +19,12 @@
 			 factory=".views.AnalyticsPathAdapter"
 			 provides="zope.traversing.interfaces.IPathAdapter" />
 
+	<!-- generations -->
+	
+	<utility factory=".generations.install._AnalyticsSchemaManager"
+			 name="nti.dataserver-analytics"
+			 provides="zope.generations.interfaces.IInstallableSchemaManager"/>
+
 	
 	<!-- database -->
 	
