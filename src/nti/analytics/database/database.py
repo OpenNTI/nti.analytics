@@ -322,8 +322,11 @@ class AnalyticsDB(object):
 		self.session.flush()
 		
 	def create_dynamic_friends_member(self, user, nti_session, timestamp, dynamic_friends_list, new_friend ):
-		user = self._get_or_create_user( user )
-		uid = user.user_id
+		if user is None:
+			uid = None
+		else: 
+			user = self._get_or_create_user( user )
+			uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
 		dfl_id = self._get_id_for_dfl( dynamic_friends_list )
 		target = self._get_or_create_user( new_friend )
@@ -381,8 +384,11 @@ class AnalyticsDB(object):
 		self.session.flush()
 		
 	def create_friends_list_member(self, user, nti_session, timestamp, friends_list, new_friend ):
-		user = self._get_or_create_user( user )
-		uid = user.user_id
+		if user is None:
+			uid = None
+		else: 
+			user = self._get_or_create_user( user )
+			uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
 		friends_list_id = self._get_id_for_friends_list( friends_list )
 		target = self._get_or_create_user( new_friend )

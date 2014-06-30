@@ -58,7 +58,7 @@ class BaseTableMixin(object):
 	
 	@declared_attr
 	def user_id(cls):
-		return Column('user_id', Integer, ForeignKey("Users.user_id"), index=True, primary_key=True )
+		return Column('user_id', Integer, ForeignKey("Users.user_id"), index=True, nullable=True, primary_key=True )
 	
 	timestamp = Column('timestamp', DateTime, nullable=True )
 

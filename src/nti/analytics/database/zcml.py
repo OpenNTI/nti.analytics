@@ -36,10 +36,11 @@ def registerAnalyticsDB(_context, dburi=None, twophase=False, autocommit=False, 
 	"""
 	Register the db
 	"""
-	logger.info( "Registering %s" % name )
+	logger.info( "Registering analyticsDB for '%s'" % name )
 	factory = functools.partial(	AnalyticsDB, 
 									dburi=dburi, 
 									twophase=twophase, 
 									autocommit=autocommit, 
 									defaultSQLite=defaultSQLite )
 	utility(_context, provides=analytics_interfaces.IAnalyticsDB, factory=factory, name=name)
+
