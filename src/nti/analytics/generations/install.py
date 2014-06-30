@@ -20,12 +20,12 @@ from nti.async import interfaces as asyc_interfaces
 
 from .. import QUEUE_NAME
 
-class _AnalyticsDBSchemaManager(SchemaManager):
+class _AnalyticsSchemaManager(SchemaManager):
 	"""
 	A schema manager that we can register as a utility in ZCML.
 	"""
 	def __init__(self):
-		super(_AnalyticsDBSchemaManager, self).__init__(
+		super(_AnalyticsSchemaManager, self).__init__(
 											generation=generation,
 											minimum_generation=generation,
 											package_name='nti.analytics.generations')
@@ -45,6 +45,5 @@ def install_queue(context):
 	result.__name__ = QUEUE_NAME
 	intids.register( result )
 	lsm.registerUtility( result, provided=asyc_interfaces.IQueue, name=QUEUE_NAME )
-# 	lsm.unregisterUtility( result, provided=asyc_interfaces.IQueue )
 
 	return result
