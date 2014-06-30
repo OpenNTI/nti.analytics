@@ -9,12 +9,12 @@ __docformat__ = "restructuredtext en"
 logger = __import__('logging').getLogger(__name__)
 
 from zope import component
-from zope.intid import interfaces as intid_interfaces
 from zope.lifecycleevent import interfaces as lce_interfaces
 
 from nti.dataserver import interfaces as nti_interfaces
 
 from nti.ntiids import ntiids
+from nti.intid import interfaces as intid_interfaces
 
 from .common import process_event
 
@@ -30,13 +30,15 @@ def _add_entity(db, oid):
 
 # Note: We are not handling entity removal. I'm not sure we need to.
 
-@component.adapter(nti_interfaces.IEntity, lce_interfaces.IObjectAddedEvent)
+@component.adapter(nti_interfaces.IEntity, intid_interfaces.IIntIdAddedEvent)
 def _entity_added(entity, event):
 	# TODO We only want users here right? What's the inclusive check?
-	# TODO Hmmm, why is this check here?
-# 	queue = get_job_queue()
-# 	if 	queue is not None:  # check queue b/c of Everyone comm
-	if not nti_interfaces.IFriendsList.providedBy( entity ):
+ 	queue = get_job_queue()
+ 	# During nti.dataserver generations, the Everyone entity is installed (?)
+ 	# and an event is fired, which we cannot handle yet because our evolving
+ 	# has not yet occurred; but that's ok.
+	if 		not nti_interfaces.IFriendsList.providedBy( entity ) \
+		and queue is not None:
 		process_event( _add_entity, entity )
 
 component.moduleProvides(analytics_interfaces.IObjectProcessor)
