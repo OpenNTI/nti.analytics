@@ -99,7 +99,7 @@ class TestUsers(unittest.TestCase):
 		results = self.session.query(Users).all()
 		assert_that( results, has_length( 0 ) )
 		
-		fooser = User( 'foo1978' )
+		fooser = 2001
 		
 		self.db.create_user( fooser )
 
@@ -109,7 +109,7 @@ class TestUsers(unittest.TestCase):
 		new_user = self.session.query(Users).one()
 		# Sequence generated
 		assert_that( new_user.user_id, is_( 1 ) )
-		assert_that( new_user.user_ds_id, is_( DEFAULT_INTID ) )
+		assert_that( new_user.user_ds_id, is_( fooser ) )
 
 		# Dupe, but not inserted
 		self.db._get_or_create_user( fooser )	
@@ -507,7 +507,7 @@ class TestCourseResources(AnalyticsTestBase):
 		
 		resource_id = 'ntiid:course_resource'
 		note_id = DEFAULT_INTID
-		my_note = MockNote( resource_id, containerId=resource_id )
+		my_note = MockNote( resource_id, containerId=resource_id, intid=note_id )
 		
 		# Create note
 		self.db.create_note( 	test_user_ds_id, 
@@ -705,7 +705,7 @@ class TestDiscussions(AnalyticsTestBase):
 		assert_that( results, has_length( 0 ) )
 		
 		discussion_id = DEFAULT_INTID
-		my_discussion = MockDiscussion( self.forum )
+		my_discussion = MockDiscussion( self.forum, intid=discussion_id )
 		# Create discussion
 		self.db.create_discussion( 	test_user_ds_id, 
 									test_session_id, self.course_name, my_discussion )
@@ -759,7 +759,7 @@ class TestForumComments(AnalyticsTestBase):
 		self.forum_id = 999
 		self.discussion_id = DEFAULT_INTID
 		forum = MockForum( None, intid=self.forum_id )
-		self.discussion = MockDiscussion( forum )
+		self.discussion = MockDiscussion( forum, intid=self.discussion_id  )
 		self.db.create_forum( 	test_user_ds_id, 
 								test_session_id, self.course_name, self.forum_id )
 		self.db.create_discussion( 	test_user_ds_id, 
@@ -774,7 +774,7 @@ class TestForumComments(AnalyticsTestBase):
 		
 		# Discussion parent
 		comment_id = DEFAULT_INTID
-		my_comment = MockComment( self.discussion )
+		my_comment = MockComment( self.discussion, intid=comment_id )
 		
 		self.db.create_forum_comment( 	test_user_ds_id, test_session_id, self.course_name,
 										self.discussion, my_comment )
@@ -807,7 +807,9 @@ class TestForumComments(AnalyticsTestBase):
 		
 		# Comment parent
 		comment_id = DEFAULT_INTID
-		my_comment = MockComment( CommentPost() )
+		# 2nd id lookup 
+		post_id = DEFAULT_INTID + 1
+		my_comment = MockComment( CommentPost(), intid=comment_id )
 		
 		self.db.create_forum_comment( 	test_user_ds_id,
 										test_session_id, self.course_name,
@@ -826,7 +828,7 @@ class TestForumComments(AnalyticsTestBase):
 		assert_that( result.session_id, is_( test_session_id ) )
 		assert_that( result.user_id, is_( 1 ) )
 		assert_that( result.course_id, is_( self.course_name ) )
-		assert_that( result.parent_id, is_( DEFAULT_INTID ) )
+		assert_that( result.parent_id, is_( post_id ) )
 		assert_that( result.deleted, none() )	
 		
 	def test_multiple_comments(self):
@@ -978,7 +980,8 @@ class TestNoteComments(AnalyticsTestBase):
 		super( TestNoteComments, self ).setUp()
 		self.course_name='course1'
 		resource_id = 'ntiid:course_resource'
-		self.note = MockNote( resource_id, containerId=resource_id )
+		self.note_id = DEFAULT_INTID
+		self.note = MockNote( resource_id, containerId=resource_id, intid=self.note_id )
 		self.db.create_note( test_user_ds_id, test_session_id, self.course_name, self.note )
 	
 	def tearDown(self):
@@ -990,7 +993,7 @@ class TestNoteComments(AnalyticsTestBase):
 		
 		# Note parent
 		comment_id = DEFAULT_INTID
-		my_comment = MockComment( self.note )
+		my_comment = MockComment( self.note, intid=comment_id  )
 		
 		self.db.create_note_comment( test_user_ds_id, test_session_id, self.course_name, self.note, my_comment )
 
@@ -998,7 +1001,7 @@ class TestNoteComments(AnalyticsTestBase):
 		assert_that( results, has_length( 1 ) )
 		
 		note_comment = self.session.query( NoteCommentsCreated ).one()
-		assert_that( note_comment.note_id, is_( DEFAULT_INTID ) )
+		assert_that( note_comment.note_id, is_( self.note_id ) )
 		assert_that( note_comment.comment_id, is_( comment_id ) )
 		assert_that( note_comment.session_id, is_( test_session_id ) )
 		assert_that( note_comment.user_id, is_( 1 ) )
@@ -1007,7 +1010,7 @@ class TestNoteComments(AnalyticsTestBase):
 		
 		self.db.delete_note_comment( datetime.now(), comment_id )
 		note_comment = self.session.query( NoteCommentsCreated ).one()
-		assert_that( note_comment.note_id, is_( DEFAULT_INTID ) )
+		assert_that( note_comment.note_id, is_( self.note_id ) )
 		assert_that( note_comment.comment_id, is_( comment_id ) )
 		assert_that( note_comment.deleted, not_none() )
 		
@@ -1018,7 +1021,7 @@ class TestNoteComments(AnalyticsTestBase):
 		
 		# Comment parent
 		comment_id = DEFAULT_INTID
-		my_comment = MockComment( CommentPost() )
+		my_comment = MockComment( CommentPost(), intid=comment_id )
 		
 		self.db.create_note_comment( test_user_ds_id, test_session_id, self.course_name,
 									self.note, my_comment )
@@ -1027,7 +1030,7 @@ class TestNoteComments(AnalyticsTestBase):
 		assert_that( results, has_length( 1 ) )
 		
 		note_comment = self.session.query( NoteCommentsCreated ).one()
-		assert_that( note_comment.note_id, is_( DEFAULT_INTID ) )
+		assert_that( note_comment.note_id, is_( self.note_id ) )
 		assert_that( note_comment.comment_id, is_( comment_id ) )
 		assert_that( note_comment.session_id, is_( test_session_id ) )
 		assert_that( note_comment.user_id, is_( 1 ) )
@@ -1036,7 +1039,7 @@ class TestNoteComments(AnalyticsTestBase):
 		
 		self.db.delete_note_comment( datetime.now(), comment_id )
 		note_comment = self.session.query( NoteCommentsCreated ).one()
-		assert_that( note_comment.note_id, is_( DEFAULT_INTID ) )
+		assert_that( note_comment.note_id, is_( self.note_id ) )
 		assert_that( note_comment.comment_id, is_( comment_id ) )
 		assert_that( note_comment.deleted, not_none() )		
 		

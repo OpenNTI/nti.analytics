@@ -53,7 +53,6 @@ class TestIDLookup(object):
 	
 common.IDLookup = TestIDLookup
 
-
 class SharedConfiguringTestLayer(ZopeComponentLayer,
                                  GCLayerMixin,
                                  ConfiguringLayerMixin,
