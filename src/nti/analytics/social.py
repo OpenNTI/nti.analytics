@@ -9,7 +9,6 @@ __docformat__ = "restructuredtext en"
 logger = __import__('logging').getLogger(__name__)
 
 from zope import component
-from zope.intid import interfaces as intid_interfaces
 from zope.lifecycleevent import interfaces as lce_interfaces
 
 from nti.chatserver import interfaces as chat_interfaces
@@ -17,6 +16,8 @@ from nti.chatserver.meeting import EVT_ENTERED_ROOM
 from nti.dataserver import interfaces as nti_interfaces
 from nti.dataserver import users
 from nti.ntiids import ntiids
+
+from nti.intid import interfaces as intid_interfaces
 
 from datetime import datetime
 
@@ -64,7 +65,7 @@ def _join_meeting(db, oid, timestamp):
 		nti_session = None
 		db.create_chat_joined( session, user_joined, nti_session, timestamp, chat)
 
-@component.adapter(chat_interfaces.IMeeting, lce_interfaces.IObjectAddedEvent)
+@component.adapter(chat_interfaces.IMeeting, intid_interfaces.IIntIdAddedEvent)
 def _meeting_created(meeting, event):
 	process_event( _add_meeting, meeting )
 
@@ -154,7 +155,7 @@ def _modified_friends_list( db, oid, timestamp=None ):
 		# What is the best we can do here, compare memberships?
 		# Expensive?
 
-@component.adapter(nti_interfaces.IFriendsList, lce_interfaces.IObjectAddedEvent)
+@component.adapter(nti_interfaces.IFriendsList, intid_interfaces.IIntIdAddedEvent)
 def _friendslist_added(obj, event):
 	if nti_interfaces.IDynamicSharingTargetFriendsList.providedBy( obj ):
 		return
@@ -197,11 +198,15 @@ def _remove_dfl( db, dfl_id, timestamp=None ):
 
 def _add_dfl_member( db, source, target, username=None, timestamp=None ):
 	dfl = get_entity( target )
-	if dfl is not None:
+	member = get_entity( source )
+	everyone = users.Entity.get_entity('Everyone')
+	
+	if 		dfl is not None \
+		and member is not None \
+		and dfl != everyone:
 		# FIXME need session
 		nti_session = None
 		user = get_entity( username )
-		member = get_entity( source )
 		db.create_dynamic_friends_member( user, nti_session, timestamp, dfl, member )
 		logger.debug( "DFL joined (member=%s) (dfl=%s)", member, dfl )		
 
@@ -215,13 +220,13 @@ def _remove_dfl_member( db, source, target, username=None, timestamp=None ):
 		db.remove_dynamic_friends_member( user, nti_session, timestamp, dfl, member )
 		logger.debug( "DFL left (member=%s) (dfl=%s)", member, dfl )
 
-@component.adapter(nti_interfaces.IDynamicSharingTargetFriendsList,
-				   lce_interfaces.IObjectAddedEvent)
+@component.adapter(	nti_interfaces.IDynamicSharingTargetFriendsList,
+				 	 intid_interfaces.IIntIdAddedEvent)
 def _dfl_added(obj, event):
 	process_event( _add_dfl, obj)
 	
 @component.adapter(nti_interfaces.IDynamicSharingTargetFriendsList,
-				  lce_interfaces.IObjectRemovedEvent)
+				  intid_interfaces.IIntIdRemovedEvent)
 def _dfl_deleted(obj, event):	
 	timestamp = datetime.utcnow()
 	id_lookup = IDLookup()
@@ -230,6 +235,7 @@ def _dfl_deleted(obj, event):
 
 @component.adapter(nti_interfaces.IStartDynamicMembershipEvent)
 def _start_dynamic_membership_event(event):
+	# TODO Can we get the user from the event?
 	timestamp = datetime.utcnow()
 	source = getattr(event.object, 'username', event.object)
 	target = event.target

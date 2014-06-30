@@ -62,20 +62,9 @@ ZCML_STRING = """
 									twophase="False"
 									autocommit="False" />
 	</configure>
-	
+	 
 </configure>
 """
-
-class _ImmediateQueueRunner(object):
-	
-	def put( self, job ):
-		return job()
-
-def _get_job_queue():
-	return _ImmediateQueueRunner()
-
-nti.analytics.get_job_queue = _get_job_queue
-
 def _to_external_id( obj ):
 	return 101 
 

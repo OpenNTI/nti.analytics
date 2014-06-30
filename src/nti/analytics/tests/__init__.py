@@ -31,21 +31,6 @@ from nti.analytics import common
 
 from six import integer_types
 
-DEFAULT_INTID = 101
-
-""" Override this for testing purposes. """
-class TestIDLookup(object):
-	
-	def get_id_for_object( self, obj ):
-		result = DEFAULT_INTID
-		if isinstance( obj, integer_types ):
-			result = obj
-		attr = getattr( obj, 'intid', result )
-		return attr or result
-	
-common.IDLookup = TestIDLookup
-
-
 class SharedConfiguringTestLayer(ZopeComponentLayer,
                                  GCLayerMixin,
                                  ConfiguringLayerMixin,

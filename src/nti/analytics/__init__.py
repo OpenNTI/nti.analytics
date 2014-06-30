@@ -44,8 +44,8 @@ def create_job(func, *args, **kwargs):
 # FIXME
 # Can we toggle this based on dev/test mode?
 # If so, we need to handle transactions/errors here.
-# def get_job_queue():
-# 	return async_queue( QUEUE_NAME )
+def get_job_queue():
+	return async_queue( QUEUE_NAME )
 
 
 # Hmm, this won't work for locally added objects.  The objects are not committed 
@@ -57,7 +57,19 @@ class _ImmediateQueueRunner(object):
 		transaction_runner = \
 				component.getUtility(nti_interfaces.IDataserverTransactionRunner)
 		try:
-			transaction_runner( job )
+			# FIXME but this breaks mockDS tests
+			#transaction_runner( job )
+			
+			job()
+			
+			# FIXME This doesn't work when running admin_view; ZTE issue?
+			#job()
+# 			
+# 			  File "/Users/jzuech/Projects/buildout-eggs/SQLAlchemy-0.9.6-py2.7-macosx-10.9-intel.egg/sqlalchemy/orm/session.py", line 298, in _connection_for_bind
+#     self._assert_active()
+#   File "/Users/jzuech/Projects/buildout-eggs/SQLAlchemy-0.9.6-py2.7-macosx-10.9-intel.egg/sqlalchemy/orm/session.py", line 210, in _assert_active
+#     % self._rollback_exception
+# InvalidRequestError: This Session's transaction has been rolled back due to a previous exception during flush. To begin a new transaction with this Session, first issue Session.rollback(). Original exception was: (IntegrityError) column user_ds_id is not unique u'INSERT INTO "Users" (user_ds_id) VALUES (?)' (97987269143875495,)
 		except Exception as e:
 			logger.exception( 'While migrating job (%s)', job )
 

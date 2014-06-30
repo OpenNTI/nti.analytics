@@ -28,6 +28,8 @@ from zope import component
 from . import create_job
 from . import get_job_queue
 
+from six import integer_types
+
 def get_entity(entity):
     if not nti_interfaces.IEntity.providedBy(entity):
         entity = Entity.get_entity(str(entity))
@@ -113,7 +115,7 @@ def get_created_timestamp(obj):
 	
 def timestamp_type(timestamp):
 	result = timestamp
-	if isinstance( timestamp, float ):
+	if isinstance( timestamp, ( float, integer_types ) ):
 		result = datetime.utcfromtimestamp( timestamp )
 	return result	
 

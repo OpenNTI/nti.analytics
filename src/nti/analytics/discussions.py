@@ -9,11 +9,12 @@ __docformat__ = "restructuredtext en"
 logger = __import__('logging').getLogger(__name__)
 
 from zope import component
-from zope.intid import interfaces as intid_interfaces
 from zope.lifecycleevent import interfaces as lce_interfaces
 
 from nti.dataserver import interfaces as nti_interfaces
 from nti.dataserver.contenttypes.forums import interfaces as frm_interfaces
+
+from nti.intid import interfaces as intid_interfaces
 
 from nti.ntiids import ntiids
 
@@ -51,7 +52,7 @@ def _remove_comment( db, oid, timestamp ):
 						comment )
 	
 @component.adapter( frm_interfaces.IGeneralForumComment, 
-					lce_interfaces.IObjectAddedEvent )
+					intid_interfaces.IIntIdAddedEvent )
 def _add_general_forum_comment(comment, event):
 	process_event( _add_comment, comment )
 
@@ -82,7 +83,7 @@ def _remove_topic( db, oid, timestamp=None ):
 		db.delete_discussion( timestamp, topic )
 		logger.debug( "Discussion deleted (discussion=%s)", topic )
 
-@component.adapter( frm_interfaces.ITopic, lce_interfaces.IObjectAddedEvent )
+@component.adapter( frm_interfaces.ITopic, intid_interfaces.IIntIdAddedEvent )
 def _topic_added( topic, event ):
 	process_event( _add_topic, topic )
 
@@ -118,7 +119,7 @@ def _modify_forum( db, oid ):
 	# TODO How do we handle these modify events?
 	pass
 
-@component.adapter( frm_interfaces.IForum, lce_interfaces.IObjectAddedEvent )
+@component.adapter( frm_interfaces.IForum, intid_interfaces.IIntIdAddedEvent )
 def _forum_added( forum, event ):
 	process_event( _add_forum, forum )
 

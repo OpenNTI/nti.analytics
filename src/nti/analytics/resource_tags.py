@@ -9,13 +9,14 @@ __docformat__ = "restructuredtext en"
 logger = __import__('logging').getLogger(__name__)
 
 from zope import component
-from zope.intid import interfaces as intid_interfaces
 from zope.lifecycleevent import interfaces as lce_interfaces
 
 from nti.dataserver import interfaces as nti_interfaces
 from nti.dataserver.contenttypes.forums import interfaces as frm_interfaces
 
 from nti.ntiids import ntiids
+
+from nti.intid import interfaces as intid_interfaces
 
 from .common import get_creator
 from .common import get_nti_session
