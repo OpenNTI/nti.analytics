@@ -54,8 +54,8 @@ def get_job_queue():
 class _ImmediateQueueRunner(object):
 	
 	def put( self, job ):
-		transaction_runner = \
-				component.getUtility(nti_interfaces.IDataserverTransactionRunner)
+# 		transaction_runner = \
+# 				component.getUtility(nti_interfaces.IDataserverTransactionRunner)
 		try:
 			# FIXME but this breaks mockDS tests
 			#transaction_runner( job )
