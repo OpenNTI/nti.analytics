@@ -45,5 +45,5 @@ def install_queue(context):
 	result.__name__ = QUEUE_NAME
 	intids.register( result )
 	lsm.registerUtility( result, provided=asyc_interfaces.IQueue, name=QUEUE_NAME )
-
 	return result
+	

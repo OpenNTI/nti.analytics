@@ -22,6 +22,7 @@ from nti.async import create_job as create_job_async
 from nti.async import get_job_queue as async_queue
 
 QUEUE_NAME = '++etc++analytics++queue'
+DEV_QUEUE_NAME = QUEUE_NAME + '++devmode'
 
 def get_analytics_db():
 	return component.getUtility( analytic_interfaces.IAnalyticsDB )
@@ -55,21 +56,13 @@ class _ImmediateQueueRunner(object):
 	
 	def put( self, job ):
 # 		transaction_runner = \
-# 				component.getUtility(nti_interfaces.IDataserverTransactionRunner)
+#  				component.getUtility(nti_interfaces.IDataserverTransactionRunner)
 		try:
-			# FIXME but this breaks mockDS tests
+			# For top level processes (admin_views) we would need to run in a transaction_runner.
 			#transaction_runner( job )
 			
+			# Any need to handle sessions here (outside of ZTE).
 			job()
-			
-			# FIXME This doesn't work when running admin_view; ZTE issue?
-			#job()
-# 			
-# 			  File "/Users/jzuech/Projects/buildout-eggs/SQLAlchemy-0.9.6-py2.7-macosx-10.9-intel.egg/sqlalchemy/orm/session.py", line 298, in _connection_for_bind
-#     self._assert_active()
-#   File "/Users/jzuech/Projects/buildout-eggs/SQLAlchemy-0.9.6-py2.7-macosx-10.9-intel.egg/sqlalchemy/orm/session.py", line 210, in _assert_active
-#     % self._rollback_exception
-# InvalidRequestError: This Session's transaction has been rolled back due to a previous exception during flush. To begin a new transaction with this Session, first issue Session.rollback(). Original exception was: (IntegrityError) column user_ds_id is not unique u'INSERT INTO "Users" (user_ds_id) VALUES (?)' (97987269143875495,)
 		except Exception as e:
 			logger.exception( 'While migrating job (%s)', job )
 
