@@ -17,6 +17,8 @@ from nti.dataserver.contenttypes.forums import interfaces as frm_interfaces
 
 from nti.ntiids import ntiids
 
+from datetime import datetime
+
 from .common import get_creator
 from .common import get_nti_session
 from .common import to_external_ntiid_oid

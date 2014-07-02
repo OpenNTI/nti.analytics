@@ -12,6 +12,7 @@ import unittest
 
 from zope import component
 from nti.analytics.database.database import AnalyticsDB
+from nti.analytics.database import interfaces as analytic_interfaces
 
 from hamcrest import assert_that
 from hamcrest import has_length
@@ -19,26 +20,18 @@ from hamcrest import none
 from hamcrest import not_none
 from hamcrest import is_
 
-from nti.dataserver.contenttypes.forums.tests import ForumTestLayer
-from nti.app.forums.tests.base_forum_testing import AbstractTestApplicationForumsBaseMixin
-
 from nti.app.testing.decorators import WithSharedApplicationMockDS
 from nti.app.testing.application_webtest import ApplicationLayerTest
 
-from nti.app.assessment.tests import RegisterAssignmentLayerMixin
-from nti.app.assessment.tests import RegisterAssignmentsForEveryoneLayer
-
 class TestDiscussionsImport( ApplicationLayerTest ):
-		
-	layer = RegisterAssignmentsForEveryoneLayer	
-	#layer = ForumTestLayer
 	
 	def setUp(self):
 		self.db = AnalyticsDB( dburi='sqlite://' )
-		component.provideUtility( self.db )
+		component.getGlobalSiteManager().registerUtility( self.db, analytic_interfaces.IAnalyticsDB )
 		self.session = self.db.session
-	
+
 	def tearDown(self):
+		component.getGlobalSiteManager().unregisterUtility( self.db, provided=analytic_interfaces.IAnalyticsDB )
 		self.session.close()
 	
 	@WithSharedApplicationMockDS(users=True,testapp=True,default_authenticate=True)

@@ -69,6 +69,7 @@
 	<subscriber handler=".resource_tags._highlight_added" />
 	<subscriber handler=".resource_tags._highlight_removed" />
 
+
 	<!-- utils -->
 	
 	<utility component=".entities" provides=".interfaces.IObjectProcessor" name="entities"/>
