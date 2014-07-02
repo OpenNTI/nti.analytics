@@ -174,9 +174,13 @@ class AnalyticsDB(object):
 		return self.idlookup.get_id_for_object( user )
 	
 	def _get_id_for_session(self, nti_session):
-		if not nti_session:
-			return None
-		return self.idlookup.get_id_for_object( nti_session )
+		result = None
+		if 		isinstance( nti_session, integer_types ) \
+			or 	nti_session is None:
+			result = nti_session
+		else:
+			result = getattr( nti_session, 'session_id', None )
+		return result
 	
 	def _get_id_for_course( self, course ):
 		# ID needs to be unique by semester...
@@ -246,8 +250,6 @@ class AnalyticsDB(object):
 		return found_user or self.create_user( uid )
 		
 	def create_session(self, user, nti_session, timestamp, ip_address, platform, version):
-		# FIXME nti_session does not exist yet, probably
-		# ISessionService from nti.dataserver?
 		user = self._get_or_create_user( user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )

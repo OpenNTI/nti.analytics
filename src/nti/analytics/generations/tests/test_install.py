@@ -16,7 +16,7 @@ from zope import component
 from nti.dataserver.tests import mock_dataserver
 
 from nti.async import queue
-from nti.async import interfaces as asyc_interfaces
+from nti.async import interfaces as async_interfaces
 
 from nti.analytics import QUEUE_NAME
 
@@ -26,5 +26,5 @@ class TestInstall(NTIAnalyticsTestCase):
 
 	@mock_dataserver.WithMockDSTrans
 	def test_install(self):
-		job_queue = component.getUtility( asyc_interfaces.IQueue, name=QUEUE_NAME )
-		assert_that( job_queue, verifiably_provides( asyc_interfaces.IQueue ) )
+		job_queue = component.getUtility( async_interfaces.IQueue, name=QUEUE_NAME )
+		assert_that( job_queue, verifiably_provides( async_interfaces.IQueue ) )
