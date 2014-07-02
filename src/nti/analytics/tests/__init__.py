@@ -27,6 +27,8 @@ from nti.dataserver.tests.mock_dataserver import DSInjectorMixin
 
 import zope.testing.cleanup
 
+from zope import component
+
 from nti.analytics import common
 
 from six import integer_types

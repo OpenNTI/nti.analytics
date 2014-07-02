@@ -31,12 +31,6 @@
 		</configure>
 	</configure>
 	
-	<configure zcml:condition="have testmode">
-			<include package="." file="meta.zcml" />
-			<adb:registerAnalyticsDB 	defaultSQLite="True"
-										dburi="sqlite://" />
-	</configure>
-	
 	<!-- TODO What goes here for non-dev? -->
 	<!-- Also, we shouldn't register by site anymore, right? -->
 	<configure zcml:condition="not-have devmode">
