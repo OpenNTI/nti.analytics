@@ -29,6 +29,7 @@ from . import create_job
 from . import get_job_queue
 
 from six import integer_types
+from six import string_types
 
 def get_entity(entity):
     if not nti_interfaces.IEntity.providedBy(entity):
@@ -43,10 +44,31 @@ def get_creator(obj):
     except (TypeError, POSKeyError):
         return None
        
-def get_nti_session():
-	# FIXME Need this
-	# Maybe get session for user?
-	return None
+def get_nti_session( user ):
+	""" Attempt to get the current session for the user, returning None if none found. """
+	session_storage = component.getUtility( nti_interfaces.ISessionServiceStorage ) 
+	sessions = session_storage.get_sessions_by_owner( user )
+	# We may have multiple; grab the first.
+	# See note in session_storage on why this may no longer be necessary.
+	nti_session = next( sessions, None )
+	return nti_session
+
+def get_nti_session_id( user ):
+	""" Attempt to get the current session id for the user, returning None if none found. """
+	nti_session = get_nti_session( user )
+	return get_id_for_session( nti_session )
+	
+def get_id_for_session( nti_session ):	
+	""" Given an nti_session, return the unique id """
+	result = None
+	
+	if 		isinstance( nti_session, string_types ) \
+		or 	nti_session is None:
+		result = nti_session
+	else:
+		result = getattr( nti_session, 'session_id', None )
+	
+	return result
 
 def get_comment_root( comment, type ):
 	""" Work up the comment parent tree looking for 'type', returning None if not found. """

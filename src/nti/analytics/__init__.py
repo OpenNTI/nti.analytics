@@ -28,7 +28,7 @@ def get_analytics_db():
 	return component.getUtility( analytic_interfaces.IAnalyticsDB )
 
 def _execute_job( *args, **kwargs ):
-	""" Execute our job, giving it a db and wrapping it with a session as we go. """
+	""" Execute our job, pass it a kwarg analytics db. """
 	db = get_analytics_db()
 	
 	effective_kwargs = dict( kwargs )

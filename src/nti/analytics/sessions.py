@@ -18,7 +18,7 @@ from nti.ntiids import ntiids
 from datetime import datetime
 
 from .common import get_creator
-from .common import get_nti_session
+from .common import get_id_for_session
 from .common import to_external_ntiid_oid
 from .common import get_deleted_time
 from .common import get_entity
@@ -30,36 +30,42 @@ from . import create_job
 from . import get_job_queue
 from . import interfaces as analytic_interfaces
 
-def _add_session( db, oid ):
-	nti_session = ntiids.find_object_with_ntiid( oid )
+# Note: these are socket sessions, and may not be the best thing to store/listen-fo.
+# 1. Not sure of the session lifecycle (new sessions clean out the old sessions)
+# 2. Multiple created per *actual* session (though this may change)
+# 3. Tied to #2, picking one of the open sessions for a user is arbitrary.
+
+def _add_session( db, user, nti_session, timestamp, ip_addr=None, platform=None, version=None ):
 	if nti_session:
-		user = getattr( nti_session, 'owner', None )
 		user = get_entity( user )
-		timestamp = getattr( nti_session, 'creation_time', datetime.utcnow() )
-		# FIXME we don't have these attributes
-		ip_addr = platform = version = None
 		db.create_session( user, nti_session, timestamp, ip_addr, platform, version )
 		logger.debug( 'Session created (user=%s) (time=%s)', user, timestamp )
 
-@component.adapter( sio_interfaces.ISocketSession, sio_interfaces.ISocketSessionConnectedEvent )
-def _session_created( session, event ):
-	# FIXME If these sessions will not be stored long term in the DS, we'll 
-	# need to pass the object (or values) along.  If not, we may lose them.
-	process_event( _add_session, session )
+def _process_session_created( nti_session ):
+	session_id = get_id_for_session( nti_session )
+	user = getattr( nti_session, 'owner', None )
+	user = get_entity( user )
+	timestamp = getattr( nti_session, 'creation_time', datetime.utcnow() )
+	# FIXME we don't have some of these attributes available to us.
+	#ip_addr = platform = version = None
+	process_event( _add_session, nti_session=session_id, user=user, timestamp=timestamp )
 
-def _remove_session( db, oid, timestamp=None ):
-	nti_session = ntiids.find_object_with_ntiid( oid )
+@component.adapter( sio_interfaces.ISocketSession, sio_interfaces.ISocketSessionConnectedEvent )
+def _session_created( nti_session, event ):
+	_process_session_created( nti_session )
+
+def _remove_session( db, nti_session, user=None, timestamp=None ):
 	if nti_session:
-		user = getattr( nti_session, 'owner', None )
-		user = get_entity( user )
 		db.end_session( nti_session, timestamp )
 		logger.debug( 'Session destroyed (user=%s) (time=%s)', user, timestamp )
 
 @component.adapter( sio_interfaces.ISocketSession, sio_interfaces.ISocketSessionDisconnectedEvent )
-def _session_destroyed( session, event ):
+def _session_destroyed( nti_session, event ):
 	# We could get 'last_heartbeat_time' as well
+	session_id = get_id_for_session( nti_session )
+	user = getattr( nti_session, 'owner', None )
 	timestamp = datetime.utcnow()
-	process_event( _remove_session, session, timestamp=timestamp )
+	process_event( _remove_session, nti_session=session_id, user=user, timestamp=timestamp )
 
 component.moduleProvides(analytic_interfaces.IObjectProcessor)
 
@@ -68,6 +74,6 @@ def init( obj ):
 	# Not sure if it's worth migrating them, but we can.
 	result = False
 	if 	sio_interfaces.ISocketSession.providedBy(obj):
-		process_event( _add_session, obj )
+		_process_session_created( obj )
 		result = True
 	return result

@@ -76,6 +76,7 @@ from .metadata import SelfAssessmentDetails
 from nti.analytics.common import get_created_timestamp
 from nti.analytics.common import timestamp_type
 from nti.analytics.common import IDLookup
+from nti.analytics.common import get_id_for_session
 
 def _get_sharing_enum( note, course ):		
 	# Logic duped in coursewarereports.views.admin_views
@@ -173,14 +174,9 @@ class AnalyticsDB(object):
 			return user
 		return self.idlookup.get_id_for_object( user )
 	
-	def _get_id_for_session(self, nti_session):
-		result = None
-		if 		isinstance( nti_session, string_types ) \
-			or 	nti_session is None:
-			result = nti_session
-		else:
-			result = getattr( nti_session, 'session_id', None )
-		return result
+	def _get_id_for_session( self, nti_session ):
+		# We're likely getting session_ids here, which we will just return.
+		return get_id_for_session( nti_session )
 	
 	def _get_id_for_course( self, course ):
 		# ID needs to be unique by semester...
@@ -249,29 +245,27 @@ class AnalyticsDB(object):
 		found_user = self.session.query(Users).filter( Users.user_ds_id == uid ).first()
 		return found_user or self.create_user( uid )
 		
-	def create_session(self, user, nti_session, timestamp, ip_address, platform, version):
+	def create_session(self, user, session_id, timestamp, ip_address, platform, version):
 		user = self._get_or_create_user( user )
 		uid = user.user_id
-		sid = self._get_id_for_session( nti_session )
 		timestamp = timestamp_type( timestamp )
 		
 		new_session = Sessions( user_id=uid, 
-								session_id=sid, 
+								session_id=session_id, 
 								start_time=timestamp, 
 								ip_addr=ip_address, 
 								platform=platform, 
 								version=version )
 		self.session.add( new_session )		
 		
-	def end_session(self, nti_session, timestamp):
-		sid = self._get_id_for_session( nti_session )
+	def end_session(self, session_id, timestamp):
 		timestamp = timestamp_type( timestamp )
-		nti_session = self.session.query(Sessions).filter( Sessions.session_id == sid ).first()
+		nti_session = self.session.query(Sessions).filter( Sessions.session_id == session_id ).first()
 		if nti_session:
 			nti_session.end_time = timestamp
 		else:
 			# This could happen during the initial startup phase, be forgiving.
-			logger.debug( 'Session ending but no record found in Sessions table (sid=%s)', sid )
+			logger.debug( 'Session ending but no record found in Sessions table (sid=%s)', session_id )
 		
 	#nti.chatserver.meeting._Meeting	
 	def create_chat_initiated(self, user, nti_session, chat):

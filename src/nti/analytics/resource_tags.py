@@ -19,7 +19,7 @@ from nti.ntiids import ntiids
 from nti.intid import interfaces as intid_interfaces
 
 from .common import get_creator
-from .common import get_nti_session
+from .common import get_nti_session_id
 from .common import to_external_ntiid_oid
 from .common import get_deleted_time
 from .common import get_comment_root
@@ -36,12 +36,11 @@ def get_course( obj ):
 	return get_course_by_ntiid( obj.containerId )
 
 # Notes
-def _add_note( db, oid ):
+def _add_note( db, oid, nti_session=None ):
 	note = ntiids.find_object_with_ntiid( oid )
 	if note is not None:
 		user = get_creator( note )
 		user = get_entity( user )
-		nti_session = get_nti_session()
 		course = get_course( note )
 		db.create_note( user, nti_session, course, note )
 		logger.debug( "Note created (user=%s) (course=%s)", user, course )
@@ -56,7 +55,10 @@ def _remove_highlight( db, oid, timestamp=None ):
 					intid_interfaces.IIntIdAddedEvent )
 def _note_added( obj, event ):
 	if _is_note( obj ):
-		process_event( _add_note, obj )
+		user = get_creator( obj )
+		user = get_entity( user )
+		nti_session = get_nti_session_id( user )
+		process_event( _add_note, obj, nti_session=nti_session )
 	
 @component.adapter(	nti_interfaces.INote,
 					intid_interfaces.IIntIdRemovedEvent )
@@ -67,12 +69,11 @@ def _note_removed( obj, event ):
 
 
 # Highlights
-def _add_highlight( db, oid ):
+def _add_highlight( db, oid, nti_session=None ):
 	highlight = ntiids.find_object_with_ntiid( oid )
 	if highlight is not None:
 		user = get_creator( highlight )
 		user = get_entity( user )
-		nti_session = get_nti_session()
 		course = get_course( highlight )
 		db.create_highlight( user, nti_session, course, highlight )
 		logger.debug( "Highlight created (user=%s) (course=%s)", user, course )
@@ -87,7 +88,10 @@ def _remove_highlight( db, oid, timestamp=None ):
 					intid_interfaces.IIntIdAddedEvent )
 def _highlight_added( obj, event ):
 	if _is_highlight( obj ):
-		process_event( _add_highlight, obj )
+		user = get_creator( obj )
+		user = get_entity( user )
+		nti_session = get_nti_session_id( user )
+		process_event( _add_highlight, obj, nti_session=nti_session )
 	
 @component.adapter(	nti_interfaces.IHighlight,
 					intid_interfaces.IIntIdRemovedEvent )

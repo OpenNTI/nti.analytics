@@ -21,7 +21,7 @@ from nti.ntiids import ntiids
 from datetime import datetime
 
 from .common import get_creator
-from .common import get_nti_session
+from .common import get_nti_session_id
 from .common import get_deleted_time
 from .common import get_comment_root
 from .common import get_entity
@@ -33,12 +33,12 @@ from . import utils
 from . import interfaces as analytic_interfaces
 
 # Comments
-def _add_comment( db, oid ):
+def _add_comment( db, oid, nti_session=None ):
 	comment = ntiids.find_object_with_ntiid( oid )
 	if comment is not None:
 		user = get_creator( comment )
 		user = get_entity( user )
-		nti_session = get_nti_session()
+		nti_session = get_nti_session_id( user )
 		discussion = get_comment_root( comment, frm_interfaces.ITopic )
 		course = get_course( discussion )
 		if discussion:
@@ -56,7 +56,10 @@ def _remove_comment( db, oid, timestamp ):
 @component.adapter( frm_interfaces.IGeneralForumComment, 
 					intid_interfaces.IIntIdAddedEvent )
 def _add_general_forum_comment(comment, event):
-	process_event( _add_comment, comment )
+	user = get_creator( comment )
+	user = get_entity( user )
+	nti_session = get_nti_session_id( user )
+	process_event( _add_comment, comment, nti_session=nti_session )
 
 @component.adapter(frm_interfaces.IGeneralForumComment,
 				   lce_interfaces.IObjectModifiedEvent)
@@ -66,12 +69,11 @@ def _modify_general_forum_comment(comment, event):
 		process_event( _remove_comment, comment, timestamp=timestamp )
 
 # Topic
-def _add_topic( db, oid ):
+def _add_topic( db, oid, nti_session=None ):
 	topic = ntiids.find_object_with_ntiid( oid )
 	if topic is not None:
 		user = get_creator( topic )
 		user = get_entity( user )
-		nti_session = get_nti_session()
 		course = get_course( topic )
 		db.create_discussion( user, nti_session, course, topic )
 		logger.debug( "Discussion created (user=%s) (discussion=%s)", user, topic )
@@ -88,7 +90,10 @@ def _remove_topic( db, oid, timestamp=None ):
 
 @component.adapter( frm_interfaces.ITopic, intid_interfaces.IIntIdAddedEvent )
 def _topic_added( topic, event ):
-	process_event( _add_topic, topic )
+	user = get_creator( topic )
+	user = get_entity( user )
+	nti_session = get_nti_session_id( user )
+	process_event( _add_topic, topic, nti_session=nti_session )
 
 @component.adapter( frm_interfaces.ITopic, lce_interfaces.IObjectModifiedEvent )
 def _topic_modified( topic, event ):
@@ -108,12 +113,11 @@ def _remove_forum( db, oid, timestamp ):
 		db.delete_forum( timestamp, forum )
 		logger.debug( "Forum deleted (forum=%s)", forum )
 
-def _add_forum( db, oid ):
+def _add_forum( db, oid, nti_session=None ):
 	forum = ntiids.find_object_with_ntiid( oid )
 	if forum is not None:
 		user = get_creator( forum )
 		user = get_entity( user )
-		nti_session = get_nti_session()
 		course = get_course( forum )
 		db.create_forum( user, nti_session, course, forum )
 		logger.debug( 	"Forum created (user=%s) (forum=%s) (course=%s)", 
@@ -125,6 +129,9 @@ def _modify_forum( db, oid ):
 
 @component.adapter( frm_interfaces.IForum, intid_interfaces.IIntIdAddedEvent )
 def _forum_added( forum, event ):
+	user = get_creator( forum )
+	user = get_entity( user )
+	nti_session = get_nti_session_id( user )
 	process_event( _add_forum, forum )
 
 @component.adapter( frm_interfaces.IForum, lce_interfaces.IObjectModifiedEvent )

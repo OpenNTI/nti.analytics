@@ -20,7 +20,7 @@ from nti.ntiids import ntiids
 from datetime import datetime
 
 from .common import get_creator
-from .common import get_nti_session
+from .common import get_nti_session_id
 from .common import to_external_ntiid_oid
 from .common import get_deleted_time
 from .common import get_comment_root
@@ -33,12 +33,11 @@ from . import get_job_queue
 from . import interfaces as analytic_interfaces
 
 # Comments
-def _add_comment( db, oid ):
+def _add_comment( db, oid, nti_session=None ):
 	comment = ntiids.find_object_with_ntiid( oid )
 	if comment is not None:
 		user = get_creator( comment )
 		user = get_entity( user )
-		nti_session = get_nti_session()
 		blog = get_comment_root( comment, 
 								( frm_interfaces.IPersonalBlogEntry, frm_interfaces.IPersonalBlogEntryPost ) )
 		if blog:
@@ -54,7 +53,10 @@ def _remove_comment( db, oid, timestamp=None ):
 @component.adapter( frm_interfaces.IPersonalBlogComment, 
 					lce_interfaces.IObjectAddedEvent)
 def _add_personal_blog_comment(comment, event):
-	process_event( _add_comment, comment )
+	user = get_creator( comment )
+	user = get_entity( user )
+	nti_session = get_nti_session_id( user )
+	process_event( _add_comment, comment, nti_session=nti_session )
 
 
 @component.adapter(frm_interfaces.IPersonalBlogComment,
@@ -68,12 +70,11 @@ def _modify_personal_blog_comment(comment, event):
 
 
 # Blogs
-def _add_blog( db, oid ):
+def _add_blog( db, oid, nti_session=None ):
 	blog = ntiids.find_object_with_ntiid( oid )
 	if blog is not None:
 		user = get_creator( blog )
 		user = get_entity( user )
-		nti_session = get_nti_session()
 		db.create_blog( user, nti_session, blog )
 		logger.debug( "Blog created (user=%s) (blog=%s)", user, blog )
 
@@ -81,7 +82,10 @@ def _add_blog( db, oid ):
 					frm_interfaces.IPersonalBlogEntryPost,
 					lce_interfaces.IObjectAddedEvent )
 def _blog_added( blog, event ):
-	process_event( _add_blog, blog )
+	user = get_creator( blog )
+	user = get_entity( user )
+	nti_session = get_nti_session_id( user )
+	process_event( _add_blog, blog, nti_session=nti_session )
 		
 # NOTE: We do not expect blog removed events.
 
