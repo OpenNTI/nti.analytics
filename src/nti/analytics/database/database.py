@@ -175,11 +175,11 @@ class AnalyticsDB(object):
 	
 	def _get_id_for_session(self, nti_session):
 		result = None
-		if 		isinstance( nti_session, integer_types ) \
+		if 		isinstance( nti_session, string_types ) \
 			or 	nti_session is None:
 			result = nti_session
 		else:
-			result = getattr( nti_session, '_session_intid', None )
+			result = getattr( nti_session, 'session_id', None )
 		return result
 	
 	def _get_id_for_course( self, course ):
@@ -270,7 +270,8 @@ class AnalyticsDB(object):
 		if nti_session:
 			nti_session.end_time = timestamp
 		else:
-			from IPython.core.debugger import Tracer;Tracer()()
+			# This could happen during the initial startup phase, be forgiving.
+			logger.debug( 'Session ending but no record found in Sessions table (sid=%s)', sid )
 		
 	#nti.chatserver.meeting._Meeting	
 	def create_chat_initiated(self, user, nti_session, chat):

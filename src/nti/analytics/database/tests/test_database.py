@@ -79,7 +79,7 @@ from nti.contenttypes.courses import courses
 
 test_user_id = 	1234
 test_user_ds_id = 78
-test_session_id = 56
+test_session_id = '56'
 
 # For new objects, this is the default intid stored in the database.
 # For subsequent objects, this will increase by one.

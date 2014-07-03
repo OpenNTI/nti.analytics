@@ -39,7 +39,7 @@ class Users(Base):
 # TODO timezone?
 class Sessions(Base):
 	__tablename__ = 'Sessions'
-	session_id = Column('session_id', Integer, primary_key=True)
+	session_id = Column('session_id', String(1048), primary_key=True)
 	user_id = Column('user_id', Integer, ForeignKey("Users.user_id"), nullable=False )
 	ip_addr = Column('ip_addr', String(64))	
 	platform = Column('platform', String(64))
@@ -54,7 +54,7 @@ class BaseTableMixin(object):
 	# Does the same apply to users?  Perhaps we don't have a 'creator' stored.
 	@declared_attr
 	def session_id(cls):
-		return Column('session_id', Integer, ForeignKey("Sessions.session_id"), nullable=True )
+		return Column('session_id', String(1048), ForeignKey("Sessions.session_id"), nullable=True )
 	
 	@declared_attr
 	def user_id(cls):
@@ -68,7 +68,7 @@ class BaseViewMixin(object):
 	# It will have to be fine-grain to avoid collisions.
 	@declared_attr
 	def session_id(cls):
-		return Column('session_id', Integer, ForeignKey("Sessions.session_id"), nullable=True )
+		return Column('session_id', String(1048), ForeignKey("Sessions.session_id"), nullable=True )
 	
 	@declared_attr
 	def user_id(cls):

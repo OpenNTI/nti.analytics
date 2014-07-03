@@ -45,7 +45,6 @@ def _add_session( db, oid ):
 def _session_created( session, event ):
 	# FIXME If these sessions will not be stored long term in the DS, we'll 
 	# need to pass the object (or values) along.  If not, we may lose them.
-	from IPython.core.debugger import Tracer;Tracer()()
 	process_event( _add_session, session )
 
 def _remove_session( db, oid, timestamp=None ):
@@ -58,7 +57,6 @@ def _remove_session( db, oid, timestamp=None ):
 
 @component.adapter( sio_interfaces.ISocketSession, sio_interfaces.ISocketSessionDisconnectedEvent )
 def _session_destroyed( session, event ):
-	from IPython.core.debugger import Tracer;Tracer()()
 	# We could get 'last_heartbeat_time' as well
 	timestamp = datetime.utcnow()
 	process_event( _remove_session, session, timestamp=timestamp )
@@ -70,7 +68,6 @@ def init( obj ):
 	# Not sure if it's worth migrating them, but we can.
 	result = False
 	if 	sio_interfaces.ISocketSession.providedBy(obj):
-		from IPython.core.debugger import Tracer;Tracer()()
 		process_event( _add_session, obj )
 		result = True
 	return result
