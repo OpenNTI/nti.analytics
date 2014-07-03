@@ -69,10 +69,8 @@
 	<subscriber handler=".resource_tags._highlight_added" />
 	<subscriber handler=".resource_tags._highlight_removed" />
 
-<!--
 	<subscriber handler=".sessions._session_created" />
 	<subscriber handler=".sessions._session_destroyed" />
--->
 
 
 	<!-- utils -->

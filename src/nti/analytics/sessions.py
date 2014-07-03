@@ -21,6 +21,7 @@ from .common import get_creator
 from .common import get_nti_session
 from .common import to_external_ntiid_oid
 from .common import get_deleted_time
+from .common import get_entity
 from .common import get_comment_root
 from .common import process_event
 
@@ -29,22 +30,35 @@ from . import create_job
 from . import get_job_queue
 from . import interfaces as analytic_interfaces
 
-def _add_session( db, session ):
-	user = getattr( session, 'owner', None )
-	timestamp = getattr( session, 'creation_time', datetime.utcnow() )
-	# FIXME we don't have these attributes
-	ip_addr = platform = version = None
-	db.create_session( user, session, timestamp, ip_addr, platform, version )
+def _add_session( db, oid ):
+	nti_session = ntiids.find_object_with_ntiid( oid )
+	if nti_session:
+		user = getattr( nti_session, 'owner', None )
+		user = get_entity( user )
+		timestamp = getattr( nti_session, 'creation_time', datetime.utcnow() )
+		# FIXME we don't have these attributes
+		ip_addr = platform = version = None
+		db.create_session( user, nti_session, timestamp, ip_addr, platform, version )
+		logger.debug( 'Session created (user=%s) (time=%s)', user, timestamp )
 
 @component.adapter( sio_interfaces.ISocketSession, sio_interfaces.ISocketSessionConnectedEvent )
-def _session_created( session, event ) :
+def _session_created( session, event ):
+	# FIXME If these sessions will not be stored long term in the DS, we'll 
+	# need to pass the object (or values) along.  If not, we may lose them.
+	from IPython.core.debugger import Tracer;Tracer()()
 	process_event( _add_session, session )
 
-def _remove_session( db, session, timestamp=None ):
-	db.end_session( session, timestamp )
+def _remove_session( db, oid, timestamp=None ):
+	nti_session = ntiids.find_object_with_ntiid( oid )
+	if nti_session:
+		user = getattr( nti_session, 'owner', None )
+		user = get_entity( user )
+		db.end_session( nti_session, timestamp )
+		logger.debug( 'Session destroyed (user=%s) (time=%s)', user, timestamp )
 
 @component.adapter( sio_interfaces.ISocketSession, sio_interfaces.ISocketSessionDisconnectedEvent )
 def _session_destroyed( session, event ):
+	from IPython.core.debugger import Tracer;Tracer()()
 	# We could get 'last_heartbeat_time' as well
 	timestamp = datetime.utcnow()
 	process_event( _remove_session, session, timestamp=timestamp )
@@ -57,8 +71,6 @@ def init( obj ):
 	result = False
 	if 	sio_interfaces.ISocketSession.providedBy(obj):
 		from IPython.core.debugger import Tracer;Tracer()()
-		# Store id here, how to lookup?
-		# Or persist the whole session object if we can. 
 		process_event( _add_session, obj )
 		result = True
 	return result

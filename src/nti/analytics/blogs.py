@@ -25,6 +25,7 @@ from .common import to_external_ntiid_oid
 from .common import get_deleted_time
 from .common import get_comment_root
 from .common import process_event
+from .common import get_entity
 
 from . import utils
 from . import create_job
@@ -36,6 +37,7 @@ def _add_comment( db, oid ):
 	comment = ntiids.find_object_with_ntiid( oid )
 	if comment is not None:
 		user = get_creator( comment )
+		user = get_entity( user )
 		nti_session = get_nti_session()
 		blog = get_comment_root( comment, 
 								( frm_interfaces.IPersonalBlogEntry, frm_interfaces.IPersonalBlogEntryPost ) )
@@ -70,6 +72,7 @@ def _add_blog( db, oid ):
 	blog = ntiids.find_object_with_ntiid( oid )
 	if blog is not None:
 		user = get_creator( blog )
+		user = get_entity( user )
 		nti_session = get_nti_session()
 		db.create_blog( user, nti_session, blog )
 		logger.debug( "Blog created (user=%s) (blog=%s)", user, blog )

@@ -179,7 +179,7 @@ class AnalyticsDB(object):
 			or 	nti_session is None:
 			result = nti_session
 		else:
-			result = getattr( nti_session, 'session_id', None )
+			result = getattr( nti_session, '_session_intid', None )
 		return result
 	
 	def _get_id_for_course( self, course ):
@@ -253,6 +253,7 @@ class AnalyticsDB(object):
 		user = self._get_or_create_user( user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
+		timestamp = timestamp_type( timestamp )
 		
 		new_session = Sessions( user_id=uid, 
 								session_id=sid, 
@@ -264,8 +265,12 @@ class AnalyticsDB(object):
 		
 	def end_session(self, nti_session, timestamp):
 		sid = self._get_id_for_session( nti_session )
+		timestamp = timestamp_type( timestamp )
 		nti_session = self.session.query(Sessions).filter( Sessions.session_id == sid ).first()
-		nti_session.end_time = timestamp
+		if nti_session:
+			nti_session.end_time = timestamp
+		else:
+			from IPython.core.debugger import Tracer;Tracer()()
 		
 	#nti.chatserver.meeting._Meeting	
 	def create_chat_initiated(self, user, nti_session, chat):

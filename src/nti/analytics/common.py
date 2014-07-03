@@ -45,6 +45,7 @@ def get_creator(obj):
        
 def get_nti_session():
 	# FIXME Need this
+	# Maybe get session for user?
 	return None
 
 def get_comment_root( comment, type ):

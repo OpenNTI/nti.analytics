@@ -45,6 +45,7 @@ def _add_meeting(db, oid):
 		# FIXME need session
 		# Idempotent if we also have participant joining events
 		creator = get_creator( new_chat )
+		creator = get_entity( creator )
 		nti_session = None
 		db.create_chat_initiated( session, creator, nti_session, new_chat )
 		logger.debug( "Meeting created (user=%s) (meeting=%s)", creator, new_chat )

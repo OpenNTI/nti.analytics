@@ -24,6 +24,7 @@ from .common import get_creator
 from .common import get_nti_session
 from .common import get_deleted_time
 from .common import get_comment_root
+from .common import get_entity
 from .common import get_course
 from .common import process_event
 from .common import IDLookup
@@ -36,6 +37,7 @@ def _add_comment( db, oid ):
 	comment = ntiids.find_object_with_ntiid( oid )
 	if comment is not None:
 		user = get_creator( comment )
+		user = get_entity( user )
 		nti_session = get_nti_session()
 		discussion = get_comment_root( comment, frm_interfaces.ITopic )
 		course = get_course( discussion )
@@ -68,6 +70,7 @@ def _add_topic( db, oid ):
 	topic = ntiids.find_object_with_ntiid( oid )
 	if topic is not None:
 		user = get_creator( topic )
+		user = get_entity( user )
 		nti_session = get_nti_session()
 		course = get_course( topic )
 		db.create_discussion( user, nti_session, course, topic )
@@ -109,6 +112,7 @@ def _add_forum( db, oid ):
 	forum = ntiids.find_object_with_ntiid( oid )
 	if forum is not None:
 		user = get_creator( forum )
+		user = get_entity( user )
 		nti_session = get_nti_session()
 		course = get_course( forum )
 		db.create_forum( user, nti_session, course, forum )

@@ -24,6 +24,7 @@ from .common import to_external_ntiid_oid
 from .common import get_deleted_time
 from .common import get_comment_root
 from .common import process_event
+from .common import get_entity
 from .common import get_course_by_ntiid
 
 from . import utils
@@ -39,6 +40,7 @@ def _add_note( db, oid ):
 	note = ntiids.find_object_with_ntiid( oid )
 	if note is not None:
 		user = get_creator( note )
+		user = get_entity( user )
 		nti_session = get_nti_session()
 		course = get_course( note )
 		db.create_note( user, nti_session, course, note )
@@ -69,6 +71,7 @@ def _add_highlight( db, oid ):
 	highlight = ntiids.find_object_with_ntiid( oid )
 	if highlight is not None:
 		user = get_creator( highlight )
+		user = get_entity( user )
 		nti_session = get_nti_session()
 		course = get_course( highlight )
 		db.create_highlight( user, nti_session, course, highlight )
