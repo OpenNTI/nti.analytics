@@ -20,6 +20,7 @@ from sqlalchemy import MetaData
 from sqlalchemy import ForeignKey
 from sqlalchemy import Boolean
 from sqlalchemy import Enum
+from sqlalchemy import Text
 from sqlalchemy import DateTime
 
 from sqlalchemy.schema import Index
@@ -30,7 +31,6 @@ from sqlalchemy.ext.declarative import declared_attr
 
 Base = declarative_base()
 
-# This user_id should be the dataserver's intid value for this user.
 class Users(Base):
 	__tablename__ = 'Users'
 	user_id = Column('user_id', Integer, Sequence('user_id_seq'), index=True, nullable=False, primary_key=True )
@@ -264,21 +264,22 @@ class CourseDrops(Base,BaseTableMixin,CourseMixin):
 	__tablename__ = 'CourseDrops'
 
 class AssignmentMixin(BaseTableMixin,CourseMixin,TimeLengthMixin):
-	assignment_id = Column('assignment_id', String(1048), nullable=False, index=True, primary_key=True )
+	@declared_attr
+	def assignment_id(cls):
+		return Column('assignment_id', String(1048), nullable=False, index=True, primary_key=True )
 		
-class SelfAssessmentsTaken(Base,AssignmentMixin):
-	__tablename__ = 'SelfAssessmentsTaken'
-	submission_id = Column('submission_id', Integer, Sequence( 'self_assess_submission_id_seq' ), primary_key=True, index=True )
-		
-# TODO Should feedback have its own event tracking? It's one of the few mutable fields if not.
 class AssignmentsTaken(Base,AssignmentMixin):
 	__tablename__ = 'AssignmentsTaken'
-	grade = Column('grade', String(256))
-	feedback_count = Column('feedback_count', Integer)
+	# TODO How do we look this up when user's can have multiple submissions, does it need to be supplied? Or lookup by timestamp?
 	submission_id = Column('submission_id', Integer, Sequence( 'assignment_submission_id_seq' ), primary_key=True, index=True )
 
+class AssignmentSubmissionMixin(BaseTableMixin):
+	@declared_attr
+	def submission_id(cls):
+		return Column('submission_id', Integer, ForeignKey("AssignmentsTaken.submission_id"), nullable=False, primary_key=True)
 
-class SubmissionMixin(AssignmentMixin):
+
+class DetailMixin(object):
 	@declared_attr
 	def question_id(cls):
 		return Column('question_id', Integer, nullable=False, primary_key=True)
@@ -287,21 +288,60 @@ class SubmissionMixin(AssignmentMixin):
 	def question_part(cls):
 		return Column('question_part', Integer, nullable=False, primary_key=True)
 	
+	# TODO separate submissions by question types?
+	# Do we even want to store the content? (We do.)
 	@declared_attr
 	def submission(cls):
-		return Column('submission', String(1048), nullable=False) #(Freeform|MapEntry|Index|List)
+		return Column('submission', Text, nullable=False) #(Freeform|MapEntry|Index|List)
 	
+	
+class GradeMixin(object):	
+	# For multiple choice types
 	@declared_attr
 	def is_correct(cls):
 		return Column('is_correct', Boolean)
 	
+	# Could be a lot of types: 7, 7/10, 95, 95%, A-, 90 A
+	@declared_attr
+	def grade(cls):
+		return Column('grade', String(32))
+	
 # TODO Can we rely on these parts/ids being integers?
-# TODO What do we do if instructor corrects an answer for a question_part (syncing)?
-class AssignmentDetails(Base,SubmissionMixin):	
+class AssignmentDetails(Base,DetailMixin,AssignmentSubmissionMixin):	
 	__tablename__ = 'AssignmentDetails'
-	submission_id = Column('submission_id', Integer, ForeignKey("AssignmentsTaken.submission_id"), nullable=False, primary_key=True)
 
-class SelfAssessmentDetails(Base,SubmissionMixin):	
+
+class AssignmentGrades(Base,GradeMixin,AssignmentSubmissionMixin):
+	__tablename__ = 'AssignmentGrades'
+	grade_id = Column('grade_id', Integer, Sequence( 'assignment_grade_id_seq' ), primary_key=True, index=True )
+
+
+# 'AUTO' will designate auto-graded parts
+class AssignmentDetailGrades(Base,GradeMixin,AssignmentSubmissionMixin):
+	__tablename__ = 'AssignmentDetailGrades'
+	question_id = Column('question_id', Integer, ForeignKey("AssignmentDetails.question_id"), nullable=False, primary_key=True)
+	question_part = Column('question_part', Integer, ForeignKey("AssignmentDetails.question_part"), nullable=True, primary_key=True)
+
+
+# Each feedback 'tree' should have an associated grade with it.
+class AssignmentFeedback(Base,AssignmentSubmissionMixin):
+	__tablename__ = 'AssignmentFeedback'
+	feedback_length = Column( 'feedback_length', Integer, nullable=True )
+	
+	# parent_id should point to a parent feedback, top-level feedback will have null parent_ids
+	parent_id = Column('parent_id', Integer)
+	
+	grade_id = Column('grade_id', Integer, ForeignKey("AssignmentGrades.grade_id"), nullable=False, primary_key=True)
+
+
+
+class SelfAssessmentsTaken(Base,AssignmentMixin):
+	__tablename__ = 'SelfAssessmentsTaken'
+	submission_id = Column('submission_id', Integer, Sequence( 'self_assess_submission_id_seq' ), primary_key=True, index=True )
+
+
+# SelfAssessments will not have feedback or multiple graders
+class SelfAssessmentDetails(Base,DetailMixin,GradeMixin):	
 	__tablename__ = 'SelfAssessmentDetails'
 	submission_id = Column('submission_id', Integer, ForeignKey("SelfAssessmentsTaken.submission_id"), nullable=False, primary_key=True)
 
@@ -313,8 +353,6 @@ class SelfAssessmentDetails(Base,SubmissionMixin):
 #		-Should we use TEXT instead of String?
 #		-If we use ntiids, we should probably expand. 
 #	constraints
-# 	Timestamps TEXT here?
-#	Forum/Discussion ids, intids or other?
 class AnalyticsMetadata(object): 
 
 	def __init__(self,engine):
