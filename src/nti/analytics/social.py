@@ -36,15 +36,12 @@ from .common import IDLookup
 from . import utils
 from . import interfaces as analytic_interfaces
 
-
-
 # Chat
 def _add_meeting(db, oid, nti_session=None ):
 	new_chat = ntiids.find_object_with_ntiid(oid)
 	if new_chat is not None:
 		# Idempotent if we also have participant joining events
 		creator = get_creator( new_chat )
-		creator = get_entity( creator )
 		db.create_chat_initiated( session, creator, nti_session, new_chat )
 		logger.debug( "Meeting created (user=%s) (meeting=%s)", creator, new_chat )
 		
@@ -67,7 +64,6 @@ def _join_meeting( db, oid, timestamp=None, nti_session=None ):
 @component.adapter(chat_interfaces.IMeeting, intid_interfaces.IIntIdAddedEvent)
 def _meeting_created(meeting, event):
 	creator = get_creator( new_chat )
-	creator = get_entity( creator )
 	nti_session = get_nti_session_id( nti_session )
 	process_event( _add_meeting, meeting, nti_session=nti_session )
 
@@ -132,7 +128,6 @@ def _add_friends_list( db, oid, nti_session=None ):
 	friends_list = ntiids.find_object_with_ntiid(oid)
 	if friends_list is not None:
 		user = get_creator( friends_list )
-		user = get_entity( user )
 		timestamp = get_created_timestamp( friends_list )
 		db.create_friends_list( user, nti_session, timestamp, friends_list )
 		for member in friends_list:
@@ -160,7 +155,6 @@ def _modified_friends_list( db, oid, timestamp=None ):
 def _friendslist_added(obj, event):
 	if not nti_interfaces.IDynamicSharingTargetFriendsList.providedBy( obj ):
 		user = get_creator( friends_list )
-		user = get_entity( user )
 		nti_session = get_nti_session_id( user )
 		process_event( _add_friends_list, obj, nti_session=nti_session )
 
@@ -185,7 +179,6 @@ def _add_dfl( db, oid, nti_session=None ):
 	dfl = ntiids.find_object_with_ntiid(oid)
 	if dfl is not None:
 		user = get_creator( dfl )
-		user = get_entity( dfl )
 		db.create_dynamic_friends_list( user, nti_session, dfl )
 		for member in dfl:
 			member = get_entity( member )
@@ -220,7 +213,6 @@ def _remove_dfl_member( db, source, target, username=None, timestamp=None, nti_s
 				 	 intid_interfaces.IIntIdAddedEvent)
 def _dfl_added(obj, event):
 	user = get_creator( obj )
-	user = get_entity( user )
 	nti_session = get_nti_session_id( user )
 	process_event( _add_dfl, obj, nti_session=nti_session )
 	
@@ -241,7 +233,11 @@ def _start_dynamic_membership_event(event):
 	target = getattr(target, 'username', target)
 	
 	nti_session = get_nti_session_id( get_entity( source ) )
-	process_event( _add_dfl_member, source=source, target=target, timestamp=timestamp, nti_session=nti_session )
+	process_event( 	_add_dfl_member, 
+					source=source,
+					target=target, 
+					timestamp=timestamp, 
+					nti_session=nti_session )
 
 @component.adapter(nti_interfaces.IStopDynamicMembershipEvent)
 def _stop_dynamic_membership_event(event):
@@ -251,7 +247,11 @@ def _stop_dynamic_membership_event(event):
 	target = getattr(target, 'username', target)
 	
 	nti_session = get_nti_session_id( get_entity( source ) )
-	process_event( _remove_dfl_member, source=source, target=target, timestamp=timestamp, nti_session=nti_session )
+	process_event(	_remove_dfl_member, 
+					source=source, 
+					target=target,
+					timestamp=timestamp, 
+					nti_session=nti_session )
 
 
 component.moduleProvides(analytic_interfaces.IObjectProcessor)

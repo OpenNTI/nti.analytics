@@ -34,6 +34,9 @@ from nti.dataserver.users.entity import Entity
 
 from nti.dataserver.contenttypes.forums.interfaces import ICommentPost
 
+from nti.assessment.interfaces import IQAssignment
+from nti.app.products.gradebook.interfaces import IGrade
+
 from nti.utils.property import Lazy
 
 from .interfaces import IAnalyticsDB
@@ -70,13 +73,16 @@ from .metadata import CourseEnrollments
 from .metadata import CourseDrops
 from .metadata import AssignmentsTaken
 from .metadata import AssignmentDetails
+from .metadata import AssignmentGrades
+from .metadata import AssignmentDetailGrades
+from .metadata import AssignmentFeedback
 from .metadata import SelfAssessmentsTaken
-from .metadata import SelfAssessmentDetails
 
 from nti.analytics.common import get_created_timestamp
 from nti.analytics.common import timestamp_type
 from nti.analytics.common import IDLookup
 from nti.analytics.common import get_id_for_session
+from nti.analytics.common import get_creator
 
 def _get_sharing_enum( note, course ):		
 	# Logic duped in coursewarereports.views.admin_views
@@ -218,6 +224,9 @@ class AnalyticsDB(object):
 	
 	def _get_id_for_friends_list(self, friends_list):
 		return self.idlookup.get_id_for_object( friends_list )
+	
+	def _get_id_for_submission(self, submission):
+		return self.idlookup.get_id_for_object( submission )
 	
 	def create_user(self, user):
 		uid = self._get_id_for_user( user )
@@ -832,23 +841,142 @@ class AnalyticsDB(object):
 																CourseEnrollments.course_id == course_id ).first()
 		enrollment.dropped = timestamp
 		
-	def create_self_assessment_taken(self, user, nti_session, timestamp, course, self_assessment_id, time_length, questions, submission ):
+	def create_self_assessment_taken(self, user, nti_session, timestamp, course, time_length, submission ):
 		user = self._get_or_create_user( user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
 		course_id = self._get_id_for_course( course )
 		timestamp = timestamp_type( timestamp )
+		submission_id = self._get_id_for_submission( submission )
 		
 		new_object = SelfAssessmentsTaken( 	user_id=uid, 
 											session_id=sid, 
 											timestamp=timestamp,
 											course_id=course_id,
 											assignment_id=self_assessment_id,
+											submission_id=submission_id,
 											time_length=time_length )
 		self.session.add( new_object )		
 	
 		# We should have questions, parts, submissions, and is_correct
-		# TODO What objects will we have here?
+		# TODO Self-Assessment details (don't have?)
+		# TODO grade (we wont have any manually graded self-assessments)
+	
+	def create_assignment_taken(self, user, nti_session, timestamp, course, time_length, submission ):
+		user = self._get_or_create_user( user )
+		uid = user.user_id
+		sid = self._get_id_for_session( nti_session )
+		course_id = self._get_id_for_course( course )
+		timestamp = timestamp_type( timestamp )
+		submission_id = self._get_id_for_submission( submission )
+		assignment_id = submission.assignmentId
+		
+		new_object = AssignmentsTaken( 	user_id=uid, 
+										session_id=sid, 
+										timestamp=timestamp,
+										course_id=course_id,
+										assignment_id=assignment_id,
+										submission_id=submission_id,
+										time_length=time_length )
+		self.session.add( new_object )		
+		
+		# Submission Parts
+		submission = submission.Submission
+		for set_submission in submission.parts:
+			for question_submission in set_submission.questions:
+				# Questions don't have ds_intids, just use ntiid.
+				question_id = question_submission.questionId
+
+				for idx, part in enumerate( question_submission.parts ):
+					parts = AssignmentDetails( 	user_id=uid, 
+												session_id=sid, 
+												timestamp=timestamp,
+												submission_id=submission_id,
+												question_id=question_id,
+												question_part_id=idx,
+												submission=part )
+					self.session.add( parts )
+		
+		# Grade
+		graded_submission = IGrade( submission, None )
+		# If None, we're pending right?
+		if graded_submission is not None:
+			grade = graded_submission.grade
+			grader = get_creator( graded_submission )
+			grader = self._get_or_create_user( grader )
+			
+			graded = AssignmentGrades( 	user_id=uid, 
+										session_id=sid, 
+										timestamp=timestamp,
+										submission_id=submission_id,
+										grade=grade,
+										grader=grader )
+			self.session.add( graded )
+	
+			# Submission Part Grades
+			for maybe_assessed in submission.pendingAssessment.parts:
+				if not IQAssessedQuestionSet.providedBy(maybe_assessed):
+					# We're not auto-graded
+					continue
+				for assessed_question in maybe_assessed.questions:
+					question_id = assessed_question.questionId
+					
+					for idx, part in enumerate( assessed_question.parts ):
+						grade = part.assessedValue
+						# TODO How do we do this?
+						is_correct = grade == 1
+						grade_details = AssignmentDetailGrades( user_id=uid, 
+																session_id=sid, 
+																timestamp=timestamp,
+																submission_id=submission_id,
+																question_id=question_id,
+																question_part_id=idx,
+																is_correct=is_correct,
+																grade=grade,
+																grader=grader )
+						self.session.add( grade_details )
+		
+	def grade_submission(self, user, nti_session, timestamp, course, time_length, submission ):
+		# TODO Will we have a total grade with part-level grades?
+		# TODO what grade objects?
+		user = self._get_or_create_user( user )
+		uid = user.user_id
+		sid = self._get_id_for_session( nti_session )
+		course_id = self._get_id_for_course( course )
+		timestamp = timestamp_type( timestamp )
+		submission_id = self._get_id_for_submission( submission )
+		
+		new_object = AssignmentGrades( 	user_id=uid, 
+										session_id=sid, 
+										timestamp=timestamp,
+										submission_id=submission_id,
+										is_correct=is_correct,
+										grade=grade,
+										grader=grader )
+		
+		#AssignmentDetailGrades
+		
+		self.session.add( new_object )		
+	
+	def create_submission_feedback(self, user, nti_session, timestamp, course, time_length, submission ):
+		# TODO Will we have a total grade with part-level grades?
+		# TODO what grade objects?
+		#nti.app.assessment.feedback.UsersCourseAssignmentHistoryItemFeedbackContainer
+		user = self._get_or_create_user( user )
+		uid = user.user_id
+		sid = self._get_id_for_session( nti_session )
+		course_id = self._get_id_for_course( course )
+		timestamp = timestamp_type( timestamp )
+		submission_id = self._get_id_for_submission( submission )
+		
+		new_object = AssignmentFeedback( 	user_id=uid, 
+										session_id=sid, 
+										timestamp=timestamp,
+										course_id=course_id,
+										assignment_id=assignment_id,
+										submission_id=submission_id,
+										time_length=time_length )
+		self.session.add( new_object )	
 	
 	# StudentParticipationReport	
 	def get_forum_comments_for_user(self, user, course):	

@@ -55,14 +55,14 @@ def get_job_queue():
 class _ImmediateQueueRunner(object):
 	
 	def put( self, job ):
-# 		transaction_runner = \
-#  				component.getUtility(nti_interfaces.IDataserverTransactionRunner)
+		transaction_runner = \
+ 				component.getUtility(nti_interfaces.IDataserverTransactionRunner)
 		try:
 			# For top level processes (admin_views) we would need to run in a transaction_runner.
-			#transaction_runner( job )
+			transaction_runner( job )
 			
 			# Any need to handle sessions here (outside of ZTE).
-			job()
+			#job()
 		except Exception as e:
 			logger.exception( 'While migrating job (%s)', job )
 

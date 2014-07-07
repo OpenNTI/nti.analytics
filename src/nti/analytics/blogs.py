@@ -37,7 +37,6 @@ def _add_comment( db, oid, nti_session=None ):
 	comment = ntiids.find_object_with_ntiid( oid )
 	if comment is not None:
 		user = get_creator( comment )
-		user = get_entity( user )
 		blog = get_comment_root( comment, 
 								( frm_interfaces.IPersonalBlogEntry, frm_interfaces.IPersonalBlogEntryPost ) )
 		if blog:
@@ -54,7 +53,6 @@ def _remove_comment( db, oid, timestamp=None ):
 					lce_interfaces.IObjectAddedEvent)
 def _add_personal_blog_comment(comment, event):
 	user = get_creator( comment )
-	user = get_entity( user )
 	nti_session = get_nti_session_id( user )
 	process_event( _add_comment, comment, nti_session=nti_session )
 
@@ -74,7 +72,6 @@ def _add_blog( db, oid, nti_session=None ):
 	blog = ntiids.find_object_with_ntiid( oid )
 	if blog is not None:
 		user = get_creator( blog )
-		user = get_entity( user )
 		db.create_blog( user, nti_session, blog )
 		logger.debug( "Blog created (user=%s) (blog=%s)", user, blog )
 
@@ -83,7 +80,6 @@ def _add_blog( db, oid, nti_session=None ):
 					lce_interfaces.IObjectAddedEvent )
 def _blog_added( blog, event ):
 	user = get_creator( blog )
-	user = get_entity( user )
 	nti_session = get_nti_session_id( user )
 	process_event( _add_blog, blog, nti_session=nti_session )
 		

@@ -31,8 +31,6 @@
 	<include package=".database" file="configure.zcml" />
 	
 	<!-- subscribers -->
-	<subscriber handler=".subscribers._set_change_listener" />
-	
 	<subscriber handler=".entities._entity_added" />
 	
 	<subscriber handler=".discussions._topic_added" />
@@ -72,16 +70,30 @@
 	<subscriber handler=".sessions._session_created" />
 	<subscriber handler=".sessions._session_destroyed" />
 
+<!--
+
+	<subscriber handler=".assessments._grade_added" />
+	<subscriber handler=".assessments._grade_modified" />
+	
+	<subscriber handler=".assessments._question_assessed" />
+	<subscriber handler=".assessments._questionset_assessed" />
+	<subscriber handler=".assessments._assignment_history_item_added" />
+	
+	<subscriber handler=".assessments._feedback_added" />
+	<subscriber handler=".assessments._feedback_removed" />
+-->
 
 	<!-- utils -->
+	<utility component=".assessments" provides=".interfaces.IObjectProcessor" name="assessments"/>
 	
+<!--	
 	<utility component=".entities" provides=".interfaces.IObjectProcessor" name="entities"/>
 	<utility component=".blogs" provides=".interfaces.IObjectProcessor" name="blogs"/>
 	<utility component=".discussions" provides=".interfaces.IObjectProcessor" name="discussions"/>
 	<utility component=".social" provides=".interfaces.IObjectProcessor" name="social"/>
 	<utility component=".resource_tags" provides=".interfaces.IObjectProcessor" name="resource_tags"/>
+	<utility component=".sessions" provides=".interfaces.IObjectProcessor" name="sessions"/>
 	
-<!--	
 	<utility component=".connections" provides=".interfaces.IObjectProcessor" name="connections"/>
 	<utility component=".creators" provides=".interfaces.IObjectProcessor" name="creators"/>
 	<utility component=".containers" provides=".interfaces.IObjectProcessor" name="containers"/>

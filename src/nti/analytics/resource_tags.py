@@ -40,7 +40,6 @@ def _add_note( db, oid, nti_session=None ):
 	note = ntiids.find_object_with_ntiid( oid )
 	if note is not None:
 		user = get_creator( note )
-		user = get_entity( user )
 		course = get_course( note )
 		db.create_note( user, nti_session, course, note )
 		logger.debug( "Note created (user=%s) (course=%s)", user, course )
@@ -56,7 +55,6 @@ def _remove_highlight( db, oid, timestamp=None ):
 def _note_added( obj, event ):
 	if _is_note( obj ):
 		user = get_creator( obj )
-		user = get_entity( user )
 		nti_session = get_nti_session_id( user )
 		process_event( _add_note, obj, nti_session=nti_session )
 	
@@ -73,7 +71,6 @@ def _add_highlight( db, oid, nti_session=None ):
 	highlight = ntiids.find_object_with_ntiid( oid )
 	if highlight is not None:
 		user = get_creator( highlight )
-		user = get_entity( user )
 		course = get_course( highlight )
 		db.create_highlight( user, nti_session, course, highlight )
 		logger.debug( "Highlight created (user=%s) (course=%s)", user, course )
@@ -89,7 +86,6 @@ def _remove_highlight( db, oid, timestamp=None ):
 def _highlight_added( obj, event ):
 	if _is_highlight( obj ):
 		user = get_creator( obj )
-		user = get_entity( user )
 		nti_session = get_nti_session_id( user )
 		process_event( _add_highlight, obj, nti_session=nti_session )
 	

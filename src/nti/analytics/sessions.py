@@ -17,7 +17,6 @@ from nti.ntiids import ntiids
 
 from datetime import datetime
 
-from .common import get_creator
 from .common import get_id_for_session
 from .common import to_external_ntiid_oid
 from .common import get_deleted_time
