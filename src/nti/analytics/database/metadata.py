@@ -296,12 +296,6 @@ class DetailMixin(object):
 		return Column('submission', Text, nullable=True) #(Freeform|MapEntry|Index|List)
 	
 class GradeMixin(object):	
-	# For multiple choice types
-	# FIXME is_correct doesn't make sense at assignment level
-	@declared_attr
-	def is_correct(cls):
-		return Column('is_correct', Boolean, nullable=True )
-	
 	# Could be a lot of types: 7, 7/10, 95, 95%, A-, 90 A
 	@declared_attr
 	def grade(cls):
@@ -312,6 +306,12 @@ class GradeMixin(object):
 	@declared_attr
 	def grader(cls):
 		return Column('grader', ForeignKey("Users.user_id"), nullable=False )
+	
+class GradeDetailMixin(GradeMixin):	
+	# For multiple choice types
+	@declared_attr
+	def is_correct(cls):
+		return Column('is_correct', Boolean, nullable=True )	
 	
 class AssignmentDetails(Base,DetailMixin,AssignmentSubmissionMixin):	
 	__tablename__ = 'AssignmentDetails'
@@ -324,7 +324,7 @@ class AssignmentGrades(Base,GradeMixin,AssignmentSubmissionMixin):
 	grade_id = Column('grade_id', Integer, Sequence( 'assignment_grade_id_seq' ), primary_key=True, index=True )
 
 
-class AssignmentDetailGrades(Base,GradeMixin,AssignmentSubmissionMixin):
+class AssignmentDetailGrades(Base,GradeDetailMixin,AssignmentSubmissionMixin):
 	__tablename__ = 'AssignmentDetailGrades'
 	question_id = Column('question_id', String(1048), ForeignKey("AssignmentDetails.question_id"), nullable=False, primary_key=True)
 	question_part = Column('question_part_id', Integer, ForeignKey("AssignmentDetails.question_part_id"), nullable=True, primary_key=True)
