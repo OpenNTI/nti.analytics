@@ -279,47 +279,55 @@ class AssignmentSubmissionMixin(BaseTableMixin):
 
 
 class DetailMixin(object):
+	# TODO Can we rely on these parts/ids being integers?
 	@declared_attr
 	def question_id(cls):
-		return Column('question_id', Integer, nullable=False, primary_key=True)
+		return Column('question_id', String(1048), nullable=False, primary_key=True)
 	
 	@declared_attr
-	def question_part(cls):
-		return Column('question_part', Integer, nullable=False, primary_key=True)
+	def question_part_id(cls):
+		return Column('question_part_id', Integer, nullable=False, primary_key=True)
 	
 	# TODO separate submissions by question types?
 	# Do we even want to store the content? (We do.)
 	@declared_attr
 	def submission(cls):
-		return Column('submission', Text, nullable=False) #(Freeform|MapEntry|Index|List)
-	
+		# Null if left blank
+		return Column('submission', Text, nullable=True) #(Freeform|MapEntry|Index|List)
 	
 class GradeMixin(object):	
 	# For multiple choice types
+	# FIXME is_correct doesn't make sense at assignment level
 	@declared_attr
 	def is_correct(cls):
-		return Column('is_correct', Boolean)
+		return Column('is_correct', Boolean, nullable=True )
 	
 	# Could be a lot of types: 7, 7/10, 95, 95%, A-, 90 A
 	@declared_attr
 	def grade(cls):
-		return Column('grade', String(32))
+		return Column('grade', String(32), nullable=True )
 	
-# TODO Can we rely on these parts/ids being integers?
+	# 'Null' for auto-graded parts.
+	# Eh, auto-graded defaults to first in instructor tree.
+	@declared_attr
+	def grader(cls):
+		return Column('grader', ForeignKey("Users.user_id"), nullable=False )
+	
 class AssignmentDetails(Base,DetailMixin,AssignmentSubmissionMixin):	
 	__tablename__ = 'AssignmentDetails'
 
 
+# TODO How about grades without submissions?
+# - Useful (I suppose) for reports, but not for analysis.
 class AssignmentGrades(Base,GradeMixin,AssignmentSubmissionMixin):
 	__tablename__ = 'AssignmentGrades'
 	grade_id = Column('grade_id', Integer, Sequence( 'assignment_grade_id_seq' ), primary_key=True, index=True )
 
 
-# 'AUTO' will designate auto-graded parts
 class AssignmentDetailGrades(Base,GradeMixin,AssignmentSubmissionMixin):
 	__tablename__ = 'AssignmentDetailGrades'
-	question_id = Column('question_id', Integer, ForeignKey("AssignmentDetails.question_id"), nullable=False, primary_key=True)
-	question_part = Column('question_part', Integer, ForeignKey("AssignmentDetails.question_part"), nullable=True, primary_key=True)
+	question_id = Column('question_id', String(1048), ForeignKey("AssignmentDetails.question_id"), nullable=False, primary_key=True)
+	question_part = Column('question_part_id', Integer, ForeignKey("AssignmentDetails.question_part_id"), nullable=True, primary_key=True)
 
 
 # Each feedback 'tree' should have an associated grade with it.
@@ -334,15 +342,16 @@ class AssignmentFeedback(Base,AssignmentSubmissionMixin):
 
 
 
-class SelfAssessmentsTaken(Base,AssignmentMixin):
+class SelfAssessmentsTaken(Base,AssignmentMixin,GradeMixin):
 	__tablename__ = 'SelfAssessmentsTaken'
 	submission_id = Column('submission_id', Integer, unique=True, primary_key=True, index=True )
 
 
 # SelfAssessments will not have feedback or multiple graders
-class SelfAssessmentDetails(Base,DetailMixin,GradeMixin):	
-	__tablename__ = 'SelfAssessmentDetails'
-	submission_id = Column('submission_id', Integer, ForeignKey("SelfAssessmentsTaken.submission_id"), nullable=False, primary_key=True)
+# FIXME We may not have this for self-assessments
+# class SelfAssessmentDetails(Base,DetailMixin,GradeMixin):	
+# 	__tablename__ = 'SelfAssessmentDetails'
+# 	submission_id = Column('submission_id', Integer, ForeignKey("SelfAssessmentsTaken.submission_id"), nullable=False, primary_key=True)
 
 
 
