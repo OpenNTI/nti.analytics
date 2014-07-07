@@ -19,7 +19,5 @@ def onChange(datasvr, msg, target=None, broadcast=None, **kwargs):
 
 @component.adapter(pyramid_events.ApplicationCreated)
 def _set_change_listener(event):
-	dataserver = component.queryUtility(nti_interfaces.IDataserver)
-	if dataserver is not None:
-		dataserver.add_change_listener(onChange)
-
+	# Not sure what we would want to do here, if anything
+	pass
