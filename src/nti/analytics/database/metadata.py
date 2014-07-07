@@ -270,8 +270,7 @@ class AssignmentMixin(BaseTableMixin,CourseMixin,TimeLengthMixin):
 		
 class AssignmentsTaken(Base,AssignmentMixin):
 	__tablename__ = 'AssignmentsTaken'
-	# TODO How do we look this up when user's can have multiple submissions, does it need to be supplied? Or lookup by timestamp?
-	submission_id = Column('submission_id', Integer, Sequence( 'assignment_submission_id_seq' ), primary_key=True, index=True )
+	submission_id = Column('submission_id', Integer, unique=True, primary_key=True, index=True )
 
 class AssignmentSubmissionMixin(BaseTableMixin):
 	@declared_attr
@@ -337,7 +336,7 @@ class AssignmentFeedback(Base,AssignmentSubmissionMixin):
 
 class SelfAssessmentsTaken(Base,AssignmentMixin):
 	__tablename__ = 'SelfAssessmentsTaken'
-	submission_id = Column('submission_id', Integer, Sequence( 'self_assess_submission_id_seq' ), primary_key=True, index=True )
+	submission_id = Column('submission_id', Integer, unique=True, primary_key=True, index=True )
 
 
 # SelfAssessments will not have feedback or multiple graders
