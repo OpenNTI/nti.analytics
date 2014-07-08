@@ -342,7 +342,7 @@ class AssignmentFeedback(Base,AssignmentSubmissionMixin):
 
 
 
-class SelfAssessmentsTaken(Base,AssignmentMixin,GradeMixin):
+class SelfAssessmentsTaken(Base,AssignmentMixin):
 	__tablename__ = 'SelfAssessmentsTaken'
 	submission_id = Column('submission_id', Integer, unique=True, primary_key=True, index=True )
 

@@ -848,6 +848,7 @@ class AnalyticsDB(object):
 		course_id = self._get_id_for_course( course )
 		timestamp = timestamp_type( timestamp )
 		submission_id = self._get_id_for_submission( submission )
+		self_assessment_id = submission.questionSetId
 		
 		new_object = SelfAssessmentsTaken( 	user_id=uid, 
 											session_id=sid, 

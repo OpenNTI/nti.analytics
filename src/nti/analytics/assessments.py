@@ -35,6 +35,7 @@ from .common import get_nti_session_id
 from .common import get_deleted_time
 from .common import get_comment_root
 from .common import get_course
+from .common import get_course_by_ntiid
 from .common import process_event
 from .common import get_created_timestamp
 from .common import get_entity
@@ -77,17 +78,23 @@ def _assess_question( db, oid, nti_session=None ):
 	if question is not None:
 		_do_assess_question( db, question, nti_session)
 
-def _assess_question_set( db, oid, nti_session=None ):
-	question_set = ntiids.find_object_with_ntiid( oid )
-	
+def _assess_question_set( db, oid, nti_session=None, time_length=None ):
+	submission = ntiids.find_object_with_ntiid( oid )
+	if submission is not None:
+		user = get_creator( submission )
+		timestamp = get_created_timestamp( submission )
+		course = get_course_by_ntiid( submission.containerId )
+		db.create_self_assessment_taken( user, nti_session, timestamp, course, time_length, submission )
+		logger.debug("Self-assessment submitted (user=%s) (assignment=%s)", user, submission.questionSetId )
 	# See if this is an assignment 
-	containerId = question_set.containerId
-	container = ntiids.find_object_with_ntiid( containerId )
-	assignment = IQAssignment( container )
+# 	containerId = question_set.containerId
+# 	container = ntiids.find_object_with_ntiid( containerId )
+# 	assignment = IQAssignment( container )
 	
-	if question_set is not None:
-		for question in question_set.questions:
-			_do_assess_question( db, question, nti_session )
+	# Are these only self-assessments?
+# 	if question_set is not None:
+# 		for question in question_set.questions:
+# 			_do_assess_question( db, question, nti_session )
 		
 
 @component.adapter(assessment_interfaces.IQAssessedQuestionSet,
@@ -217,7 +224,6 @@ def init( obj ):
 		from IPython.core.debugger import Tracer;Tracer()()
 		process_event( _assess_question_set, obj )
 	elif app_assessment_interfaces.IUsersCourseAssignmentHistoryItem.providedBy(obj):
-		from IPython.core.debugger import Tracer;Tracer()()
 		process_event( _assignment_taken, obj )
 	elif app_assessment_interfaces.IUsersCourseAssignmentHistoryItemFeedback.providedBy(obj):
 		from IPython.core.debugger import Tracer;Tracer()()
