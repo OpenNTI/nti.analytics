@@ -302,10 +302,10 @@ class GradeMixin(object):
 		return Column('grade', String(32), nullable=True )
 	
 	# 'Null' for auto-graded parts.
-	# Eh, auto-graded defaults to first in instructor tree.
+	# Eh, auto-graded defaults to first in instructor list.
 	@declared_attr
 	def grader(cls):
-		return Column('grader', ForeignKey("Users.user_id"), nullable=False )
+		return Column('grader', ForeignKey("Users.user_id"), nullable=False, index=True )
 	
 class GradeDetailMixin(GradeMixin):	
 	# For multiple choice types
@@ -319,25 +319,31 @@ class AssignmentDetails(Base,DetailMixin,AssignmentSubmissionMixin):
 
 # TODO How about grades without submissions?
 # - Useful (I suppose) for reports, but not for analysis.
-class AssignmentGrades(Base,GradeMixin,AssignmentSubmissionMixin):
+class AssignmentGrades(Base,GradeMixin):
 	__tablename__ = 'AssignmentGrades'
 	grade_id = Column('grade_id', Integer, Sequence( 'assignment_grade_id_seq' ), primary_key=True, index=True )
-
+ 	# TODO Our seq has to be the only primary_key, thus we cannot use AssignmentSubmissionMixin. Ugh.
+ 	submission_id = Column('submission_id', Integer, ForeignKey("AssignmentsTaken.submission_id"), nullable=False, index=True)
+ 	session_id = Column('session_id', String(1048), ForeignKey("Sessions.session_id"), nullable=True )
+	user_id = Column('user_id', Integer, ForeignKey("Users.user_id"), index=True, nullable=True )
+	timestamp = Column('timestamp', DateTime, nullable=True )
 
 class AssignmentDetailGrades(Base,GradeDetailMixin,AssignmentSubmissionMixin):
 	__tablename__ = 'AssignmentDetailGrades'
 	question_id = Column('question_id', String(1048), ForeignKey("AssignmentDetails.question_id"), nullable=False, primary_key=True)
-	question_part = Column('question_part_id', Integer, ForeignKey("AssignmentDetails.question_part_id"), nullable=True, primary_key=True)
+	question_part_id = Column('question_part_id', Integer, ForeignKey("AssignmentDetails.question_part_id"), nullable=True, primary_key=True)
 
 
 # Each feedback 'tree' should have an associated grade with it.
 class AssignmentFeedback(Base,AssignmentSubmissionMixin):
 	__tablename__ = 'AssignmentFeedback'
+	feedback_id = Column( 'feedback_id', Integer, nullable=False, unique=True, primary_key=True )
 	feedback_length = Column( 'feedback_length', Integer, nullable=True )
 	
 	# parent_id should point to a parent feedback, top-level feedback will have null parent_ids
-	parent_id = Column('parent_id', Integer)
+	parent_id = Column( 'parent_id', Integer, nullable=True )
 	
+	# Tie our feedback to our submission and grader.
 	grade_id = Column('grade_id', Integer, ForeignKey("AssignmentGrades.grade_id"), nullable=False, primary_key=True)
 
 
@@ -348,7 +354,7 @@ class SelfAssessmentsTaken(Base,AssignmentMixin):
 
 
 # SelfAssessments will not have feedback or multiple graders
-# FIXME We may not have this for self-assessments
+# TODO We may not have this for self-assessments
 # class SelfAssessmentDetails(Base,DetailMixin,GradeMixin):	
 # 	__tablename__ = 'SelfAssessmentDetails'
 # 	submission_id = Column('submission_id', Integer, ForeignKey("SelfAssessmentsTaken.submission_id"), nullable=False, primary_key=True)

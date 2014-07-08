@@ -37,6 +37,10 @@ from nti.dataserver.contenttypes.forums.interfaces import ICommentPost
 from nti.assessment.interfaces import IQAssignment
 from nti.app.products.gradebook.interfaces import IGrade
 
+from nti.app.assessment.interfaces import IUsersCourseAssignmentHistoryItemFeedback
+from nti.app.assessment.interfaces import IUsersCourseAssignmentHistoryItem
+from nti.assessment.interfaces import IQAssessedQuestionSet
+
 from nti.utils.property import Lazy
 
 from .interfaces import IAnalyticsDB
@@ -227,6 +231,9 @@ class AnalyticsDB(object):
 	
 	def _get_id_for_submission(self, submission):
 		return self.idlookup.get_id_for_object( submission )
+	
+	def _get_id_for_feedback(self, feedback):
+		return self.idlookup.get_id_for_object( feedback )
 	
 	def create_user(self, user):
 		uid = self._get_id_for_user( user )
@@ -863,6 +870,20 @@ class AnalyticsDB(object):
 		# TODO Self-Assessment details (don't have?)
 		# TODO grade (we wont have any manually graded self-assessments)
 	
+	def _get_grader_id( self, submission ):
+		""" Returns a grader id for the submission if one exists (otherwise None).
+			Currently, we have a one-to-one mapping between submission and grader.  That
+			would need to change for things like peer grading.
+		"""
+		grader = None
+		graded_submission = IGrade( submission, None )
+		# If None, we're pending right?
+		if graded_submission is not None:
+			grader = get_creator( graded_submission )
+			grader = self._get_or_create_user( grader )
+			grader = grader.user_id
+		return grader
+	
 	def create_assignment_taken(self, user, nti_session, timestamp, course, time_length, submission ):
 		user = self._get_or_create_user( user )
 		uid = user.user_id
@@ -882,8 +903,8 @@ class AnalyticsDB(object):
 		self.session.add( new_object )		
 		
 		# Submission Parts
-		submission = submission.Submission
-		for set_submission in submission.parts:
+		submission_obj = submission.Submission
+		for set_submission in submission_obj.parts:
 			for question_submission in set_submission.questions:
 				# Questions don't have ds_intids, just use ntiid.
 				question_id = question_submission.questionId
@@ -903,8 +924,7 @@ class AnalyticsDB(object):
 		# If None, we're pending right?
 		if graded_submission is not None:
 			grade = graded_submission.grade
-			grader = get_creator( graded_submission )
-			grader = self._get_or_create_user( grader )
+			grader = self._get_grader_id( submission )
 			
 			graded = AssignmentGrades( 	user_id=uid, 
 										session_id=sid, 
@@ -959,24 +979,39 @@ class AnalyticsDB(object):
 		
 		self.session.add( new_object )		
 	
-	def create_submission_feedback(self, user, nti_session, timestamp, course, time_length, submission ):
-		# TODO Will we have a total grade with part-level grades?
-		# TODO what grade objects?
+	def _get_grade_id( self, submission_id, grader ):
+		grade_entry = self.session.query(AssignmentGrades).filter( 	
+													AssignmentGrades.submission_id==submission_id,
+													AssignmentGrades.grader==grader ).one()
+		return grade_entry.grade_id
+	
+	def create_submission_feedback(self, user, nti_session, timestamp, submission, feedback ):
 		#nti.app.assessment.feedback.UsersCourseAssignmentHistoryItemFeedbackContainer
 		user = self._get_or_create_user( user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
-		course_id = self._get_id_for_course( course )
 		timestamp = timestamp_type( timestamp )
+		feedback_id = self._get_id_for_feedback( feedback )
+		# What are these, lines?
+		feedback_length = sum( len( x ) for x in feedback.body )
+		parent = feedback.__parent__
+		parent_id = self._get_id_for_feedback( parent ) \
+					if IUsersCourseAssignmentHistoryItemFeedback.providedBy( parent ) else None
+					
 		submission_id = self._get_id_for_submission( submission )
+		grader = self._get_grader_id( submission )
+		# TODO Do we need to handle any of these being None?
+		# That's an error condition, right?
+		grade_id = self._get_grade_id( submission_id, grader )
 		
-		new_object = AssignmentFeedback( 	user_id=uid, 
+		new_object = AssignmentFeedback( user_id=uid, 
 										session_id=sid, 
 										timestamp=timestamp,
-										course_id=course_id,
-										assignment_id=assignment_id,
 										submission_id=submission_id,
-										time_length=time_length )
+										feedback_id=feedback_id,
+										feedback_length=feedback_length,
+										parent_id=parent_id,
+										grade_id=grade_id )
 		self.session.add( new_object )	
 	
 	# StudentParticipationReport	

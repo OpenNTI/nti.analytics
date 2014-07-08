@@ -122,6 +122,9 @@ def _assignment_taken( db, oid, nti_session=None, time_length=None ):
 		course = get_course( submission )
 		db.create_assignment_taken( user, nti_session, timestamp, course, time_length, submission )
 		logger.debug("Assignment submitted (user=%s) (assignment=%s)", user, submission.assignmentId )
+		
+		for feedback in submission.Feedback.values():
+			_do_add_feedback( db, nti_session, feedback, submission )
 
 @component.adapter(app_assessment_interfaces.IUsersCourseAssignmentHistoryItem,
 				   intid_interfaces.IIntIdAddedEvent)
@@ -153,13 +156,20 @@ def _grade_modified(grade, event):
 def _grade_added(grade, event):
 	_grade_modified( grade, event )
 
+def _do_add_feedback( db, nti_session, feedback, submission ):
+	user = get_creator( feedback )
+	timestamp = get_created_timestamp( feedback )
+		
+	db.create_submission_feedback( user, nti_session, timestamp, submission, feedback )
+	logger.debug( "Assignment feedback added (user=%s) (%s)", user, feedback )
+
 # Feedback
 def _add_feedback( db, oid, nti_session=None ):
 	feedback = ntiids.find_object_with_ntiid(oid)
 	if feedback is not None:
-		user = get_creator( feedback )
-		db.add_feedback( user, nti_session, feedback )
-		logger.debug( "Assignment feedback added (user=%s) (%s)", creator, feedback )
+		submission = get_comment_root( feedback, app_assessment_interfaces.IUsersCourseAssignmentHistoryItem )
+		_do_add_feedback( db, nti_session, feedback, submission )
+		
 
 def _remove_feedback( db, oid, timestamp=None ):
 	feedback = ntiids.find_object_with_ntiid( oid )
@@ -178,7 +188,7 @@ def _feedback_added(feedback, event):
 				   intid_interfaces.IIntIdRemovedEvent)
 def _feedback_removed(feedback, event):
 	timestamp = datetime.utcnow()
-	process_event( _remove_feedback, feedback, timestamp=timestamp )
+	process_event( _remove_feedback, feedback, nti_session=nti_session, timestamp=timestamp )
 
 # utils
 # 
@@ -190,20 +200,6 @@ def _feedback_removed(feedback, event):
 # 		container.extend(queried)
 # 	container[:] = [course_interfaces.ICourseInstanceEnrollment(x) for x in container]
 # 	return container
-# 
-# def init_asssignments(db, user):
-# 	enrollments = get_course_enrollments(user)
-# 	for enrollment in enrollments:
-# 		course = enrollment.CourseInstance
-# 		history = component.getMultiAdapter(
-# 									(course, user),
-# 									app_assessment_interfaces.IUsersCourseAssignmentHistory)
-# 		for _, item in history.items():
-# 			grade = grade_interfaces.IGrade(item, None)
-# 			if grade is not None and grade.value is not None:
-# 				process_grade_modified(db, grade)
-# 			else:
-# 				process_assignment_taken(db, item)
 
 def _add_submission( db, oid, timestamp=None ):
 	pass
@@ -225,9 +221,6 @@ def init( obj ):
 		process_event( _assess_question_set, obj )
 	elif app_assessment_interfaces.IUsersCourseAssignmentHistoryItem.providedBy(obj):
 		process_event( _assignment_taken, obj )
-	elif app_assessment_interfaces.IUsersCourseAssignmentHistoryItemFeedback.providedBy(obj):
-		from IPython.core.debugger import Tracer;Tracer()()
-		process_event( _add_feedback, obj )
 	else:
 		result = False
 	return result

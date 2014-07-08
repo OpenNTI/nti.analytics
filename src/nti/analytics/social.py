@@ -154,7 +154,7 @@ def _modified_friends_list( db, oid, timestamp=None ):
 @component.adapter(nti_interfaces.IFriendsList, intid_interfaces.IIntIdAddedEvent)
 def _friendslist_added(obj, event):
 	if not nti_interfaces.IDynamicSharingTargetFriendsList.providedBy( obj ):
-		user = get_creator( friends_list )
+		user = get_creator( obj )
 		nti_session = get_nti_session_id( user )
 		process_event( _add_friends_list, obj, nti_session=nti_session )
 
