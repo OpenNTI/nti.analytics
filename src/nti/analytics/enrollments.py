@@ -15,17 +15,12 @@ from nti.dataserver import interfaces as nti_interfaces
 
 from nti.ntiids import ntiids
 from nti.intid import interfaces as intid_interfaces
-
+from nti.app.products.courseware import interfaces as course_interfaces
 from nti.store import interfaces as store_interfaces
 from nti.contenttypes.courses.interfaces import ICourseInstance
 
 from nti.app.products.courseware.interfaces import ICourseCatalog
 from nti.dataserver.users import Community
-
-#EnrollmentAttemptSuccessful
-#store_interfaces.UnenrollmentAttemptSuccessful
-
-#Maybe migrate courses or users...
 
 from datetime import datetime
 
@@ -69,7 +64,7 @@ def _get_enrollment_type( user, course ):
 	is_for_credit = user.username in restricted_usernames
 	return FOR_CREDIT if is_for_credit else OPEN
 
-def _do_enroll( db, user, course, nti_session, timestamp ):
+def _do_enroll( db, user, course, nti_session=None, timestamp=None ):
 	enrollment_type = _get_enrollment_type( user, course )
 	db.create_course_enrollment( user, nti_session, timestamp, course, enrollment_type )
 	logger.debug( "User enrollment (user=%s) (course=%s) (type=%s)", user, course, enrollment_type )
@@ -77,9 +72,11 @@ def _do_enroll( db, user, course, nti_session, timestamp ):
 def _add_enrollment( db, user, community, timestamp=None, nti_session=None ):
 	user = get_entity( user )
 	community = get_entity( community )
+	# Are all communities course memberships?
+	course = ICourseInstance( community, None )
 	if 		user is not None \
-		and community is not None:
-		course = ICourseInstance( community )
+		and course is not None:
+		
 		_do_enroll( db, user, course, nti_session, timestamp )
 
 def _handle_event( event, to_call ):	
@@ -108,11 +105,16 @@ def _enrolled(event):
 def _dropped(event):
 	_handle_event( event, _add_drop )
 
+def _user_enrollments( user ):
+	communities = getattr( user, 'usernames_of_dynamic_memberships', list() )
+	user = getattr( user, 'username', None )
+	for community in communities:
+		process_event( _add_enrollment, user=user, community=community )
+
 component.moduleProvides(analytics_interfaces.IObjectProcessor)
 def init( obj ):
 	result = False
-	if 	nti_interfaces.IEntity.providedBy(obj):
-		from IPython.core.debugger import Tracer;Tracer()()
-		process_event( _do_enroll, obj )
-		result = True
+	if 	nti_interfaces.IUser.providedBy(obj):
+		_user_enrollments( obj )
+		result = True	
 	return result
