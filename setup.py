@@ -5,7 +5,7 @@ VERSION = '0.0.0'
 
 entry_points = {
     'console_scripts': [
-        "nti_analytics = nti.analytics:main",
+        "nti_analytics_constructor = nti.analytics.utils.constructor:main",
     ],
 }
 

@@ -13,6 +13,10 @@ import sqlite3
 import pkg_resources
 from six import integer_types
 from six import string_types
+try:
+	import cPickle as pickle
+except ImportError:
+	import pickle
 
 from contextlib import contextmanager
 
@@ -880,8 +884,9 @@ class AnalyticsDB(object):
 		# If None, we're pending right?
 		if graded_submission is not None:
 			grader = get_creator( graded_submission )
-			grader = self._get_or_create_user( grader )
-			grader = grader.user_id
+			if grader is not None:
+				grader = self._get_or_create_user( grader )
+				grader = grader.user_id
 		return grader
 	
 	def create_assignment_taken(self, user, nti_session, timestamp, course, time_length, submission ):
@@ -910,13 +915,15 @@ class AnalyticsDB(object):
 				question_id = question_submission.questionId
 
 				for idx, part in enumerate( question_submission.parts ):
+					# Serialize our response 
+					response = pickle.dumps( part )
 					parts = AssignmentDetails( 	user_id=uid, 
 												session_id=sid, 
 												timestamp=timestamp,
 												submission_id=submission_id,
 												question_id=question_id,
 												question_part_id=idx,
-												submission=part )
+												submission=response )
 					self.session.add( parts )
 		
 		# Grade
@@ -974,8 +981,6 @@ class AnalyticsDB(object):
 										is_correct=is_correct,
 										grade=grade,
 										grader=grader )
-		
-		#AssignmentDetailGrades
 		
 		self.session.add( new_object )		
 	

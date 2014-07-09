@@ -83,6 +83,9 @@ def _add_contacts( db, oid, timestamp=None, nti_session=None ):
 		entities_followed = getattr(user, 'entities_followed', ())
 		count = 0
 		for followed in entities_followed:
+			# Only add users (have seen Communities here)
+			if not nti_interfaces.IUser.providedBy( followed ):
+				continue
 			count += 1
 			followed = get_entity( followed )
 			db.create_contact_added( user, nti_session, timestamp, followed )

@@ -217,7 +217,6 @@ def init( obj ):
 		# FIXME Distinguishing between self-assessments and assignments may be a pain:
 		# traversing course objects (just like in the reports).  
 		# See if things have improved recently.
-		from IPython.core.debugger import Tracer;Tracer()()
 		process_event( _assess_question_set, obj )
 	elif app_assessment_interfaces.IUsersCourseAssignmentHistoryItem.providedBy(obj):
 		process_event( _assignment_taken, obj )

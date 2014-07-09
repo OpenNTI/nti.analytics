@@ -302,10 +302,9 @@ class GradeMixin(object):
 		return Column('grade', String(32), nullable=True )
 	
 	# 'Null' for auto-graded parts.
-	# Eh, auto-graded defaults to first in instructor list.
 	@declared_attr
 	def grader(cls):
-		return Column('grader', ForeignKey("Users.user_id"), nullable=False, index=True )
+		return Column('grader', ForeignKey("Users.user_id"), nullable=True, index=True )
 	
 class GradeDetailMixin(GradeMixin):	
 	# For multiple choice types
