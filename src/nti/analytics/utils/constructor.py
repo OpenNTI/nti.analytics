@@ -20,12 +20,6 @@ from nti.analytics import interfaces as analytic_interfaces
 
 class Constructor(Processor):
 
-	def create_arg_parser(self):
-		arg_parser = argparse.ArgumentParser(description="Analytics database constructor")
-		arg_parser.add_argument('-v', '--verbose', help="Be verbose",
-								action='store_true', dest='verbose')
-		return arg_parser
-
 	def set_log_formatter(self, args):
 		super(Constructor, self).set_log_formatter(args)
 		if args.verbose:
