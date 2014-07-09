@@ -63,12 +63,12 @@ def _join_meeting( db, oid, timestamp=None, nti_session=None ):
 
 @component.adapter(chat_interfaces.IMeeting, intid_interfaces.IIntIdAddedEvent)
 def _meeting_created(meeting, event):
-	creator = get_creator( new_chat )
-	nti_session = get_nti_session_id( nti_session )
+	creator = get_creator( meeting )
+	nti_session = get_nti_session_id( creator )
 	process_event( _add_meeting, meeting, nti_session=nti_session )
 
 @component.adapter( chat_interfaces.IMeeting, lce_interfaces.IObjectModifiedEvent )
-def _meeting_joined( meeting, event):
+def _meeting_joined( meeting, event ):
 	# TODO Verify/implement this...
 	# TODO nti_session
 	#from IPython.core.debugger import Tracer;Tracer()()
@@ -105,7 +105,8 @@ def _remove_contact( db, source, target, timestamp=None, nti_session=None ):
 
 @component.adapter(nti_interfaces.IEntityFollowingEvent)
 def _start_following_event(event):
-	if nti_interfaces.IDynamicSharingTargetFriendsList.providedBy( event.now_following ):
+	if		nti_interfaces.IDynamicSharingTargetFriendsList.providedBy( event.now_following ) \
+		or 	nti_interfaces.ICommunity.providedBy( event.now_following ):
 		return
 	timestamp = datetime.utcnow()
 	source = getattr( event.object, 'username', event.object )
@@ -117,7 +118,8 @@ def _start_following_event(event):
 
 @component.adapter(nti_interfaces.IStopFollowingEvent)
 def _stop_following_event(event):
-	if nti_interfaces.IDynamicSharingTargetFriendsList.providedBy( event.not_following ):
+	if		nti_interfaces.IDynamicSharingTargetFriendsList.providedBy( event.not_following ) \
+		or 	nti_interfaces.ICommunity.providedBy( event.not_following ):
 		return
 	timestamp = datetime.utcnow()
 	source = getattr(event.object, 'username', event.object)
@@ -227,34 +229,30 @@ def _dfl_deleted(obj, event):
 	id = id_lookup.get_id_for_object( obj )
 	process_event( _remove_dfl, dfl_id=id, timestamp=timestamp )
 
-@component.adapter(nti_interfaces.IStartDynamicMembershipEvent)
-def _start_dynamic_membership_event(event):
-	# TODO Can we get the user from the event?
+def _handle_dfl_membership_event( event, to_call ):
 	timestamp = datetime.utcnow()
 	source = getattr(event.object, 'username', event.object)
 	target = event.target
+	# We ignore Community events (enrollments)
+	if nti_interfaces.ICommunity.providedBy( target ):
+		return
+	
 	target = getattr(target, 'username', target)
 	
 	nti_session = get_nti_session_id( get_entity( source ) )
-	process_event( 	_add_dfl_member, 
+	process_event( 	to_call, 
 					source=source,
 					target=target, 
 					timestamp=timestamp, 
 					nti_session=nti_session )
 
+@component.adapter(nti_interfaces.IStartDynamicMembershipEvent)
+def _start_dynamic_membership_event(event):
+	_handle_dfl_membership_event( event, _add_dfl_member )
+
 @component.adapter(nti_interfaces.IStopDynamicMembershipEvent)
 def _stop_dynamic_membership_event(event):
-	timestamp = datetime.utcnow()
-	source = getattr(event.object, 'username', event.object)
-	target = event.target
-	target = getattr(target, 'username', target)
-	
-	nti_session = get_nti_session_id( get_entity( source ) )
-	process_event(	_remove_dfl_member, 
-					source=source, 
-					target=target,
-					timestamp=timestamp, 
-					nti_session=nti_session )
+	_handle_dfl_membership_event( event, _remove_dfl_member )
 
 
 component.moduleProvides(analytic_interfaces.IObjectProcessor)

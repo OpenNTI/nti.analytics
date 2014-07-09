@@ -81,9 +81,16 @@
 	
 	<subscriber handler=".assessments._feedback_added" />
 	<subscriber handler=".assessments._feedback_removed" />
+	
 -->
 
+	<subscriber handler=".enrollments._enrolled" />
+	<subscriber handler=".enrollments._dropped" />
+
 	<!-- utils -->
+
+	<utility component=".enrollments" provides=".interfaces.IObjectProcessor" name="enrollments"/>
+<!--
 	<utility component=".entities" provides=".interfaces.IObjectProcessor" name="entities"/>
 	<utility component=".blogs" provides=".interfaces.IObjectProcessor" name="blogs"/>
 	<utility component=".discussions" provides=".interfaces.IObjectProcessor" name="discussions"/>
@@ -91,8 +98,8 @@
 	<utility component=".resource_tags" provides=".interfaces.IObjectProcessor" name="resource_tags"/>
 	<utility component=".sessions" provides=".interfaces.IObjectProcessor" name="sessions"/>
 	<utility component=".assessments" provides=".interfaces.IObjectProcessor" name="assessments"/>
-	
-<!--	
+
+
 	<utility component=".connections" provides=".interfaces.IObjectProcessor" name="connections"/>
 	<utility component=".creators" provides=".interfaces.IObjectProcessor" name="creators"/>
 	<utility component=".containers" provides=".interfaces.IObjectProcessor" name="containers"/>
