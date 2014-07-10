@@ -176,7 +176,7 @@ class CourseResourceViews(Base,ResourceViewMixin,TimeLengthMixin):
 # If so, we may break them out into separate tables.	
 # TODO: Punt, should we have separate rows for start/end?
 # TODO Define questions we want to answer before we define this table.
-# TODO We need to define what timestamp is here (start of event, end of event?)
+# TODO We need to document what timestamp is here (start of event, end of event?)
 class VideoEvents(Base,ResourceViewMixin,TimeLengthMixin):
 	__tablename__ = 'VideoEvents'
 	video_event_type = Column('video_event_type', Enum( 'WATCH', 'SKIP' ), nullable=False )

@@ -43,32 +43,6 @@ from .common import IDLookup
 from . import utils
 from . import interfaces as analytic_interfaces
 
-# # Questions
-# def _get_creator_in_lineage(obj):
-# 	result = None
-# 	while result is None and obj is not None:
-# 		result = get_creator(obj)
-# 		obj = getattr(obj, '__parent__', None)
-# 		if nti_interfaces.IUser.providedBy(obj) and result is None:
-# 			result = obj
-# 	return result
-# 
-# def _get_underlying(obj):
-# 	if 	assessment_interfaces.IQuestion.providedBy(obj) or \
-# 		assessment_interfaces.IQuestionSet.providedBy(obj) or \
-# 		assessment_interfaces.IQAssignment.providedBy(obj) :
-# 		result = obj
-# 	elif assessment_interfaces.IQAssessedQuestion.providedBy(obj):
-# 		result = component.getUtility(assessment_interfaces.IQuestion,
-# 									  name=obj.questionId)
-# 	elif assessment_interfaces.IQAssessedQuestionSet.providedBy(obj):
-# 		result = component.getUtility(assessment_interfaces.IQuestionSet,
-# 									  name=obj.questionSetId)
-# 	else:
-# 		result = None # Throw Exception?
-# 	return result
-
-
 def _do_assess_question( db, question, nti_session ):
 	pass
 
@@ -115,7 +89,6 @@ def _question_assessed( question, event ):
 # Assignments
 # TODO time-length
 def _assignment_taken( db, oid, nti_session=None, time_length=None ):
-	# TODO How can we distinguish between auto-graded items and not-yet graded items?
 	submission = ntiids.find_object_with_ntiid(oid)
 	if submission is not None:
 		user = get_creator( submission )
@@ -134,28 +107,46 @@ def _assignment_history_item_added( item, event ):
 	nti_session = get_nti_session_id( user )
 	process_event( _assignment_taken, item, nti_session=nti_session )
 
-def _set_grade( db, oid, nti_session=None ):
-	grade = ntiids.find_object_with_ntiid(oid)
-	if grade is not None:
-		user = get_creator( grade )
-		db.set_grade( user, nti_session, grade )
-		assignment_id = getattr( grade, 'AssignmentId', None )
-		logger.debug( 	"Setting grade for assignment (user=%s) (grade=%s) (assignment=%s)", 
+def _set_grade( db, oid, username, graded_val, nti_session=None, timestamp=None ):
+	submission = ntiids.find_object_with_ntiid(oid)
+	if submission is not None:
+		grader = get_entity( username )
+		user = get_creator( submission )
+		db.grade_submission( user, nti_session, timestamp, grader, graded_val, submission )
+		assignment_id = getattr( submission, 'assignmentId', None )
+		logger.debug( 	"Setting grade for assignment (user=%s) (grade=%s) (grader=%s) (assignment=%s)", 
 						user, 
-						grade,
+						graded_val,
+						grader,
 						assignment_id )
+
+def _grade_submission( grade, submission ):
+	user = get_creator( grade )
+	nti_session = get_nti_session_id( user )
+	timestamp = datetime.utcnow()
+	graded_val = grade.grade
+	process_event( 	_set_grade, 
+					submission, 
+					username=user.username, 
+					graded_val=graded_val, 
+					nti_session=nti_session, 
+					timestamp=timestamp )
 
 @component.adapter(grade_interfaces.IGrade,
 				   lce_interfaces.IObjectModifiedEvent)
 def _grade_modified(grade, event):
-	user = get_creator( grade )
-	nti_session = get_nti_session_id( user )
-	process_event( _set_grade, grade, nti_session=nti_session )
+	submission = app_assessment_interfaces.IUsersCourseAssignmentHistoryItem( grade )
+	_grade_submission( grade, submission )
 
 @component.adapter(grade_interfaces.IGrade,
 				   intid_interfaces.IIntIdAddedEvent)
 def _grade_added(grade, event):
-	_grade_modified( grade, event )
+	submission = app_assessment_interfaces.IUsersCourseAssignmentHistoryItem( grade, None )
+	# Perhaps a grade is being assigned without a submission.  That should be a rare case
+	# and is not something useful to persist.
+	if submission is None:
+		return
+	_grade_submission( grade, submission )
 
 def _do_add_feedback( db, nti_session, feedback, submission ):
 	user = get_creator( feedback )

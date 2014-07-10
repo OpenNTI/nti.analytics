@@ -70,8 +70,6 @@
 	<subscriber handler=".sessions._session_created" />
 	<subscriber handler=".sessions._session_destroyed" />
 
-<!--
-
 	<subscriber handler=".assessments._grade_added" />
 	<subscriber handler=".assessments._grade_modified" />
 	
@@ -81,8 +79,6 @@
 	
 	<subscriber handler=".assessments._feedback_added" />
 	<subscriber handler=".assessments._feedback_removed" />
-	
--->
 
 	<subscriber handler=".enrollments._enrolled" />
 	<subscriber handler=".enrollments._dropped" />

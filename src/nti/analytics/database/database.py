@@ -964,34 +964,46 @@ class AnalyticsDB(object):
 																grader=grader )
 						self.session.add( grade_details )
 		
-	def grade_submission(self, user, nti_session, timestamp, course, time_length, submission ):
-		# TODO Will we have a total grade with part-level grades?
-		# TODO what grade objects?
-		user = self._get_or_create_user( user )
-		uid = user.user_id
-		sid = self._get_id_for_session( nti_session )
-		course_id = self._get_id_for_course( course )
-		timestamp = timestamp_type( timestamp )
+	def grade_submission(self, user, nti_session, timestamp, grader, graded_val, submission ):
+		grader = self._get_or_create_user( grader )
+		grader_id  = grader.user_id
 		submission_id = self._get_id_for_submission( submission )
+		grade_entry = self._get_grade_entry( submission_id )
+		timestamp = timestamp_type( timestamp )
 		
-		new_object = AssignmentGrades( 	user_id=uid, 
-										session_id=sid, 
-										timestamp=timestamp,
-										submission_id=submission_id,
-										is_correct=is_correct,
-										grade=grade,
-										grader=grader )
-		
-		self.session.add( new_object )		
+		if grade_entry:
+			# Update
+			# If we wanted, we could just append every 'set_grade' action.
+			grade_entry.grade = graded_val
+			grade_entry.timestamp = timestamp
+			grade_entry.grader = grader_id
+		else:
+			# New grade
+			user = self._get_or_create_user( user )
+			uid = user.user_id
+			sid = self._get_id_for_session( nti_session )
+			
+			new_object = AssignmentGrades( 	user_id=uid, 
+											session_id=sid, 
+											timestamp=timestamp,
+											submission_id=submission_id,
+											grade=graded_val,
+											grader=grader_id )
+			
+			self.session.add( new_object )		
+	
+	def _get_grade_entry( self, submission_id ):
+		# Currently, one assignment means one grade (and one grader).  If that changes, we'll 
+		# need to change this (at least)
+		grade_entry = self.session.query(AssignmentGrades).filter( 	
+													AssignmentGrades.submission_id==submission_id ).first()
+		return grade_entry
 	
 	def _get_grade_id( self, submission_id, grader ):
-		grade_entry = self.session.query(AssignmentGrades).filter( 	
-													AssignmentGrades.submission_id==submission_id,
-													AssignmentGrades.grader==grader ).one()
+		grade_entry = self._get_grade_entry( submission_id, grader )
 		return grade_entry.grade_id
 	
 	def create_submission_feedback(self, user, nti_session, timestamp, submission, feedback ):
-		#nti.app.assessment.feedback.UsersCourseAssignmentHistoryItemFeedbackContainer
 		user = self._get_or_create_user( user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
@@ -1004,7 +1016,7 @@ class AnalyticsDB(object):
 		grader = self._get_grader_id( submission )
 		# TODO Do we need to handle any of these being None?
 		# That's an error condition, right?
-		grade_id = self._get_grade_id( submission_id, grader )
+		grade_id = self._get_grade_id( submission_id )
 		
 		new_object = AssignmentFeedback( user_id=uid, 
 										session_id=sid, 
