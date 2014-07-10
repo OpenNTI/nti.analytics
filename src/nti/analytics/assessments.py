@@ -56,6 +56,9 @@ def _assess_question_set( db, oid, nti_session=None, time_length=None ):
 	if submission is not None:
 		user = get_creator( submission )
 		timestamp = get_created_timestamp( submission )
+		# FIXME this fires for big data assignment in cs1300?
+		# Ah, perhaps thats where I need to check if assignment so we do
+		# not double event.
 		course = get_course_by_ntiid( submission.containerId )
 		db.create_self_assessment_taken( user, nti_session, timestamp, course, time_length, submission )
 		logger.debug("Self-assessment submitted (user=%s) (assignment=%s)", user, submission.questionSetId )

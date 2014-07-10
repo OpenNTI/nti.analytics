@@ -13,10 +13,6 @@ import sqlite3
 import pkg_resources
 from six import integer_types
 from six import string_types
-try:
-	import cPickle as pickle
-except ImportError:
-	import pickle
 
 from contextlib import contextmanager
 
@@ -38,7 +34,10 @@ from nti.dataserver.users.entity import Entity
 
 from nti.dataserver.contenttypes.forums.interfaces import ICommentPost
 
+from nti.contentfragments.interfaces import IPlainTextContentFragment
+
 from nti.assessment.interfaces import IQAssignment
+from nti.assessment.interfaces import IQModeledContentResponse
 from nti.app.products.gradebook.interfaces import IGrade
 
 from nti.app.assessment.interfaces import IUsersCourseAssignmentHistoryItemFeedback
@@ -916,7 +915,9 @@ class AnalyticsDB(object):
 
 				for idx, part in enumerate( question_submission.parts ):
 					# Serialize our response 
-					response = pickle.dumps( part )
+					# TODO Hmm, we could pickle dump whatever object we have.
+					# Maybe just adapting to str is sufficient.
+					response = str( part )
 					parts = AssignmentDetails( 	user_id=uid, 
 												session_id=sid, 
 												timestamp=timestamp,

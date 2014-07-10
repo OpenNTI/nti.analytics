@@ -46,9 +46,10 @@ OPEN = 'OPEN'
 def _add_drop( db, user, community, timestamp=None, nti_session=None ):
 	user = get_entity( user )
 	community = get_entity( community )
+	course = ICourseInstance( community, None )
 	if 		user is not None \
-		and community is not None:
-		course = ICourseInstance( community )
+		and course is not None:
+		
 		db.create_course_drop( user, nti_session, timestamp, course )
 		logger.debug( "User dropped (user=%s) (course=%s)", user, course )
 
@@ -99,6 +100,7 @@ def _handle_event( event, to_call ):
 
 @component.adapter(nti_interfaces.IStartDynamicMembershipEvent)
 def _enrolled(event):
+	from IPython.core.debugger import Tracer;Tracer()()
 	_handle_event( event, _add_enrollment )
 
 @component.adapter(nti_interfaces.IStopDynamicMembershipEvent)
