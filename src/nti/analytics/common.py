@@ -70,14 +70,12 @@ def get_id_for_session( nti_session ):
 	
 	return result
 
-def get_comment_root( comment, type ):
-	""" Work up the comment parent tree looking for 'type', returning None if not found. """
+def get_object_root( obj, type ):
+	""" Work up the parent tree looking for 'type', returning None if not found. """
 	result = None
-	obj = comment
-	while obj:
-		obj = getattr( obj, '__parent__', None )
-		if type.providedBy( obj ):
-			result = obj
+	for location in lineage( obj ):
+		if type.providedBy( location ):
+			result = location
 			break
 	return result
 
@@ -94,11 +92,7 @@ def to_external_ntiid_oid(obj):
     return ntiid
 
 def get_course( obj ):	
-	result = None
-	for location in lineage( obj ):
-		result = ICourseInstance( location, None )
-		if result is not None:
-			break
+	result = get_object_root( obj, ICourseInstance )
 	# TODO Should we fall back and look up by ntiid here?
 	return result
 

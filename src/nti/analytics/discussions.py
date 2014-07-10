@@ -23,7 +23,7 @@ from datetime import datetime
 from .common import get_creator
 from .common import get_nti_session_id
 from .common import get_deleted_time
-from .common import get_comment_root
+from .common import get_object_root
 from .common import get_entity
 from .common import get_course
 from .common import process_event
@@ -38,7 +38,7 @@ def _add_comment( db, oid, nti_session=None ):
 	if comment is not None:
 		user = get_creator( comment )
 		nti_session = get_nti_session_id( user )
-		discussion = get_comment_root( comment, frm_interfaces.ITopic )
+		discussion = get_object_root( comment, frm_interfaces.ITopic )
 		course = get_course( discussion )
 		if discussion:
 			db.create_forum_comment( user, nti_session, course, discussion, comment )

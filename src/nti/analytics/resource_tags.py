@@ -22,7 +22,6 @@ from .common import get_creator
 from .common import get_nti_session_id
 from .common import to_external_ntiid_oid
 from .common import get_deleted_time
-from .common import get_comment_root
 from .common import process_event
 from .common import get_entity
 from .common import get_course_by_ntiid

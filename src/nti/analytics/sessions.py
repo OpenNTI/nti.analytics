@@ -21,7 +21,6 @@ from .common import get_id_for_session
 from .common import to_external_ntiid_oid
 from .common import get_deleted_time
 from .common import get_entity
-from .common import get_comment_root
 from .common import process_event
 
 from . import utils

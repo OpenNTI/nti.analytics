@@ -32,7 +32,7 @@ from .common import to_external_ntiid_oid
 from .common import get_creator
 from .common import get_nti_session_id
 from .common import get_deleted_time
-from .common import get_comment_root
+from .common import get_object_root
 from .common import get_course
 from .common import get_course_by_ntiid
 from .common import process_event
@@ -54,8 +54,8 @@ def _self_assessment_taken( db, oid, nti_session=None, time_length=None ):
 
 def _process_question_set( question_set, nti_session=None ):
 	# We only want self-assessments here.
- 	# FIXME rename this
- 	assignment = get_comment_root( question_set, app_assessment_interfaces.IUsersCourseAssignmentHistoryItem )
+ 	assignment = get_object_root( 	question_set, 
+									app_assessment_interfaces.IUsersCourseAssignmentHistoryItem )
  	if assignment is None:
   		# Ok, we should be a self-assessment.
 	  	process_event( _self_assessment_taken, question_set, nti_session=nti_session )
@@ -160,7 +160,7 @@ def _do_add_feedback( db, nti_session, feedback, submission ):
 def _add_feedback( db, oid, nti_session=None ):
 	feedback = ntiids.find_object_with_ntiid(oid)
 	if feedback is not None:
-		submission = get_comment_root( feedback, app_assessment_interfaces.IUsersCourseAssignmentHistoryItem )
+		submission = get_object_root( feedback, app_assessment_interfaces.IUsersCourseAssignmentHistoryItem )
 		_do_add_feedback( db, nti_session, feedback, submission )
 		
 
