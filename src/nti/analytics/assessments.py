@@ -136,6 +136,7 @@ def _grade_submission( grade, submission ):
 @component.adapter(grade_interfaces.IGrade,
 				   lce_interfaces.IObjectModifiedEvent)
 def _grade_modified(grade, event):
+	from IPython.core.debugger import Tracer;Tracer()()
 	submission = app_assessment_interfaces.IUsersCourseAssignmentHistoryItem( grade )
 	_grade_submission( grade, submission )
 
@@ -145,6 +146,8 @@ def _grade_added(grade, event):
 	submission = app_assessment_interfaces.IUsersCourseAssignmentHistoryItem( grade, None )
 	# Perhaps a grade is being assigned without a submission.  That should be a rare case
 	# and is not something useful to persist.
+	# TODO Oof, a placeholder submission is created. See if we can tell when that occurs.
+	# (it also appears in the Grade modified path).
 	if submission is None:
 		return
 	_grade_submission( grade, submission )

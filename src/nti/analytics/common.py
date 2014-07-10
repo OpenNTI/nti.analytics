@@ -61,7 +61,6 @@ def get_nti_session_id( user ):
 def get_id_for_session( nti_session ):	
 	""" Given an nti_session, return the unique id """
 	result = None
-	
 	if 		isinstance( nti_session, string_types ) \
 		or 	nti_session is None:
 		result = nti_session
