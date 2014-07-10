@@ -1000,8 +1000,8 @@ class AnalyticsDB(object):
 													AssignmentGrades.submission_id==submission_id ).first()
 		return grade_entry
 	
-	def _get_grade_id( self, submission_id, grader ):
-		grade_entry = self._get_grade_entry( submission_id, grader )
+	def _get_grade_id( self, submission_id ):
+		grade_entry = self._get_grade_entry( submission_id )
 		return grade_entry.grade_id
 	
 	def create_submission_feedback(self, user, nti_session, timestamp, submission, feedback ):
@@ -1010,7 +1010,6 @@ class AnalyticsDB(object):
 		sid = self._get_id_for_session( nti_session )
 		timestamp = timestamp_type( timestamp )
 		feedback_id = self._get_id_for_feedback( feedback )
-		# What are these, lines?
 		feedback_length = sum( len( x ) for x in feedback.body )
 					
 		submission_id = self._get_id_for_submission( submission )

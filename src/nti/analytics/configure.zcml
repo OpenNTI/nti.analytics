@@ -73,7 +73,6 @@
 	<subscriber handler=".assessments._grade_added" />
 	<subscriber handler=".assessments._grade_modified" />
 	
-	<subscriber handler=".assessments._question_assessed" />
 	<subscriber handler=".assessments._questionset_assessed" />
 	<subscriber handler=".assessments._assignment_history_item_added" />
 	

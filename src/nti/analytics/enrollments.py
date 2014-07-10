@@ -100,7 +100,6 @@ def _handle_event( event, to_call ):
 
 @component.adapter(nti_interfaces.IStartDynamicMembershipEvent)
 def _enrolled(event):
-	from IPython.core.debugger import Tracer;Tracer()()
 	_handle_event( event, _add_enrollment )
 
 @component.adapter(nti_interfaces.IStopDynamicMembershipEvent)

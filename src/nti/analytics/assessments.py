@@ -43,51 +43,49 @@ from .common import IDLookup
 from . import utils
 from . import interfaces as analytic_interfaces
 
-def _do_assess_question( db, question, nti_session ):
-	pass
-
-def _assess_question( db, oid, nti_session=None ):
-	question = ntiids.find_object_with_ntiid(oid)
-	if question is not None:
-		_do_assess_question( db, question, nti_session)
-
-def _assess_question_set( db, oid, nti_session=None, time_length=None ):
+def _self_assessment_taken( db, oid, nti_session=None, time_length=None ):
 	submission = ntiids.find_object_with_ntiid( oid )
 	if submission is not None:
 		user = get_creator( submission )
 		timestamp = get_created_timestamp( submission )
-		# FIXME this fires for big data assignment in cs1300?
-		# Ah, perhaps thats where I need to check if assignment so we do
-		# not double event.
 		course = get_course_by_ntiid( submission.containerId )
 		db.create_self_assessment_taken( user, nti_session, timestamp, course, time_length, submission )
 		logger.debug("Self-assessment submitted (user=%s) (assignment=%s)", user, submission.questionSetId )
-	# See if this is an assignment 
-# 	containerId = question_set.containerId
-# 	container = ntiids.find_object_with_ntiid( containerId )
-# 	assignment = IQAssignment( container )
+
+def _process_question_set( question_set, nti_session=None ):
+	# We only want self-assessments here.
+ 	# FIXME rename this
+ 	assignment = get_comment_root( question_set, app_assessment_interfaces.IUsersCourseAssignmentHistoryItem )
+ 	if assignment is None:
+  		# Ok, we should be a self-assessment.
+	  	process_event( _self_assessment_taken, question_set, nti_session=nti_session )
+	else:
+		# TODO Like individually assessed questions, there are not current cases
+		# in the wild where QuestionSets are assessed for an assignment.  Once
+		# there are, we should handle those cases here.
+		pass
 	
-	# Are these only self-assessments?
-# 	if question_set is not None:
-# 		for question in question_set.questions:
-# 			_do_assess_question( db, question, nti_session )
-		
 
 @component.adapter(assessment_interfaces.IQAssessedQuestionSet,
 				   intid_interfaces.IIntIdAddedEvent)
 def _questionset_assessed( question_set, event ):
 	user = get_creator( question_set )
 	nti_session = get_nti_session_id( user )
-	process_event( _assess_question_set, question_set, nti_session=nti_session )
+	_process_question_set( question_set, nti_session=nti_session )
 
 @component.adapter(assessment_interfaces.IQAssessedQuestion,
 				   intid_interfaces.IIntIdAddedEvent)
-def _question_assessed( question, event ):
-	# TODO Are these question grade mods?
-	from IPython.core.debugger import Tracer;Tracer()()
-	user = get_creator( question )
-	nti_session = get_nti_session_id( user )
-	process_event( _assess_question, question, nti_session=nti_session )
+def _question_grade( question, event ):
+	# These are question level grade events (also modified). These do
+	# not currently occur in the wild, but they may in the future.
+	# TODO implement
+	# We're not subscribed to any event listeners either.
+	pass
+
+@component.adapter(assessment_interfaces.IQAssessedQuestion,
+				   lce_interfaces.IObjectModifiedEvent)
+def _question_grade_modified( question, event ):
+	pass
 
 # Assignments
 # TODO time-length
@@ -185,23 +183,12 @@ def _feedback_removed(feedback, event):
 	timestamp = datetime.utcnow()
 	process_event( _remove_feedback, feedback, nti_session=nti_session, timestamp=timestamp )
 
-def _add_submission( db, oid, timestamp=None ):
-	pass
-
 component.moduleProvides(analytic_interfaces.IObjectProcessor)
 
 def init( obj ):
 	result = True
-	if 	assessment_interfaces.IQAssessedQuestion.providedBy(obj):
-		from IPython.core.debugger import Tracer;Tracer()()
-		process_event( _assess_question, obj )
-	elif assessment_interfaces.IQAssessedQuestionSet.providedBy(obj):
-		# (only?) Self-assessments
-		# TODO Hmm, we may not have details here for self-assessments
-		# FIXME Distinguishing between self-assessments and assignments may be a pain:
-		# traversing course objects (just like in the reports).  
-		# See if things have improved recently.
-		process_event( _assess_question_set, obj )
+	if assessment_interfaces.IQAssessedQuestionSet.providedBy(obj):
+		_process_question_set( obj )
 	elif app_assessment_interfaces.IUsersCourseAssignmentHistoryItem.providedBy(obj):
 		process_event( _assignment_taken, obj )
 	else:
