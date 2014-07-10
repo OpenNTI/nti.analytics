@@ -89,7 +89,7 @@
 
 	<!-- utils -->
 
-	<utility component=".enrollments" provides=".interfaces.IObjectProcessor" name="enrollments"/>
+	<utility component=".assessments" provides=".interfaces.IObjectProcessor" name="assessments"/>
 <!--
 	<utility component=".entities" provides=".interfaces.IObjectProcessor" name="entities"/>
 	<utility component=".blogs" provides=".interfaces.IObjectProcessor" name="blogs"/>
@@ -98,6 +98,7 @@
 	<utility component=".resource_tags" provides=".interfaces.IObjectProcessor" name="resource_tags"/>
 	<utility component=".sessions" provides=".interfaces.IObjectProcessor" name="sessions"/>
 	<utility component=".assessments" provides=".interfaces.IObjectProcessor" name="assessments"/>
+	<utility component=".enrollments" provides=".interfaces.IObjectProcessor" name="enrollments"/>
 
 
 	<utility component=".connections" provides=".interfaces.IObjectProcessor" name="connections"/>

@@ -338,13 +338,8 @@ class AssignmentFeedback(Base,AssignmentSubmissionMixin):
 	__tablename__ = 'AssignmentFeedback'
 	feedback_id = Column( 'feedback_id', Integer, nullable=False, unique=True, primary_key=True )
 	feedback_length = Column( 'feedback_length', Integer, nullable=True )
-	
-	# parent_id should point to a parent feedback, top-level feedback will have null parent_ids
-	parent_id = Column( 'parent_id', Integer, nullable=True )
-	
 	# Tie our feedback to our submission and grader.
 	grade_id = Column('grade_id', Integer, ForeignKey("AssignmentGrades.grade_id"), nullable=False, primary_key=True)
-
 
 
 class SelfAssessmentsTaken(Base,AssignmentMixin):

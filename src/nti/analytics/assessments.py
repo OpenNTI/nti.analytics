@@ -29,7 +29,6 @@ from nti.app.products.gradebook.interfaces import IGrade
 from datetime import datetime
 
 from .common import to_external_ntiid_oid
-
 from .common import get_creator
 from .common import get_nti_session_id
 from .common import get_deleted_time
@@ -107,6 +106,8 @@ def _questionset_assessed( question_set, event ):
 @component.adapter(assessment_interfaces.IQAssessedQuestion,
 				   intid_interfaces.IIntIdAddedEvent)
 def _question_assessed( question, event ):
+	# TODO Are these question grade mods?
+	from IPython.core.debugger import Tracer;Tracer()()
 	user = get_creator( question )
 	nti_session = get_nti_session_id( user )
 	process_event( _assess_question, question, nti_session=nti_session )
@@ -189,17 +190,6 @@ def _feedback_added(feedback, event):
 def _feedback_removed(feedback, event):
 	timestamp = datetime.utcnow()
 	process_event( _remove_feedback, feedback, nti_session=nti_session, timestamp=timestamp )
-
-# utils
-# 
-# def get_course_enrollments(user):
-# 	container = []
-# 	subs = component.subscribers((user,), course_interfaces.IPrincipalEnrollmentCatalog)
-# 	for catalog in subs:
-# 		queried = catalog.iter_enrollments()
-# 		container.extend(queried)
-# 	container[:] = [course_interfaces.ICourseInstanceEnrollment(x) for x in container]
-# 	return container
 
 def _add_submission( db, oid, timestamp=None ):
 	pass

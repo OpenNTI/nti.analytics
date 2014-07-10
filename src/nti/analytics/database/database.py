@@ -999,9 +999,6 @@ class AnalyticsDB(object):
 		feedback_id = self._get_id_for_feedback( feedback )
 		# What are these, lines?
 		feedback_length = sum( len( x ) for x in feedback.body )
-		parent = feedback.__parent__
-		parent_id = self._get_id_for_feedback( parent ) \
-					if IUsersCourseAssignmentHistoryItemFeedback.providedBy( parent ) else None
 					
 		submission_id = self._get_id_for_submission( submission )
 		grader = self._get_grader_id( submission )
@@ -1015,7 +1012,6 @@ class AnalyticsDB(object):
 										submission_id=submission_id,
 										feedback_id=feedback_id,
 										feedback_length=feedback_length,
-										parent_id=parent_id,
 										grade_id=grade_id )
 		self.session.add( new_object )	
 	
