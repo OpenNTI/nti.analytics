@@ -12,7 +12,6 @@ from zope import component
 from zope.lifecycleevent import interfaces as lce_interfaces
 
 from nti.chatserver import interfaces as chat_interfaces
-from nti.chatserver.meeting import EVT_ENTERED_ROOM
 from nti.dataserver import interfaces as nti_interfaces
 from nti.dataserver import users
 from nti.ntiids import ntiids
@@ -21,44 +20,31 @@ from nti.intid import interfaces as intid_interfaces
 
 from datetime import datetime
 
-from .common import to_external_ntiid_oid
-
 from .common import get_creator
 from .common import get_nti_session_id
-from .common import get_deleted_time
-from .common import get_course
 from .common import process_event
 from .common import get_created_timestamp
 from .common import get_entity
 from .common import IDLookup
 
-from . import utils
-from . import interfaces as analytic_interfaces
+from nti.analytics import interfaces as analytic_interfaces
 
 # Chat
-def _add_meeting(db, oid, nti_session=None ):
+def _add_meeting( db, oid, nti_session=None ):
 	new_chat = ntiids.find_object_with_ntiid(oid)
 	if new_chat is not None:
-		# Idempotent if we also have participant joining events
 		creator = get_creator( new_chat )
-		db.create_chat_initiated( session, creator, nti_session, new_chat )
+		db.create_chat_initiated( creator, nti_session, new_chat )
 		logger.debug( "Meeting created (user=%s) (meeting=%s)", creator, new_chat )
-		
+
 		timestamp = get_created_timestamp( new_chat )
-		users_joined = getattr( obj , 'historical_occupant_names', ())
+		users_joined = getattr( new_chat, 'historical_occupant_names', ())
 		count = 0
 		for user_joined in users_joined:
 			count += 1
 			user_joined = get_entity( user_joined )
 			db.chat_joined( user_joined, nti_session, timestamp, new_chat )
 		logger.debug( "Meeting joined by users (count=%s)", count )
-
-def _join_meeting( db, oid, timestamp=None, nti_session=None ):
-	chat = ntiids.find_object_with_ntiid(oid)
-	if chat is not None:
-		# FIXME implement
-		# user-joined?
-		db.create_chat_joined( session, user_joined, nti_session, timestamp, chat)
 
 @component.adapter(chat_interfaces.IMeeting, intid_interfaces.IIntIdAddedEvent)
 def _meeting_created(meeting, event):
@@ -68,14 +54,13 @@ def _meeting_created(meeting, event):
 
 @component.adapter( chat_interfaces.IMeeting, lce_interfaces.IObjectModifiedEvent )
 def _meeting_joined( meeting, event ):
-	# TODO Verify/implement this...
-	# TODO nti_session
-	#from IPython.core.debugger import Tracer;Tracer()()
-	timestamp = datetime.utcnow()
-	process_event( _join_meeting, meeting, timestamp=timestamp )
+	# I think the only chat participants occur on meeting creation time.
+	# This will remain unimplemented until that changes.
+	pass
 
-# Contacts	
+# Contacts
 def _add_contacts( db, oid, timestamp=None, nti_session=None ):
+	""" Intended, during migration, to add all of a user's contacts. """
 	user = ntiids.find_object_with_ntiid(oid)
 	if user is not None:
 		user = get_entity( user )
@@ -111,10 +96,11 @@ def _start_following_event(event):
 	source = getattr( event.object, 'username', event.object )
 	followed = event.now_following
 	followed = getattr( followed, 'username', followed )
-	
+
 	nti_session = get_nti_session_id( get_entity( source ) )
 	process_event( _add_contact, source=source, target=followed, timestamp=timestamp, nti_session=nti_session )
 
+# This does not get fired for some reason.
 @component.adapter(nti_interfaces.IStopFollowingEvent)
 def _stop_following_event(event):
 	if		nti_interfaces.IDynamicSharingTargetFriendsList.providedBy( event.not_following ) \
@@ -137,17 +123,17 @@ def _add_friends_list( db, oid, nti_session=None ):
 		for member in friends_list:
 			member = get_entity( member )
 			db.create_friends_list_member( user, nti_session, None, friends_list, member )
-		logger.debug( 	"FriendsList created (user=%s) (friends_list=%s) (count=%s", 
-						user, 
+		logger.debug( 	"FriendsList created (user=%s) (friends_list=%s) (count=%s",
+						user,
 						friends_list,
-						len( friends_list ) )		
+						len( friends_list ) )
 
 def _remove_friends_list(db, friends_list_id, timestamp=None):
 	db.remove_friends_list( timestamp, friends_list_id )
-	logger.debug( "FriendsList removed (friends_list=%s)", friends_list )
-
+	logger.debug( "FriendsList removed (friends_list=%s)", friends_list_id )
 
 def _modified_friends_list( db, oid, timestamp=None ):
+	# I guess look for mycontacts here
 	friends_list = ntiids.find_object_with_ntiid( oid )
 	if friends_list is not None:
 		pass
@@ -187,23 +173,23 @@ def _add_dfl( db, oid, nti_session=None ):
 		for member in dfl:
 			member = get_entity( member )
 			db.create_dynamic_friends_member( user, nti_session, None, dfl, member )
-		logger.debug( "DFL created (user=%s) (dfl=%s) (count=%s)", user, dfl, len( dfl ) )		
+		logger.debug( "DFL created (user=%s) (dfl=%s) (count=%s)", user, dfl, len( dfl ) )
 
 def _remove_dfl( db, dfl_id, timestamp=None ):
 	db.remove_dynamic_friends_list( timestamp, dfl_id )
-	logger.debug( "DFL destroyed (dfl=%s)", dfl )
+	logger.debug( "DFL destroyed (dfl=%s)", dfl_id )
 
 def _add_dfl_member( db, source, target, username=None, timestamp=None, nti_session=None ):
 	dfl = get_entity( target )
 	member = get_entity( source )
 	everyone = users.Entity.get_entity('Everyone')
-	
+
 	if 		dfl is not None \
 		and member is not None \
 		and dfl != everyone:
 		user = get_entity( username )
 		db.create_dynamic_friends_member( user, nti_session, timestamp, dfl, member )
-		logger.debug( "DFL joined (member=%s) (dfl=%s)", member, dfl )		
+		logger.debug( "DFL joined (member=%s) (dfl=%s)", member, dfl )
 
 def _remove_dfl_member( db, source, target, username=None, timestamp=None, nti_session=None ):
 	dfl = get_entity( target )
@@ -219,10 +205,10 @@ def _dfl_added(obj, event):
 	user = get_creator( obj )
 	nti_session = get_nti_session_id( user )
 	process_event( _add_dfl, obj, nti_session=nti_session )
-	
+
 @component.adapter(nti_interfaces.IDynamicSharingTargetFriendsList,
 				  intid_interfaces.IIntIdRemovedEvent)
-def _dfl_deleted(obj, event):	
+def _dfl_deleted(obj, event):
 	timestamp = datetime.utcnow()
 	id_lookup = IDLookup()
 	id = id_lookup.get_id_for_object( obj )
@@ -235,14 +221,14 @@ def _handle_dfl_membership_event( event, to_call ):
 	# We ignore Community events (enrollments)
 	if nti_interfaces.ICommunity.providedBy( target ):
 		return
-	
+
 	target = getattr(target, 'username', target)
-	
+
 	nti_session = get_nti_session_id( get_entity( source ) )
-	process_event( 	to_call, 
+	process_event( 	to_call,
 					source=source,
-					target=target, 
-					timestamp=timestamp, 
+					target=target,
+					timestamp=timestamp,
 					nti_session=nti_session )
 
 @component.adapter(nti_interfaces.IStartDynamicMembershipEvent)
@@ -253,22 +239,22 @@ def _start_dynamic_membership_event(event):
 def _stop_dynamic_membership_event(event):
 	_handle_dfl_membership_event( event, _remove_dfl_member )
 
-
 component.moduleProvides(analytic_interfaces.IObjectProcessor)
+
 def init( obj ):
 	result = True
 	if chat_interfaces.IMeeting.providedBy(obj):
 		process_event( _add_meeting, obj )
 	elif nti_interfaces.IDynamicSharingTargetFriendsList.providedBy( obj ):
 		process_event( _add_dfl, obj )
-		
-	# Exclude 'mycontacts', better way to do this?	
+
+	# Exclude 'mycontacts', better way to do this?
 	elif 	nti_interfaces.IFriendsList.providedBy( obj ) \
 		and 'mycontacts' not in obj.__name__:
-		
+
 		process_event( _add_friends_list, obj )
 	elif nti_interfaces.IUser.providedBy(obj):
-		
+
 		process_event( _add_contacts, obj )
 	else:
 		result = False

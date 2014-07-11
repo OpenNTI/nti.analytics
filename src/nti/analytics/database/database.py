@@ -854,8 +854,8 @@ class AnalyticsDB(object):
 		self.session.add( new_object )
 
 		# We should have questions, parts, submissions, and is_correct
-		# TODO Self-Assessment details (don't have?)
-		# TODO grade (we wont have any manually graded self-assessments)
+		# TODO Self-Assessment details; these appear to exist in question_set.questions
+		# when the event is fired, but not when pulled from our processor. Why?
 
 	def _get_grader_id( self, submission ):
 		""" Returns a grader id for the submission if one exists (otherwise None).

@@ -7,40 +7,40 @@
 	<include package="zope.component" file="meta.zcml" />
 	<include package="zope.security" file="meta.zcml" />
 	<include package="zope.component" />
-	
+
 	<!-- Job runner -->
-	
+
 	<include package="nti.async" />
 
 	<!-- access to the views under .../analytics/ -->
-	
+
 	<adapter name="analyticsdb"
 			 for="nti.dataserver.interfaces.IDataserverFolder pyramid.interfaces.IRequest"
 			 factory=".views.AnalyticsPathAdapter"
 			 provides="zope.traversing.interfaces.IPathAdapter" />
 
 	<!-- generations -->
-	
+
 	<utility factory=".generations.install._AnalyticsSchemaManager"
 			 name="nti.dataserver-analytics"
 			 provides="zope.generations.interfaces.IInstallableSchemaManager"/>
 
-	
+
 	<!-- database -->
-	
+
 	<include package=".database" file="configure.zcml" />
-	
+
 	<!-- subscribers -->
 	<subscriber handler=".entities._entity_added" />
-	
+
 	<subscriber handler=".discussions._topic_added" />
 	<subscriber handler=".discussions._topic_removed" />
 	<subscriber handler=".discussions._topic_modified" />
-		
+
 	<subscriber handler=".discussions._forum_added" />
 	<subscriber handler=".discussions._forum_removed" />
 	<subscriber handler=".discussions._forum_modified" />
-	
+
 	<subscriber handler=".discussions._add_general_forum_comment" />
 	<subscriber handler=".discussions._modify_general_forum_comment" />
 
@@ -50,17 +50,16 @@
 	<subscriber handler=".social._friendslist_added" />
 	<subscriber handler=".social._friendslist_modified" />
 	<subscriber handler=".social._friendslist_deleted" />
-	
+
 	<subscriber handler=".social._dfl_added" />
 	<subscriber handler=".social._dfl_deleted" />
 	<subscriber handler=".social._start_dynamic_membership_event" />
 	<subscriber handler=".social._stop_dynamic_membership_event" />
-	
+
 	<subscriber handler=".social._start_following_event" />
 	<subscriber handler=".social._stop_following_event" />
-	
+
 	<subscriber handler=".social._meeting_created" />
-	<subscriber handler=".social._meeting_joined" />
 
 	<subscriber handler=".resource_tags._note_added" />
 	<subscriber handler=".resource_tags._note_removed" />
@@ -72,10 +71,10 @@
 
 	<subscriber handler=".assessments._grade_added" />
 	<subscriber handler=".assessments._grade_modified" />
-	
+
 	<subscriber handler=".assessments._questionset_assessed" />
 	<subscriber handler=".assessments._assignment_history_item_added" />
-	
+
 	<subscriber handler=".assessments._feedback_added" />
 	<subscriber handler=".assessments._feedback_removed" />
 
@@ -84,8 +83,6 @@
 
 	<!-- utils -->
 
-	<utility component=".assessments" provides=".interfaces.IObjectProcessor" name="assessments"/>
-<!--
 	<utility component=".entities" provides=".interfaces.IObjectProcessor" name="entities"/>
 	<utility component=".blogs" provides=".interfaces.IObjectProcessor" name="blogs"/>
 	<utility component=".discussions" provides=".interfaces.IObjectProcessor" name="discussions"/>
@@ -95,7 +92,7 @@
 	<utility component=".assessments" provides=".interfaces.IObjectProcessor" name="assessments"/>
 	<utility component=".enrollments" provides=".interfaces.IObjectProcessor" name="enrollments"/>
 
-
+<!--
 	<utility component=".connections" provides=".interfaces.IObjectProcessor" name="connections"/>
 	<utility component=".creators" provides=".interfaces.IObjectProcessor" name="creators"/>
 	<utility component=".containers" provides=".interfaces.IObjectProcessor" name="containers"/>
@@ -106,7 +103,7 @@
 	<utility component=".ratings" provides=".interfaces.IObjectProcessor" name="ratings"/>
 	<utility component=".discussions" provides=".interfaces.IObjectProcessor" name="discussions"/>
 	<utility component=".assessments" provides=".interfaces.IObjectProcessor" name="assessments"/>
--->	
-		
+-->
+
 </configure>
 

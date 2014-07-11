@@ -54,7 +54,7 @@ def _self_assessment_taken( db, oid, nti_session=None, time_length=None ):
 
 def _process_question_set( question_set, nti_session=None ):
 	# We only want self-assessments here.
- 	assignment = get_object_root( 	question_set, 
+ 	assignment = get_object_root( 	question_set,
 									app_assessment_interfaces.IUsersCourseAssignmentHistoryItem )
  	if assignment is None:
   		# Ok, we should be a self-assessment.
@@ -64,7 +64,7 @@ def _process_question_set( question_set, nti_session=None ):
 		# in the wild where QuestionSets are assessed for an assignment.  Once
 		# there are, we should handle those cases here.
 		pass
-	
+
 
 @component.adapter(assessment_interfaces.IQAssessedQuestionSet,
 				   intid_interfaces.IIntIdAddedEvent)
@@ -97,7 +97,7 @@ def _assignment_taken( db, oid, nti_session=None, time_length=None ):
 		course = get_course( submission )
 		db.create_assignment_taken( user, nti_session, timestamp, course, time_length, submission )
 		logger.debug("Assignment submitted (user=%s) (assignment=%s)", user, submission.assignmentId )
-		
+
 		for feedback in submission.Feedback.values():
 			_do_add_feedback( db, nti_session, feedback, submission )
 
@@ -115,8 +115,8 @@ def _set_grade( db, oid, username, graded_val, nti_session=None, timestamp=None 
 		user = get_creator( submission )
 		db.grade_submission( user, nti_session, timestamp, grader, graded_val, submission )
 		assignment_id = getattr( submission, 'assignmentId', None )
-		logger.debug( 	"Setting grade for assignment (user=%s) (grade=%s) (grader=%s) (assignment=%s)", 
-						user, 
+		logger.debug( 	"Setting grade for assignment (user=%s) (grade=%s) (grader=%s) (assignment=%s)",
+						user,
 						graded_val,
 						grader,
 						assignment_id )
@@ -126,11 +126,11 @@ def _grade_submission( grade, submission ):
 	nti_session = get_nti_session_id( user )
 	timestamp = datetime.utcnow()
 	graded_val = grade.grade
-	process_event( 	_set_grade, 
-					submission, 
-					username=user.username, 
-					graded_val=graded_val, 
-					nti_session=nti_session, 
+	process_event( 	_set_grade,
+					submission,
+					username=user.username,
+					graded_val=graded_val,
+					nti_session=nti_session,
 					timestamp=timestamp )
 
 @component.adapter(grade_interfaces.IGrade,
@@ -154,7 +154,7 @@ def _grade_added(grade, event):
 def _do_add_feedback( db, nti_session, feedback, submission ):
 	user = get_creator( feedback )
 	timestamp = get_created_timestamp( feedback )
-		
+
 	db.create_submission_feedback( user, nti_session, timestamp, submission, feedback )
 	logger.debug( "Assignment feedback added (user=%s) (%s)", user, feedback )
 
@@ -164,7 +164,7 @@ def _add_feedback( db, oid, nti_session=None ):
 	if feedback is not None:
 		submission = get_object_root( feedback, app_assessment_interfaces.IUsersCourseAssignmentHistoryItem )
 		_do_add_feedback( db, nti_session, feedback, submission )
-		
+
 
 def _remove_feedback( db, oid, timestamp=None ):
 	feedback = ntiids.find_object_with_ntiid( oid )

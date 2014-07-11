@@ -150,6 +150,7 @@ class CourseMixin(object):
 		return (Index('ix_%s_user_course' % cls.__tablename__, 'user_id', 'course_id'),)
 
 class ResourceMixin(CourseMixin,BaseViewMixin):
+	# ntiid, 1048 seems like it would be enough...
 	resource_id = Column('resource_id', String(1048), nullable=False, primary_key=True)
 
 class ResourceViewMixin(ResourceMixin):

@@ -59,7 +59,7 @@ def get_nti_session_id( user ):
 	try:
 		nti_session = get_nti_session( user )
 	except TypeError:
-		# Some cases (creating Topics as community?) won't let us
+		# Some cases (creating Forums as community) won't let us
 		# get a session.
 		logger.debug( 'Failed to get session for user (%s)', user )
 	return get_id_for_session( nti_session )

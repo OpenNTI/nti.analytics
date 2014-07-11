@@ -37,7 +37,7 @@ def _add_session( db, user, nti_session, timestamp, ip_addr=None, platform=None,
 	if nti_session:
 		user = get_entity( user )
 		db.create_session( user, nti_session, timestamp, ip_addr, platform, version )
-		logger.debug( 'Session created (user=%s) (time=%s)', user, timestamp )
+		logger.debug( 'Session created (user=%s)', user )
 
 def _process_session_created( nti_session ):
 	session_id = get_id_for_session( nti_session )
@@ -55,7 +55,7 @@ def _session_created( nti_session, event ):
 def _remove_session( db, nti_session, user=None, timestamp=None ):
 	if nti_session:
 		db.end_session( nti_session, timestamp )
-		logger.debug( 'Session destroyed (user=%s) (time=%s)', user, timestamp )
+		logger.debug( 'Session destroyed (user=%s)', user )
 
 @component.adapter( sio_interfaces.ISocketSession, sio_interfaces.ISocketSessionDisconnectedEvent )
 def _session_destroyed( nti_session, event ):
