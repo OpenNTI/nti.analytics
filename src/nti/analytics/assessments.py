@@ -136,7 +136,6 @@ def _grade_submission( grade, submission ):
 @component.adapter(grade_interfaces.IGrade,
 				   lce_interfaces.IObjectModifiedEvent)
 def _grade_modified(grade, event):
-	from IPython.core.debugger import Tracer;Tracer()()
 	submission = app_assessment_interfaces.IUsersCourseAssignmentHistoryItem( grade )
 	_grade_submission( grade, submission )
 
