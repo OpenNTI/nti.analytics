@@ -43,10 +43,10 @@ def get_creator(obj):
         return creator
     except (TypeError, POSKeyError):
         return None
-       
+
 def get_nti_session( user ):
 	""" Attempt to get the current session for the user, returning None if none found. """
-	session_storage = component.getUtility( nti_interfaces.ISessionServiceStorage ) 
+	session_storage = component.getUtility( nti_interfaces.ISessionServiceStorage )
 	sessions = session_storage.get_sessions_by_owner( user )
 	# We may have multiple; grab the first.
 	# See note in session_storage on why this may no longer be necessary.
@@ -55,10 +55,16 @@ def get_nti_session( user ):
 
 def get_nti_session_id( user ):
 	""" Attempt to get the current session id for the user, returning None if none found. """
-	nti_session = get_nti_session( user )
+	nti_session = None
+	try:
+		nti_session = get_nti_session( user )
+	except TypeError:
+		# Some cases (creating Topics as community?) won't let us
+		# get a session.
+		logger.debug( 'Failed to get session for user (%s)', user )
 	return get_id_for_session( nti_session )
-	
-def get_id_for_session( nti_session ):	
+
+def get_id_for_session( nti_session ):
 	""" Given an nti_session, return the unique id """
 	result = None
 	if 		isinstance( nti_session, string_types ) \
@@ -66,15 +72,16 @@ def get_id_for_session( nti_session ):
 		result = nti_session
 	else:
 		result = getattr( nti_session, 'session_id', None )
-	
+
 	return result
 
-def get_object_root( obj, type ):
-	""" Work up the parent tree looking for 'type', returning None if not found. """
+def get_object_root( obj, type_to_find ):
+	""" Work up the parent tree looking for 'type_to_find', returning None if not found. """
 	result = None
 	for location in lineage( obj ):
-		if type.providedBy( location ):
-			result = location
+		candidate = type_to_find( location, None )
+		if candidate is not None:
+			result = candidate
 			break
 	return result
 
@@ -90,7 +97,7 @@ def to_external_ntiid_oid(obj):
         ntiid = ':'.join(parts[:4])
     return ntiid
 
-def get_course( obj ):	
+def get_course( obj ):
 	result = get_object_root( obj, ICourseInstance )
 	# TODO Should we fall back and look up by ntiid here?
 	return result
@@ -111,7 +118,6 @@ def get_course_by_ntiid( ntiid ):
 	return ICourseInstance( course )
 
 
-
 def process_event( object_op, obj=None, **kwargs ):
 	effective_kwargs = kwargs
 	if obj is not None:
@@ -119,29 +125,28 @@ def process_event( object_op, obj=None, **kwargs ):
 		oid = to_external_ntiid_oid( obj )
 		effective_kwargs = dict( kwargs )
 		effective_kwargs['oid'] = oid
-	
+
 	queue = get_job_queue()
 	job = create_job( object_op, **effective_kwargs )
 	queue.put( job )
-	
+
 def get_created_timestamp(obj):
 	result = getattr( obj, 'createdTime', None )
 	result = timestamp_type( result )
-	return result or datetime.utcnow()	
-	
+	return result or datetime.utcnow()
+
 def timestamp_type(timestamp):
 	result = timestamp
 	if isinstance( timestamp, ( float, integer_types ) ):
 		result = datetime.utcfromtimestamp( timestamp )
-	return result	
+	return result
 
 class IDLookup(object):
-	""" Defines a unique identifier for objects that can be used for storage."""	
-	
+	""" Defines a unique identifier for objects that can be used for storage."""
+
 	def __init__( self ):
 		self.intids = component.getUtility(zope.intid.IIntIds)
-		
+
 	def get_id_for_object( self, obj ):
 		result = getattr( obj, '_ds_intid', None )
 		return result or self.intids.getId( obj )
-	

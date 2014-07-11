@@ -42,17 +42,17 @@ def _add_comment( db, oid, nti_session=None ):
 		course = get_course( discussion )
 		if discussion:
 			db.create_forum_comment( user, nti_session, course, discussion, comment )
-			logger.debug( 	"Forum comment created (user=%s) (discussion=%s) (course=%s)", 
+			logger.debug( 	"Forum comment created (user=%s) (discussion=%s) (course=%s)",
 							user, discussion, course )
 
 def _remove_comment( db, oid, timestamp ):
 	comment = ntiids.find_object_with_ntiid( oid )
 	if comment is not None:
 		db.delete_forum_comment( timestamp, comment )
-		logger.debug( 	"Forum comment deleted (comment=%s)", 
+		logger.debug( 	"Forum comment deleted (comment=%s)",
 						comment )
-	
-@component.adapter( frm_interfaces.IGeneralForumComment, 
+
+@component.adapter( frm_interfaces.IGeneralForumComment,
 					intid_interfaces.IIntIdAddedEvent )
 def _add_general_forum_comment(comment, event):
 	user = get_creator( comment )
@@ -115,7 +115,8 @@ def _add_forum( db, oid, nti_session=None ):
 		user = get_creator( forum )
 		course = get_course( forum )
 		db.create_forum( user, nti_session, course, forum )
-		logger.debug( 	"Forum created (user=%s) (forum=%s) (course=%s)", 
+		logger.debug( 'test' )
+		logger.debug( 	"Forum created (user=%s) (forum=%s) (course=%s)",
 						user, forum, course )
 
 def _modify_forum( db, oid ):
@@ -126,7 +127,7 @@ def _modify_forum( db, oid ):
 def _forum_added( forum, event ):
 	user = get_creator( forum )
 	nti_session = get_nti_session_id( user )
-	process_event( _add_forum, forum )
+	process_event( _add_forum, forum, nti_session=nti_session )
 
 @component.adapter( frm_interfaces.IForum, lce_interfaces.IObjectModifiedEvent )
 def _forum_modified( forum, event ):
@@ -138,7 +139,7 @@ def _forum_removed( forum, event ):
 	timestamp = datetime.utcnow()
 	timestamp = get_deleted_time( forum )
 	process_event( _remove_forum, forum, timestamp=timestamp )
-		
+
 component.moduleProvides(analytic_interfaces.IObjectProcessor)
 
 def init( obj ):
@@ -148,18 +149,18 @@ def init( obj ):
 	result = True
 	if frm_interfaces.IForum.providedBy(obj):
 		process_event( _add_forum, obj )
-	
+
 	elif frm_interfaces.ITopic.providedBy(obj) \
 		and not (	frm_interfaces.IPersonalBlogEntry.providedBy( obj ) \
 				or 	frm_interfaces.IPersonalBlogEntryPost.providedBy( obj ) ):
-		
+
 		process_event( _add_topic, obj )
-	
+
 	elif frm_interfaces.IGeneralForumComment.providedBy( obj ) \
 		and not frm_interfaces.IPersonalBlogComment.providedBy( obj ):
-		
+
 		process_event( _add_comment, obj )
 	else:
 		result = False
-		
+
 	return result
