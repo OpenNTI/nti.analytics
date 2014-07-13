@@ -12,13 +12,6 @@
 
 	<include package="nti.async" />
 
-	<!-- access to the views under .../analytics/ -->
-
-	<adapter name="analyticsdb"
-			 for="nti.dataserver.interfaces.IDataserverFolder pyramid.interfaces.IRequest"
-			 factory=".views.AnalyticsPathAdapter"
-			 provides="zope.traversing.interfaces.IPathAdapter" />
-
 	<!-- generations -->
 
 	<utility factory=".generations.install._AnalyticsSchemaManager"
