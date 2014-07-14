@@ -9,27 +9,21 @@ __docformat__ = "restructuredtext en"
 logger = __import__('logging').getLogger(__name__)
 
 from zope import component
-from zope.lifecycleevent import interfaces as lce_interfaces
+
+from datetime import datetime
 
 from nti.dataserver import interfaces as nti_interfaces
-from nti.dataserver.contenttypes.forums import interfaces as frm_interfaces
 
 from nti.ntiids import ntiids
 
 from nti.intid import interfaces as intid_interfaces
 
+from nti.analytics import interfaces as analytic_interfaces
+
 from .common import get_creator
 from .common import get_nti_session_id
-from .common import to_external_ntiid_oid
-from .common import get_deleted_time
 from .common import process_event
-from .common import get_entity
 from .common import get_course_by_ntiid
-
-from . import utils
-from . import create_job
-from . import get_job_queue
-from . import interfaces as analytic_interfaces
 
 def get_course( obj ):
 	return get_course_by_ntiid( obj.containerId )
@@ -41,13 +35,14 @@ def _add_note( db, oid, nti_session=None ):
 		user = get_creator( note )
 		course = get_course( note )
 		db.create_note( user, nti_session, course, note )
-		logger.debug( "Note created (user=%s) (course=%s)", user, course )
+		logger.debug( 	"Note created (user=%s) (course=%s) (note=%s)",
+						user, course, note )
 
-def _remove_highlight( db, oid, timestamp=None ):
+def _remove_note( db, oid, timestamp=None ):
 	note = ntiids.find_object_with_ntiid( oid )
 	if note is not None:
 		db.delete_note( timestamp, note )
-		logger.debug( "Note deleted" )
+		logger.debug( "Note deleted (note=%s)", note )
 
 @component.adapter(	nti_interfaces.INote,
 					intid_interfaces.IIntIdAddedEvent )
@@ -56,7 +51,7 @@ def _note_added( obj, event ):
 		user = get_creator( obj )
 		nti_session = get_nti_session_id( user )
 		process_event( _add_note, obj, nti_session=nti_session )
-	
+
 @component.adapter(	nti_interfaces.INote,
 					intid_interfaces.IIntIdRemovedEvent )
 def _note_removed( obj, event ):
@@ -87,22 +82,22 @@ def _highlight_added( obj, event ):
 		user = get_creator( obj )
 		nti_session = get_nti_session_id( user )
 		process_event( _add_highlight, obj, nti_session=nti_session )
-	
+
 @component.adapter(	nti_interfaces.IHighlight,
 					intid_interfaces.IIntIdRemovedEvent )
 def _highlight_removed( obj, event ):
 	if _is_highlight( obj ):
 		timestamp = datetime.utcnow()
-		process_event( _remove_highlight, obj, timestamp=timestamp )	
-		
+		process_event( _remove_highlight, obj, timestamp=timestamp )
+
 component.moduleProvides(analytic_interfaces.IObjectProcessor)
 
 def _is_note( obj ):
-	return nti_interfaces.INote.providedBy( obj );
+	return nti_interfaces.INote.providedBy( obj )
 
 def _is_highlight( obj ):
 	return 	nti_interfaces.IHighlight.providedBy( obj ) \
-		and not nti_interfaces.INote.providedBy( obj );
+		and not nti_interfaces.INote.providedBy( obj )
 
 def init( obj ):
 	result = True
