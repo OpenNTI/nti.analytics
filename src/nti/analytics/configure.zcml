@@ -35,6 +35,8 @@
 	<subscriber handler=".discussions._add_general_forum_comment" />
 	<subscriber handler=".discussions._modify_general_forum_comment" />
 
+	<subscriber handler=".blogs._blog_added" />
+	<subscriber handler=".blogs._blog_post_added" />
 	<subscriber handler=".blogs._add_personal_blog_comment" />
 	<subscriber handler=".blogs._modify_personal_blog_comment" />
 

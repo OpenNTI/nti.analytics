@@ -11,6 +11,8 @@ logger = __import__('logging').getLogger(__name__)
 from zope import component
 from zope.lifecycleevent import interfaces as lce_interfaces
 
+from nti.intid import interfaces as intid_interfaces
+
 from nti.dataserver import interfaces as nti_interfaces
 from nti.dataserver.contenttypes.forums import interfaces as frm_interfaces
 
@@ -30,8 +32,10 @@ def _add_comment( db, oid, nti_session=None ):
 	comment = ntiids.find_object_with_ntiid( oid )
 	if comment is not None:
 		user = get_creator( comment )
-		blog = get_object_root( comment,
-								( frm_interfaces.IPersonalBlogEntry, frm_interfaces.IPersonalBlogEntryPost ) )
+		blog = get_object_root( comment, frm_interfaces.IPersonalBlogEntry )
+		if blog is None:
+			# TODO Need to find out which type we should look for.
+			blog = get_object_root( comment, frm_interfaces.IPersonalBlogEntryPost )
 		if blog:
 			db.create_blog_comment( user, nti_session, blog, comment )
 			logger.debug( "Blog comment created (user=%s) (blog=%s)", user, blog )
@@ -43,7 +47,7 @@ def _remove_comment( db, oid, timestamp=None ):
 		logger.debug( "Blog comment deleted (blog=%s)", comment )
 
 @component.adapter( frm_interfaces.IPersonalBlogComment,
-					lce_interfaces.IObjectAddedEvent)
+					intid_interfaces.IIntIdAddedEvent)
 def _add_personal_blog_comment(comment, event):
 	user = get_creator( comment )
 	nti_session = get_nti_session_id( user )
@@ -68,15 +72,17 @@ def _add_blog( db, oid, nti_session=None ):
 		db.create_blog( user, nti_session, blog )
 		logger.debug( "Blog created (user=%s) (blog=%s)", user, blog )
 
-@component.adapter(	frm_interfaces.IPersonalBlogEntry,
-					frm_interfaces.IPersonalBlogEntryPost,
-					lce_interfaces.IObjectAddedEvent )
-def _blog_added( blog, event ):
+def _do_blog_added( blog, event ):
 	user = get_creator( blog )
 	nti_session = get_nti_session_id( user )
 	process_event( _add_blog, blog, nti_session=nti_session )
 
-# NOTE: We do not expect blog removed events.
+@component.adapter(	frm_interfaces.IPersonalBlogEntry,
+					intid_interfaces.IIntIdAddedEvent )
+def _blog_added( blog, event ):
+	_do_blog_added( blog, event )
+
+# FIXME: We do not handle blog removed events (here nor in the db).
 
 component.moduleProvides(analytic_interfaces.IObjectProcessor)
 
@@ -84,10 +90,8 @@ def init( obj ):
 	result = True
 	if 		frm_interfaces.IPersonalBlogEntry.providedBy( obj ) \
 		or 	frm_interfaces.IPersonalBlogEntryPost.providedBy( obj ):
-
 		process_event( _add_blog, obj )
 	elif frm_interfaces.IPersonalBlogComment.providedBy( obj ):
-
 		process_event( _add_comment, obj )
 	else:
 		result = False

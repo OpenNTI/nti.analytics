@@ -29,6 +29,18 @@ from .common import get_object_root
 from .common import get_course
 from .common import process_event
 
+def _is_topic( obj ):
+	# Exclude blogs
+	result = 	frm_interfaces.ITopic.providedBy(obj) \
+			and not (	frm_interfaces.IPersonalBlogEntry.providedBy( obj ) \
+					or 	frm_interfaces.IPersonalBlogEntryPost.providedBy( obj ) )
+	return result
+
+def _is_forum_comment( obj ):
+	result = 	frm_interfaces.IGeneralForumComment.providedBy( obj ) \
+			and not frm_interfaces.IPersonalBlogComment.providedBy( obj )
+	return result
+
 # Comments
 def _add_comment( db, oid, nti_session=None ):
 	comment = ntiids.find_object_with_ntiid( oid )
@@ -52,16 +64,18 @@ def _remove_comment( db, oid, timestamp ):
 @component.adapter( frm_interfaces.IGeneralForumComment,
 					intid_interfaces.IIntIdAddedEvent )
 def _add_general_forum_comment(comment, event):
-	user = get_creator( comment )
-	nti_session = get_nti_session_id( user )
-	process_event( _add_comment, comment, nti_session=nti_session )
+	if _is_forum_comment( comment ):
+		user = get_creator( comment )
+		nti_session = get_nti_session_id( user )
+		process_event( _add_comment, comment, nti_session=nti_session )
 
 @component.adapter(frm_interfaces.IGeneralForumComment,
 				   lce_interfaces.IObjectModifiedEvent)
 def _modify_general_forum_comment(comment, event):
-	if nti_interfaces.IDeletedObjectPlaceholder.providedBy( comment ):
-		timestamp = datetime.utcnow()
-		process_event( _remove_comment, comment, timestamp=timestamp )
+	if		_is_forum_comment( comment ) \
+		and nti_interfaces.IDeletedObjectPlaceholder.providedBy( comment ):
+			timestamp = datetime.utcnow()
+			process_event( _remove_comment, comment, timestamp=timestamp )
 
 # Topic
 def _add_topic( db, oid, nti_session=None ):
@@ -72,10 +86,6 @@ def _add_topic( db, oid, nti_session=None ):
 		db.create_discussion( user, nti_session, course, topic )
 		logger.debug( "Discussion created (user=%s) (discussion=%s)", user, topic )
 
-def _modify_topic( db, oid, timestamp=None ):
-	# TODO
-	pass
-
 def _remove_topic( db, oid, timestamp=None ):
 	topic = ntiids.find_object_with_ntiid( oid )
 	if topic is not None:
@@ -84,20 +94,24 @@ def _remove_topic( db, oid, timestamp=None ):
 
 @component.adapter( frm_interfaces.ITopic, intid_interfaces.IIntIdAddedEvent )
 def _topic_added( topic, event ):
-	user = get_creator( topic )
-	nti_session = get_nti_session_id( user )
-	process_event( _add_topic, topic, nti_session=nti_session )
+	if _is_topic( topic ):
+		user = get_creator( topic )
+		nti_session = get_nti_session_id( user )
+		process_event( _add_topic, topic, nti_session=nti_session )
 
 @component.adapter( frm_interfaces.ITopic, lce_interfaces.IObjectModifiedEvent )
 def _topic_modified( topic, event ):
-	# What's this?
-	timestamp = datetime.utcnow()
-	process_event( _modify_topic, topic, timestamp=timestamp )
+	pass
+# 	if _is_topic( topic ):
+# 		# What's this?
+# 		timestamp = datetime.utcnow()
+# 		process_event( _modify_topic, topic, timestamp=timestamp )
 
 @component.adapter( frm_interfaces.ITopic, intid_interfaces.IIntIdRemovedEvent )
 def _topic_removed( topic, event ):
-	timestamp = datetime.utcnow()
-	process_event( _remove_topic, topic, timestamp=timestamp )
+	if _is_topic( topic ):
+		timestamp = datetime.utcnow()
+		process_event( _remove_topic, topic, timestamp=timestamp )
 
 # Forum
 def _remove_forum( db, oid, timestamp ):
@@ -116,10 +130,6 @@ def _add_forum( db, oid, nti_session=None ):
 		logger.debug( 	"Forum created (user=%s) (forum=%s) (course=%s)",
 						user, forum, course )
 
-def _modify_forum( db, oid ):
-	# TODO How do we handle these modify events?
-	pass
-
 @component.adapter( frm_interfaces.IForum, intid_interfaces.IIntIdAddedEvent )
 def _forum_added( forum, event ):
 	user = get_creator( forum )
@@ -128,7 +138,7 @@ def _forum_added( forum, event ):
 
 @component.adapter( frm_interfaces.IForum, lce_interfaces.IObjectModifiedEvent )
 def _forum_modified( forum, event ):
-	process_event( _modify_forum, forum )
+	pass
 
 @component.adapter( frm_interfaces.IForum, intid_interfaces.IIntIdRemovedEvent )
 def _forum_removed( forum, event ):
@@ -139,22 +149,13 @@ def _forum_removed( forum, event ):
 component.moduleProvides(analytic_interfaces.IObjectProcessor)
 
 def init( obj ):
-	# Exclude blogs
 	# TODO Note comments may end up here...
-	# FIXME need to filter out by type in event handlers.
 	result = True
 	if frm_interfaces.IForum.providedBy(obj):
 		process_event( _add_forum, obj )
-
-	elif frm_interfaces.ITopic.providedBy(obj) \
-		and not (	frm_interfaces.IPersonalBlogEntry.providedBy( obj ) \
-				or 	frm_interfaces.IPersonalBlogEntryPost.providedBy( obj ) ):
-
+	elif _is_topic( obj ):
 		process_event( _add_topic, obj )
-
-	elif frm_interfaces.IGeneralForumComment.providedBy( obj ) \
-		and not frm_interfaces.IPersonalBlogComment.providedBy( obj ):
-
+	elif _is_forum_comment( obj ):
 		process_event( _add_comment, obj )
 	else:
 		result = False
