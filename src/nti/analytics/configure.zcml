@@ -24,8 +24,6 @@
 	<include package=".database" file="configure.zcml" />
 
 	<!-- subscribers -->
-	<subscriber handler=".entities._entity_added" />
-
 	<subscriber handler=".discussions._topic_added" />
 	<subscriber handler=".discussions._topic_removed" />
 	<subscriber handler=".discussions._topic_modified" />
@@ -73,7 +71,6 @@
 
 	<!-- utils -->
 
-	<utility component=".entities" provides=".interfaces.IObjectProcessor" name="entities"/>
 	<utility component=".blogs" provides=".interfaces.IObjectProcessor" name="blogs"/>
 	<utility component=".discussions" provides=".interfaces.IObjectProcessor" name="discussions"/>
 	<utility component=".social" provides=".interfaces.IObjectProcessor" name="social"/>
@@ -81,19 +78,6 @@
 	<utility component=".sessions" provides=".interfaces.IObjectProcessor" name="sessions"/>
 	<utility component=".assessments" provides=".interfaces.IObjectProcessor" name="assessments"/>
 	<utility component=".enrollments" provides=".interfaces.IObjectProcessor" name="enrollments"/>
-
-<!--
-	<utility component=".connections" provides=".interfaces.IObjectProcessor" name="connections"/>
-	<utility component=".creators" provides=".interfaces.IObjectProcessor" name="creators"/>
-	<utility component=".containers" provides=".interfaces.IObjectProcessor" name="containers"/>
-	<utility component=".threadables" provides=".interfaces.IObjectProcessor" name="threadables"/>
-	<utility component=".sharing" provides=".interfaces.IObjectProcessor" name="sharing"/>
-	<utility component=".tagging" provides=".interfaces.IObjectProcessor" name="tagging"/>
-	<utility component=".flagging" provides=".interfaces.IObjectProcessor" name="flagging"/>
-	<utility component=".ratings" provides=".interfaces.IObjectProcessor" name="ratings"/>
-	<utility component=".discussions" provides=".interfaces.IObjectProcessor" name="discussions"/>
-	<utility component=".assessments" provides=".interfaces.IObjectProcessor" name="assessments"/>
--->
 
 </configure>
 
