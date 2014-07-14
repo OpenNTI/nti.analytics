@@ -131,7 +131,6 @@ def _add_forum( db, oid, nti_session=None ):
 		user = get_creator( forum )
 		course = get_course( forum )
 		db.create_forum( user, nti_session, course, forum )
-		logger.debug( 'test' )
 		logger.debug( 	"Forum created (user=%s) (forum=%s) (course=%s)",
 						user, forum, course )
 

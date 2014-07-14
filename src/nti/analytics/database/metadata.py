@@ -325,7 +325,7 @@ class AssignmentDetailGrades(Base,GradeDetailMixin,AssignmentSubmissionMixin):
 
 
 # Each feedback 'tree' should have an associated grade with it.
-class AssignmentFeedback(Base,AssignmentSubmissionMixin):
+class AssignmentFeedback(Base,AssignmentSubmissionMixin,DeletedMixin):
 	__tablename__ = 'AssignmentFeedback'
 	feedback_id = Column( 'feedback_id', Integer, nullable=False, unique=True, primary_key=True )
 	feedback_length = Column( 'feedback_length', Integer, nullable=True )

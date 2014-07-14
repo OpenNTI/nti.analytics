@@ -159,12 +159,9 @@ def _add_feedback( db, oid, nti_session=None ):
 		_do_add_feedback( db, nti_session, feedback, submission )
 
 
-def _remove_feedback( db, oid, timestamp=None ):
-	feedback = ntiids.find_object_with_ntiid( oid )
-	if feedback is not None:
-		# FIXME implement
-		db.remove_feedback( feedback, timestamp )
-		logger.debug("Assignment feedback removed (%s)", feedback )
+def _remove_feedback( db, feedback_id, timestamp=None ):
+	db.delete_feedback( timestamp, feedback_id )
+	logger.debug("Assignment feedback removed (%s)", feedback_id )
 
 @component.adapter(app_assessment_interfaces.IUsersCourseAssignmentHistoryItemFeedback,
 				   intid_interfaces.IIntIdAddedEvent)
@@ -177,7 +174,8 @@ def _feedback_added(feedback, event):
 				   intid_interfaces.IIntIdRemovedEvent)
 def _feedback_removed(feedback, event):
 	timestamp = datetime.utcnow()
-	process_event( _remove_feedback, feedback, nti_session=nti_session, timestamp=timestamp )
+	feedback_id = id_lookup.get_id_for_feedback( feedback )
+	process_event( _remove_feedback, feedback_id=feedback_id, timestamp=timestamp )
 
 component.moduleProvides(analytic_interfaces.IObjectProcessor)
 

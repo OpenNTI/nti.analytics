@@ -913,7 +913,7 @@ class AnalyticsDB(object):
 		grade_entry = self._get_grade_entry( submission_id )
 		return grade_entry.grade_id
 
-	def create_submission_feedback(self, user, nti_session, timestamp, submission, feedback ):
+	def create_submission_feedback( self, user, nti_session, timestamp, submission, feedback ):
 		user = self._get_or_create_user( user )
 		uid = user.user_id
 		sid = self.idlookup.get_id_for_session( nti_session )
@@ -934,6 +934,13 @@ class AnalyticsDB(object):
 										feedback_length=feedback_length,
 										grade_id=grade_id )
 		self.session.add( new_object )
+
+	def delete_feedback( self, timestamp, feedback_id ):
+		timestamp = timestamp_type( timestamp )
+		feedback = self.session.query(AssignmentFeedback).filter(
+								AssignmentFeedback.feedback_id == feedback_id ).one()
+		feedback.deleted=timestamp
+		self.session.flush()
 
 	# StudentParticipationReport
 	def get_forum_comments_for_user(self, user, course):
