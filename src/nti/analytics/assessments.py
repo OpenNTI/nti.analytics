@@ -33,6 +33,8 @@ from .common import get_course_by_ntiid
 from .common import process_event
 from .common import get_created_timestamp
 from .common import get_entity
+from .common import IDLookup
+id_lookup = IDLookup()
 
 def _self_assessment_taken( db, oid, nti_session=None, time_length=None ):
 	submission = ntiids.find_object_with_ntiid( oid )
@@ -160,6 +162,7 @@ def _add_feedback( db, oid, nti_session=None ):
 def _remove_feedback( db, oid, timestamp=None ):
 	feedback = ntiids.find_object_with_ntiid( oid )
 	if feedback is not None:
+		# FIXME implement
 		db.remove_feedback( feedback, timestamp )
 		logger.debug("Assignment feedback removed (%s)", feedback )
 

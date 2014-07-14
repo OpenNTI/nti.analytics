@@ -594,7 +594,7 @@ class TestCourseResources(AnalyticsTestBase):
 		assert_that( note.timestamp, not_none() )
 
 		# Delete note
-		self.db.delete_note( datetime.now(), my_note )
+		self.db.delete_note( datetime.now(), note_id )
 
 		results = self.session.query(NotesCreated).all()
 		assert_that( results, has_length( 1 ) )
@@ -631,7 +631,7 @@ class TestCourseResources(AnalyticsTestBase):
 		assert_that( highlight.timestamp, not_none() )
 
 		# Delete highlight
-		self.db.delete_highlight( datetime.now(), my_highlight )
+		self.db.delete_highlight( datetime.now(), highlight_id )
 
 		results = self.session.query(HighlightsCreated).all()
 		assert_that( results, has_length( 1 ) )

@@ -507,8 +507,9 @@ class AnalyticsDB(object):
 		sharing = _get_sharing_enum( note, course )
 
 		pid = None
-		if INote.providedBy( note.__parent__ ):
-			pid = self.idlookup.get_id_for_note( note.__parent__ )
+		parent_note = getattr( note, 'inReplyTo', None )
+		if INote.providedBy( parent_note ):
+			pid = self.idlookup.get_id_for_note( parent_note )
 
 		new_object = NotesCreated( 	user_id=uid,
 									session_id=sid,
@@ -520,10 +521,10 @@ class AnalyticsDB(object):
 									sharing=sharing )
 		self.session.add( new_object )
 
-	def delete_note(self, timestamp, note):
+	def delete_note(self, timestamp, note_id):
 		timestamp = timestamp_type( timestamp )
-		nid = self.idlookup.get_id_for_note(note)
-		note = self.session.query(NotesCreated).filter( NotesCreated.note_id==nid ).one()
+		note = self.session.query(NotesCreated).filter(
+								NotesCreated.note_id == note_id ).one()
 		note.deleted=timestamp
 		self.session.flush()
 
@@ -562,10 +563,10 @@ class AnalyticsDB(object):
 										resource_id=rid)
 		self.session.add( new_object )
 
-	def delete_highlight(self, timestamp, highlight):
+	def delete_highlight(self, timestamp, highlight_id):
 		timestamp = timestamp_type( timestamp )
-		hid = self.idlookup.get_id_for_highlight(highlight)
-		highlight = self.session.query(HighlightsCreated).filter( HighlightsCreated.highlight_id==hid ).one()
+		highlight = self.session.query(HighlightsCreated).filter(
+									HighlightsCreated.highlight_id == highlight_id ).one()
 		highlight.deleted=timestamp
 		self.session.flush()
 
@@ -694,10 +695,10 @@ class AnalyticsDB(object):
 											comment_id=cid )
 		self.session.add( new_object )
 
-	def delete_blog_comment(self, timestamp, comment):
+	def delete_blog_comment(self, timestamp, comment_id):
 		timestamp = timestamp_type( timestamp )
-		cid = self.idlookup.get_id_for_comment(comment)
-		comment = self.session.query(BlogCommentsCreated).filter( BlogCommentsCreated.comment_id==cid ).one()
+		comment = self.session.query(BlogCommentsCreated).filter(
+							BlogCommentsCreated.comment_id == comment_id ).one()
 		comment.deleted=timestamp
 		self.session.flush()
 

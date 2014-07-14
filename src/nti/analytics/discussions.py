@@ -28,6 +28,8 @@ from .common import get_deleted_time
 from .common import get_object_root
 from .common import get_course
 from .common import process_event
+from .common import IDLookup
+id_lookup = IDLookup()
 
 def _is_topic( obj ):
 	# Exclude blogs
@@ -87,6 +89,9 @@ def _add_topic( db, oid, nti_session=None ):
 		logger.debug( "Discussion created (user=%s) (discussion=%s)", user, topic )
 
 def _remove_topic( db, oid, timestamp=None ):
+	# FIXME Hmm, we're going to delete our object. So we cannot look it up on
+	# the other side.  For topics/forums, we'll need to pull all of our children.
+	# Is there a better way to do this?
 	topic = ntiids.find_object_with_ntiid( oid )
 	if topic is not None:
 		db.delete_discussion( timestamp, topic )

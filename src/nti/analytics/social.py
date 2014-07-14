@@ -11,6 +11,8 @@ logger = __import__('logging').getLogger(__name__)
 from zope import component
 from zope.lifecycleevent import interfaces as lce_interfaces
 
+from datetime import datetime
+
 from nti.chatserver import interfaces as chat_interfaces
 from nti.dataserver import interfaces as nti_interfaces
 from nti.dataserver import users
@@ -18,7 +20,7 @@ from nti.ntiids import ntiids
 
 from nti.intid import interfaces as intid_interfaces
 
-from datetime import datetime
+from nti.analytics import interfaces as analytic_interfaces
 
 from .common import get_creator
 from .common import get_nti_session_id
@@ -26,11 +28,11 @@ from .common import process_event
 from .common import get_created_timestamp
 from .common import get_entity
 from .common import IDLookup
-
-from nti.analytics import interfaces as analytic_interfaces
+id_lookup = IDLookup()
 
 def _is_friends_list( obj ):
 	return 	nti_interfaces.IFriendsList.providedBy( obj ) \
+		and not nti_interfaces.IDynamicSharingTargetFriendsList.providedBy( obj ) \
 		and not _is_contacts_friends_list( obj )
 
 def _is_contacts_friends_list( obj ):
@@ -130,8 +132,7 @@ def _update_friends_list( db, oid, nti_session=None, timestamp=None ):
 
 @component.adapter(nti_interfaces.IFriendsList, intid_interfaces.IIntIdAddedEvent)
 def _friendslist_added(obj, event):
-	if 		not nti_interfaces.IDynamicSharingTargetFriendsList.providedBy( obj ) \
-		and not _is_contacts_friends_list( obj ):
+	if _is_friends_list( obj ):
 		user = get_creator( obj )
 		nti_session = get_nti_session_id( user )
 		process_event( _add_friends_list, obj, nti_session=nti_session )
@@ -146,11 +147,8 @@ def _friendslist_modified(obj, event):
 
 @component.adapter(nti_interfaces.IFriendsList, intid_interfaces.IIntIdRemovedEvent)
 def _friendslist_deleted(obj, event):
-	if 		not nti_interfaces.IDynamicSharingTargetFriendsList.providedBy( obj ) \
-		and not _is_contacts_friends_list( obj ):
-		# FIXME simplify this
-		id_lookup = IDLookup()
-		id = id_lookup.get_id_for_object( obj )
+	if _is_friends_list( obj ):
+		id = id_lookup.get_id_for_friends_list( obj )
 		timestamp = datetime.utcnow()
 		process_event( _remove_friends_list, friends_list_id=id, timestamp=timestamp )
 
@@ -201,8 +199,7 @@ def _dfl_added(obj, event):
 				  intid_interfaces.IIntIdRemovedEvent)
 def _dfl_deleted(obj, event):
 	timestamp = datetime.utcnow()
-	id_lookup = IDLookup()
-	id = id_lookup.get_id_for_object( obj )
+	id = id_lookup.get_id_for_dfl( obj )
 	process_event( _remove_dfl, dfl_id=id, timestamp=timestamp )
 
 def _handle_dfl_membership_event( event, to_call ):

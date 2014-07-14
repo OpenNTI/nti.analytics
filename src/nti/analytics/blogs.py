@@ -26,6 +26,8 @@ from .common import get_creator
 from .common import get_nti_session_id
 from .common import get_object_root
 from .common import process_event
+from .common import IDLookup
+id_lookup = IDLookup()
 
 # Comments
 def _add_comment( db, oid, nti_session=None ):
@@ -40,11 +42,9 @@ def _add_comment( db, oid, nti_session=None ):
 			db.create_blog_comment( user, nti_session, blog, comment )
 			logger.debug( "Blog comment created (user=%s) (blog=%s)", user, blog )
 
-def _remove_comment( db, oid, timestamp=None ):
-	comment = ntiids.find_object_with_ntiid( oid )
-	if comment is not None:
-		db.delete_blog_comment( timestamp, comment )
-		logger.debug( "Blog comment deleted (blog=%s)", comment )
+def _remove_comment( db, comment_id, timestamp=None ):
+	db.delete_blog_comment( timestamp, comment_id )
+	logger.debug( "Blog comment deleted (blog=%s)", comment_id )
 
 @component.adapter( frm_interfaces.IPersonalBlogComment,
 					intid_interfaces.IIntIdAddedEvent)
@@ -61,7 +61,8 @@ def _modify_personal_blog_comment(comment, event):
 	# IObjectSharingModifiedEvent
 	if nti_interfaces.IDeletedObjectPlaceholder.providedBy( comment ):
 		timestamp = datetime.utcnow()
-		process_event( _remove_comment, comment, timestamp=timestamp )
+		comment_id = id_lookup.get_id_for_comment( comment )
+		process_event( _remove_comment, comment_id=comment_id, timestamp=timestamp )
 
 
 # Blogs

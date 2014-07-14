@@ -25,6 +25,8 @@ from pyramid.location import lineage
 import zope.intid
 from zope import component
 
+from nti.utils.property import Lazy
+
 from . import create_job
 from . import get_job_queue
 
@@ -110,7 +112,7 @@ def _get_paths(ntiid, library=None, registry=component):
     return paths or ()
 
 def _get_collection_root(ntiid, library=None, registry=component):
-    paths = get_paths(ntiid, library, registry)
+    paths = _get_paths(ntiid, library, registry)
     return paths[0] if paths else None
 
 def get_course_by_ntiid( ntiid ):
@@ -144,8 +146,9 @@ def timestamp_type(timestamp):
 class IDLookup(object):
 	""" Defines a unique identifier for objects that can be used for storage."""
 
-	def __init__( self ):
-		self.intids = component.getUtility(zope.intid.IIntIds)
+	@Lazy
+	def intids(self):
+		return component.getUtility( zope.intid.IIntiIds )
 
 	def get_id_for_object( self, obj ):
 		result = getattr( obj, '_ds_intid', None )

@@ -24,6 +24,8 @@ from .common import get_creator
 from .common import get_nti_session_id
 from .common import process_event
 from .common import get_course_by_ntiid
+from .common import IDLookup
+id_lookup = IDLookup()
 
 def get_course( obj ):
 	return get_course_by_ntiid( obj.containerId )
@@ -38,11 +40,9 @@ def _add_note( db, oid, nti_session=None ):
 		logger.debug( 	"Note created (user=%s) (course=%s) (note=%s)",
 						user, course, note )
 
-def _remove_note( db, oid, timestamp=None ):
-	note = ntiids.find_object_with_ntiid( oid )
-	if note is not None:
-		db.delete_note( timestamp, note )
-		logger.debug( "Note deleted (note=%s)", note )
+def _remove_note( db, note_id, timestamp=None ):
+	db.delete_note( timestamp, note_id )
+	logger.debug( "Note deleted (note=%s)", note_id )
 
 @component.adapter(	nti_interfaces.INote,
 					intid_interfaces.IIntIdAddedEvent )
@@ -57,7 +57,8 @@ def _note_added( obj, event ):
 def _note_removed( obj, event ):
 	if _is_note( obj ):
 		timestamp = datetime.utcnow()
-		process_event( _remove_note, obj, timestamp=timestamp )
+		note_id = id_lookup.get_id_for_note( obj )
+		process_event( _remove_note, note_id=note_id, timestamp=timestamp )
 
 
 # Highlights
@@ -69,11 +70,9 @@ def _add_highlight( db, oid, nti_session=None ):
 		db.create_highlight( user, nti_session, course, highlight )
 		logger.debug( "Highlight created (user=%s) (course=%s)", user, course )
 
-def _remove_highlight( db, oid, timestamp=None ):
-	highlight = ntiids.find_object_with_ntiid( oid )
-	if highlight is not None:
-		db.delete_highlight( timestamp, highlight )
-		logger.debug( "Highlight deleted" )
+def _remove_highlight( db, highlight_id, timestamp=None ):
+	db.delete_highlight( timestamp, highlight_id )
+	logger.debug( "Highlight deleted (highlight_id=%s)", highlight_id )
 
 @component.adapter(	nti_interfaces.IHighlight,
 					intid_interfaces.IIntIdAddedEvent )
@@ -88,7 +87,8 @@ def _highlight_added( obj, event ):
 def _highlight_removed( obj, event ):
 	if _is_highlight( obj ):
 		timestamp = datetime.utcnow()
-		process_event( _remove_highlight, obj, timestamp=timestamp )
+		highlight_id = id_lookup.get_id_for_highlight( obj )
+		process_event( _remove_highlight, highlight_id=highlight_id, timestamp=timestamp )
 
 component.moduleProvides(analytic_interfaces.IObjectProcessor)
 
