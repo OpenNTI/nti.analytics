@@ -35,22 +35,22 @@ DEFAULT_INTID = 101
 
 """ Override this for testing purposes. """
 class TestIDLookup(object):
-	
+
 	def __init__(self):
 		self.default_intid = DEFAULT_INTID
-	
+
 	def get_id_for_object( self, obj ):
 		result = None
 		if isinstance( obj, integer_types ):
 			result = obj
 		elif hasattr( obj, 'intid' ):
 			result = getattr( obj, 'intid', None )
-		
+
 		if result is None:
 			result = self.default_intid
 			self.default_intid += 1
 		return result
-	
+
 common.IDLookup = TestIDLookup
 
 class SharedConfiguringTestLayer(ZopeComponentLayer,
@@ -77,7 +77,7 @@ class SharedConfiguringTestLayer(ZopeComponentLayer,
         cls.setUpTestDS(test)
         shutil.rmtree(cls.new_data_dir, True)
         os.environ['DATASERVER_DATA_DIR'] = cls.old_data_dir or '/tmp'
-        
+
     @classmethod
     def testTearDown(cls):
         pass
@@ -96,15 +96,19 @@ class NTIAnalyticsApplicationTestLayer(ApplicationTestLayer):
     @classmethod
     def tearDown(cls):
         pass
-       
-class MockParent(object): 
-	
-	def __init__(self, parent, intid = None, containerId = None ):    
-		self.__parent__ = parent  
+
+class MockParent(object):
+
+	def __init__(self, parent, intid=None, containerId=None, children=list(), vals=None ):
+		self.__parent__ = parent
 		self.intid = intid
 		self.containerId = containerId
-		self.children = list()
-		
+		self.children = children
+		self.vals = vals
+
 	def values(self):
 		return self.children
-		
+
+	def __iter__(self):
+		return iter(self.vals)
+

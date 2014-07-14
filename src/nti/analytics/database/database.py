@@ -388,84 +388,94 @@ class AnalyticsDB(object):
 		db_friends_list.deleted=timestamp
 		self.session.flush()
 
-	def create_friends_list_member(self, user, nti_session, timestamp, friends_list, new_friend ):
-		if user is None:
-			uid = None
-		else:
-			user = self._get_or_create_user( user )
-			uid = user.user_id
-		sid = self._get_id_for_session( nti_session )
-		friends_list_id = self._get_id_for_friends_list( friends_list )
-		target = self._get_or_create_user( new_friend )
-		target_id = target.user_id
-		timestamp = timestamp_type( timestamp )
-
-		new_object = FriendsListsMemberAdded( 	user_id=uid,
-												session_id=sid,
-												timestamp=timestamp,
-												friends_list_id=friends_list_id,
-												target_id=target_id )
-		self.session.add( new_object )
-
 	def _delete_friend_list_member( self, friends_list_id, target_id ):
 		friend = self.session.query(FriendsListsMemberAdded).filter( 	FriendsListsMemberAdded.friends_list_id==friends_list_id,
 																		FriendsListsMemberAdded.target_id==target_id ).first()
 		self.session.delete( friend )
 
-	def remove_friends_list_member(self, user, nti_session, timestamp, friends_list, new_friend ):
+
+	def _get_friends_list_members( self, friends_list_id ):
+		results = self.session.query(FriendsListsMemberAdded).filter(
+									FriendsListsMemberAdded.friends_list_id == friends_list_id ).all()
+		return results
+
+	def _get_contacts( self, uid ):
+		results = self.session.query(ContactsAdded).filter(
+									ContactsAdded.user_id == uid ).all()
+		return results
+
+	def update_contacts( self, user, nti_session, timestamp, friends_list ):
 		user = self._get_or_create_user( user )
 		uid = user.user_id
 		sid = self._get_id_for_session( nti_session )
-		friends_list_id = self._get_id_for_friends_list( friends_list )
-		target = self._get_or_create_user( new_friend )
-		target_id = target.user_id
 		timestamp = timestamp_type( timestamp )
 
-		new_object = FriendsListsMemberRemoved( user_id=uid,
-												session_id=sid,
-												timestamp=timestamp,
-												friends_list_id=friends_list_id,
-												target_id=target_id )
-		self.session.add( new_object )
-		self._delete_friend_list_member( friends_list_id, target_id )
+		members = self._get_contacts( uid )
+		# This works because contacts are friends_list, and both
+		# 'member' sets have 'target_id' columns we key off of.
+		members_to_add, members_to_remove \
+			= self._find_members( friends_list, members )
 
-	# Magical FL
-	# See DefaultComputedContacts
-	# During migration, we'll want to pull this from user objects and capture events
-	# during runtime.
-	def create_contact_added( self, user, nti_session, timestamp, target ):
-		user = self._get_or_create_user( user )
-		uid = user.user_id
-		sid = self._get_id_for_session( nti_session )
-		target = self._get_or_create_user( target )
-		target_id = target.user_id
-		timestamp = timestamp_type( timestamp )
-
-		new_object = ContactsAdded( 	user_id=uid,
+		for new_member in members_to_add:
+			new_object = ContactsAdded( user_id=uid,
 										session_id=sid,
 										timestamp=timestamp,
-										target_id=target_id )
-		self.session.add( new_object )
+										target_id=new_member )
+
+			self.session.add( new_object )
+		for old_member in members_to_remove:
+			new_object = ContactsRemoved( 	user_id=uid,
+											session_id=sid,
+											timestamp=timestamp,
+											target_id=old_member )
+			self.session.add( new_object )
+			self._delete_contact_added( uid, old_member )
+
+		return len( members_to_add ) - len( members_to_remove )
+
+	def update_friends_list( self, user, nti_session, timestamp, friends_list ):
+		friends_list_id = self._get_id_for_friends_list( friends_list )
+		members = self._get_friends_list_members( friends_list_id )
+		members_to_add, members_to_remove \
+			= self._find_members( friends_list, members )
+
+		user = self._get_or_create_user( user )
+		uid = user.user_id
+		sid = self._get_id_for_session( nti_session )
+		timestamp = timestamp_type( timestamp )
+
+		for new_member in members_to_add:
+			new_object = FriendsListsMemberAdded( 	user_id=uid,
+													session_id=sid,
+													timestamp=timestamp,
+													friends_list_id=friends_list_id,
+													target_id=new_member )
+			self.session.add( new_object )
+		for old_member in members_to_remove:
+			new_object = FriendsListsMemberRemoved( user_id=uid,
+													session_id=sid,
+													timestamp=timestamp,
+													friends_list_id=friends_list_id,
+													target_id=old_member )
+			self.session.add( new_object )
+			self._delete_friend_list_member( friends_list_id, old_member )
+
+		return len( members_to_add ) - len( members_to_remove )
+
+	def _find_members( self, friends_list, members ):
+		""" For a friends_list, return a tuple of members to add/remove. """
+		members = set( [ x.target_id for x in members ] )
+		new_members = set( [ self._get_or_create_user( x ).user_id for x in friends_list] )
+
+		members_to_add = new_members - members
+		members_to_remove = members - new_members
+
+		return ( members_to_add, members_to_remove )
 
 	def _delete_contact_added( self, user_id, target_id ):
 		contact = self.session.query(ContactsAdded).filter( ContactsAdded.user_id==user_id,
 															ContactsAdded.target_id==target_id ).first()
 		self.session.delete( contact )
-
-	def contact_removed( self, user, nti_session, timestamp, target ):
-		user = self._get_or_create_user( user )
-		uid = user.user_id
-		sid = self._get_id_for_session( nti_session )
-		target = self._get_or_create_user( target )
-		target_id = target.user_id
-		timestamp = timestamp_type( timestamp )
-
-		new_object = ContactsRemoved( 	user_id=uid,
-										session_id=sid,
-										timestamp=timestamp,
-										target_id=target_id )
-		self.session.add( new_object )
-		self._delete_contact_added( uid, target_id )
 
 	def create_blog( self, user, nti_session, blog_entry ):
 		user = self._get_or_create_user( user )

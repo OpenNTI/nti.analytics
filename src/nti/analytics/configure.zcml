@@ -49,9 +49,6 @@
 	<subscriber handler=".social._start_dynamic_membership_event" />
 	<subscriber handler=".social._stop_dynamic_membership_event" />
 
-	<subscriber handler=".social._start_following_event" />
-	<subscriber handler=".social._stop_following_event" />
-
 	<subscriber handler=".social._meeting_created" />
 
 	<subscriber handler=".resource_tags._note_added" />

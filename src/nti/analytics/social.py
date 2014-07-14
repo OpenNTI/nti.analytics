@@ -29,6 +29,15 @@ from .common import IDLookup
 
 from nti.analytics import interfaces as analytic_interfaces
 
+def _is_friends_list( obj ):
+	return 	nti_interfaces.IFriendsList.providedBy( obj ) \
+		and not _is_contacts_friends_list( obj )
+
+def _is_contacts_friends_list( obj ):
+	# Exclude 'mycontacts', better way to do this?
+	return 	nti_interfaces.IFriendsList.providedBy( obj ) \
+		and 'mycontacts' in obj.__name__
+
 # Chat
 def _add_meeting( db, oid, nti_session=None ):
 	new_chat = ntiids.find_object_with_ntiid(oid)
@@ -87,32 +96,6 @@ def _remove_contact( db, source, target, timestamp=None, nti_session=None ):
 	db.contact_removed( source, nti_session, timestamp, target )
 	logger.debug( "Contact removed (user=%s) (target=%s)", source, target )
 
-@component.adapter(nti_interfaces.IEntityFollowingEvent)
-def _start_following_event(event):
-	if		nti_interfaces.IDynamicSharingTargetFriendsList.providedBy( event.now_following ) \
-		or 	nti_interfaces.ICommunity.providedBy( event.now_following ):
-		return
-	timestamp = datetime.utcnow()
-	source = getattr( event.object, 'username', event.object )
-	followed = event.now_following
-	followed = getattr( followed, 'username', followed )
-
-	nti_session = get_nti_session_id( get_entity( source ) )
-	process_event( _add_contact, source=source, target=followed, timestamp=timestamp, nti_session=nti_session )
-
-# This does not get fired for some reason.
-@component.adapter(nti_interfaces.IStopFollowingEvent)
-def _stop_following_event(event):
-	if		nti_interfaces.IDynamicSharingTargetFriendsList.providedBy( event.not_following ) \
-		or 	nti_interfaces.ICommunity.providedBy( event.not_following ):
-		return
-	timestamp = datetime.utcnow()
-	source = getattr(event.object, 'username', event.object)
-	followed = event.not_following
-	followed = getattr(followed, 'username', followed)
-	nti_session = get_nti_session_id( get_entity( source ) )
-	process_event( _remove_contact, source=source, target=followed, timestamp=timestamp, nti_session=nti_session )
-
 # Friends List
 def _add_friends_list( db, oid, nti_session=None ):
 	friends_list = ntiids.find_object_with_ntiid(oid)
@@ -123,7 +106,7 @@ def _add_friends_list( db, oid, nti_session=None ):
 		for member in friends_list:
 			member = get_entity( member )
 			db.create_friends_list_member( user, nti_session, None, friends_list, member )
-		logger.debug( 	"FriendsList created (user=%s) (friends_list=%s) (count=%s",
+		logger.debug( 	"FriendsList created (user=%s) (friends_list=%s) (count=%s)",
 						user,
 						friends_list,
 						len( friends_list ) )
@@ -132,18 +115,23 @@ def _remove_friends_list(db, friends_list_id, timestamp=None):
 	db.remove_friends_list( timestamp, friends_list_id )
 	logger.debug( "FriendsList removed (friends_list=%s)", friends_list_id )
 
-def _modified_friends_list( db, oid, timestamp=None ):
-	# I guess look for mycontacts here
+def _update_friends_list( db, oid, nti_session=None, timestamp=None ):
 	friends_list = ntiids.find_object_with_ntiid( oid )
 	if friends_list is not None:
-		pass
-		#FIXME implement
-		# What is the best we can do here, compare memberships?
-		# Expensive?
+		# Creator makes sense for contacts, but what about friends_list?
+		user = get_creator( friends_list )
+		# We end up comparing membership lists. Expensive?
+		if _is_contacts_friends_list( friends_list ):
+			result = db.update_contacts( user, nti_session, timestamp, friends_list )
+			logger.debug( 'Update contacts (user=%s) (count=%s)', user, result )
+		else:
+			result = db.update_friends_list( user, nti_session, timestamp, friends_list )
+			logger.debug( 'Update FriendsList (user=%s) (count=%s)', user, result )
 
 @component.adapter(nti_interfaces.IFriendsList, intid_interfaces.IIntIdAddedEvent)
 def _friendslist_added(obj, event):
-	if not nti_interfaces.IDynamicSharingTargetFriendsList.providedBy( obj ):
+	if 		not nti_interfaces.IDynamicSharingTargetFriendsList.providedBy( obj ) \
+		and not _is_contacts_friends_list( obj ):
 		user = get_creator( obj )
 		nti_session = get_nti_session_id( user )
 		process_event( _add_friends_list, obj, nti_session=nti_session )
@@ -151,13 +139,15 @@ def _friendslist_added(obj, event):
 @component.adapter(nti_interfaces.IFriendsList, lce_interfaces.IObjectModifiedEvent)
 def _friendslist_modified(obj, event):
 	if not nti_interfaces.IDynamicSharingTargetFriendsList.providedBy( obj ):
-		# Should be joins/removals
 		timestamp = datetime.utcnow()
-		process_event( _modified_friends_list, obj, timestamp=timestamp )
+		user = get_creator( obj )
+		nti_session = get_nti_session_id( user )
+		process_event( _update_friends_list, obj, nti_session=nti_session, timestamp=timestamp )
 
 @component.adapter(nti_interfaces.IFriendsList, intid_interfaces.IIntIdRemovedEvent)
 def _friendslist_deleted(obj, event):
-	if not nti_interfaces.IDynamicSharingTargetFriendsList.providedBy( obj ):
+	if 		not nti_interfaces.IDynamicSharingTargetFriendsList.providedBy( obj ) \
+		and not _is_contacts_friends_list( obj ):
 		id_lookup = IDLookup()
 		id = id_lookup.get_id_for_object( obj )
 		timestamp = datetime.utcnow()
@@ -247,14 +237,9 @@ def init( obj ):
 		process_event( _add_meeting, obj )
 	elif nti_interfaces.IDynamicSharingTargetFriendsList.providedBy( obj ):
 		process_event( _add_dfl, obj )
-
-	# Exclude 'mycontacts', better way to do this?
-	elif 	nti_interfaces.IFriendsList.providedBy( obj ) \
-		and 'mycontacts' not in obj.__name__:
-
+	elif _is_friends_list( obj ):
 		process_event( _add_friends_list, obj )
 	elif nti_interfaces.IUser.providedBy(obj):
-
 		process_event( _add_contacts, obj )
 	else:
 		result = False

@@ -19,7 +19,6 @@ from nti.app.products.courseware import interfaces as course_interfaces
 from nti.store import interfaces as store_interfaces
 from nti.contenttypes.courses.interfaces import ICourseInstance
 
-from nti.app.products.courseware.interfaces import ICourseCatalog
 from nti.dataserver.users import Community
 
 from datetime import datetime
@@ -48,7 +47,7 @@ def _add_drop( db, user, community, timestamp=None, nti_session=None ):
 	course = ICourseInstance( community, None )
 	if 		user is not None \
 		and course is not None:
-		
+
 		db.create_course_drop( user, nti_session, timestamp, course )
 		logger.debug( "User dropped (user=%s) (course=%s)", user, course )
 
@@ -57,7 +56,7 @@ def _get_enrollment_type( user, course ):
 	# TODO Expensive. Can we do better?
 	restricted_id = course.LegacyScopes['restricted']
 	restricted = get_entity(restricted_id) if restricted_id else None
-	
+
 	restricted_usernames = ({x.lower() for x in nti_interfaces.IEnumerableEntityContainer(restricted).iter_usernames()}
 							if restricted is not None
 							else set())
@@ -76,26 +75,26 @@ def _add_enrollment( db, user, community, timestamp=None, nti_session=None ):
 	course = ICourseInstance( community, None )
 	if 		user is not None \
 		and course is not None:
-		
+
 		_do_enroll( db, user, course, nti_session, timestamp )
 
-def _handle_event( event, to_call ):	
+def _handle_event( event, to_call ):
 	timestamp = datetime.utcnow()
 	source = getattr(event.object, 'username', event.object)
 	target = event.target
 	# We only listen for Community targeted DFL joins
 	if not nti_interfaces.ICommunity.providedBy( target ):
 		return
-	
+
 	target = getattr(target, 'username', target)
-	
+
 	nti_session = get_nti_session_id( get_entity( source ) )
-	process_event( 	to_call, 
+	process_event( 	to_call,
 					user=source,
-					community=target, 
-					timestamp=timestamp, 
+					community=target,
+					timestamp=timestamp,
 					nti_session=nti_session )
-			
+
 
 @component.adapter(nti_interfaces.IStartDynamicMembershipEvent)
 def _enrolled(event):
@@ -116,5 +115,5 @@ def init( obj ):
 	result = False
 	if 	nti_interfaces.IUser.providedBy(obj):
 		_user_enrollments( obj )
-		result = True	
+		result = True
 	return result
