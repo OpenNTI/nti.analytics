@@ -34,7 +34,7 @@ def _is_friends_list( obj ):
 		and not _is_contacts_friends_list( obj )
 
 def _is_contacts_friends_list( obj ):
-	# Exclude 'mycontacts', better way to do this?
+	# Look for 'mycontacts'; is there a better way to do this?
 	return 	nti_interfaces.IFriendsList.providedBy( obj ) \
 		and 'mycontacts' in obj.__name__
 

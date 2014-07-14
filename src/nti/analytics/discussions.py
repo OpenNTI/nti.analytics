@@ -20,17 +20,14 @@ from nti.ntiids import ntiids
 
 from datetime import datetime
 
+from nti.analytics import interfaces as analytic_interfaces
+
 from .common import get_creator
 from .common import get_nti_session_id
 from .common import get_deleted_time
 from .common import get_object_root
-from .common import get_entity
 from .common import get_course
 from .common import process_event
-from .common import IDLookup
-
-from . import utils
-from . import interfaces as analytic_interfaces
 
 # Comments
 def _add_comment( db, oid, nti_session=None ):
@@ -131,7 +128,6 @@ def _forum_added( forum, event ):
 
 @component.adapter( frm_interfaces.IForum, lce_interfaces.IObjectModifiedEvent )
 def _forum_modified( forum, event ):
-	timestamp = datetime.utcnow()
 	process_event( _modify_forum, forum )
 
 @component.adapter( frm_interfaces.IForum, intid_interfaces.IIntIdRemovedEvent )

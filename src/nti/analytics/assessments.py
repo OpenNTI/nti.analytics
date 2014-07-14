@@ -8,40 +8,31 @@ __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
-import six
-
 from nti.ntiids import ntiids
 
 from zope import component
 from zope.lifecycleevent import interfaces as lce_interfaces
 
 from nti.app.assessment import interfaces as app_assessment_interfaces
-from nti.app.products.courseware import interfaces as course_interfaces
+
 from nti.app.products.gradebook import interfaces as grade_interfaces
+
 from nti.assessment import interfaces as assessment_interfaces
 
-from nti.contenttypes.courses.interfaces import ICourseInstance
 from nti.intid import interfaces as intid_interfaces
-
-from nti.assessment.interfaces import IQAssignment
-from nti.app.products.gradebook.interfaces import IGrade
 
 from datetime import datetime
 
-from .common import to_external_ntiid_oid
+from nti.analytics import interfaces as analytic_interfaces
+
 from .common import get_creator
 from .common import get_nti_session_id
-from .common import get_deleted_time
 from .common import get_object_root
 from .common import get_course
 from .common import get_course_by_ntiid
 from .common import process_event
 from .common import get_created_timestamp
 from .common import get_entity
-from .common import IDLookup
-
-from . import utils
-from . import interfaces as analytic_interfaces
 
 def _self_assessment_taken( db, oid, nti_session=None, time_length=None ):
 	submission = ntiids.find_object_with_ntiid( oid )

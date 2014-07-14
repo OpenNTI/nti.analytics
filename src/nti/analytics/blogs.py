@@ -9,7 +9,6 @@ __docformat__ = "restructuredtext en"
 logger = __import__('logging').getLogger(__name__)
 
 from zope import component
-from zope.intid import interfaces as intid_interfaces
 from zope.lifecycleevent import interfaces as lce_interfaces
 
 from nti.dataserver import interfaces as nti_interfaces
@@ -19,25 +18,19 @@ from nti.ntiids import ntiids
 
 from datetime import datetime
 
+from nti.analytics import interfaces as analytic_interfaces
+
 from .common import get_creator
 from .common import get_nti_session_id
-from .common import to_external_ntiid_oid
-from .common import get_deleted_time
 from .common import get_object_root
 from .common import process_event
-from .common import get_entity
-
-from . import utils
-from . import create_job
-from . import get_job_queue
-from . import interfaces as analytic_interfaces
 
 # Comments
 def _add_comment( db, oid, nti_session=None ):
 	comment = ntiids.find_object_with_ntiid( oid )
 	if comment is not None:
 		user = get_creator( comment )
-		blog = get_object_root( comment, 
+		blog = get_object_root( comment,
 								( frm_interfaces.IPersonalBlogEntry, frm_interfaces.IPersonalBlogEntryPost ) )
 		if blog:
 			db.create_blog_comment( user, nti_session, blog, comment )
@@ -47,9 +40,9 @@ def _remove_comment( db, oid, timestamp=None ):
 	comment = ntiids.find_object_with_ntiid( oid )
 	if comment is not None:
 		db.delete_blog_comment( timestamp, comment )
-		logger.debug( "Blog comment deleted (blog=%s)", blog )
+		logger.debug( "Blog comment deleted (blog=%s)", comment )
 
-@component.adapter( frm_interfaces.IPersonalBlogComment, 
+@component.adapter( frm_interfaces.IPersonalBlogComment,
 					lce_interfaces.IObjectAddedEvent)
 def _add_personal_blog_comment(comment, event):
 	user = get_creator( comment )
@@ -61,7 +54,7 @@ def _add_personal_blog_comment(comment, event):
 				   lce_interfaces.IObjectModifiedEvent)
 def _modify_personal_blog_comment(comment, event):
 	# FIXME Could these be changes in sharing? Perhaps different by object type.
-	# IObjectSharingModifiedEvent	
+	# IObjectSharingModifiedEvent
 	if nti_interfaces.IDeletedObjectPlaceholder.providedBy( comment ):
 		timestamp = datetime.utcnow()
 		process_event( _remove_comment, comment, timestamp=timestamp )
@@ -75,14 +68,14 @@ def _add_blog( db, oid, nti_session=None ):
 		db.create_blog( user, nti_session, blog )
 		logger.debug( "Blog created (user=%s) (blog=%s)", user, blog )
 
-@component.adapter(	frm_interfaces.IPersonalBlogEntry, 
+@component.adapter(	frm_interfaces.IPersonalBlogEntry,
 					frm_interfaces.IPersonalBlogEntryPost,
 					lce_interfaces.IObjectAddedEvent )
 def _blog_added( blog, event ):
 	user = get_creator( blog )
 	nti_session = get_nti_session_id( user )
 	process_event( _add_blog, blog, nti_session=nti_session )
-		
+
 # NOTE: We do not expect blog removed events.
 
 component.moduleProvides(analytic_interfaces.IObjectProcessor)
@@ -91,10 +84,10 @@ def init( obj ):
 	result = True
 	if 		frm_interfaces.IPersonalBlogEntry.providedBy( obj ) \
 		or 	frm_interfaces.IPersonalBlogEntryPost.providedBy( obj ):
-		
+
 		process_event( _add_blog, obj )
 	elif frm_interfaces.IPersonalBlogComment.providedBy( obj ):
-		
+
 		process_event( _add_comment, obj )
 	else:
 		result = False

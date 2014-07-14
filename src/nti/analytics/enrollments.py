@@ -9,34 +9,21 @@ __docformat__ = "restructuredtext en"
 logger = __import__('logging').getLogger(__name__)
 
 from zope import component
-from zope.lifecycleevent import interfaces as lce_interfaces
 
 from nti.dataserver import interfaces as nti_interfaces
 
-from nti.ntiids import ntiids
-from nti.intid import interfaces as intid_interfaces
-from nti.app.products.courseware import interfaces as course_interfaces
-from nti.store import interfaces as store_interfaces
 from nti.contenttypes.courses.interfaces import ICourseInstance
-
-from nti.dataserver.users import Community
 
 from datetime import datetime
 
-from .common import process_event
+from nti.analytics import interfaces as analytics_interfaces
 
-from . import create_job
-from . import get_job_queue
-from . import interfaces as analytics_interfaces
-
-from .common import get_creator
 from .common import get_nti_session_id
-from .common import get_deleted_time
 from .common import get_course
 from .common import process_event
-from .common import get_created_timestamp
 from .common import get_entity
 from .common import IDLookup
+from .common import process_event
 
 FOR_CREDIT = 'FOR_CREDIT'
 OPEN = 'OPEN'
