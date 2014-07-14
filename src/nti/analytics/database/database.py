@@ -223,10 +223,11 @@ class AnalyticsDB(object):
 		return self.idlookup.get_id_for_object( feedback )
 
 	def create_user(self, user):
+		# TODO Should we validate we have IUsers here, do we want to exclude entities?
 		uid = self._get_id_for_user( user )
 		if not uid:
 			# FIXME Nothing we can do, not sure how we got here
-			logger.debug( 'User has no user_id and cannot be inserted (uid=%s) (user=%s)', uid, user )
+			logger.exception( 'User has no user_id and cannot be inserted (uid=%s) (user=%s)', uid, user )
 			return
 		user = Users( user_ds_id=uid )
 		# We'd like to use 'merge' here, but we cannot (in sqlite) if our primary key
@@ -234,6 +235,7 @@ class AnalyticsDB(object):
 		self.session.add( user )
 		try:
 			self.session.flush()
+			logger.info( 'Created user (user_id=%s) (user_ds_id=%s)', user.user_id, uid )
 		except IntegrityError:
 			# TODO if we have a race condition, we'll need to fetch the current user entry.
 			logger.debug( 'User (%s) (db_id=%s) already exists on attempted insert', uid, user.user_id )

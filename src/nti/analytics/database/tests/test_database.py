@@ -7,7 +7,6 @@ __docformat__ = "restructuredtext en"
 # disable: accessing protected members, too many methods
 # pylint: disable=W0212,R0904
 
-import os
 import unittest
 
 from datetime import datetime
@@ -27,7 +26,6 @@ from hamcrest import contains
 from hamcrest import contains_inanyorder
 from hamcrest import has_items
 
-from sqlalchemy.orm.exc import FlushError
 from sqlalchemy.exc import IntegrityError
 
 from . import MockParent
@@ -70,7 +68,6 @@ from ..metadata import SelfAssessmentsTaken
 
 from ..database import AnalyticsDB
 
-from nti.analytics.database import database
 from nti.dataserver.users import User
 from nti.dataserver.users import FriendsList
 
