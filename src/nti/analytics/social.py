@@ -148,6 +148,7 @@ def _friendslist_modified(obj, event):
 def _friendslist_deleted(obj, event):
 	if 		not nti_interfaces.IDynamicSharingTargetFriendsList.providedBy( obj ) \
 		and not _is_contacts_friends_list( obj ):
+		# FIXME simplify this
 		id_lookup = IDLookup()
 		id = id_lookup.get_id_for_object( obj )
 		timestamp = datetime.utcnow()

@@ -33,8 +33,7 @@ from six import integer_types
 
 DEFAULT_INTID = 101
 
-""" Override this for testing purposes. """
-class TestIDLookup(object):
+class TestIDLookup(common.IDLookup):
 
 	def __init__(self):
 		self.default_intid = DEFAULT_INTID
@@ -51,6 +50,7 @@ class TestIDLookup(object):
 			self.default_intid += 1
 		return result
 
+""" Override id lookup for testing purposes. """
 common.IDLookup = TestIDLookup
 
 class SharedConfiguringTestLayer(ZopeComponentLayer,
@@ -99,11 +99,11 @@ class NTIAnalyticsApplicationTestLayer(ApplicationTestLayer):
 
 class MockParent(object):
 
-	def __init__(self, parent, intid=None, containerId=None, children=list(), vals=None ):
+	def __init__(self, parent, intid=None, containerId=None, children=None, vals=None ):
 		self.__parent__ = parent
 		self.intid = intid
 		self.containerId = containerId
-		self.children = children
+		self.children = children if children else list()
 		self.vals = vals
 
 	def values(self):

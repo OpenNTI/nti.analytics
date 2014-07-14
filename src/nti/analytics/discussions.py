@@ -149,7 +149,6 @@ def _forum_removed( forum, event ):
 component.moduleProvides(analytic_interfaces.IObjectProcessor)
 
 def init( obj ):
-	# TODO Note comments may end up here...
 	result = True
 	if frm_interfaces.IForum.providedBy(obj):
 		process_event( _add_forum, obj )

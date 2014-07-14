@@ -188,6 +188,8 @@ class NoteMixin(ResourceMixin):
 class NotesCreated(Base,ResourceMixin,DeletedMixin):
 	__tablename__ = 'NotesCreated'
 	note_id = Column('note_id', Integer, nullable=False, index=True, primary_key=True )
+	# Parent-id should be other notes; top-level notes will have null parent_ids
+	parent_id = Column('parent_id', Integer, nullable=True)
 	sharing = Column('sharing', Enum( 'PUBLIC', 'COURSE', 'OTHER', 'UNKNOWN' ), nullable=False )
 
 class NotesViewed(Base,NoteMixin):
@@ -224,7 +226,7 @@ class CommentsMixin(BaseTableMixin,DeletedMixin):
 	def comment_id(cls):
 		return Column('comment_id', Integer, nullable=False, primary_key=True)
 
-	# parent_id should point to a parent comment, top-level comments will have null parent_ids
+	# parent_id should point to a parent comment; top-level comments will have null parent_ids
 	@declared_attr
 	def parent_id(cls):
 		return Column('parent_id', Integer)
@@ -234,9 +236,6 @@ class ForumCommentsCreated(Base,CommentsMixin,DiscussionMixin):
 
 class BlogCommentsCreated(Base,CommentsMixin,ThoughtMixin):
 	__tablename__ = 'BlogCommentsCreated'
-
-class NoteCommentsCreated(Base,CommentsMixin,NoteMixin):
-	__tablename__ = 'NoteCommentsCreated'
 
 
 class CourseCatalogViews(Base,BaseViewMixin,CourseMixin,TimeLengthMixin):
