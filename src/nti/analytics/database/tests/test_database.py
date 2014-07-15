@@ -860,7 +860,7 @@ class TestForumComments(AnalyticsTestBase):
 		comment_id = DEFAULT_INTID
 		# 2nd id lookup
 		post_id = DEFAULT_INTID + 1
-		my_comment = MockComment( CommentPost(), intid=comment_id )
+		my_comment = MockComment( CommentPost(), inReplyTo=post_id, intid=comment_id )
 
 		self.db.create_forum_comment( 	test_user_ds_id,
 										test_session_id, self.course_name,
@@ -1004,7 +1004,7 @@ class TestBlogComments(AnalyticsTestBase):
 
 		# Comment parent
 		comment_id = DEFAULT_INTID
-		my_comment = MockComment( CommentPost() )
+		my_comment = MockComment( CommentPost(), inReplyTo=CommentPost() )
 
 		self.db.create_blog_comment( test_user_ds_id, test_session_id, self.blog_id, my_comment )
 

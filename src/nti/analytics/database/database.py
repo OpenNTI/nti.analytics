@@ -508,7 +508,7 @@ class AnalyticsDB(object):
 
 		pid = None
 		parent_note = getattr( note, 'inReplyTo', None )
-		if INote.providedBy( parent_note ):
+		if parent_note is not None:
 			pid = self.idlookup.get_id_for_note( parent_note )
 
 		new_object = NotesCreated( 	user_id=uid,
@@ -654,8 +654,9 @@ class AnalyticsDB(object):
 		pid = None
 		timestamp = get_created_timestamp( comment )
 
-		if ICommentPost.providedBy( comment.__parent__ ):
-			pid = self.idlookup.get_id_for_comment( comment.__parent__ )
+		parent_comment = getattr( comment, 'inReplyTo', None )
+		if parent_comment is not None:
+			pid = self.idlookup.get_id_for_comment( parent_comment )
 
 		new_object = ForumCommentsCreated( 	user_id=uid,
 											session_id=sid,
@@ -683,9 +684,9 @@ class AnalyticsDB(object):
 		pid = None
 
 		timestamp = get_created_timestamp( comment )
-
-		if ICommentPost.providedBy( comment.__parent__ ):
-			pid = self.idlookup.get_id_for_comment( comment.__parent__ )
+		parent_comment = getattr( comment, 'inReplyTo', None )
+		if parent_comment is not None:
+			pid = self.idlookup.get_id_for_comment( parent_comment )
 
 		new_object = BlogCommentsCreated( 	user_id=uid,
 											session_id=sid,
