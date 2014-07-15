@@ -827,6 +827,9 @@ class AnalyticsDB(object):
 					# Serialize our response
 					# TODO Hmm, we could pickle dump whatever object we have.
 					# Maybe just adapting to str is sufficient.
+					# FIXME Can we get back to maps from that?
+					# import ast;literal_eval
+					# -> safe, only literals. How about other types?
 					response = str( part )
 					parts = AssignmentDetails( 	user_id=uid,
 												session_id=sid,

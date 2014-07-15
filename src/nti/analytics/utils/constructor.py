@@ -18,6 +18,11 @@ from nti.async.utils.processor import Processor
 from nti.analytics import QUEUE_NAME
 from nti.analytics import interfaces as analytic_interfaces
 
+
+# Example command lines
+# Migration: bin/nti_analytics_constructor -v --no_sleep --site platform.ou.edu
+# Runtime: bin/nti_analytics_constructor -v --site platform.ou.edu
+
 class Constructor(Processor):
 
 	def set_log_formatter(self, args):
@@ -27,10 +32,6 @@ class Constructor(Processor):
 				module.logger.setLevel(logging.DEBUG)
 
 	def process_args(self, args):
-		# FIXME We would like to specify the 'sleep' arg we pass to
-		# nti.async.Processor.  The sub 'sleep' arg passed to
-		# IDSTransactionRunner is only used before retrying a job
-		# that errs out.
 		setattr(args, 'library', True)  # load library
 		setattr(args, 'name', QUEUE_NAME)  # set queue name
 		super(Constructor, self).process_args(args)
