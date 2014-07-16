@@ -195,8 +195,8 @@ class IDLookup(object):
 			result = getattr( resource, 'ntiid', None )
 		return result
 
-	def get_id_for_thought(self, thought):
-		return self.get_id_for_object( thought )
+	def get_id_for_blog(self, blog):
+		return self.get_id_for_object( blog )
 
 	def get_id_for_chat(self, chat):
 		return self.get_id_for_object( chat )

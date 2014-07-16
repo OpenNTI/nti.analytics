@@ -47,8 +47,8 @@ from .metadata import FriendsListsMemberAdded
 from .metadata import FriendsListsMemberRemoved
 from .metadata import ContactsAdded
 from .metadata import ContactsRemoved
-from .metadata import ThoughtsCreated
-from .metadata import ThoughtsViewed
+from .metadata import BlogsCreated
+from .metadata import BlogsViewed
 from .metadata import CourseResourceViews
 from .metadata import VideoEvents
 from .metadata import NotesCreated
@@ -417,35 +417,43 @@ class AnalyticsDB(object):
 		return ( members_to_add, members_to_remove )
 
 	def _delete_contact_added( self, user_id, target_id ):
-		contact = self.session.query(ContactsAdded).filter( ContactsAdded.user_id==user_id,
-															ContactsAdded.target_id==target_id ).first()
+		contact = self.session.query(ContactsAdded).filter(
+											ContactsAdded.user_id == user_id,
+											ContactsAdded.target_id == target_id ).first()
 		self.session.delete( contact )
 
 	def create_blog( self, user, nti_session, blog_entry ):
 		user = self._get_or_create_user( user )
 		uid = user.user_id
 		sid = self.idlookup.get_id_for_session( nti_session )
-		tid = self.idlookup.get_id_for_thought( blog_entry )
+		blog_id = self.idlookup.get_id_for_blog( blog_entry )
 
 		timestamp = get_created_timestamp( blog_entry )
 
-		new_object = ThoughtsCreated( 	user_id=uid,
-										session_id=sid,
-										timestamp=timestamp,
-										thought_id=tid )
+		new_object = BlogsCreated( 	user_id=uid,
+									session_id=sid,
+									timestamp=timestamp,
+									blog_id=blog_id )
 		self.session.add( new_object )
+
+	def delete_blog( self, timestamp, blog_id ):
+		# TODO We're not deleting chlidren blog objects (comments) here.  Should we?
+		blog = self.session.query(BlogsCreated).filter(
+										BlogsCreated.blog_id == blog_id ).one()
+		blog.deleted = timestamp
+		self.session.flush()
 
 	def create_blog_view(self, user, nti_session, timestamp, blog_entry):
 		user = self._get_or_create_user( user )
 		uid = user.user_id
 		sid = self.idlookup.get_id_for_session( nti_session )
-		tid = self.idlookup.get_id_for_thought( blog_entry )
+		blog_id = self.idlookup.get_id_for_blog( blog_entry )
 		timestamp = timestamp_type( timestamp )
 
-		new_object = ThoughtsViewed( 	user_id=uid,
-										session_id=sid,
-										timestamp=timestamp,
-										thought_id=tid )
+		new_object = BlogsViewed( 	user_id=uid,
+									session_id=sid,
+									timestamp=timestamp,
+									blog_id=blog_id )
 		self.session.add( new_object )
 
 
@@ -679,7 +687,7 @@ class AnalyticsDB(object):
 		user = self._get_or_create_user( user )
 		uid = user.user_id
 		sid = self.idlookup.get_id_for_session( nti_session )
-		bid = self.idlookup.get_id_for_thought( blog )
+		bid = self.idlookup.get_id_for_blog( blog )
 		cid = self.idlookup.get_id_for_comment( comment )
 		pid = None
 
@@ -691,7 +699,7 @@ class AnalyticsDB(object):
 		new_object = BlogCommentsCreated( 	user_id=uid,
 											session_id=sid,
 											timestamp=timestamp,
-											thought_id=bid,
+											blog_id=bid,
 											parent_id=pid,
 											comment_id=cid )
 		self.session.add( new_object )

@@ -43,8 +43,8 @@ from ..metadata import FriendsListsMemberAdded
 from ..metadata import FriendsListsMemberRemoved
 from ..metadata import ContactsAdded
 from ..metadata import ContactsRemoved
-from ..metadata import ThoughtsCreated
-from ..metadata import ThoughtsViewed
+from ..metadata import BlogsCreated
+from ..metadata import BlogsViewed
 from ..metadata import CourseResourceViews
 from ..metadata import VideoEvents
 from ..metadata import NotesCreated
@@ -456,34 +456,40 @@ class TestSocial(AnalyticsTestBase):
 		assert_that( db_contacts, has_length( 0 ) )
 
 	def test_create_blog(self):
-		results = self.session.query( ThoughtsCreated ).all()
+		results = self.session.query( BlogsCreated ).all()
 		assert_that( results, has_length( 0 ) )
 
 		# Add blog
 		new_blog_id = 999
 		self.db.create_blog( test_user_ds_id, test_session_id, new_blog_id )
-		results = self.session.query( ThoughtsCreated ).all()
+		results = self.session.query( BlogsCreated ).all()
 		assert_that( results, has_length( 1 ) )
 
-		contact = self.session.query( ThoughtsCreated ).one()
-		assert_that( contact.user_id, is_( 1 ) )
-		assert_that( contact.thought_id, is_( 999 ) )
-		assert_that( contact.session_id, is_( test_session_id ) )
-		assert_that( contact.timestamp, not_none() )
+		blog = self.session.query( BlogsCreated ).one()
+		assert_that( blog.user_id, is_( 1 ) )
+		assert_that( blog.blog_id, is_( new_blog_id ) )
+		assert_that( blog.session_id, is_( test_session_id ) )
+		assert_that( blog.timestamp, not_none() )
+		assert_that( blog.deleted, none() )
+
+		# Delete
+		self.db.delete_blog( datetime.now(), new_blog_id )
+		assert_that( blog.blog_id, is_( new_blog_id ) )
+		assert_that( blog.deleted, not_none() )
 
 		# Create blog view
-		results = self.session.query( ThoughtsViewed ).all()
+		results = self.session.query( BlogsViewed ).all()
 		assert_that( results, has_length( 0 ) )
 
 		self.db.create_blog_view( test_user_ds_id, test_session_id, datetime.now(), new_blog_id )
-		results = self.session.query( ThoughtsViewed ).all()
+		results = self.session.query( BlogsViewed ).all()
 		assert_that( results, has_length( 1 ) )
 
-		contact = self.session.query( ThoughtsViewed ).one()
-		assert_that( contact.user_id, is_( 1 ) )
-		assert_that( contact.thought_id, is_( 999 ) )
-		assert_that( contact.session_id, is_( test_session_id ) )
-		assert_that( contact.timestamp, not_none() )
+		blog = self.session.query( BlogsViewed ).one()
+		assert_that( blog.user_id, is_( 1 ) )
+		assert_that( blog.blog_id, is_( 999 ) )
+		assert_that( blog.session_id, is_( test_session_id ) )
+		assert_that( blog.timestamp, not_none() )
 
 class TestCourseResources(AnalyticsTestBase):
 
@@ -984,7 +990,7 @@ class TestBlogComments(AnalyticsTestBase):
 		assert_that( results, has_length( 1 ) )
 
 		blog_comment = self.session.query( BlogCommentsCreated ).one()
-		assert_that( blog_comment.thought_id, is_( self.blog_id ) )
+		assert_that( blog_comment.blog_id, is_( self.blog_id ) )
 		assert_that( blog_comment.comment_id, is_( comment_id ) )
 		assert_that( blog_comment.session_id, is_( test_session_id ) )
 		assert_that( blog_comment.user_id, is_( 1 ) )
@@ -993,7 +999,7 @@ class TestBlogComments(AnalyticsTestBase):
 
 		self.db.delete_blog_comment( datetime.now(), comment_id )
 		blog_comment = self.session.query( BlogCommentsCreated ).one()
-		assert_that( blog_comment.thought_id, is_( self.blog_id ) )
+		assert_that( blog_comment.blog_id, is_( self.blog_id ) )
 		assert_that( blog_comment.comment_id, is_( comment_id ) )
 		assert_that( blog_comment.deleted, not_none() )
 
@@ -1012,7 +1018,7 @@ class TestBlogComments(AnalyticsTestBase):
 		assert_that( results, has_length( 1 ) )
 
 		blog_comment = self.session.query( BlogCommentsCreated ).one()
-		assert_that( blog_comment.thought_id, is_( self.blog_id ) )
+		assert_that( blog_comment.blog_id, is_( self.blog_id ) )
 		assert_that( blog_comment.comment_id, is_( comment_id ) )
 		assert_that( blog_comment.session_id, is_( test_session_id ) )
 		assert_that( blog_comment.user_id, is_( 1 ) )
@@ -1021,7 +1027,7 @@ class TestBlogComments(AnalyticsTestBase):
 
 		self.db.delete_blog_comment( datetime.now(), comment_id )
 		blog_comment = self.session.query( BlogCommentsCreated ).one()
-		assert_that( blog_comment.thought_id, is_( self.blog_id ) )
+		assert_that( blog_comment.blog_id, is_( self.blog_id ) )
 		assert_that( blog_comment.comment_id, is_( comment_id ) )
 		assert_that( blog_comment.deleted, not_none() )
 

@@ -122,25 +122,24 @@ class FriendsListsMemberAdded(Base,BaseTableMixin,FriendsListMixin,FriendMixin):
 class FriendsListsMemberRemoved(Base,BaseTableMixin,FriendsListMixin,FriendMixin):
 	__tablename__ = 'FriendsListsMemberRemoved'
 
-# Contact events should(?) only reference the user-specific friends list.
 class ContactsAdded(Base,BaseTableMixin,FriendMixin):
 	__tablename__ = 'ContactsAdded'
 
 class ContactsRemoved(Base,BaseTableMixin,FriendMixin):
 	__tablename__ = 'ContactsRemoved'
 
-class ThoughtMixin(BaseViewMixin):
+class BlogMixin(BaseViewMixin):
 
 	@declared_attr
-	def thought_id(cls):
-		return Column('thought_id', Integer, ForeignKey("ThoughtsCreated.thought_id"), nullable=False, index=True, primary_key=True )
+	def blog_id(cls):
+		return Column('blog_id', Integer, ForeignKey("BlogsCreated.blog_id"), nullable=False, index=True, primary_key=True )
 
-class ThoughtsCreated(Base,BaseTableMixin):
-	__tablename__ = 'ThoughtsCreated'
-	thought_id = Column('thought_id', Integer, nullable=False, index=True, primary_key=True )
+class BlogsCreated(Base,BaseTableMixin,DeletedMixin):
+	__tablename__ = 'BlogsCreated'
+	blog_id = Column('blog_id', Integer, nullable=False, index=True, primary_key=True )
 
-class ThoughtsViewed(Base,ThoughtMixin):
-	__tablename__ = 'ThoughtsViewed'
+class BlogsViewed(Base,BlogMixin):
+	__tablename__ = 'BlogsViewed'
 
 class CourseMixin(object):
 	course_id = Column('course_id', String(64), nullable=False, index=True, primary_key=True)
@@ -172,7 +171,7 @@ class CourseResourceViews(Base,ResourceViewMixin,TimeLengthMixin):
 # TODO: Punt, should we have separate rows for start/end?
 # TODO Define questions we want to answer before we define this table.
 # TODO We need to document what timestamp is here (start of event, end of event?)
-# TODO Rewatch events?
+# TODO Rewatch events? (kaltura player doesn't really have this right now; we could infer...)
 class VideoEvents(Base,ResourceViewMixin,TimeLengthMixin):
 	__tablename__ = 'VideoEvents'
 	video_event_type = Column('video_event_type', Enum( 'WATCH', 'SKIP' ), nullable=False )
@@ -235,7 +234,7 @@ class CommentsMixin(BaseTableMixin,DeletedMixin):
 class ForumCommentsCreated(Base,CommentsMixin,DiscussionMixin):
 	__tablename__ = 'ForumCommentsCreated'
 
-class BlogCommentsCreated(Base,CommentsMixin,ThoughtMixin):
+class BlogCommentsCreated(Base,CommentsMixin,BlogMixin):
 	__tablename__ = 'BlogCommentsCreated'
 
 

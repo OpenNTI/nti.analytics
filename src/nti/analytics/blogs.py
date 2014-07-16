@@ -57,7 +57,7 @@ def _add_personal_blog_comment(comment, event):
 @component.adapter(frm_interfaces.IPersonalBlogComment,
 				   lce_interfaces.IObjectModifiedEvent)
 def _modify_personal_blog_comment(comment, event):
-	# FIXME Could these be changes in sharing? Perhaps different by object type.
+	# TODO Could these be changes in sharing? Perhaps different by object type.
 	# IObjectSharingModifiedEvent
 	if nti_interfaces.IDeletedObjectPlaceholder.providedBy( comment ):
 		timestamp = datetime.utcnow()
@@ -83,7 +83,17 @@ def _do_blog_added( blog, event ):
 def _blog_added( blog, event ):
 	_do_blog_added( blog, event )
 
-# FIXME: We do not handle blog removed events (here nor in the db).
+def _delete_blog( db, blog_id, timestamp ):
+	db.delete_blog( timestamp, blog_id )
+	logger.debug( 'Blog deleted (blog_id=%s)', blog_id )
+
+@component.adapter(	frm_interfaces.IPersonalBlogEntry,
+					intid_interfaces.IIntIdRemovedEvent )
+def _blog_removed( blog, event ):
+	timestamp = datetime.utcnow()
+	blog_id = id_lookup.get_id_for_blog( blog )
+	process_event( _delete_blog, blog_id=blog_id, timestamp=timestamp )
+
 
 component.moduleProvides(analytic_interfaces.IObjectProcessor)
 
