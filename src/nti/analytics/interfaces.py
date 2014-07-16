@@ -11,7 +11,6 @@ from zope import interface
 from nti.schema.field import Number
 from nti.schema.field import Object
 from nti.schema.field import Bool
-from nti.schema.field import ValidText as Text
 from nti.schema.field import DecodingValidTextLine as ValidTextLine
 from nti.schema.field import IndexedIterable as TypedIterable
 
@@ -38,7 +37,7 @@ class IResourceEvent(interface.Interface):
 	course = ValidTextLine(title='Course id')
 
 	# TODO Does thiw work?
-	organization = ValidTextLine(title='Context path',
+	context_path = ValidTextLine(title='Context path',
 								description='Slash separated values describing where the event occurred.')
 
 	resource_id = ValidTextLine(title="The resource ntiid.")
@@ -51,7 +50,7 @@ class IVideoEvent(IResourceEvent):
 	Describes a video event.
 	"""
 	# TODO Should we have separate video interfaces? WATCH OR SKIP
-	event_type = ValidTextLine(title='The ')
+	event_type = ValidTextLine(title='The type of video event {WATCH, SKIP}')
 
 	video_start_time = Number(title=u"The point in the video that starts playing, in seconds.",
 							default=0)
