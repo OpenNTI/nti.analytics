@@ -530,14 +530,13 @@ class TestCourseResources(AnalyticsTestBase):
 		resource_id = 'ntiid:course_video'
 		time_length = 30
 		video_event_type = 'WATCH'
-		video_start_time = datetime.now()
-		video_delta = 30
-		video_end_time = video_start_time + timedelta( seconds=video_delta )
+		video_start_time = 30
+		video_end_time = 60
 		with_transcript = True
 		self.db.create_video_event( test_user_ds_id,
 									test_session_id, datetime.now(),
 									self.course_name, self.context_path,
-									video_delta,
+									time_length,
 									video_event_type, video_start_time,
 									video_end_time, resource_id, with_transcript )
 		results = self.session.query(VideoEvents).all()
@@ -553,7 +552,7 @@ class TestCourseResources(AnalyticsTestBase):
 		assert_that( resource_view.video_event_type, is_( video_event_type ) )
 		assert_that( resource_view.video_start_time, is_( video_start_time ) )
 		assert_that( resource_view.video_end_time, is_( video_end_time ) )
-		assert_that( resource_view.time_length, is_( video_delta ) )
+		assert_that( resource_view.time_length, is_( time_length ) )
 		assert_that( resource_view.with_transcript )
 
 	def test_note(self):

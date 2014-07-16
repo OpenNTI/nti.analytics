@@ -168,15 +168,14 @@ class CourseResourceViews(Base,ResourceViewMixin,TimeLengthMixin):
 
 # Would we query on these separate event types? Probably not.
 # If so, we may break them out into separate tables.
-# TODO: Punt, should we have separate rows for start/end?
-# TODO Define questions we want to answer before we define this table.
 # TODO We need to document what timestamp is here (start of event, end of event?)
 # TODO Rewatch events? (kaltura player doesn't really have this right now; we could infer...)
 class VideoEvents(Base,ResourceViewMixin,TimeLengthMixin):
 	__tablename__ = 'VideoEvents'
 	video_event_type = Column('video_event_type', Enum( 'WATCH', 'SKIP' ), nullable=False )
-	video_start_time = Column('video_start_time', DateTime, nullable=False )
-	video_end_time = Column('video_end_time', DateTime, nullable=False )
+	# seconds from beginning of video (time 0s)
+	video_start_time = Column('video_start_time', Integer, nullable=False )
+	video_end_time = Column('video_end_time', Integer, nullable=False )
 	with_transcript = Column('with_transcript', Boolean, nullable=False )
 
 class NoteMixin(ResourceMixin):
