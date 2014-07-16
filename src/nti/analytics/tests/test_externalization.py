@@ -12,6 +12,7 @@ from hamcrest import not_none
 from hamcrest import has_entry
 from hamcrest import assert_that
 from hamcrest import has_property
+from hamcrest import has_length
 
 import time
 from datetime import datetime
@@ -22,12 +23,15 @@ from nti.externalization.tests import assert_does_not_pickle
 
 from nti.analytics.model import ResourceEvent
 from nti.analytics.model import VideoEvent
+from nti.analytics.model import BatchResourceEvents
 
 from nti.testing.matchers import verifiably_provides
 
 from nti.analytics.tests import NTIAnalyticsTestCase
+
 from nti.analytics.interfaces import IResourceEvent
 from nti.analytics.interfaces import IVideoEvent
+from nti.analytics.interfaces import IBatchResourceEvents
 
 class TestResourceEvents(NTIAnalyticsTestCase):
 
@@ -63,8 +67,6 @@ class TestResourceEvents(NTIAnalyticsTestCase):
 		assert_that(new_io, has_property('resource_id', is_( resource_id )))
 		assert_that(new_io, has_property('time_length', is_( time_length )))
 		assert_that( new_io, is_( ResourceEvent ) )
-
-class TestVideoEvents(NTIAnalyticsTestCase):
 
 	def test_video_event(self):
 		timestamp = time.mktime( datetime.utcnow().timetuple() )
@@ -110,3 +112,50 @@ class TestVideoEvents(NTIAnalyticsTestCase):
 		assert_that(new_io, has_property('video_end_time', is_( video_end_time )))
 		assert_that(new_io, has_property('with_transcript', is_( with_transcript )))
 		assert_that( new_io, is_( VideoEvent ) )
+
+	def test_batch(self):
+		timestamp = time.mktime( datetime.utcnow().timetuple() )
+		user = 'jzuech@nextthought.com'
+		course = 'CS1300'
+		context_path = 'ntiid:lesson1'
+		resource_id = 'ntiid:lesson1_chapter1'
+		time_length = 30
+		event_type = 'WATCH'
+		video_start_time = 13
+		video_end_time = 39
+		with_transcript = True
+
+		video_event = VideoEvent(user=user,
+						timestamp=timestamp,
+						course=course,
+						context_path=context_path,
+						resource_id=resource_id,
+						time_length=time_length,
+						event_type=event_type,
+						video_start_time=video_start_time,
+						video_end_time=video_end_time,
+						with_transcript=with_transcript)
+
+		resource_event = ResourceEvent(user=user,
+							timestamp=timestamp,
+							course=course,
+							context_path=context_path,
+							resource_id=resource_id,
+							time_length=time_length)
+
+		io = BatchResourceEvents( events=[ video_event, resource_event ] )
+
+		ext_obj = toExternalObject(io)
+		assert_that(ext_obj, has_entry('Class', 'BatchResourceEvents'))
+		assert_that(ext_obj, has_entry('MimeType', 'application/vnd.nextthought.analytics.batchevents' ))
+
+		factory = internalization.find_factory_for(ext_obj)
+		assert_that(factory, is_(not_none()))
+
+		new_io = factory()
+		internalization.update_from_external_object(new_io, ext_obj)
+		assert_that( new_io.events, has_length( 2 ) )
+		assert_that( new_io, is_( BatchResourceEvents ) )
+
+		# Test iterable
+		events = [x for x in new_io.events]

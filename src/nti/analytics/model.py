@@ -38,3 +38,13 @@ class VideoEvent(SchemaConfigured):
 	__external_class_name__ = "VideoEvent"
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.videoevent'
 
+@interface.implementer(interfaces.IBatchResourceEvents)
+@WithRepr
+@NoPickle
+class BatchResourceEvents(SchemaConfigured):
+	createDirectFieldProperties(interfaces.IBatchResourceEvents)
+
+	__external_can_create__ = True
+	__external_class_name__ = "BatchResourceEvents"
+	mime_type = mimeType = 'application/vnd.nextthought.analytics.batchevents'
+

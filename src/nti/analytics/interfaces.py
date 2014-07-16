@@ -36,7 +36,7 @@ class IResourceEvent(interface.Interface):
 	# We could grab this via the resource_id
 	course = ValidTextLine(title='Course id')
 
-	# TODO Does thiw work?
+	# TODO This is really undefined...
 	context_path = ValidTextLine(title='Context path',
 								description='Slash separated values describing where the event occurred.')
 
@@ -60,13 +60,7 @@ class IVideoEvent(IResourceEvent):
 
 	with_transcript = Bool(title=u"Whether the video was viewed with a transcript or not.")
 
-
 class IBatchResourceEvents( IIterable ):
-	resource_events = TypedIterable(
-		title="The resource events in this batch",
+	events = TypedIterable(
+		title="The events in this batch",
 		value_type=Object( IResourceEvent ) )
-
-class IBatchVideoEvents( IIterable ):
-	video_events = TypedIterable(
-		title="The video events in this batch",
-		value_type=Object( IVideoEvent ) )

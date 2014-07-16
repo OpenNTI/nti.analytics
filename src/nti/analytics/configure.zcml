@@ -88,7 +88,8 @@
 	<include package="nti.externalization" />
 	<ext:registerAutoPackageIO
 		root_interfaces=".interfaces.IResourceEvent
-						 .interfaces.IVideoEvent"
+						 .interfaces.IVideoEvent
+						 .interfaces.IBatchResourceEvents"
 		modules=".model" />
 
 	<adapter factory=".internalization._ResourceEventUpdater"
