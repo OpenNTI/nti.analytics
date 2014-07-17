@@ -49,7 +49,6 @@ class IVideoEvent(IResourceEvent):
 	"""
 	Describes a video event.
 	"""
-	# TODO Should we have separate video interfaces? WATCH OR SKIP
 	event_type = ValidTextLine(title='The type of video event {WATCH, SKIP}')
 
 	video_start_time = Number(title=u"The point in the video that starts playing, in seconds.",
