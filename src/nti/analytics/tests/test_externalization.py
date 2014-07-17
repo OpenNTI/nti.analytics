@@ -22,7 +22,8 @@ from nti.externalization.externalization import toExternalObject
 from nti.externalization.tests import assert_does_not_pickle
 
 from nti.analytics.model import ResourceEvent
-from nti.analytics.model import VideoEvent
+from nti.analytics.model import WatchVideoEvent
+from nti.analytics.model import SkipVideoEvent
 from nti.analytics.model import BatchResourceEvents
 
 from nti.testing.matchers import verifiably_provides
@@ -49,7 +50,6 @@ class TestResourceEvents(NTIAnalyticsTestCase):
 							resource_id=resource_id,
 							time_length=time_length)
 		assert_that(io, verifiably_provides( IResourceEvent ) )
-		assert_does_not_pickle(io)
 
 		ext_obj = toExternalObject(io)
 		assert_that(ext_obj, has_entry('Class', 'ResourceEvent'))
@@ -75,26 +75,23 @@ class TestResourceEvents(NTIAnalyticsTestCase):
 		context_path = 'ntiid:lesson1'
 		resource_id = 'ntiid:lesson1_chapter1'
 		time_length = 30
-		event_type = 'WATCH'
 		video_start_time = 13
 		video_end_time = 39
 		with_transcript = True
-		io = VideoEvent(user=user,
+		io = SkipVideoEvent(user=user,
 						timestamp=timestamp,
 						course=course,
 						context_path=context_path,
 						resource_id=resource_id,
 						time_length=time_length,
-						event_type=event_type,
 						video_start_time=video_start_time,
 						video_end_time=video_end_time,
 						with_transcript=with_transcript)
 		assert_that(io, verifiably_provides( IVideoEvent ) )
-		assert_does_not_pickle(io)
 
 		ext_obj = toExternalObject(io)
-		assert_that(ext_obj, has_entry('Class', 'VideoEvent'))
-		assert_that(ext_obj, has_entry('MimeType', 'application/vnd.nextthought.analytics.videoevent' ))
+		assert_that(ext_obj, has_entry('Class', 'SkipVideoEvent'))
+		assert_that(ext_obj, has_entry('MimeType', 'application/vnd.nextthought.analytics.skipvideoevent' ))
 
 		factory = internalization.find_factory_for(ext_obj)
 		assert_that(factory, is_(not_none()))
@@ -107,11 +104,11 @@ class TestResourceEvents(NTIAnalyticsTestCase):
 		assert_that(new_io, has_property('context_path', is_( context_path )))
 		assert_that(new_io, has_property('resource_id', is_( resource_id )))
 		assert_that(new_io, has_property('time_length', is_( time_length )))
-		assert_that(new_io, has_property('event_type', is_( event_type )))
+		assert_that(new_io, has_property('event_type', is_( SkipVideoEvent.event_type )))
 		assert_that(new_io, has_property('video_start_time', is_( video_start_time )))
 		assert_that(new_io, has_property('video_end_time', is_( video_end_time )))
 		assert_that(new_io, has_property('with_transcript', is_( with_transcript )))
-		assert_that( new_io, is_( VideoEvent ) )
+		assert_that( new_io, is_( SkipVideoEvent ) )
 
 	def test_batch(self):
 		timestamp = time.mktime( datetime.utcnow().timetuple() )
@@ -120,18 +117,16 @@ class TestResourceEvents(NTIAnalyticsTestCase):
 		context_path = 'ntiid:lesson1'
 		resource_id = 'ntiid:lesson1_chapter1'
 		time_length = 30
-		event_type = 'WATCH'
 		video_start_time = 13
 		video_end_time = 39
 		with_transcript = True
 
-		video_event = VideoEvent(user=user,
+		video_event = WatchVideoEvent(user=user,
 						timestamp=timestamp,
 						course=course,
 						context_path=context_path,
 						resource_id=resource_id,
 						time_length=time_length,
-						event_type=event_type,
 						video_start_time=video_start_time,
 						video_end_time=video_end_time,
 						with_transcript=with_transcript)
@@ -144,6 +139,7 @@ class TestResourceEvents(NTIAnalyticsTestCase):
 							time_length=time_length)
 
 		io = BatchResourceEvents( events=[ video_event, resource_event ] )
+		assert_does_not_pickle(io)
 
 		ext_obj = toExternalObject(io)
 		assert_that(ext_obj, has_entry('Class', 'BatchResourceEvents'))

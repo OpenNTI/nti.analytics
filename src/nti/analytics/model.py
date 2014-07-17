@@ -29,12 +29,23 @@ class ResourceEvent(SchemaConfigured):
 
 @interface.implementer(interfaces.IVideoEvent)
 @WithRepr
-class VideoEvent(SchemaConfigured):
+class WatchVideoEvent(SchemaConfigured):
 	createDirectFieldProperties(interfaces.IVideoEvent)
 
 	__external_can_create__ = True
-	__external_class_name__ = "VideoEvent"
-	mime_type = mimeType = 'application/vnd.nextthought.analytics.videoevent'
+	__external_class_name__ = "WatchVideoEvent"
+	mime_type = mimeType = 'application/vnd.nextthought.analytics.watchvideoevent'
+	event_type = 'WATCH'
+
+@interface.implementer(interfaces.IVideoEvent)
+@WithRepr
+class SkipVideoEvent(SchemaConfigured):
+	createDirectFieldProperties(interfaces.IVideoEvent)
+
+	__external_can_create__ = True
+	__external_class_name__ = "SkipVideoEvent"
+	mime_type = mimeType = 'application/vnd.nextthought.analytics.skipvideoevent'
+	event_type = 'SKIP'
 
 @interface.implementer(interfaces.IBatchResourceEvents)
 @WithRepr

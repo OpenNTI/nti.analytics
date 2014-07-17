@@ -40,7 +40,7 @@ def _validate_video( event ):
 	pass
 
 def _add_resource_event( db, event, nti_session=None ):
-	user = get_entity( event )
+	user = get_entity( event.user )
 	resource_id = event.resource_id
 	course = _get_course( resource_id )
 	db.create_course_resource_view( user,
@@ -50,12 +50,12 @@ def _add_resource_event( db, event, nti_session=None ):
 								event.context_path,
 								resource_id,
 								event.time_length )
-	logger.debug( 	"Resource view event (user=%s) (course=%s) (note=%s)",
+	logger.debug( 	"Resource view event (user=%s) (course=%s) (resource=%s)",
 					user, course, resource_id )
 
 
 def _add_video_event( db, event, nti_session=None ):
-	user = get_entity( event )
+	user = get_entity( event.user )
 	resource_id = event.resource_id
 	course = _get_course( resource_id )
 	db.create_video_event( user,
@@ -65,21 +65,20 @@ def _add_video_event( db, event, nti_session=None ):
 						event.context_path,
 						resource_id,
 						event.time_length,
-						event.video_event_type,
+						event.event_type,
 						event.video_start_time,
 						event.video_end_time,
 						event.with_transcript )
 	logger.debug( 	"Video event (user=%s) (course=%s) (type=%s) (start=%s) (end=%s)",
-					user, course, event.video_event_type, event.video_start_time, event.video_end_time )
+					user, course, event.event_type, event.video_start_time, event.video_end_time )
 
 
 def handle_events( batch_events ):
-	# TODO Where do we want to validate?
 	# TODO We likely don't have valid sessions to pass along.
 	for event in batch_events.events:
 		if IVideoEvent.providedBy( event ):
 			process_event( _add_video_event, event=event )
 		elif IResourceEvent.providedBy( event ):
 			process_event( _add_resource_event, event=event )
-	# If we validate early, we could return a something meaningful.
+	# If we validate early, we could return something meaningful.
 	return len( batch_events.events )
