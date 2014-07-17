@@ -20,7 +20,6 @@ from nti.analytics import interfaces
 
 @interface.implementer(interfaces.IResourceEvent)
 @WithRepr
-@NoPickle
 class ResourceEvent(SchemaConfigured):
 	createDirectFieldProperties(interfaces.IResourceEvent)
 
@@ -30,7 +29,6 @@ class ResourceEvent(SchemaConfigured):
 
 @interface.implementer(interfaces.IVideoEvent)
 @WithRepr
-@NoPickle
 class VideoEvent(SchemaConfigured):
 	createDirectFieldProperties(interfaces.IVideoEvent)
 

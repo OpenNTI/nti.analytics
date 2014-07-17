@@ -189,6 +189,7 @@ class IDLookup(object):
 
 	def get_id_for_resource(self, resource):
 		""" Resource could be a video or content piece. """
+		# Most likely, we'll have an ntiid here, which is what we want.
 		if isinstance( resource, string_types ):
 			result = resource
 		else:
