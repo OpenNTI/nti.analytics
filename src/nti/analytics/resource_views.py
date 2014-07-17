@@ -35,6 +35,7 @@ def _get_course( event ):
 
 def _validate_resource_event( event ):
 	""" Validate our events, sanitizing as we go. """
+	# I think nti.externalization handles encoding.
 	user = get_entity( event.user )
 	if user is None:
 		raise ValueError( 'Event received with non-existent user (user=%s) (event=%s)' %
@@ -125,4 +126,7 @@ def handle_events( batch_events ):
 		elif IResourceEvent.providedBy( event ):
 			process_event( _add_resource_event, event=event )
 	# If we validated early, we could return something meaningful.
+	# But we'd have to handle all validation exceptions as to not lose the valid
+	# events. The nti.async.processor does this and at least drops the bad
+	# events in a failed queue.
 	return len( batch_events.events )
