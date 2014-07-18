@@ -30,7 +30,7 @@ id_lookup = IDLookup()
 
 def _get_course( event ):
 	# TODO We also have event.course, not sure what the app would pass us (ntiid?).
-	# Try to look up via resource ntiid
+	# Try to look up via resource ntiid (don't think this will work).
 	return get_course_by_ntiid( event.resource_id )
 
 def _validate_resource_event( event ):
@@ -41,7 +41,7 @@ def _validate_resource_event( event ):
 		raise ValueError( 'Event received with non-existent user (user=%s) (event=%s)' %
 							( event.user, event.event_type ) )
 
-	course = _get_course( event.resource_id )
+	course = _get_course( event )
 	if course is None:
 		raise ValueError( """Event received with non-existent course
 							(user=%s) (course=%s) (event=%s)""" %
@@ -100,7 +100,7 @@ def _add_video_event( db, event, nti_session=None ):
 
 	user = get_entity( event.user )
 	resource_id = event.resource_id
-	course = _get_course( resource_id )
+	course = _get_course( event )
 	db.create_video_event( user,
 						nti_session,
 						event.timestamp,

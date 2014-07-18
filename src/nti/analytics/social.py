@@ -76,27 +76,13 @@ def _add_contacts( db, oid, timestamp=None, nti_session=None ):
 	if user is not None:
 		user = get_entity( user )
 		entities_followed = getattr(user, 'entities_followed', ())
-		count = 0
-		for followed in entities_followed:
-			# Only add users (have seen Communities here)
-			if not nti_interfaces.IUser.providedBy( followed ):
-				continue
-			count += 1
-			followed = get_entity( followed )
-			db.create_contact_added( user, nti_session, timestamp, followed )
+
+		# Only add users (not Communities)
+		entities_followed = (get_entity( x )
+							for x in entities_followed
+							if nti_interfaces.IUser.providedBy( x ) )
+		count = db.update_contacts( user, nti_session, timestamp, entities_followed )
 		logger.debug( "Contacts added (user=%s) (count=%s)", user, count )
-
-def _add_contact( db, source, target, timestamp=None, nti_session=None ):
-	source = get_entity( source )
-	target = get_entity( target )
-	db.create_contact_added( source, nti_session, timestamp, target )
-	logger.debug( "Contact added (user=%s) (target=%s)", source, target )
-
-def _remove_contact( db, source, target, timestamp=None, nti_session=None ):
-	source = get_entity( source )
-	target = get_entity( target )
-	db.contact_removed( source, nti_session, timestamp, target )
-	logger.debug( "Contact removed (user=%s) (target=%s)", source, target )
 
 # Friends List
 def _add_friends_list( db, oid, nti_session=None ):
@@ -105,9 +91,7 @@ def _add_friends_list( db, oid, nti_session=None ):
 		user = get_creator( friends_list )
 		timestamp = get_created_timestamp( friends_list )
 		db.create_friends_list( user, nti_session, timestamp, friends_list )
-		for member in friends_list:
-			member = get_entity( member )
-			db.create_friends_list_member( user, nti_session, None, friends_list, member )
+		db.update_friends_list( user, nti_session, timestamp, friends_list )
 		logger.debug( 	"FriendsList created (user=%s) (friends_list=%s) (count=%s)",
 						user,
 						friends_list,
