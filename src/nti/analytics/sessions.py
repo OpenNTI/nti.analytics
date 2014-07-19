@@ -11,6 +11,8 @@ logger = __import__('logging').getLogger(__name__)
 from zope import component
 from zope.intid import interfaces as intid_interfaces
 
+from pyramid.threadlocal import get_current_request
+
 from nti.socketio import interfaces as sio_interfaces
 
 from nti.ntiids import ntiids
@@ -44,9 +46,11 @@ def _process_session_created( nti_session ):
 	user = getattr( nti_session, 'owner', None )
 	user = get_entity( user )
 	timestamp = getattr( nti_session, 'creation_time', datetime.utcnow() )
-	# FIXME we don't have some of these attributes available to us.
-	#ip_addr = platform = version = None
-	process_event( _add_session, nti_session=session_id, user=user, timestamp=timestamp )
+
+	request = get_current_request()
+	ip_addr = getattr( request, 'remote_addr', None )
+	# TODO we don't have some of these attributes available to us (platform, version).
+	process_event( _add_session, nti_session=session_id, user=user, timestamp=timestamp, ip_addr=ip_addr )
 
 @component.adapter( sio_interfaces.ISocketSession, sio_interfaces.ISocketSessionConnectedEvent )
 def _session_created( nti_session, event ):

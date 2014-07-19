@@ -165,7 +165,7 @@ class AnalyticsDB(object):
 		return IDLookup()
 
 	def create_user(self, user):
-		# TODO Should we validate we have IUsers here, do we want to exclude entities?
+		# TODO Should we validate we have IUsers here, do we want to exclude other entities?
 		uid = self.idlookup.get_id_for_user( user )
 		if not uid:
 			# FIXME Nothing we can do, not sure how we got here
@@ -184,10 +184,7 @@ class AnalyticsDB(object):
 		return user
 
 	def _get_or_create_user(self, user):
-		# We use this throughout in other transactions, is the negative case not indicative of
-		# data incorrectness? Should we barf? Same with enrollment_type
 		# TODO Do we have to worry about race conditions?
-		# TODO Some of these objects will not have creators/users during migration.
 		uid = self.idlookup.get_id_for_user( user )
 		found_user = self.session.query(Users).filter( Users.user_ds_id == uid ).first()
 		return found_user or self.create_user( uid )
@@ -214,7 +211,6 @@ class AnalyticsDB(object):
 			# This could happen during the initial startup phase, be forgiving.
 			logger.debug( 'Session ending but no record found in Sessions table (sid=%s)', session_id )
 
-	#nti.chatserver.meeting._Meeting
 	def create_chat_initiated(self, user, nti_session, chat):
 		user = self._get_or_create_user( user )
 		uid = user.user_id
