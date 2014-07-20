@@ -57,3 +57,9 @@ class BatchResourceEvents(SchemaConfigured):
 	__external_class_name__ = "BatchResourceEvents"
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.batchevents'
 
+	def __iter__(self):
+		return iter( self.events )
+
+	def __len__(self):
+		return len( self.events )
+

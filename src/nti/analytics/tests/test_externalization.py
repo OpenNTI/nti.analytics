@@ -140,6 +140,7 @@ class TestResourceEvents(NTIAnalyticsTestCase):
 
 		io = BatchResourceEvents( events=[ video_event, resource_event ] )
 		assert_does_not_pickle(io)
+		assert_that(io, verifiably_provides( IBatchResourceEvents ) )
 
 		ext_obj = toExternalObject(io)
 		assert_that(ext_obj, has_entry('Class', 'BatchResourceEvents'))
@@ -154,6 +155,7 @@ class TestResourceEvents(NTIAnalyticsTestCase):
 		assert_that( new_io, is_( BatchResourceEvents ) )
 
 		# Test iterable
-		events = [x for x in new_io.events]
+		assert_that( new_io, has_length( 2 ) )
+		events = [x for x in new_io]
 		assert_that( events, not_none() )
 		assert_that( events, has_length( 2 ))

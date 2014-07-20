@@ -22,10 +22,6 @@ from zope.sqlalchemy import ZopeTransactionExtension
 
 from nti.dataserver.users.entity import Entity
 
-from nti.dataserver.interfaces import INote
-
-from nti.dataserver.contenttypes.forums.interfaces import ICommentPost
-
 from nti.app.products.gradebook.interfaces import IGrade
 
 from nti.assessment.interfaces import IQAssessedQuestionSet
@@ -73,7 +69,6 @@ from .metadata import SelfAssessmentsTaken
 from nti.analytics.common import get_created_timestamp
 from nti.analytics.common import timestamp_type
 from nti.analytics.common import IDLookup
-from nti.analytics.common import get_id_for_session
 from nti.analytics.common import get_creator
 
 def _get_sharing_enum( note, course ):

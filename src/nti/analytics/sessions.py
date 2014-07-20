@@ -9,26 +9,17 @@ __docformat__ = "restructuredtext en"
 logger = __import__('logging').getLogger(__name__)
 
 from zope import component
-from zope.intid import interfaces as intid_interfaces
-
 from pyramid.threadlocal import get_current_request
 
 from nti.socketio import interfaces as sio_interfaces
 
-from nti.ntiids import ntiids
-
 from datetime import datetime
 
 from .common import get_id_for_session
-from .common import to_external_ntiid_oid
-from .common import get_deleted_time
 from .common import get_entity
 from .common import process_event
 
-from . import utils
-from . import create_job
-from . import get_job_queue
-from . import interfaces as analytic_interfaces
+from nti.analytics import interfaces as analytic_interfaces
 
 # Note: these are socket sessions, and may not be the best thing to store/listen-fo.
 # 1. Not sure of the session lifecycle (new sessions clean out the old sessions)

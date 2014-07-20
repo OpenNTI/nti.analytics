@@ -12,8 +12,6 @@ from zope import component
 
 from pyramid import events as pyramid_events
 
-from nti.dataserver import interfaces as nti_interfaces
-
 def onChange(datasvr, msg, target=None, broadcast=None, **kwargs):
 	pass
 

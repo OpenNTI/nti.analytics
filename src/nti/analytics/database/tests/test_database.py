@@ -10,19 +10,12 @@ __docformat__ = "restructuredtext en"
 import unittest
 
 from datetime import datetime
-from datetime import timedelta
-
-from collections import namedtuple
 
 from hamcrest import is_
 from hamcrest import none
 from hamcrest import not_none
-from hamcrest import is_not
-from hamcrest import has_entry
 from hamcrest import has_length
 from hamcrest import assert_that
-from hamcrest import has_property
-from hamcrest import contains
 from hamcrest import contains_inanyorder
 from hamcrest import has_items
 
@@ -67,13 +60,7 @@ from ..metadata import SelfAssessmentsTaken
 
 from ..database import AnalyticsDB
 
-from nti.dataserver.users import User
-from nti.dataserver.users import FriendsList
-
-from nti.dataserver.contenttypes.forums.interfaces import ICommentPost
 from nti.dataserver.contenttypes.forums.post import CommentPost
-
-from nti.contenttypes.courses import courses
 
 test_user_id = 	1234
 test_user_ds_id = 78

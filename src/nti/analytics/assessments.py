@@ -53,7 +53,7 @@ def _process_question_set( question_set, nti_session=None ):
   		# Ok, we should be a self-assessment.
 	  	process_event( _self_assessment_taken, question_set, nti_session=nti_session )
 	else:
-		# TODO Like individually assessed questions, there are not current cases
+		# Like individually assessed questions, there are not current cases
 		# in the wild where QuestionSets are assessed for an assignment.  Once
 		# there are, we should handle those cases here.
 		pass

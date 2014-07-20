@@ -8,23 +8,12 @@ __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
-from zope import component
-
-from datetime import datetime
-
-from nti.contentlibrary.interfaces import IContentPackageLibrary
-
-from nti.dataserver import interfaces as nti_interfaces
-
 from nti.ntiids import ntiids
-
-from nti.intid import interfaces as intid_interfaces
 
 from nti.analytics.interfaces import IVideoEvent
 from nti.analytics.interfaces import IResourceEvent
 
 from .common import get_entity
-from .common import get_nti_session_id
 from .common import process_event
 from .common import get_course_by_ntiid
 from .common import IDLookup
@@ -122,7 +111,7 @@ def _add_video_event( db, event, nti_session=None ):
 
 def handle_events( batch_events ):
 	# TODO We likely don't have valid sessions to pass along.
-	for event in batch_events.events:
+	for event in batch_events:
 		if IVideoEvent.providedBy( event ):
 			process_event( _add_video_event, event=event )
 		elif IResourceEvent.providedBy( event ):
@@ -131,4 +120,4 @@ def handle_events( batch_events ):
 	# But we'd have to handle all validation exceptions as to not lose the valid
 	# events. The nti.async.processor does this and at least drops the bad
 	# events in a failed queue.
-	return len( batch_events.events )
+	return len( batch_events )

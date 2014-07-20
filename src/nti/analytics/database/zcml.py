@@ -16,7 +16,6 @@ from zope import schema
 from zope import interface
 from zope.configuration import fields
 from zope.component.zcml import utility
-from zope import component
 
 from . import interfaces as analytics_interfaces
 from .database import AnalyticsDB
@@ -31,16 +30,16 @@ class IRegisterAnalyticsDB(interface.Interface):
 	twophase = schema.Bool(title="twophase commit", required=False)
 	autocommit = fields.Bool(title="autocommit", required=False)
 	defaultSQLite = schema.Bool(title="default to SQLite", required=False)
-	
+
 def registerAnalyticsDB(_context, dburi=None, twophase=False, autocommit=False, defaultSQLite=False, name=u""):
 	"""
 	Register the db
 	"""
 	logger.info( "Registering analyticsDB for '%s'" % name )
-	factory = functools.partial(	AnalyticsDB, 
-									dburi=dburi, 
-									twophase=twophase, 
-									autocommit=autocommit, 
+	factory = functools.partial(	AnalyticsDB,
+									dburi=dburi,
+									twophase=twophase,
+									autocommit=autocommit,
 									defaultSQLite=defaultSQLite )
 	utility(_context, provides=analytics_interfaces.IAnalyticsDB, factory=factory, name=name)
 

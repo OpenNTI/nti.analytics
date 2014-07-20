@@ -7,9 +7,6 @@ __docformat__ = "restructuredtext en"
 # disable: accessing protected members, too many methods
 # pylint: disable=W0212,R0904
 
-from hamcrest import is_
-from hamcrest import none
-from hamcrest import is_not
 from hamcrest import not_none
 from hamcrest import assert_that
 from hamcrest import has_property
@@ -32,7 +29,7 @@ ZCML_STRING = """
 	<include package="zope.security" file="meta.zcml" />
 	<include package="zope.component" />
 	<include package="." file="meta.zcml" />
-			 		 
+
 	<configure>
 		<adb:registerAnalyticsDB 	defaultSQLite="True"
 									twophase="True"
@@ -49,7 +46,7 @@ class TestZcml(nti.testing.base.ConfiguringTestBase):
 
 		db = component.queryUtility( IAnalyticsDB )
 		assert_that( db, not_none() )
-		
+
 		db = get_analytics_db()
 		assert_that( db, not_none() )
 		assert_that( db, has_property('twophase', True ) )

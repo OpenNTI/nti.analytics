@@ -7,19 +7,13 @@ __docformat__ = "restructuredtext en"
 # disable: accessing protected members, too many methods
 # pylint: disable=W0212,R0904
 
-import unittest
-
 from hamcrest import is_
 from hamcrest import has_length
 from hamcrest import assert_that
 
-from sqlalchemy.exc import IntegrityError
-
 from nti.analytics import _execute_job
 from nti.analytics import get_analytics_db
 from nti.analytics.database.metadata import Users
-from nti.analytics.database.database import AnalyticsDB
-from nti.dataserver.users import User
 
 # For new objects, this is the default intid stored in the database.
 # For subsequent objects, this will increase by one.
@@ -37,7 +31,7 @@ ZCML_STRING = """
 	<include package="zope.security" file="meta.zcml" />
 	<include package="zope.component" />
 	<include package="nti.analytics.database" file="meta.zcml" />
-			 		 
+
 	<configure>
 		<adb:registerAnalyticsDB 	defaultSQLite="True"
 									dburi="sqlite://"
@@ -52,33 +46,33 @@ class TestJob(nti.testing.base.ConfiguringTestBase):
 
 	def setUp(self):
 		self.configure_string(ZCML_STRING)
-		
-	def _read_call( self, db ):	
+
+	def _read_call( self, db ):
 		# Database arg passed in
 		session = db.session()
-		return session.query(Users).all()		
-		
+		return session.query(Users).all()
+
 	def _good_call(self, db, valid_new_user ):
 		# New valid user
 		db.create_user( valid_new_user )
-	
+
 	def test_job(self):
 		db = get_analytics_db()
 		session = db.session()
 		results = session.query(Users).all()
 		assert_that( results, has_length( 0 ) )
-		
+
 		# Multiple calls
 		_execute_job( self._read_call )
 		_execute_job( self._read_call )
 		_execute_job( self._read_call )
-		
+
 		# Successful insert
 		valid_new_user = 9999
 		_execute_job( self._good_call, valid_new_user=valid_new_user )
 		results = session.query(Users).all()
 		assert_that( results, has_length( 1 ) )
-		
+
 		result = session.query(Users).one()
 		assert_that( result.user_id, is_( 1 ) )
 		assert_that( result.user_ds_id, is_( valid_new_user ) )
