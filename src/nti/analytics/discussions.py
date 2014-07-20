@@ -49,19 +49,16 @@ def _add_comment( db, oid, nti_session=None ):
 	if comment is not None:
 		user = get_creator( comment )
 		nti_session = get_nti_session_id( user )
-		discussion = get_object_root( comment, frm_interfaces.ITopic )
-		course = get_course( discussion )
-		if discussion:
-			db.create_forum_comment( user, nti_session, course, discussion, comment )
-			logger.debug( 	"Forum comment created (user=%s) (discussion=%s) (course=%s)",
-							user, discussion, course )
+		topic = get_object_root( comment, frm_interfaces.ITopic )
+		course = get_course( topic )
+		if topic:
+			db.create_forum_comment( user, nti_session, course, topic, comment )
+			logger.debug( 	"Forum comment created (user=%s) (topic=%s) (course=%s)",
+							user, topic, course )
 
-def _remove_comment( db, oid, timestamp ):
-	comment = ntiids.find_object_with_ntiid( oid )
-	if comment is not None:
-		db.delete_forum_comment( timestamp, comment )
-		logger.debug( 	"Forum comment deleted (comment=%s)",
-						comment )
+def _remove_comment( db, comment_id, timestamp ):
+	db.delete_forum_comment( timestamp, comment_id )
+	logger.debug( "Forum comment deleted (comment_id=%s)", comment_id )
 
 @component.adapter( frm_interfaces.IGeneralForumComment,
 					intid_interfaces.IIntIdAddedEvent )
@@ -77,7 +74,8 @@ def _modify_general_forum_comment(comment, event):
 	if		_is_forum_comment( comment ) \
 		and nti_interfaces.IDeletedObjectPlaceholder.providedBy( comment ):
 			timestamp = datetime.utcnow()
-			process_event( _remove_comment, comment, timestamp=timestamp )
+			comment_id = id_lookup.get_id_for_comment( comment )
+			process_event( _remove_comment, comment_id=comment_id, timestamp=timestamp )
 
 # Topic
 def _add_topic( db, oid, nti_session=None ):
@@ -85,17 +83,12 @@ def _add_topic( db, oid, nti_session=None ):
 	if topic is not None:
 		user = get_creator( topic )
 		course = get_course( topic )
-		db.create_discussion( user, nti_session, course, topic )
-		logger.debug( "Discussion created (user=%s) (discussion=%s)", user, topic )
+		db.create_topic( user, nti_session, course, topic )
+		logger.debug( "Topic created (user=%s) (topic=%s)", user, topic )
 
-def _remove_topic( db, oid, timestamp=None ):
-	# FIXME Hmm, we're going to delete our object. So we cannot look it up on
-	# the other side.  For topics/forums, we'll need to pull all of our children.
-	# Is there a better way to do this?
-	topic = ntiids.find_object_with_ntiid( oid )
-	if topic is not None:
-		db.delete_discussion( timestamp, topic )
-		logger.debug( "Discussion deleted (discussion=%s)", topic )
+def _remove_topic( db, topic_id, timestamp=None ):
+	db.delete_topic( timestamp, topic_id )
+	logger.debug( "Topic deleted (topic_id=%s)", topic_id )
 
 @component.adapter( frm_interfaces.ITopic, intid_interfaces.IIntIdAddedEvent )
 def _topic_added( topic, event ):
@@ -116,14 +109,13 @@ def _topic_modified( topic, event ):
 def _topic_removed( topic, event ):
 	if _is_topic( topic ):
 		timestamp = datetime.utcnow()
-		process_event( _remove_topic, topic, timestamp=timestamp )
+		topic_id = id_lookup.get_id_for_topic( topic )
+		process_event( _remove_topic, topic_id=topic_id, timestamp=timestamp )
 
 # Forum
-def _remove_forum( db, oid, timestamp ):
-	forum = ntiids.find_object_with_ntiid( oid )
-	if forum is not None:
-		db.delete_forum( timestamp, forum )
-		logger.debug( "Forum deleted (forum=%s)", forum )
+def _remove_forum( db, forum_id, timestamp ):
+	db.delete_forum( timestamp, forum_id )
+	logger.debug( "Forum deleted (forum_id=%s)", forum_id )
 
 def _add_forum( db, oid, nti_session=None ):
 	forum = ntiids.find_object_with_ntiid( oid )
@@ -148,7 +140,8 @@ def _forum_modified( forum, event ):
 def _forum_removed( forum, event ):
 	timestamp = datetime.utcnow()
 	timestamp = get_deleted_time( forum )
-	process_event( _remove_forum, forum, timestamp=timestamp )
+	forum_id = id_lookup.get_id_for_forum( forum )
+	process_event( _remove_forum, forum_id=forum_id, timestamp=timestamp )
 
 component.moduleProvides(analytic_interfaces.IObjectProcessor)
 

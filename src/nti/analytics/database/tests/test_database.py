@@ -29,7 +29,7 @@ from hamcrest import has_items
 from sqlalchemy.exc import IntegrityError
 
 from . import MockParent
-MockFL = MockNote = MockHighlight = MockDiscussion = MockComment = MockThought = MockForum = MockParent
+MockFL = MockNote = MockHighlight = MockTopic = MockComment = MockThought = MockForum = MockParent
 
 from ..metadata import Users
 from ..metadata import Sessions
@@ -51,8 +51,8 @@ from ..metadata import NotesCreated
 from ..metadata import NotesViewed
 from ..metadata import HighlightsCreated
 from ..metadata import ForumsCreated
-from ..metadata import DiscussionsCreated
-from ..metadata import DiscussionsViewed
+from ..metadata import TopicsCreated
+from ..metadata import TopicsViewed
 from ..metadata import ForumCommentsCreated
 from ..metadata import BlogCommentsCreated
 from ..metadata import CourseCatalogViews
@@ -678,7 +678,7 @@ class TestForums(AnalyticsTestBase):
 		assert_that( forum.deleted, none() )
 
 		# Delete forum
-		self.db.delete_forum( datetime.now(), my_forum )
+		self.db.delete_forum( datetime.now(), self.forum_id )
 
 		results = self.session.query(ForumsCreated).all()
 		assert_that( results, has_length( 1 ) )
@@ -689,34 +689,34 @@ class TestForums(AnalyticsTestBase):
 
 	def test_chain_delete(self):
 		forum = MockForum( None, intid=self.forum_id )
-		discussion = MockDiscussion( forum, intid=DEFAULT_INTID )
+		topic = MockTopic( forum, intid=DEFAULT_INTID )
 		self.db.create_forum( 	test_user_ds_id,
 								test_session_id, self.course_name, self.forum_id )
-		self.db.create_discussion( 	test_user_ds_id,
-									test_session_id, self.course_name, MockDiscussion( self.forum_id ) )
+		self.db.create_topic( 	test_user_ds_id,
+									test_session_id, self.course_name, MockTopic( self.forum_id ) )
 
-		new_comment1 = MockComment( discussion, intid=21 )
-		new_comment2 = MockComment( discussion, intid=22 )
+		new_comment1 = MockComment( topic, intid=21 )
+		new_comment2 = MockComment( topic, intid=22 )
 
 		# Create relationships
-		forum.children = [ discussion ]
-		discussion.children = [ new_comment1, new_comment2 ]
+		forum.children = [ topic ]
+		topic.children = [ new_comment1, new_comment2 ]
 
 		self.db.create_forum_comment( 	test_user_ds_id,
 										test_session_id,
 										self.course_name,
-										discussion, new_comment1 )
+										topic, new_comment1 )
 
 		self.db.create_forum_comment( 	test_user_ds_id,
 										test_session_id,
 										self.course_name,
-										discussion, new_comment2 )
+										topic, new_comment2 )
 
 		results = self.session.query( ForumsCreated ).all()
 		assert_that( results, has_length( 1 ) )
 		assert_that( results[0].deleted, none() )
 
-		results = self.session.query( DiscussionsCreated ).all()
+		results = self.session.query( TopicsCreated ).all()
 		assert_that( results, has_length( 1 ) )
 		assert_that( results[0].deleted, none() )
 
@@ -726,13 +726,13 @@ class TestForums(AnalyticsTestBase):
 		assert_that( results[1].deleted, none() )
 
 		# Delete forum and everything goes with it
-		self.db.delete_forum( datetime.now(), forum )
+		self.db.delete_forum( datetime.now(), self.forum_id )
 
 		results = self.session.query( ForumsCreated ).all()
 		assert_that( results, has_length( 1 ) )
 		assert_that( results[0].deleted, not_none() )
 
-		results = self.session.query( DiscussionsCreated ).all()
+		results = self.session.query( TopicsCreated ).all()
 		assert_that( results, has_length( 1 ) )
 		assert_that( results[0].deleted, not_none() )
 
@@ -741,10 +741,10 @@ class TestForums(AnalyticsTestBase):
 		assert_that( results[0].deleted, not_none() )
 		assert_that( results[1].deleted, not_none() )
 
-class TestDiscussions(AnalyticsTestBase):
+class TestTopics(AnalyticsTestBase):
 
 	def setUp(self):
-		super( TestDiscussions, self ).setUp()
+		super( TestTopics, self ).setUp()
 		self.course_name = 'course1'
 		self.forum_id = 999
 		self.forum = MockForum( None, intid=self.forum_id )
@@ -754,58 +754,58 @@ class TestDiscussions(AnalyticsTestBase):
 	def tearDown(self):
 		self.session.close()
 
-	def test_discussions(self):
-		results = self.session.query( DiscussionsCreated ).all()
+	def test_topics(self):
+		results = self.session.query( TopicsCreated ).all()
 		assert_that( results, has_length( 0 ) )
-		results = self.session.query( DiscussionsViewed ).all()
+		results = self.session.query( TopicsViewed ).all()
 		assert_that( results, has_length( 0 ) )
 
-		discussion_id = DEFAULT_INTID
-		my_discussion = MockDiscussion( self.forum, intid=discussion_id )
-		# Create discussion
-		self.db.create_discussion( 	test_user_ds_id,
-									test_session_id, self.course_name, my_discussion )
+		topic_id = DEFAULT_INTID
+		my_topic = MockTopic( self.forum, intid=topic_id )
+		# Create topic
+		self.db.create_topic( 	test_user_ds_id,
+									test_session_id, self.course_name, my_topic )
 
-		results = self.session.query( DiscussionsCreated ).all()
+		results = self.session.query( TopicsCreated ).all()
 		assert_that( results, has_length( 1 ) )
 
-		discussion = self.session.query( DiscussionsCreated ).one()
-		assert_that( discussion.user_id, is_( 1 ) )
-		assert_that( discussion.session_id, is_( test_session_id ) )
-		assert_that( discussion.course_id, is_( self.course_name ) )
-		assert_that( discussion.forum_id, is_( self.forum_id ) )
-		assert_that( discussion.discussion_id, is_( discussion_id ) )
-		assert_that( discussion.timestamp, not_none() )
-		assert_that( discussion.deleted, none() )
+		topic = self.session.query( TopicsCreated ).one()
+		assert_that( topic.user_id, is_( 1 ) )
+		assert_that( topic.session_id, is_( test_session_id ) )
+		assert_that( topic.course_id, is_( self.course_name ) )
+		assert_that( topic.forum_id, is_( self.forum_id ) )
+		assert_that( topic.topic_id, is_( topic_id ) )
+		assert_that( topic.timestamp, not_none() )
+		assert_that( topic.deleted, none() )
 
-		# View discussion
+		# View topic
 		time_length = 30
-		self.db.create_discussion_view( test_user_ds_id,
+		self.db.create_topic_view( test_user_ds_id,
 										test_session_id, datetime.now(),
-										self.course_name, my_discussion,
+										self.course_name, my_topic,
 										time_length )
 
-		results = self.session.query( DiscussionsViewed ).all()
+		results = self.session.query( TopicsViewed ).all()
 		assert_that( results, has_length( 1 ) )
 
-		discussion = self.session.query( DiscussionsViewed ).one()
-		assert_that( discussion.user_id, is_( 1 ) )
-		assert_that( discussion.session_id, is_( test_session_id ) )
-		assert_that( discussion.course_id, is_( self.course_name ) )
-		assert_that( discussion.forum_id, is_( self.forum_id ) )
-		assert_that( discussion.discussion_id, is_( discussion_id ) )
-		assert_that( discussion.timestamp, not_none() )
-		assert_that( discussion.time_length, is_( 30 ) )
+		topic = self.session.query( TopicsViewed ).one()
+		assert_that( topic.user_id, is_( 1 ) )
+		assert_that( topic.session_id, is_( test_session_id ) )
+		assert_that( topic.course_id, is_( self.course_name ) )
+		assert_that( topic.forum_id, is_( self.forum_id ) )
+		assert_that( topic.topic_id, is_( topic_id ) )
+		assert_that( topic.timestamp, not_none() )
+		assert_that( topic.time_length, is_( 30 ) )
 
-		# Delete discussion
-		self.db.delete_discussion( datetime.now(), my_discussion )
+		# Delete topic
+		self.db.delete_topic( datetime.now(), topic_id )
 
-		results = self.session.query(DiscussionsCreated).all()
+		results = self.session.query(TopicsCreated).all()
 		assert_that( results, has_length( 1 ) )
 
-		discussion = self.session.query(DiscussionsCreated).one()
-		assert_that( discussion.discussion_id, is_( discussion_id ) )
-		assert_that( discussion.deleted, not_none() )
+		topic = self.session.query(TopicsCreated).one()
+		assert_that( topic.topic_id, is_( topic_id ) )
+		assert_that( topic.deleted, not_none() )
 
 class TestForumComments(AnalyticsTestBase):
 
@@ -813,13 +813,13 @@ class TestForumComments(AnalyticsTestBase):
 		super( TestForumComments, self ).setUp()
 		self.course_name='course1'
 		self.forum_id = 999
-		self.discussion_id = DEFAULT_INTID
+		self.topic_id = DEFAULT_INTID
 		forum = MockForum( None, intid=self.forum_id )
-		self.discussion = MockDiscussion( forum, intid=self.discussion_id  )
+		self.topic = MockTopic( forum, intid=self.topic_id  )
 		self.db.create_forum( 	test_user_ds_id,
 								test_session_id, self.course_name, self.forum_id )
-		self.db.create_discussion( 	test_user_ds_id,
-									test_session_id, self.course_name, MockDiscussion( self.forum_id ) )
+		self.db.create_topic( 	test_user_ds_id,
+									test_session_id, self.course_name, MockTopic( self.forum_id ) )
 
 	def tearDown(self):
 		self.session.close()
@@ -828,12 +828,12 @@ class TestForumComments(AnalyticsTestBase):
 		results = self.db.get_forum_comments_for_user( test_user_ds_id, self.course_name )
 		assert_that( results, has_length( 0 ) )
 
-		# Discussion parent
+		# Topic parent
 		comment_id = DEFAULT_INTID
-		my_comment = MockComment( self.discussion, intid=comment_id )
+		my_comment = MockComment( self.topic, intid=comment_id )
 
 		self.db.create_forum_comment( 	test_user_ds_id, test_session_id, self.course_name,
-										self.discussion, my_comment )
+										self.topic, my_comment )
 
 		results = self.session.query( ForumCommentsCreated ).all()
 		assert_that( results, has_length( 1 ) )
@@ -846,7 +846,7 @@ class TestForumComments(AnalyticsTestBase):
 
 		result = results[0]
 		assert_that( result.forum_id, is_( self.forum_id ) )
-		assert_that( result.discussion_id, is_( self.discussion_id ) )
+		assert_that( result.topic_id, is_( self.topic_id ) )
 		assert_that( result.comment_id, is_( comment_id ) )
 		assert_that( result.session_id, is_( test_session_id ) )
 		assert_that( result.user_id, is_( 1 ) )
@@ -869,7 +869,7 @@ class TestForumComments(AnalyticsTestBase):
 
 		self.db.create_forum_comment( 	test_user_ds_id,
 										test_session_id, self.course_name,
-										self.discussion, my_comment )
+										self.topic, my_comment )
 
 		results = self.db.get_forum_comments_for_user( test_user_ds_id, self.course_name )
 		assert_that( results, has_length( 1 ) )
@@ -879,7 +879,7 @@ class TestForumComments(AnalyticsTestBase):
 
 		result = results[0]
 		assert_that( result.forum_id, is_( self.forum_id ) )
-		assert_that( result.discussion_id, is_( self.discussion_id ) )
+		assert_that( result.topic_id, is_( self.topic_id ) )
 		assert_that( result.comment_id, is_( comment_id ) )
 		assert_that( result.session_id, is_( test_session_id ) )
 		assert_that( result.user_id, is_( 1 ) )
@@ -891,18 +891,18 @@ class TestForumComments(AnalyticsTestBase):
 		results = self.db.get_forum_comments_for_user( test_user_ds_id, self.course_name )
 		assert_that( results, has_length( 0 ) )
 
-		new_comment1 = MockComment( self.discussion, intid=19 )
-		new_comment2 = MockComment( self.discussion, intid=20 )
+		new_comment1 = MockComment( self.topic, intid=19 )
+		new_comment2 = MockComment( self.topic, intid=20 )
 
 		self.db.create_forum_comment( 	test_user_ds_id,
 										test_session_id,
 										self.course_name,
-										self.discussion, new_comment1 )
+										self.topic, new_comment1 )
 
 		self.db.create_forum_comment( 	test_user_ds_id,
 										test_session_id,
 										self.course_name,
-										self.discussion, new_comment2 )
+										self.topic, new_comment2 )
 
 		results = self.db.get_forum_comments_for_user( test_user_ds_id, self.course_name )
 		assert_that( results, has_length( 2 ) )
@@ -911,7 +911,7 @@ class TestForumComments(AnalyticsTestBase):
 		assert_that( results, has_length( 2 ) )
 
 		#Deleted comments not returned
-		self.db.delete_forum_comment( datetime.now(), new_comment1 )
+		self.db.delete_forum_comment( datetime.now(), 20 )
 
 		results = self.db.get_forum_comments_for_user( test_user_ds_id, self.course_name )
 		assert_that( results, has_length( 1 ) )
@@ -928,32 +928,32 @@ class TestForumComments(AnalyticsTestBase):
 		test_user_ds_id2 = 9999
 		course_name2 = 'different course'
 
-		new_comment1 = MockComment( self.discussion, intid=19 )
-		new_comment2 = MockComment( self.discussion, intid=20 )
-		new_comment3 = MockComment( self.discussion, intid=21 )
-		new_comment4 = MockComment( self.discussion, intid=22 )
+		new_comment1 = MockComment( self.topic, intid=19 )
+		new_comment2 = MockComment( self.topic, intid=20 )
+		new_comment3 = MockComment( self.topic, intid=21 )
+		new_comment4 = MockComment( self.topic, intid=22 )
 
 		# Different user
 		self.db.create_forum_comment( 	test_user_ds_id2,
 										test_session_id,
 										self.course_name,
-										self.discussion, new_comment1 )
+										self.topic, new_comment1 )
 
 		self.db.create_forum_comment( 	test_user_ds_id,
 										test_session_id,
 										self.course_name,
-										self.discussion, new_comment2 )
+										self.topic, new_comment2 )
 		# Deleted
 		self.db.create_forum_comment( 	test_user_ds_id,
 										test_session_id,
 										self.course_name,
-										self.discussion, new_comment3 )
-		self.db.delete_forum_comment( datetime.now(), new_comment3 )
+										self.topic, new_comment3 )
+		self.db.delete_forum_comment( datetime.now(), 21 )
 		# Different course
 		self.db.create_forum_comment( 	test_user_ds_id,
 										test_session_id,
 										course_name2,
-										self.discussion, new_comment4 )
+										self.topic, new_comment4 )
 
 		# Only non-deleted comment for user in course
 		results = self.db.get_forum_comments_for_user( test_user_ds_id, self.course_name )
@@ -1002,6 +1002,23 @@ class TestBlogComments(AnalyticsTestBase):
 		assert_that( blog_comment.comment_id, is_( comment_id ) )
 		assert_that( blog_comment.deleted, not_none() )
 
+	def test_chain_delete(self):
+		results = self.session.query( BlogCommentsCreated ).all()
+		assert_that( results, has_length( 0 ) )
+
+		# Empty parent
+		comment_id = DEFAULT_INTID
+		my_comment = MockComment( MockThought( None ) )
+
+		self.db.create_blog_comment( test_user_ds_id, test_session_id, self.blog_id, my_comment )
+
+		self.db.delete_blog( datetime.now(), self.blog_id )
+
+		blog = self.session.query( BlogsCreated ).one()
+		assert_that( blog.deleted, not_none() )
+
+		blog_comment = self.session.query( BlogCommentsCreated ).one()
+		assert_that( blog_comment.deleted, not_none() )
 
 	def test_comment_with_parent(self):
 		results = self.session.query( BlogCommentsCreated ).all()

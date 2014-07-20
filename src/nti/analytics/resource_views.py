@@ -12,6 +12,8 @@ from zope import component
 
 from datetime import datetime
 
+from nti.contentlibrary.interfaces import IContentPackageLibrary
+
 from nti.dataserver import interfaces as nti_interfaces
 
 from nti.ntiids import ntiids

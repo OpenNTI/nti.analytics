@@ -207,17 +207,17 @@ class ForumMixin(CourseMixin):
 	def forum_id(cls):
 		return Column('forum_id', Integer, ForeignKey("ForumsCreated.forum_id"), nullable=False, primary_key=True)
 
-class DiscussionsCreated(Base,BaseTableMixin,ForumMixin,DeletedMixin):
-	__tablename__ = 'DiscussionsCreated'
-	discussion_id = Column('discussion_id', Integer, primary_key=True )
+class TopicsCreated(Base,BaseTableMixin,ForumMixin,DeletedMixin):
+	__tablename__ = 'TopicsCreated'
+	topic_id = Column('topic_id', Integer, primary_key=True )
 
-class DiscussionMixin(ForumMixin):
+class TopicMixin(ForumMixin):
 	@declared_attr
-	def discussion_id(cls):
-		return Column('discussion_id', Integer, ForeignKey("DiscussionsCreated.discussion_id"), nullable=False, primary_key=True)
+	def topic_id(cls):
+		return Column('topic_id', Integer, ForeignKey("TopicsCreated.topic_id"), nullable=False, primary_key=True)
 
-class DiscussionsViewed(Base,BaseViewMixin,DiscussionMixin,TimeLengthMixin):
-	__tablename__ = 'DiscussionsViewed'
+class TopicsViewed(Base,BaseViewMixin,TopicMixin,TimeLengthMixin):
+	__tablename__ = 'TopicsViewed'
 
 class CommentsMixin(BaseTableMixin,DeletedMixin):
 	# comment_id should be the DS intid
@@ -230,7 +230,7 @@ class CommentsMixin(BaseTableMixin,DeletedMixin):
 	def parent_id(cls):
 		return Column('parent_id', Integer)
 
-class ForumCommentsCreated(Base,CommentsMixin,DiscussionMixin):
+class ForumCommentsCreated(Base,CommentsMixin,TopicMixin):
 	__tablename__ = 'ForumCommentsCreated'
 
 class BlogCommentsCreated(Base,CommentsMixin,BlogMixin):

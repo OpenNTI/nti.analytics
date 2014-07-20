@@ -105,14 +105,13 @@ def get_course( obj ):
 	return result
 
 # Copied from nti.store.content_utils
-def _get_paths(ntiid, library=None, registry=component):
-    library = registry.queryUtility(lib_interfaces.IContentPackageLibrary) \
-              if library is None else library
+def _get_paths(ntiid):
+    library = component.queryUtility(lib_interfaces.IContentPackageLibrary)
     paths = library.pathToNTIID(ntiid) if library and ntiid else ()
     return paths or ()
 
-def _get_collection_root(ntiid, library=None, registry=component):
-    paths = _get_paths(ntiid, library, registry)
+def _get_collection_root(ntiid):
+    paths = _get_paths(ntiid)
     return paths[0] if paths else None
 
 def get_course_by_ntiid( ntiid ):
@@ -178,8 +177,8 @@ class IDLookup(object):
 	def get_id_for_forum(self, forum):
 		return self.get_id_for_object( forum )
 
-	def get_id_for_discussion(self, discussion):
-		return self.get_id_for_object( discussion )
+	def get_id_for_topic(self, topic):
+		return self.get_id_for_object( topic )
 
 	def get_id_for_note(self, note):
 		return self.get_id_for_object( note )

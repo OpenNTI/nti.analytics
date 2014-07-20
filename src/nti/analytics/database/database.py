@@ -55,8 +55,8 @@ from .metadata import NotesCreated
 from .metadata import NotesViewed
 from .metadata import HighlightsCreated
 from .metadata import ForumsCreated
-from .metadata import DiscussionsCreated
-from .metadata import DiscussionsViewed
+from .metadata import TopicsCreated
+from .metadata import TopicsViewed
 from .metadata import ForumCommentsCreated
 from .metadata import BlogCommentsCreated
 from .metadata import CourseCatalogViews
@@ -433,10 +433,13 @@ class AnalyticsDB(object):
 		self.session.add( new_object )
 
 	def delete_blog( self, timestamp, blog_id ):
-		# TODO We're not deleting chlidren blog objects (comments) here.  Should we?
 		blog = self.session.query(BlogsCreated).filter(
 										BlogsCreated.blog_id == blog_id ).one()
 		blog.deleted = timestamp
+
+		self.session.query( BlogCommentsCreated ).filter(
+							BlogCommentsCreated.blog_id == blog_id ).update(
+										{ BlogCommentsCreated.deleted : timestamp } )
 		self.session.flush()
 
 	def create_blog_view(self, user, nti_session, timestamp, blog_entry):
@@ -590,69 +593,72 @@ class AnalyticsDB(object):
 									forum_id=fid )
 		self.session.add( new_object )
 
-	def delete_forum(self, timestamp, forum):
+	def delete_forum(self, timestamp, forum_id):
 		timestamp = timestamp_type( timestamp )
-		fid = self.idlookup.get_id_for_forum(forum)
-		db_forum = self.session.query(ForumsCreated).filter( ForumsCreated.forum_id==fid ).one()
+		db_forum = self.session.query(ForumsCreated).filter( ForumsCreated.forum_id==forum_id ).one()
 		db_forum.deleted=timestamp
 
-		for topic in forum.values():
-			self.delete_discussion(timestamp, topic)
+		# Get our topics and comments
+		self.session.query( TopicsCreated ).filter(
+							TopicsCreated.forum_id == forum_id ).update( { TopicsCreated.deleted : timestamp } )
+		self.session.query( ForumCommentsCreated ).filter(
+							ForumCommentsCreated.forum_id == forum_id ).update(
+								{ ForumCommentsCreated.deleted : timestamp } )
 		self.session.flush()
 
-	def create_discussion(self, user, nti_session, course, topic):
+	def create_topic(self, user, nti_session, course, topic):
 		user = self._get_or_create_user( user )
 		uid = user.user_id
 		sid = self.idlookup.get_id_for_session( nti_session )
 		fid = self.idlookup.get_id_for_forum( topic.__parent__ )
-		did = self.idlookup.get_id_for_discussion( topic )
+		did = self.idlookup.get_id_for_topic( topic )
 		course_id = self.idlookup.get_id_for_course( course )
 
 		timestamp = get_created_timestamp( topic )
 
-		new_object = DiscussionsCreated( 	user_id=uid,
+		new_object = TopicsCreated( 	user_id=uid,
 											session_id=sid,
 											timestamp=timestamp,
 											course_id=course_id,
 											forum_id=fid,
-											discussion_id=did )
+											topic_id=did )
 		self.session.add( new_object )
 
-	def delete_discussion(self, timestamp, topic):
+	def delete_topic(self, timestamp, topic_id):
 		timestamp = timestamp_type( timestamp )
-		did = self.idlookup.get_id_for_discussion( topic )
-		db_topic = self.session.query(DiscussionsCreated).filter( DiscussionsCreated.discussion_id==did ).one()
-		db_topic.deleted=timestamp
+		db_topic = self.session.query(TopicsCreated).filter( TopicsCreated.topic_id == topic_id ).one()
+		db_topic.deleted = timestamp
 
-		for comment in topic.values():
-			self.delete_forum_comment(timestamp, comment)
+		self.session.query( ForumCommentsCreated ).filter(
+							ForumCommentsCreated.topic_id == topic_id ).update(
+												{ ForumCommentsCreated.deleted : timestamp } )
 		self.session.flush()
 
-	def create_discussion_view(self, user, nti_session, timestamp, course, topic, time_length):
+	def create_topic_view(self, user, nti_session, timestamp, course, topic, time_length):
 		user = self._get_or_create_user( user )
 		uid = user.user_id
 		sid = self.idlookup.get_id_for_session( nti_session )
 		fid = self.idlookup.get_id_for_forum( topic.__parent__ )
-		did = self.idlookup.get_id_for_discussion( topic )
+		did = self.idlookup.get_id_for_topic( topic )
 		course_id = self.idlookup.get_id_for_course( course )
 		timestamp = timestamp_type( timestamp )
 
-		new_object = DiscussionsViewed( user_id=uid,
+		new_object = TopicsViewed( user_id=uid,
 										session_id=sid,
 										timestamp=timestamp,
 										course_id=course_id,
 										forum_id=fid,
-										discussion_id=did,
+										topic_id=did,
 										time_length=time_length )
 		self.session.add( new_object )
 
-	def create_forum_comment(self, user, nti_session, course, discussion, comment):
+	def create_forum_comment(self, user, nti_session, course, topic, comment):
 		user = self._get_or_create_user( user )
 		uid = user.user_id
 		sid = self.idlookup.get_id_for_session( nti_session )
-		forum = discussion.__parent__
+		forum = topic.__parent__
 		fid = self.idlookup.get_id_for_forum(forum)
-		did = self.idlookup.get_id_for_discussion(discussion)
+		did = self.idlookup.get_id_for_topic(topic)
 		cid = self.idlookup.get_id_for_comment(comment)
 		course_id = self.idlookup.get_id_for_course( course )
 		pid = None
@@ -667,15 +673,14 @@ class AnalyticsDB(object):
 											timestamp=timestamp,
 											course_id=course_id,
 											forum_id=fid,
-											discussion_id=did,
+											topic_id=did,
 											parent_id=pid,
 											comment_id=cid )
 		self.session.add( new_object )
 
-	def delete_forum_comment(self, timestamp, comment):
+	def delete_forum_comment(self, timestamp, comment_id):
 		timestamp = timestamp_type( timestamp )
-		cid = self.idlookup.get_id_for_comment(comment)
-		comment = self.session.query(ForumCommentsCreated).filter( ForumCommentsCreated.comment_id==cid ).one()
+		comment = self.session.query(ForumCommentsCreated).filter( ForumCommentsCreated.comment_id==comment_id ).one()
 		comment.deleted=timestamp
 		self.session.flush()
 
@@ -788,9 +793,10 @@ class AnalyticsDB(object):
 		# when the event is fired, but not when pulled from our processor. Why?
 
 	def _get_grader_id( self, submission ):
-		""" Returns a grader id for the submission if one exists (otherwise None).
-			Currently, we have a one-to-one mapping between submission and grader.  That
-			would need to change for things like peer grading.
+		"""
+		Returns a grader id for the submission if one exists (otherwise None).
+		Currently, we have a one-to-one mapping between submission and grader.  That
+		would need to change for things like peer grading.
 		"""
 		grader = None
 		graded_submission = IGrade( submission, None )
@@ -960,13 +966,13 @@ class AnalyticsDB(object):
 																ForumCommentsCreated.deleted == None ).all()
 		return results
 
-	def get_discussions_created_for_user(self, user, course):
+	def get_topics_created_for_user(self, user, course):
 		user = self._get_or_create_user( user )
 		uid = user.user_id
 		course_id = self.idlookup.get_id_for_course( course )
-		results = self.session.query(DiscussionsCreated).filter( DiscussionsCreated.user_id == uid,
-															DiscussionsCreated.course_id == course_id,
-															DiscussionsCreated.deleted == None  ).all()
+		results = self.session.query(TopicsCreated).filter( TopicsCreated.user_id == uid,
+															TopicsCreated.course_id == course_id,
+															TopicsCreated.deleted == None  ).all()
 		return results
 
 	def get_self_assessments_for_user(self, user, course):
@@ -986,9 +992,9 @@ class AnalyticsDB(object):
 		return results
 
 	#TopicReport
-	def get_comments_for_discussion(self, discussion ):
-		discussion_id = self.idlookup.get_id_for_discussion( discussion )
-		results = self.session.query(ForumCommentsCreated).filter( ForumCommentsCreated.discussion_id == discussion_id ).all()
+	def get_comments_for_topic(self, topic ):
+		topic_id = self.idlookup.get_id_for_topic( topic )
+		results = self.session.query(ForumCommentsCreated).filter( ForumCommentsCreated.topic_id == topic_id ).all()
 		return results
 
 
@@ -999,10 +1005,10 @@ class AnalyticsDB(object):
 																	ForumCommentsCreated.deleted == None  ).all()
 		return results
 
-	def get_discussions_created_for_forum(self, forum):
+	def get_topics_created_for_forum(self, forum):
 		forum_id = self.idlookup.get_id_for_forum( forum )
-		results = self.session.query(DiscussionsCreated).filter( DiscussionsCreated.forum_id == forum_id,
-																DiscussionsCreated.deleted == None  ).all()
+		results = self.session.query(TopicsCreated).filter( TopicsCreated.forum_id == forum_id,
+																TopicsCreated.deleted == None  ).all()
 		return results
 
 
@@ -1013,10 +1019,10 @@ class AnalyticsDB(object):
 																	ForumCommentsCreated.deleted == None  ).all()
 		return results
 
-	def get_discussions_created_for_course(self, course):
+	def get_topics_created_for_course(self, course):
 		course_id = self.idlookup.get_id_for_course( course )
-		results = self.session.query(DiscussionsCreated).filter( 	DiscussionsCreated.course_id == course_id,
-																	DiscussionsCreated.deleted == None  ).all()
+		results = self.session.query(TopicsCreated).filter( 	TopicsCreated.course_id == course_id,
+																	TopicsCreated.deleted == None  ).all()
 		return results
 
 	def get_self_assessments_for_course(self, course):
