@@ -336,10 +336,9 @@ class SelfAssessmentsTaken(Base,AssignmentMixin):
 
 
 # SelfAssessments will not have feedback or multiple graders
-# TODO We may not have this for self-assessments
-# class SelfAssessmentDetails(Base,DetailMixin,GradeMixin):
-# 	__tablename__ = 'SelfAssessmentDetails'
-# 	submission_id = Column('submission_id', Integer, ForeignKey("SelfAssessmentsTaken.submission_id"), nullable=False, primary_key=True)
+class SelfAssessmentDetails(Base,BaseTableMixin,DetailMixin,GradeDetailMixin):
+ 	__tablename__ = 'SelfAssessmentDetails'
+ 	submission_id = Column('submission_id', Integer, ForeignKey("SelfAssessmentsTaken.submission_id"), nullable=False, primary_key=True)
 
 
 ## TODO LIST

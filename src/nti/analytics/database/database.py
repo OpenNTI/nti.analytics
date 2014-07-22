@@ -65,6 +65,7 @@ from .metadata import AssignmentGrades
 from .metadata import AssignmentDetailGrades
 from .metadata import AssignmentFeedback
 from .metadata import SelfAssessmentsTaken
+from .metadata import SelfAssessmentDetails
 
 from nti.analytics.common import get_created_timestamp
 from nti.analytics.common import timestamp_type
@@ -782,6 +783,11 @@ class AnalyticsDB(object):
 		timestamp = timestamp_type( timestamp )
 		submission_id = self.idlookup.get_id_for_submission( submission )
 		self_assessment_id = submission.questionSetId
+		# We likely will not have a grader.
+		grader = self._get_grader_id( submission )
+		# TODO As a QAssessedQuestionSet. we will not have a duration.
+		# I don't believe the submission was saved; so we cannot get it back.
+		# We'd have to transfer it during adaptation perhaps.
 		time_length = _get_duration( submission )
 
 		new_object = SelfAssessmentsTaken( 	user_id=uid,
@@ -793,9 +799,26 @@ class AnalyticsDB(object):
 											time_length=time_length )
 		self.session.add( new_object )
 
-		# We should have questions, parts, submissions, and is_correct
-		# TODO Self-Assessment details; these appear to exist in question_set.questions
-		# when the event is fired, but not when pulled from our processor. Why?
+		for assessed_question in submission.questions:
+			question_id = assessed_question.questionId
+
+			for idx, part in enumerate( assessed_question.parts ):
+				grade = part.assessedValue
+				# TODO How do we do this?
+				is_correct = grade == 1
+				response = str( part.submittedResponse )
+				grade_details = SelfAssessmentDetails( user_id=uid,
+														session_id=sid,
+														timestamp=timestamp,
+														submission_id=submission_id,
+														question_id=question_id,
+														question_part_id=idx,
+														is_correct=is_correct,
+														grade=grade,
+														grader=grader,
+														submission=response,
+														time_length=time_length )
+				self.session.add( grade_details )
 
 	def _get_grader_id( self, submission ):
 		"""
@@ -838,16 +861,18 @@ class AnalyticsDB(object):
 			for question_submission in set_submission.questions:
 				# Questions don't have ds_intids, just use ntiid.
 				question_id = question_submission.questionId
+				# We'd like this by part, but will accept by question for now.
+				time_length = _get_duration( question_submission )
 
 				for idx, part in enumerate( question_submission.parts ):
 					# Serialize our response
 					# TODO Hmm, we could pickle dump whatever object we have.
 					# Maybe just adapting to str is sufficient.
-					# FIXME Can we get back to maps from that?
+					# Can we get back to maps from that?
+					# - FIXME Yes, but we'll probably have to handle by type here.
 					# import ast;literal_eval
 					# -> safe, only literals. How about other types?
 					response = str( part )
-					time_length = _get_duration( part )
 					parts = AssignmentDetails( 	user_id=uid,
 												session_id=sid,
 												timestamp=timestamp,

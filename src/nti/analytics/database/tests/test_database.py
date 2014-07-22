@@ -75,7 +75,7 @@ class TestUsers(unittest.TestCase):
 	def setUp(self):
 		self.db = AnalyticsDB( dburi='sqlite://' )
 		self.session = self.db.session
-		assert_that( self.db.engine.table_names(), has_length( 34 ) )
+		assert_that( self.db.engine.table_names(), has_length( 35 ) )
 
 	def tearDown(self):
 		self.session.close()
