@@ -30,7 +30,6 @@ class Users(Base):
 	user_id = Column('user_id', Integer, Sequence('user_id_seq'), index=True, nullable=False, primary_key=True )
 	user_ds_id = Column('user_ds_id', Integer, nullable=False, unique=True, index=True )
 
-# TODO timezone?
 class Sessions(Base):
 	__tablename__ = 'Sessions'
 	session_id = Column('session_id', String(1048), primary_key=True)
@@ -271,7 +270,7 @@ class AssignmentSubmissionMixin(BaseTableMixin):
 		return Column('submission_id', Integer, ForeignKey("AssignmentsTaken.submission_id"), nullable=False, primary_key=True)
 
 
-class DetailMixin(object):
+class DetailMixin(TimeLengthMixin):
 	# TODO Can we rely on these parts/ids being integers?
 	@declared_attr
 	def question_id(cls):
@@ -282,7 +281,6 @@ class DetailMixin(object):
 		return Column('question_part_id', Integer, nullable=False, primary_key=True)
 
 	# TODO separate submissions by question types?
-	# Do we even want to store the content? (We do.)
 	@declared_attr
 	def submission(cls):
 		# Null if left blank

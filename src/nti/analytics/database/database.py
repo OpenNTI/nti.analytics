@@ -71,6 +71,15 @@ from nti.analytics.common import timestamp_type
 from nti.analytics.common import IDLookup
 from nti.analytics.common import get_creator
 
+def _get_duration( submission ):
+	"""
+	For a submission, retrieves how long it took to submit the object, in integer seconds.
+	'-1' is returned if unknown.
+	"""
+	time_length = getattr( submission, 'CreatorRecordedEffortDuration', -1 )
+	time_length = time_length or -1
+	return int( time_length )
+
 def _get_sharing_enum( note, course ):
 	# Logic duped in coursewarereports.views.admin_views
 	if 		not course \
@@ -765,7 +774,7 @@ class AnalyticsDB(object):
 																CourseEnrollments.course_id == course_id ).first()
 		enrollment.dropped = timestamp
 
-	def create_self_assessment_taken(self, user, nti_session, timestamp, course, time_length, submission ):
+	def create_self_assessment_taken(self, user, nti_session, timestamp, course, submission ):
 		user = self._get_or_create_user( user )
 		uid = user.user_id
 		sid = self.idlookup.get_id_for_session( nti_session )
@@ -773,6 +782,7 @@ class AnalyticsDB(object):
 		timestamp = timestamp_type( timestamp )
 		submission_id = self.idlookup.get_id_for_submission( submission )
 		self_assessment_id = submission.questionSetId
+		time_length = _get_duration( submission )
 
 		new_object = SelfAssessmentsTaken( 	user_id=uid,
 											session_id=sid,
@@ -803,7 +813,7 @@ class AnalyticsDB(object):
 				grader = grader.user_id
 		return grader
 
-	def create_assignment_taken(self, user, nti_session, timestamp, course, time_length, submission ):
+	def create_assignment_taken(self, user, nti_session, timestamp, course, submission ):
 		user = self._get_or_create_user( user )
 		uid = user.user_id
 		sid = self.idlookup.get_id_for_session( nti_session )
@@ -811,6 +821,8 @@ class AnalyticsDB(object):
 		timestamp = timestamp_type( timestamp )
 		submission_id = self.idlookup.get_id_for_submission( submission )
 		assignment_id = submission.assignmentId
+		submission_obj = submission.Submission
+		time_length = _get_duration( submission_obj )
 
 		new_object = AssignmentsTaken( 	user_id=uid,
 										session_id=sid,
@@ -822,7 +834,6 @@ class AnalyticsDB(object):
 		self.session.add( new_object )
 
 		# Submission Parts
-		submission_obj = submission.Submission
 		for set_submission in submission_obj.parts:
 			for question_submission in set_submission.questions:
 				# Questions don't have ds_intids, just use ntiid.
@@ -836,13 +847,15 @@ class AnalyticsDB(object):
 					# import ast;literal_eval
 					# -> safe, only literals. How about other types?
 					response = str( part )
+					time_length = _get_duration( part )
 					parts = AssignmentDetails( 	user_id=uid,
 												session_id=sid,
 												timestamp=timestamp,
 												submission_id=submission_id,
 												question_id=question_id,
 												question_part_id=idx,
-												submission=response )
+												submission=response,
+												time_length=time_length )
 					self.session.add( parts )
 
 		# Grade

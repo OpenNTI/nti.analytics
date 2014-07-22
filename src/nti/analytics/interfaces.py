@@ -33,7 +33,6 @@ class IResourceEvent(interface.Interface):
 
 	user = ValidTextLine(title='User who created the event')
 
-	# We could grab this via the resource_id
 	course = ValidTextLine(title='Course id')
 
 	# TODO This is really undefined...

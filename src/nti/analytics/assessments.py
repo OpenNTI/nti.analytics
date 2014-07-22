@@ -36,13 +36,13 @@ from .common import get_entity
 from .common import IDLookup
 id_lookup = IDLookup()
 
-def _self_assessment_taken( db, oid, nti_session=None, time_length=None ):
+def _self_assessment_taken( db, oid, nti_session=None ):
 	submission = ntiids.find_object_with_ntiid( oid )
 	if submission is not None:
 		user = get_creator( submission )
 		timestamp = get_created_timestamp( submission )
 		course = get_course_by_ntiid( submission.containerId )
-		db.create_self_assessment_taken( user, nti_session, timestamp, course, time_length, submission )
+		db.create_self_assessment_taken( user, nti_session, timestamp, course, submission )
 		logger.debug("Self-assessment submitted (user=%s) (assignment=%s)", user, submission.questionSetId )
 
 def _process_question_set( question_set, nti_session=None ):
@@ -81,14 +81,13 @@ def _question_grade_modified( question, event ):
 	pass
 
 # Assignments
-# TODO time-length
-def _assignment_taken( db, oid, nti_session=None, time_length=None ):
+def _assignment_taken( db, oid, nti_session=None ):
 	submission = ntiids.find_object_with_ntiid(oid)
 	if submission is not None:
 		user = get_creator( submission )
 		timestamp = get_created_timestamp( submission )
 		course = get_course( submission )
-		db.create_assignment_taken( user, nti_session, timestamp, course, time_length, submission )
+		db.create_assignment_taken( user, nti_session, timestamp, course, submission )
 		logger.debug("Assignment submitted (user=%s) (assignment=%s)", user, submission.assignmentId )
 
 		for feedback in submission.Feedback.values():
