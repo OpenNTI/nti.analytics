@@ -147,7 +147,7 @@ class IDLookup(object):
 
 	@Lazy
 	def intids(self):
-		return component.getUtility( zope.intid.IIntiIds )
+		return component.getUtility( zope.intid.IIntIds )
 
 	def get_id_for_object( self, obj ):
 		result = getattr( obj, '_ds_intid', None )

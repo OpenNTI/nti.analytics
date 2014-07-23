@@ -481,11 +481,11 @@ class AnalyticsDB(object):
 	def create_video_event(	self, user,
 							nti_session, timestamp,
 							course, context_path,
+							video_resource,
 							time_length,
 							video_event_type,
 							video_start_time,
 							video_end_time,
-							video_resource,
 							with_transcript ):
 		user = self._get_or_create_user( user )
 		uid = user.user_id
