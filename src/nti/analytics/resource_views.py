@@ -22,6 +22,7 @@ id_lookup = IDLookup()
 def _get_course( event ):
 	# TODO We also have event.course, not sure what the app would pass us (ntiid?).
 	# Try to look up via resource ntiid (don't think this will work).
+	# Could resource -> bundle -> course
 	#return get_course_by_ntiid( event.resource_id )
 	return ntiids.find_object_with_ntiid( event.course )
 
@@ -50,7 +51,7 @@ def _validate_resource_event( event ):
 	if not ntiids.is_valid_ntiid_string( event.resource_id ):
 		raise ValueError( """Event received for invalid resource id
 							(user=%s) (resource=%s) (event=%s)""" %
-							( event.user, event.resource_id, event) )
+							( event.user, event.resource_id, event ) )
 
 
 def _validate_video_event( event ):

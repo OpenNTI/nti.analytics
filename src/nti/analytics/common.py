@@ -143,7 +143,12 @@ def timestamp_type(timestamp):
 	return result
 
 class IDLookup(object):
-	""" Defines a unique identifier for objects that can be used for storage."""
+	"""
+	Defines a unique identifier for objects that can be used for storage.
+	It is vital that these ids can be used to look up the corresponding
+	dataserver objects when the data is used to be displayed
+	in the app or in reports.
+	"""
 
 	@Lazy
 	def intids(self):
