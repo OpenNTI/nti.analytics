@@ -25,6 +25,7 @@ from .common import get_entity
 from .common import IDLookup
 from .common import process_event
 
+# FIXME There is now an enrollment scope that we could use.
 FOR_CREDIT = 'FOR_CREDIT'
 OPEN = 'OPEN'
 
