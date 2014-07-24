@@ -29,30 +29,6 @@ import zope.testing.cleanup
 
 from nti.analytics import common
 
-from six import integer_types
-
-DEFAULT_INTID = 101
-
-class TestIDLookup(common.IDLookup):
-
-	def __init__(self):
-		self.default_intid = DEFAULT_INTID
-
-	def get_id_for_object( self, obj ):
-		result = None
-		if isinstance( obj, integer_types ):
-			result = obj
-		elif hasattr( obj, 'intid' ):
-			result = getattr( obj, 'intid', None )
-
-		if result is None:
-			result = self.default_intid
-			self.default_intid += 1
-		return result
-
-""" Override id lookup for testing purposes. """
-common.IDLookup = TestIDLookup
-
 class SharedConfiguringTestLayer(ZopeComponentLayer,
                                  GCLayerMixin,
                                  ConfiguringLayerMixin,
@@ -113,3 +89,7 @@ class MockParent(object):
 	def __iter__(self):
 		return iter(self.vals)
 
+from nti.analytics.tests import DEFAULT_INTID
+
+from nti.analytics.tests import TestIDLookup
+common.IDLookup = TestIDLookup

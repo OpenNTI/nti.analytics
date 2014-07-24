@@ -523,9 +523,9 @@ class TestCourseResources(AnalyticsTestBase):
 		self.db.create_video_event( test_user_ds_id,
 									test_session_id, datetime.now(),
 									self.course_name, self.context_path,
-									time_length,
+									resource_id, time_length,
 									video_event_type, video_start_time,
-									video_end_time, resource_id, with_transcript )
+									video_end_time,  with_transcript )
 		results = self.session.query(VideoEvents).all()
 		assert_that( results, has_length( 1 ) )
 

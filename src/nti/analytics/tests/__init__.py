@@ -57,7 +57,7 @@ class SharedConfiguringTestLayer(ZopeComponentLayer,
         cls.setUpTestDS(test)
         shutil.rmtree(cls.new_data_dir, True)
         os.environ['DATASERVER_DATA_DIR'] = cls.old_data_dir or '/tmp'
-        
+
     @classmethod
     def testTearDown(cls):
         pass
@@ -76,4 +76,35 @@ class NTIAnalyticsApplicationTestLayer(ApplicationTestLayer):
     @classmethod
     def tearDown(cls):
         pass
-		
+
+
+from six import integer_types
+
+DEFAULT_INTID = 101
+
+class TestIDLookup(common.IDLookup):
+	""" Defines ids simply if they are ints, or looks for an 'intid' field. """
+
+	def __init__(self):
+		self.default_intid = DEFAULT_INTID
+
+	def get_id_for_object( self, obj ):
+		result = None
+		if isinstance( obj, integer_types ):
+			result = obj
+		elif hasattr( obj, 'intid' ):
+			result = getattr( obj, 'intid', None )
+
+		if result is None:
+			result = self.default_intid
+			self.default_intid += 1
+		return result
+
+
+class _ImmediateQueueRunner(object):
+	"""A queue that immediately runs the given job."""
+	def put( self, job ):
+		job()
+
+def _get_job_queue():
+	return _ImmediateQueueRunner()
