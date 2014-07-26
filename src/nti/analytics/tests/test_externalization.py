@@ -159,3 +159,4 @@ class TestResourceEvents(NTIAnalyticsTestCase):
 		events = [x for x in new_io]
 		assert_that( events, not_none() )
 		assert_that( events, has_length( 2 ))
+

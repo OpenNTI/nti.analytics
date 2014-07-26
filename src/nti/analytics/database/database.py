@@ -9,6 +9,7 @@ __docformat__ = "restructuredtext en"
 logger = __import__('logging').getLogger(__name__)
 
 import os
+import json
 from six import integer_types
 from six import string_types
 
@@ -806,7 +807,7 @@ class AnalyticsDB(object):
 				grade = part.assessedValue
 				# TODO How do we do this?
 				is_correct = grade == 1
-				response = str( part.submittedResponse )
+				response = json.dumps( part.submittedResponse )
 				grade_details = SelfAssessmentDetails( user_id=uid,
 														session_id=sid,
 														timestamp=timestamp,
@@ -866,13 +867,7 @@ class AnalyticsDB(object):
 
 				for idx, part in enumerate( question_submission.parts ):
 					# Serialize our response
-					# TODO Hmm, we could pickle dump whatever object we have.
-					# Maybe just adapting to str is sufficient.
-					# Can we get back to maps from that?
-					# - FIXME Yes, but we'll probably have to handle by type here.
-					# import ast;literal_eval
-					# -> safe, only literals. How about other types?
-					response = str( part )
+					response = json.dumps( part )
 					parts = AssignmentDetails( 	user_id=uid,
 												session_id=sid,
 												timestamp=timestamp,
