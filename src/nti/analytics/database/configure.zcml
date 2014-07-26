@@ -8,34 +8,22 @@
 	<include package="zope.security" file="meta.zcml" />
 	<include package="zope.component" />
 	<include package="zope.security" />
-			
+
+	<include package="." file="meta.zcml" />
+
 	<configure zcml:condition="have devmode">
-		<configure zcml:condition="have testmode">
-			<include package="." file="meta.zcml" />
-			<adb:registerAnalyticsDB 	defaultSQLite="True"
-										name="janux.ou.edu" />
-		</configure>
-		
-		<configure zcml:condition="have testmode">
-			<include package="." file="meta.zcml" />
-			<adb:registerAnalyticsDB 	defaultSQLite="True"
-										dburi="sqlite://" />
-		</configure>
-		
-		<configure zcml:condition="not-have testmode">
-			<include package="." file="meta.zcml" />
-			<adb:registerAnalyticsDB 	defaultSQLite="True"
-										name="janux.ou.edu" />
-										
-			<adb:registerAnalyticsDB 	defaultSQLite="True"/>							
-		</configure>
+		<adb:registerAnalyticsDB 	defaultSQLite="True"
+									name="janux.ou.edu" />
+
+		<adb:registerAnalyticsDB 	defaultSQLite="True"
+									dburi="sqlite://" />
 	</configure>
-	
+
 	<!-- TODO What goes here for non-dev? -->
 	<!-- Also, we shouldn't register by site anymore, right? -->
 	<configure zcml:condition="not-have devmode">
 		<include package="." file="meta.zcml" />
 		<adb:registerAnalyticsDB name="janux.ou.edu" />
 	</configure>
-	
+
 </configure>

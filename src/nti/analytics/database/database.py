@@ -26,6 +26,7 @@ from nti.dataserver.users.entity import Entity
 from nti.app.products.gradebook.interfaces import IGrade
 
 from nti.assessment.interfaces import IQAssessedQuestionSet
+from nti.assessment.interfaces import IQUploadedFile
 
 from nti.utils.property import Lazy
 
@@ -775,6 +776,18 @@ class AnalyticsDB(object):
 		enrollment = self.session.query(CourseEnrollments).filter( 	CourseEnrollments.user_id == uid,
 																CourseEnrollments.course_id == course_id ).first()
 		enrollment.dropped = timestamp
+
+	def _get_response(self, part):
+		if IQUploadedFile.providedBy( part ):
+			part = '<FILE_UPLOADED>'
+
+		result = ''
+		try:
+			result = json.dumps( part )
+		except TypeError:
+			logger.exception( 'Submission response is not serializable (type=%s)', type( part ) )
+
+		return result
 
 	def create_self_assessment_taken(self, user, nti_session, timestamp, course, submission ):
 		user = self._get_or_create_user( user )
