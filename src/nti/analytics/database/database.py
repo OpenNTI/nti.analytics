@@ -27,6 +27,7 @@ from nti.app.products.gradebook.interfaces import IGrade
 
 from nti.assessment.interfaces import IQAssessedQuestionSet
 from nti.assessment.interfaces import IQUploadedFile
+from nti.assessment.interfaces import IQModeledContentResponse
 
 from nti.utils.property import Lazy
 
@@ -780,6 +781,8 @@ class AnalyticsDB(object):
 	def _get_response(self, part):
 		if IQUploadedFile.providedBy( part ):
 			part = '<FILE_UPLOADED>'
+		elif IQModeledContentResponse.providedBy( part ):
+			part = ''.join( part.value )
 
 		result = ''
 		try:

@@ -12,11 +12,26 @@
 	<include package="." file="meta.zcml" />
 
 	<configure zcml:condition="have devmode">
-		<adb:registerAnalyticsDB 	defaultSQLite="True"
-									name="janux.ou.edu" />
 
-		<adb:registerAnalyticsDB 	defaultSQLite="True"
-									dburi="sqlite://" />
+		<!-- In-memory sqlite for test mode -->
+		<configure zcml:condition="have testmode">
+
+			<adb:registerAnalyticsDB 	defaultSQLite="True"
+										name="janux.ou.edu" />
+
+			<adb:registerAnalyticsDB 	defaultSQLite="True"
+										dburi="sqlite://" />
+
+		</configure>
+
+		<configure zcml:condition="not-have testmode">
+
+			<adb:registerAnalyticsDB 	defaultSQLite="True"
+										name="janux.ou.edu" />
+
+			<adb:registerAnalyticsDB 	defaultSQLite="True"/>
+
+		</configure>
 	</configure>
 
 	<!-- TODO What goes here for non-dev? -->
