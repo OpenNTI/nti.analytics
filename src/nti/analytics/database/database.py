@@ -820,7 +820,7 @@ class AnalyticsDB(object):
 				grade = part.assessedValue
 				# TODO How do we do this?
 				is_correct = grade == 1
-				response = json.dumps( part.submittedResponse )
+				response = _get_response( part.submittedResponse )
 				grade_details = SelfAssessmentDetails( user_id=uid,
 														session_id=sid,
 														timestamp=timestamp,
@@ -880,7 +880,7 @@ class AnalyticsDB(object):
 
 				for idx, part in enumerate( question_submission.parts ):
 					# Serialize our response
-					response = json.dumps( part )
+					response = _get_response( part )
 					parts = AssignmentDetails( 	user_id=uid,
 												session_id=sid,
 												timestamp=timestamp,
