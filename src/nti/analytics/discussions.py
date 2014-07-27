@@ -48,7 +48,6 @@ def _add_comment( db, oid, nti_session=None ):
 	comment = ntiids.find_object_with_ntiid( oid )
 	if comment is not None:
 		user = get_creator( comment )
-		nti_session = get_nti_session_id( user )
 		topic = get_object_root( comment, frm_interfaces.ITopic )
 		course = get_course( topic )
 		if topic:
