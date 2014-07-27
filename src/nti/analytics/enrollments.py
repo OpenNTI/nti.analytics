@@ -42,6 +42,7 @@ def _add_drop( db, user, community, timestamp=None, nti_session=None ):
 def _get_enrollment_type( user, course ):
 	# course.instructors are in this set
 	# TODO Expensive. Can we do better?
+	# FIXME Look for new scopes.
 	restricted_id = course.LegacyScopes['restricted']
 	restricted = get_entity(restricted_id) if restricted_id else None
 

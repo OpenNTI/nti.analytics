@@ -412,8 +412,8 @@ class AnalyticsDB(object):
 
 	def _find_members( self, friends_list, members ):
 		""" For a friends_list, return a tuple of members to add/remove. """
-		members = set( [ x.target_id for x in members ] )
-		new_members = set( [ self._get_or_create_user( x ).user_id for x in friends_list] )
+		members = set( [ x.target_id for x in members if x ] )
+		new_members = set( [ self._get_or_create_user( x ).user_id for x in friends_list if x] )
 
 		members_to_add = new_members - members
 		members_to_remove = members - new_members
@@ -823,7 +823,7 @@ class AnalyticsDB(object):
 				grade = part.assessedValue
 				# TODO How do we do this?
 				is_correct = grade == 1
-				response = _get_response( part.submittedResponse )
+				response = self._get_response( part.submittedResponse )
 				grade_details = SelfAssessmentDetails( user_id=uid,
 														session_id=sid,
 														timestamp=timestamp,
@@ -883,7 +883,7 @@ class AnalyticsDB(object):
 
 				for idx, part in enumerate( question_submission.parts ):
 					# Serialize our response
-					response = _get_response( part )
+					response = self._get_response( part )
 					parts = AssignmentDetails( 	user_id=uid,
 												session_id=sid,
 												timestamp=timestamp,

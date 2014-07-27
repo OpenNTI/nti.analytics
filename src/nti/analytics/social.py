@@ -54,7 +54,8 @@ def _add_meeting( db, oid, nti_session=None ):
 		for user_joined in users_joined:
 			count += 1
 			user_joined = get_entity( user_joined )
-			db.chat_joined( user_joined, nti_session, timestamp, new_chat )
+			if user_joined is not None:
+				db.chat_joined( user_joined, nti_session, timestamp, new_chat )
 		logger.debug( "Meeting joined by users (count=%s)", count )
 
 @component.adapter(chat_interfaces.IMeeting, intid_interfaces.IIntIdAddedEvent)
@@ -145,7 +146,8 @@ def _add_dfl( db, oid, nti_session=None ):
 		db.create_dynamic_friends_list( user, nti_session, dfl )
 		for member in dfl:
 			member = get_entity( member )
-			db.create_dynamic_friends_member( user, nti_session, None, dfl, member )
+			if member is not None:
+				db.create_dynamic_friends_member( user, nti_session, None, dfl, member )
 		logger.debug( "DFL created (user=%s) (dfl=%s) (count=%s)", user, dfl, len( dfl ) )
 
 def _remove_dfl( db, dfl_id, timestamp=None ):
