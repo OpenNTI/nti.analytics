@@ -185,7 +185,7 @@ class AnalyticsDB(object):
 		self.session.add( user )
 		try:
 			self.session.flush()
-			logger.info( 'Created user (user_id=%s) (user_ds_id=%s)', user.user_id, uid )
+			logger.info( 'Created user (user=%s) (user_id=%s) (user_ds_id=%s)', user, user.user_id, uid )
 		except IntegrityError:
 			# TODO if we have a race condition, we'll need to fetch the current user entry.
 			logger.debug( 'User (%s) (db_id=%s) already exists on attempted insert', uid, user.user_id )

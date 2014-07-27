@@ -41,6 +41,8 @@ def _self_assessment_taken( db, oid, nti_session=None ):
 	if submission is not None:
 		user = get_creator( submission )
 		timestamp = get_created_timestamp( submission )
+		# TODO This doesn't work for some submissions, why (see resource_tags.py)?
+		__traceback_info__ = submission.containerId
 		course = get_course_by_ntiid( submission.containerId )
 		db.create_self_assessment_taken( user, nti_session, timestamp, course, submission )
 		logger.debug("Self-assessment submitted (user=%s) (assignment=%s)", user, submission.questionSetId )
