@@ -13,6 +13,8 @@ from zope import component
 
 from nti.utils.property import Lazy
 
+from six import string_types
+
 class _Singleton(object):
 	_instances = {}
 	def __new__(cls, *args, **kwargs):
@@ -43,7 +45,10 @@ class _NtiidIdentifier(_Identifier):
 
 	def get_id(self, resource):
 		""" Resource could be a video or content piece. """
-		result = getattr( resource, 'ntiid', None )
+		if isinstance( resource, string_types ):
+			result = resource
+		else:
+			result = getattr( resource, 'ntiid', None )
 		return result
 
 
