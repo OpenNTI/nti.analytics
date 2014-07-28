@@ -37,7 +37,18 @@ class Constructor(Processor):
 		super(Constructor, self).process_args(args)
 
 def main():
-	return Constructor()()
+# 	import cProfile, pstats
+# 	pr = cProfile.Profile()
+# 	pr.enable()
+# 	result = None
+# 	try:
+# 		result = Constructor()()
+# 	finally:
+# 		pr.disable()
+# 		with open( '/Users/jzuech/analytics_profiling_orm.txt', 'w+' ) as f:
+# 			pstats.Stats( pr, stream=f ).print_stats()
+# 	return result
+ 	return Constructor()()
 
 if __name__ == '__main__':
 	main()

@@ -109,12 +109,6 @@ def _get_sharing_enum( note, course ):
 
 	return result
 
-# We should only have a few different types of operations here:
-# - Insertions
-# - Deleted objects will modify 'deleted' column with timestamp
-# - Modify feedback column (?)
-# - Modify self.session end timestamp
-# - Reads
 @interface.implementer(IAnalyticsDB)
 class AnalyticsDB(object):
 
@@ -173,10 +167,12 @@ class AnalyticsDB(object):
 		return IDLookup()
 
 	def create_user(self, user):
-		# TODO Should we validate we have IUsers here, do we want to exclude other entities?
+		# We may have non-IUsers here, but let's keep them since we may need
+		# them (e.g. community owned forums).
 		uid = self.idlookup.get_id_for_user( user )
 		if not uid:
-			# FIXME Nothing we can do, not sure how we got here
+			# Nothing we can do, not sure how we got here. Probably indicative of
+			# old or stale data.
 			logger.exception( 'User has no user_id and cannot be inserted (uid=%s) (user=%s)', uid, user )
 			return
 		user = Users( user_ds_id=uid )
@@ -187,8 +183,9 @@ class AnalyticsDB(object):
 			self.session.flush()
 			logger.info( 'Created user (user=%s) (user_id=%s) (user_ds_id=%s)', user, user.user_id, uid )
 		except IntegrityError:
-			# TODO if we have a race condition, we'll need to fetch the current user entry.
 			logger.debug( 'User (%s) (db_id=%s) already exists on attempted insert', uid, user.user_id )
+
+		user = self.session.query(Users).filter( Users.user_ds_id == uid ).first()
 		return user
 
 	def _get_or_create_user(self, user):
