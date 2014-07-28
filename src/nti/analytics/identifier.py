@@ -11,12 +11,16 @@ logger = __import__('logging').getLogger(__name__)
 import zope.intid
 from zope import component
 
-from six import integer_types
-from six import string_types
-
 from nti.utils.property import Lazy
 
-class _Identifier(object):
+class _Singleton(object):
+	_instances = {}
+	def __new__(cls, *args, **kwargs):
+		if cls not in cls._instances:
+			cls._instances[cls] = super(_Singleton, cls).__new__(cls, *args, **kwargs)
+		return cls._instances[cls]
+
+class _Identifier(_Singleton):
 	"""
 	Defines a unique identifier for objects that can be used for storage.
 	It is vital that these ids can be used to look up the corresponding
@@ -39,44 +43,23 @@ class _NtiidIdentifier(_Identifier):
 
 	def get_id(self, resource):
 		""" Resource could be a video or content piece. """
-		# Most likely, we'll have an ntiid here, which is what we want.
-		if isinstance( resource, string_types ):
-			result = resource
-		else:
-			result = getattr( resource, 'ntiid', None )
+		result = getattr( resource, 'ntiid', None )
 		return result
 
 
 class UserId(_DSIdentifier):
-
-	def get_id(self, user):
-		if not user:
-			return None
-		# We may already have an integer id, use it.
-		if isinstance( user, integer_types ):
-			return user
-		return super(UserId,self).get_id( user )
+	pass
 
 class SessionId(_Identifier):
 
 	def get_id( self, nti_session ):
 		# We're likely getting session_ids here, which we will just return.
-		result = None
-		if 		isinstance( nti_session, string_types ) \
-			or 	nti_session is None:
-			result = nti_session
-		else:
-			result = getattr( nti_session, 'session_id', None )
-
+		result = getattr( nti_session, 'session_id', None )
 		return result
 
 class CourseId(_DSIdentifier):
-
-	def get_id( self, course ):
-		# TODO ID needs to be unique by semester...Verify.
-		if isinstance( course, ( integer_types, string_types ) ):
-			return course
-		return super(CourseId,self).get_id( course )
+	# TODO ID needs to be unique by semester...Verify.
+	pass
 
 class CommentId(_DSIdentifier):
 	pass

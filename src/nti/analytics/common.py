@@ -29,7 +29,6 @@ from . import create_job
 from . import get_job_queue
 
 from six import integer_types
-from six import string_types
 
 from nti.analytics.identifier import SessionId
 _sessionid = SessionId()
