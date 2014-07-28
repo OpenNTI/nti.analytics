@@ -217,7 +217,7 @@ class AnalyticsDB(object):
 		# TODO Do we have to worry about race conditions?
 		uid = _userid.get_id( user )
 		found_user = self.session.query(Users).filter( Users.user_ds_id == uid ).first()
-		return found_user or self.create_user( uid )
+		return found_user or self.create_user( user )
 
 	def create_session(self, user, session_id, timestamp, ip_address, platform, version):
 		user = self._get_or_create_user( user )
