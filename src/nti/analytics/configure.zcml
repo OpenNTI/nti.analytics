@@ -27,11 +27,9 @@
 	<!-- subscribers -->
 	<subscriber handler=".discussions._topic_added" />
 	<subscriber handler=".discussions._topic_removed" />
-	<subscriber handler=".discussions._topic_modified" />
 
 	<subscriber handler=".discussions._forum_added" />
 	<subscriber handler=".discussions._forum_removed" />
-	<subscriber handler=".discussions._forum_modified" />
 
 	<subscriber handler=".discussions._add_general_forum_comment" />
 	<subscriber handler=".discussions._modify_general_forum_comment" />

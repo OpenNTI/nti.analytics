@@ -101,14 +101,6 @@ def _topic_added( topic, event ):
 		nti_session = get_nti_session_id( user )
 		process_event( _add_topic, topic, nti_session=nti_session )
 
-@component.adapter( frm_interfaces.ITopic, lce_interfaces.IObjectModifiedEvent )
-def _topic_modified( topic, event ):
-	pass
-# 	if _is_topic( topic ):
-# 		# What's this?
-# 		timestamp = datetime.utcnow()
-# 		process_event( _modify_topic, topic, timestamp=timestamp )
-
 @component.adapter( frm_interfaces.ITopic, intid_interfaces.IIntIdRemovedEvent )
 def _topic_removed( topic, event ):
 	if _is_topic( topic ):
@@ -135,10 +127,6 @@ def _forum_added( forum, event ):
 	user = get_creator( forum )
 	nti_session = get_nti_session_id( user )
 	process_event( _add_forum, forum, nti_session=nti_session )
-
-@component.adapter( frm_interfaces.IForum, lce_interfaces.IObjectModifiedEvent )
-def _forum_modified( forum, event ):
-	pass
 
 @component.adapter( frm_interfaces.IForum, intid_interfaces.IIntIdRemovedEvent )
 def _forum_removed( forum, event ):
