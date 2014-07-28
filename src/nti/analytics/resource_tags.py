@@ -24,8 +24,11 @@ from .common import get_creator
 from .common import get_nti_session_id
 from .common import process_event
 from .common import get_course_by_ntiid
-from .common import IDLookup
-id_lookup = IDLookup()
+
+from nti.analytics.identifier import NoteId
+from nti.analytics.identifier import HighlightId
+_noteid = NoteId()
+_highlightid = HighlightId()
 
 def get_course( obj ):
 	# TODO This doesnt work for some notes/highlights, why?
@@ -61,7 +64,7 @@ def _note_added( obj, event ):
 def _note_removed( obj, event ):
 	if _is_note( obj ):
 		timestamp = datetime.utcnow()
-		note_id = id_lookup.get_id_for_note( obj )
+		note_id = _noteid.get_id( obj )
 		process_event( _remove_note, note_id=note_id, timestamp=timestamp )
 
 
@@ -91,7 +94,7 @@ def _highlight_added( obj, event ):
 def _highlight_removed( obj, event ):
 	if _is_highlight( obj ):
 		timestamp = datetime.utcnow()
-		highlight_id = id_lookup.get_id_for_highlight( obj )
+		highlight_id = _highlightid.get_id( obj )
 		process_event( _remove_highlight, highlight_id=highlight_id, timestamp=timestamp )
 
 component.moduleProvides(analytic_interfaces.IObjectProcessor)

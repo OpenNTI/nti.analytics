@@ -27,7 +27,13 @@ from nti.dataserver.tests.mock_dataserver import DSInjectorMixin
 
 import zope.testing.cleanup
 
-from nti.analytics import common
+from nti.analytics import identifier
+
+from nti.analytics.tests import DEFAULT_INTID
+
+from nti.analytics.tests import TestIdentifier
+identifier._DSIdentifier.get_id = identifier._NtiidIdentifier.get_id \
+= identifier.SessionId.get_id = TestIdentifier().get_id
 
 class SharedConfiguringTestLayer(ZopeComponentLayer,
                                  GCLayerMixin,
@@ -89,7 +95,3 @@ class MockParent(object):
 	def __iter__(self):
 		return iter(self.vals)
 
-from nti.analytics.tests import DEFAULT_INTID
-
-from nti.analytics.tests import TestIDLookup
-common.IDLookup = TestIDLookup

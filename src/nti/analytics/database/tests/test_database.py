@@ -968,7 +968,7 @@ class TestBlogComments(AnalyticsTestBase):
 
 		# Empty parent
 		comment_id = DEFAULT_INTID
-		my_comment = MockComment( MockThought( None ) )
+		my_comment = MockComment( MockThought( None ), intid=comment_id )
 
 		self.db.create_blog_comment( test_user_ds_id, test_session_id, self.blog_id, my_comment )
 
@@ -1013,7 +1013,7 @@ class TestBlogComments(AnalyticsTestBase):
 
 		# Comment parent
 		comment_id = DEFAULT_INTID
-		my_comment = MockComment( CommentPost(), inReplyTo=CommentPost() )
+		my_comment = MockComment( CommentPost(), inReplyTo=CommentPost(), intid=comment_id )
 
 		self.db.create_blog_comment( test_user_ds_id, test_session_id, self.blog_id, my_comment )
 

@@ -27,8 +27,11 @@ from .common import get_nti_session_id
 from .common import process_event
 from .common import get_created_timestamp
 from .common import get_entity
-from .common import IDLookup
-id_lookup = IDLookup()
+
+from nti.analytics.identifier import FriendsListId
+from nti.analytics.identifier import DFLId
+_dflid = DFLId()
+_flid = FriendsListId()
 
 def _is_friends_list( obj ):
 	return 	nti_interfaces.IFriendsList.providedBy( obj ) \
@@ -133,7 +136,7 @@ def _friendslist_modified(obj, event):
 @component.adapter(nti_interfaces.IFriendsList, intid_interfaces.IIntIdRemovedEvent)
 def _friendslist_deleted(obj, event):
 	if _is_friends_list( obj ):
-		id = id_lookup.get_id_for_friends_list( obj )
+		id = _flid.get_id( obj )
 		timestamp = datetime.utcnow()
 		process_event( _remove_friends_list, friends_list_id=id, timestamp=timestamp )
 
@@ -185,7 +188,7 @@ def _dfl_added(obj, event):
 				  intid_interfaces.IIntIdRemovedEvent)
 def _dfl_deleted(obj, event):
 	timestamp = datetime.utcnow()
-	id = id_lookup.get_id_for_dfl( obj )
+	id = _dflid.get_id( obj )
 	process_event( _remove_dfl, dfl_id=id, timestamp=timestamp )
 
 def _handle_dfl_membership_event( event, to_call ):

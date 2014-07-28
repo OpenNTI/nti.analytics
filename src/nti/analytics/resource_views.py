@@ -16,8 +16,6 @@ from nti.analytics.interfaces import IResourceEvent
 from .common import get_entity
 from .common import process_event
 from .common import get_course_by_ntiid
-from .common import IDLookup
-id_lookup = IDLookup()
 
 def _get_course( event ):
 	# TODO We also have event.course, not sure what the app would pass us (ntiid?).

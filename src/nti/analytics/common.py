@@ -25,13 +25,14 @@ from pyramid.location import lineage
 import zope.intid
 from zope import component
 
-from nti.utils.property import Lazy
-
 from . import create_job
 from . import get_job_queue
 
 from six import integer_types
 from six import string_types
+
+from nti.analytics.identifier import SessionId
+_sessionid = SessionId()
 
 def get_entity(entity):
     if not nti_interfaces.IEntity.providedBy(entity):
@@ -68,14 +69,7 @@ def get_nti_session_id( user ):
 
 def get_id_for_session( nti_session ):
 	""" Given an nti_session, return the unique id """
-	result = None
-	if 		isinstance( nti_session, string_types ) \
-		or 	nti_session is None:
-		result = nti_session
-	else:
-		result = getattr( nti_session, 'session_id', None )
-
-	return result
+	return _sessionid.get_id( nti_session )
 
 def get_object_root( obj, type_to_find ):
 	""" Work up the parent tree looking for 'type_to_find', returning None if not found. """
@@ -141,79 +135,3 @@ def timestamp_type(timestamp):
 	if isinstance( timestamp, ( float, integer_types ) ):
 		result = datetime.utcfromtimestamp( timestamp )
 	return result
-
-class IDLookup(object):
-	"""
-	Defines a unique identifier for objects that can be used for storage.
-	It is vital that these ids can be used to look up the corresponding
-	dataserver objects when the data is used to be displayed
-	in the app or in reports.
-	"""
-
-	@Lazy
-	def intids(self):
-		return component.getUtility( zope.intid.IIntIds )
-
-	def get_id_for_object( self, obj ):
-		result = getattr( obj, '_ds_intid', None )
-		return result or self.intids.getId( obj )
-
-	def get_id_for_user(self, user):
-		if not user:
-			return None
-		# We may already have an integer id, use it.
-		if isinstance( user, integer_types ):
-			return user
-		return self.get_id_for_object( user )
-
-	def get_id_for_session( self, nti_session ):
-		# We're likely getting session_ids here, which we will just return.
-		return get_id_for_session( nti_session )
-
-	def get_id_for_course( self, course ):
-		# ID needs to be unique by semester...
-		if isinstance( course, ( integer_types, string_types ) ):
-			return course
-		return self.get_id_for_object( course )
-
-	def get_id_for_comment(self, comment):
-		return self.get_id_for_object( comment )
-
-	def get_id_for_forum(self, forum):
-		return self.get_id_for_object( forum )
-
-	def get_id_for_topic(self, topic):
-		return self.get_id_for_object( topic )
-
-	def get_id_for_note(self, note):
-		return self.get_id_for_object( note )
-
-	def get_id_for_highlight(self, highlight):
-		return self.get_id_for_object( highlight )
-
-	def get_id_for_resource(self, resource):
-		""" Resource could be a video or content piece. """
-		# Most likely, we'll have an ntiid here, which is what we want.
-		if isinstance( resource, string_types ):
-			result = resource
-		else:
-			result = getattr( resource, 'ntiid', None )
-		return result
-
-	def get_id_for_blog(self, blog):
-		return self.get_id_for_object( blog )
-
-	def get_id_for_chat(self, chat):
-		return self.get_id_for_object( chat )
-
-	def get_id_for_dfl(self, dfl):
-		return self.get_id_for_object( dfl )
-
-	def get_id_for_friends_list(self, friends_list):
-		return self.get_id_for_object( friends_list )
-
-	def get_id_for_submission(self, submission):
-		return self.get_id_for_object( submission )
-
-	def get_id_for_feedback(self, feedback):
-		return self.get_id_for_object( feedback )

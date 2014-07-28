@@ -28,8 +28,13 @@ from .common import get_deleted_time
 from .common import get_object_root
 from .common import get_course
 from .common import process_event
-from .common import IDLookup
-id_lookup = IDLookup()
+
+from nti.analytics.identifier import ForumId
+from nti.analytics.identifier import TopicId
+from nti.analytics.identifier import CommentId
+_commentid = CommentId()
+_topicid = TopicId()
+_forumid = ForumId()
 
 def _is_topic( obj ):
 	# Exclude blogs
@@ -73,7 +78,7 @@ def _modify_general_forum_comment(comment, event):
 	if		_is_forum_comment( comment ) \
 		and nti_interfaces.IDeletedObjectPlaceholder.providedBy( comment ):
 			timestamp = datetime.utcnow()
-			comment_id = id_lookup.get_id_for_comment( comment )
+			comment_id = _commentid.get_id( comment )
 			process_event( _remove_comment, comment_id=comment_id, timestamp=timestamp )
 
 # Topic
@@ -108,7 +113,7 @@ def _topic_modified( topic, event ):
 def _topic_removed( topic, event ):
 	if _is_topic( topic ):
 		timestamp = datetime.utcnow()
-		topic_id = id_lookup.get_id_for_topic( topic )
+		topic_id = _topicid.get_id( topic )
 		process_event( _remove_topic, topic_id=topic_id, timestamp=timestamp )
 
 # Forum
@@ -139,7 +144,7 @@ def _forum_modified( forum, event ):
 def _forum_removed( forum, event ):
 	timestamp = datetime.utcnow()
 	timestamp = get_deleted_time( forum )
-	forum_id = id_lookup.get_id_for_forum( forum )
+	forum_id = _forumid.get_id( forum )
 	process_event( _remove_forum, forum_id=forum_id, timestamp=timestamp )
 
 component.moduleProvides(analytic_interfaces.IObjectProcessor)

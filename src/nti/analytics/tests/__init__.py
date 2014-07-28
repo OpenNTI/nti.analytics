@@ -29,7 +29,7 @@ import zope.testing.cleanup
 
 from zope import component
 
-from nti.analytics import common
+from nti.analytics.identifier import _Identifier
 
 from six import integer_types
 
@@ -78,19 +78,19 @@ class NTIAnalyticsApplicationTestLayer(ApplicationTestLayer):
         pass
 
 
-from six import integer_types
+from six import integer_types, string_types
 
 DEFAULT_INTID = 101
 
-class TestIDLookup(common.IDLookup):
+class TestIdentifier(_Identifier):
 	""" Defines ids simply if they are ints, or looks for an 'intid' field. """
 
 	def __init__(self):
 		self.default_intid = DEFAULT_INTID
 
-	def get_id_for_object( self, obj ):
+	def get_id( self, obj ):
 		result = None
-		if isinstance( obj, integer_types ):
+		if isinstance( obj, ( integer_types, string_types ) ):
 			result = obj
 		elif hasattr( obj, 'intid' ):
 			result = getattr( obj, 'intid', None )

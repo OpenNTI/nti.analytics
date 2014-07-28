@@ -33,8 +33,9 @@ from .common import get_course_by_ntiid
 from .common import process_event
 from .common import get_created_timestamp
 from .common import get_entity
-from .common import IDLookup
-id_lookup = IDLookup()
+
+from nti.analytics.identifier import FeedbackId
+_feedbackid = FeedbackId()
 
 def _self_assessment_taken( db, oid, nti_session=None ):
 	submission = ntiids.find_object_with_ntiid( oid )
@@ -175,7 +176,7 @@ def _feedback_added(feedback, event):
 				   intid_interfaces.IIntIdRemovedEvent)
 def _feedback_removed(feedback, event):
 	timestamp = datetime.utcnow()
-	feedback_id = id_lookup.get_id_for_feedback( feedback )
+	feedback_id = _feedbackid.get_id( feedback )
 	process_event( _remove_feedback, feedback_id=feedback_id, timestamp=timestamp )
 
 component.moduleProvides(analytic_interfaces.IObjectProcessor)
