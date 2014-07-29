@@ -808,6 +808,11 @@ class AnalyticsDB(object):
 
 		result = ''
 		try:
+			# Hmm, json will convert the keys to string as we dump them.  We
+			# could try to handle that, or we could serialize differently.
+			# I think, most importantly, we need to compare responses between users
+			# (which this will handle) and to know if the answer was correct.
+			# We may be fine as-is with json.
 			result = json.dumps( part )
 		except TypeError:
 			logger.exception( 'Submission response is not serializable (type=%s)', type( part ) )
