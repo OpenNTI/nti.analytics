@@ -10,94 +10,76 @@ logger = __import__('logging').getLogger(__name__)
 
 from zope import component
 
+from nti.ntiids import ntiids
+
+from nti.intid.interfaces import IIntIdAddedEvent
+from nti.intid.interfaces import IIntIdRemovedEvent
+
 from nti.dataserver import interfaces as nti_interfaces
 
-from nti.contenttypes.courses.interfaces import ICourseInstance
+from nti.contenttypes.courses.interfaces import ICourseInstanceEnrollmentRecord
+from nti.contenttypes.courses.enrollment import DefaultPrincipalEnrollments
 
 from datetime import datetime
 
 from nti.analytics import interfaces as analytics_interfaces
 
 from .common import get_nti_session_id
-from .common import get_course
 from .common import process_event
 from .common import get_entity
 from .common import process_event
 
-# FIXME There is now an enrollment scope that we could use.
-FOR_CREDIT = 'FOR_CREDIT'
-OPEN = 'OPEN'
-
-def _add_drop( db, user, community, timestamp=None, nti_session=None ):
-	user = get_entity( user )
-	community = get_entity( community )
-	course = ICourseInstance( community, None )
+def _add_drop( db, oid, username, scope, nti_session=None, timestamp=None ):
+	course = ntiids.find_object_with_ntiid( oid )
+	user = get_entity( username )
 	if 		user is not None \
 		and course is not None:
 
 		db.create_course_drop( user, nti_session, timestamp, course )
 		logger.debug( "User dropped (user=%s) (course=%s)", user, course )
 
-def _get_enrollment_type( user, course ):
-	# course.instructors are in this set
-	# TODO Expensive. Can we do better?
-	# We may err out here due to missing course.
-	__traceback_info__ = user, getattr( course, '__name__', None )
-	restricted_id = course.LegacyScopes['restricted']
-	restricted = get_entity(restricted_id) if restricted_id else None
-
-	restricted_usernames = ({x.lower() for x in nti_interfaces.IEnumerableEntityContainer(restricted).iter_usernames()}
-							if restricted is not None
-							else set())
-	is_for_credit = user.username in restricted_usernames
-	return FOR_CREDIT if is_for_credit else OPEN
-
-def _do_enroll( db, user, course, nti_session=None, timestamp=None ):
-	enrollment_type = _get_enrollment_type( user, course )
-	db.create_course_enrollment( user, nti_session, timestamp, course, enrollment_type )
-	logger.debug( "User enrollment (user=%s) (course=%s) (type=%s)", user, course, enrollment_type )
-
-def _add_enrollment( db, user, community, timestamp=None, nti_session=None ):
-	user = get_entity( user )
-	community = get_entity( community )
-	# Are all communities course memberships?
-	course = ICourseInstance( community, None )
+def _add_enrollment( db, oid, username, scope, nti_session=None, timestamp=None ):
+	course = ntiids.find_object_with_ntiid( oid )
+	user = get_entity( username )
 	if 		user is not None \
 		and course is not None:
 
-		_do_enroll( db, user, course, nti_session, timestamp )
+		user = get_entity( username )
+		enrollment_type = scope
+		db.create_course_enrollment( user, nti_session, timestamp, course, enrollment_type )
+		logger.debug( "User enrollment (user=%s) (course=%s) (type=%s)", user, course, enrollment_type )
 
-def _handle_event( event, to_call ):
+def _handle_event( record, to_call ):
 	timestamp = datetime.utcnow()
-	source = getattr(event.object, 'username', event.object)
-	target = event.target
-	# We only listen for Community targeted DFL joins
-	if not nti_interfaces.ICommunity.providedBy( target ):
-		return
+	user = record.Principal
+	username = getattr( user, 'username', None )
+	course = record.CourseInstance
+	scope = record.Scope
 
-	target = getattr(target, 'username', target)
-
-	nti_session = get_nti_session_id( get_entity( source ) )
+	nti_session = get_nti_session_id( get_entity( user ) )
 	process_event( 	to_call,
-					user=source,
-					community=target,
+					course,
+					username=username,
+					scope=scope,
 					timestamp=timestamp,
 					nti_session=nti_session )
 
 
-@component.adapter(nti_interfaces.IStartDynamicMembershipEvent)
-def _enrolled(event):
-	_handle_event( event, _add_enrollment )
+@component.adapter( ICourseInstanceEnrollmentRecord, IIntIdAddedEvent )
+def _enrolled( record, event ):
+	_handle_event( record, _add_enrollment )
 
-@component.adapter(nti_interfaces.IStopDynamicMembershipEvent)
-def _dropped(event):
-	_handle_event( event, _add_drop )
+@component.adapter( ICourseInstanceEnrollmentRecord, IIntIdRemovedEvent )
+def _dropped( record, event ):
+	_handle_event( record, _add_drop )
 
 def _user_enrollments( user ):
-	communities = getattr( user, 'usernames_of_dynamic_memberships', list() )
-	user = getattr( user, 'username', None )
-	for community in communities:
-		process_event( _add_enrollment, user=user, community=community )
+	enrollments = DefaultPrincipalEnrollments( user )
+	for enrollment in enrollments.iter_enrollments():
+		course = enrollment.CourseInstance
+		username = user.username
+		scope = enrollment.Scope
+		process_event( _add_enrollment, course, username=username, scope=scope )
 
 component.moduleProvides(analytics_interfaces.IObjectProcessor)
 def init( obj ):
