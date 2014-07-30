@@ -11,11 +11,11 @@
 
 	<meta:directives namespace="http://nextthought.com/analytics">
 		<meta:directive	name="registerImmediateProcessingQueue"
-						schema="nti.analytics.zcml.IRegisterAnalyticsQueue"
+						schema="nti.analytics.interfaces.IAnalyticsQueue"
 						handler="nti.analytics.zcml.registerImmediateProcessingQueue" />
 
 		<meta:directive	name="registerProcessingQueue"
-						schema="nti.analytics.zcml.IRegisterAnalyticsQueue"
+						schema="nti.analytics.interfaces.IAnalyticsQueue"
 						handler="nti.analytics.zcml.registerProcessingQueue" />
 	</meta:directives>
 
