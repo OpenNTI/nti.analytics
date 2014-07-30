@@ -798,7 +798,7 @@ class AnalyticsDB(object):
 
 		enrollment = self.session.query(CourseEnrollments).filter( 	CourseEnrollments.user_id == uid,
 																CourseEnrollments.course_id == course_id ).first()
-		enrollment.dropped = timestamp
+		self.session.delete( enrollment )
 
 	def _get_response(self, part):
 		if IQUploadedFile.providedBy( part ):

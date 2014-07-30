@@ -1065,6 +1065,8 @@ class TestCourseViews(AnalyticsTestBase):
 		assert_that( results, has_length( 0 ) )
 		results = self.session.query( EnrollmentTypes ).all()
 		assert_that( results, has_length( 0 ) )
+		results = self.session.query( CourseDrops ).all()
+		assert_that( results, has_length( 0 ) )
 
 		for_credit = 'for_credit'
 		self.db.create_course_enrollment( test_user_ds_id, test_session_id, datetime.now(), self.course_name, for_credit )
@@ -1078,7 +1080,6 @@ class TestCourseViews(AnalyticsTestBase):
 		assert_that( enrollment.course_id, is_( self.course_name ) )
 		assert_that( enrollment.timestamp, not_none() )
 		assert_that( enrollment.type_id, is_( 1 ) )
-		assert_that( enrollment.dropped, none() )
 
 		# EnrollmentType
 		results = self.session.query( EnrollmentTypes ).all()
@@ -1100,7 +1101,7 @@ class TestCourseViews(AnalyticsTestBase):
 		self.db.create_course_drop( test_user_ds_id, test_session_id, datetime.now(), self.course_name )
 
 		results = self.session.query( CourseEnrollments ).all()
-		assert_that( results, has_length( 2 ) )
+		assert_that( results, has_length( 1 ) )
 
 		results = self.session.query( CourseDrops ).all()
 		assert_that( results, has_length( 1 ) )
@@ -1109,11 +1110,3 @@ class TestCourseViews(AnalyticsTestBase):
 		assert_that( drop.user_id, is_( 1 ) )
 		assert_that( drop.course_id, is_( self.course_name ) )
 		assert_that( drop.timestamp, not_none() )
-
-		enrollment = self.session.query( CourseEnrollments ).filter( CourseEnrollments.user_id == 1, CourseEnrollments.course_id==self.course_name ).one()
-		assert_that( enrollment.session_id, is_( test_session_id ) )
-		assert_that( enrollment.user_id, is_( 1 ) )
-		assert_that( enrollment.course_id, is_( self.course_name ) )
-		assert_that( enrollment.timestamp, not_none() )
-		assert_that( enrollment.type_id, is_( 1 ) )
-		assert_that( enrollment.dropped, not_none() )

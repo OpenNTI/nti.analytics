@@ -246,11 +246,9 @@ class EnrollmentTypes(Base):
 	type_id = Column( 'type_id', Integer, Sequence( 'enrollment_type_seq' ), nullable=False, primary_key=True )
 	type_name = Column( 'type_name', String(64), nullable=False, index=True, unique=True )
 
-# Dropped is redundant, but it may be useful to grab all course enrollment information here.
 class CourseEnrollments(Base,BaseTableMixin,CourseMixin):
 	__tablename__ = 'CourseEnrollments'
 	type_id = Column( 'type_id', Integer, ForeignKey( 'EnrollmentTypes.type_id' ), nullable=False )
-	dropped = Column( 'dropped', DateTime, nullable=True )
 
 class CourseDrops(Base,BaseTableMixin,CourseMixin):
 	__tablename__ = 'CourseDrops'
