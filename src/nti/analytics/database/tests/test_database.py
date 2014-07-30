@@ -95,6 +95,7 @@ class TestUsers(unittest.TestCase):
 		# Sequence generated
 		assert_that( new_user.user_id, is_( 1 ) )
 		assert_that( new_user.user_ds_id, is_( fooser ) )
+		assert_that( new_user.shareable, is_( False ) )
 
 		# Dupe, but not inserted
 		self.db._get_or_create_user( fooser )
