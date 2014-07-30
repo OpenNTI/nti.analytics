@@ -101,10 +101,7 @@ class TestIdentifier(_Identifier):
 		return result
 
 
-class _ImmediateQueueRunner(object):
+class ImmediateQueueRunner(object):
 	"""A queue that immediately runs the given job."""
 	def put( self, job ):
 		job()
-
-def _get_job_queue():
-	return _ImmediateQueueRunner()

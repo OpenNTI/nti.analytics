@@ -16,6 +16,13 @@ from nti.schema.field import IndexedIterable as TypedIterable
 
 from dolmen.builtins.interfaces import IIterable
 
+from nti.async.interfaces import IQueue
+
+class IAnalyticsQueue(IQueue):
+	"""
+	The analytics processing queue.
+	"""
+
 class IObjectProcessor(interface.Interface):
 
 	def init( obj ):
