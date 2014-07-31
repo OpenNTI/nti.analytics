@@ -195,6 +195,7 @@ class AnalyticsDB(object):
 	def create_user(self, user):
 		# We may have non-IUsers here, but let's keep them since we may need
 		# them (e.g. community owned forums).
+		username = getattr( user, 'username', None )
 		uid = _userid.get_id( user )
 		if not uid:
 			# Nothing we can do, not sure how we got here. Probably indicative of
@@ -207,7 +208,7 @@ class AnalyticsDB(object):
 		self.session.add( user )
 		try:
 			self.session.flush()
-			logger.info( 'Created user (user=%s) (user_id=%s) (user_ds_id=%s)', user, user.user_id, uid )
+			logger.info( 'Created user (user=%s) (user_id=%s) (user_ds_id=%s)', username, user.user_id, uid )
 		except IntegrityError:
 			# TODO Fetch actual user? Do we want to rollback session to do so?
 			logger.debug( 'User (%s) (db_id=%s) already exists on attempted insert', uid, user.user_id )
@@ -797,7 +798,7 @@ class AnalyticsDB(object):
 		self.session.add( new_object )
 
 		enrollment = self.session.query(CourseEnrollments).filter( 	CourseEnrollments.user_id == uid,
-																CourseEnrollments.course_id == course_id ).first()
+																CourseEnrollments.course_id == course_id ).one()
 		self.session.delete( enrollment )
 
 	def _get_response(self, part):

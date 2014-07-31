@@ -75,15 +75,19 @@ def _add_resource_event( db, event, nti_session=None ):
 	user = get_entity( event.user )
 	resource_id = event.resource_id
 	course = _get_course( event )
-	db.create_course_resource_view( user,
-								nti_session,
-								event.timestamp,
-								course,
-								event.context_path,
-								resource_id,
-								event.time_length )
-	logger.debug( 	"Resource view event (user=%s) (course=%s) (resource=%s) (time_length=%s)",
-					user, course, resource_id, event.time_length )
+	if 		user is not None \
+		and resource_id \
+		and course is not None:
+
+		db.create_course_resource_view( user,
+									nti_session,
+									event.timestamp,
+									course,
+									event.context_path,
+									resource_id,
+									event.time_length )
+		logger.debug( 	"Resource view event (user=%s) (course=%s) (resource=%s) (time_length=%s)",
+						user, course, resource_id, event.time_length )
 
 
 def _add_video_event( db, event, nti_session=None ):
@@ -92,21 +96,25 @@ def _add_video_event( db, event, nti_session=None ):
 	user = get_entity( event.user )
 	resource_id = event.resource_id
 	course = _get_course( event )
-	db.create_video_event( user,
-						nti_session,
-						event.timestamp,
-						course,
-						event.context_path,
-						resource_id,
-						event.time_length,
-						event.event_type,
-						event.video_start_time,
-						event.video_end_time,
-						event.with_transcript )
-	logger.debug( 	"Video event (user=%s) (course=%s) (resource=%s) (type=%s) (start=%s) (end=%s) (time_length=%s)",
-					user, course, resource_id,
-					event.event_type, event.video_start_time,
-					event.video_end_time, event.time_length )
+	if 		user is not None \
+		and resource_id \
+		and course is not None:
+
+		db.create_video_event( user,
+							nti_session,
+							event.timestamp,
+							course,
+							event.context_path,
+							resource_id,
+							event.time_length,
+							event.event_type,
+							event.video_start_time,
+							event.video_end_time,
+							event.with_transcript )
+		logger.debug( 	"Video event (user=%s) (course=%s) (resource=%s) (type=%s) (start=%s) (end=%s) (time_length=%s)",
+						user, course, resource_id,
+						event.event_type, event.video_start_time,
+						event.video_end_time, event.time_length )
 
 
 def handle_events( batch_events ):

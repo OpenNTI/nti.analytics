@@ -31,7 +31,7 @@ from zope import component
 
 from nti.analytics.identifier import _Identifier
 
-from six import integer_types
+from six import integer_types, string_types
 
 class SharedConfiguringTestLayer(ZopeComponentLayer,
                                  GCLayerMixin,
@@ -78,8 +78,6 @@ class NTIAnalyticsApplicationTestLayer(ApplicationTestLayer):
         pass
 
 
-from six import integer_types, string_types
-
 DEFAULT_INTID = 101
 
 class TestIdentifier(_Identifier):
@@ -87,8 +85,12 @@ class TestIdentifier(_Identifier):
 
 	def __init__(self):
 		self.default_intid = DEFAULT_INTID
+		self.cache = dict()
 
 	def get_id( self, obj ):
+		if obj in self.cache:
+			return self.cache.get( obj )
+
 		result = None
 		if isinstance( obj, ( integer_types, string_types ) ):
 			result = obj
@@ -98,8 +100,13 @@ class TestIdentifier(_Identifier):
 		if result is None:
 			result = self.default_intid
 			self.default_intid += 1
+
+		self.cache[obj] = result
 		return result
 
+from nti.analytics import identifier
+identifier._DSIdentifier.get_id = identifier._NtiidIdentifier.get_id \
+= identifier.SessionId.get_id = TestIdentifier().get_id
 
 class ImmediateQueueRunner(object):
 	"""A queue that immediately runs the given job."""
