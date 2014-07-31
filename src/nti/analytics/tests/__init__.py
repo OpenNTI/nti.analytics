@@ -93,6 +93,11 @@ class TestIdentifier(_Identifier):
 		if result:
 			return result
 
+		# Or session id
+		result = getattr( obj, 'session_id', result )
+		if result:
+			return result
+
 		# Otherwise, let's check cache
 		if obj in self.cache:
 			return self.cache.get( obj )
