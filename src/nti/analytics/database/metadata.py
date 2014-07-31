@@ -27,7 +27,7 @@ Base = declarative_base()
 
 class Users(Base):
 	__tablename__ = 'Users'
-	# Sequence must be primary key
+	# Sequence must be primary key, even though we'd like to not do so (for merge purposes).
 	user_id = Column('user_id', Integer, Sequence('user_id_seq'), index=True, nullable=False, primary_key=True )
 	user_ds_id = Column('user_ds_id', Integer, nullable=False, unique=True, index=True )
 	shareable = Column('shareable', Boolean, nullable=False, default=False )

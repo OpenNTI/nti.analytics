@@ -115,14 +115,6 @@ class TestUsers(unittest.TestCase):
 		# Save everything we have.
 		self.session.commit()
 
-		# Idempotent
-		new_user = self.db.create_user( fooser )
-		#assert_that( new_user.user_id, is_( 1 ) )
-		assert_that( new_user.user_ds_id, is_( fooser ) )
-#
-# 		results = self.session.query(Users).all()
-# 		assert_that( results, has_length( 3 ) )
-
 	def test_user_constraints(self):
 		results = self.session.query(Users).all()
 		assert_that( results, has_length( 0 ) )

@@ -10,6 +10,7 @@ logger = __import__('logging').getLogger(__name__)
 
 import os
 import json
+
 from six import integer_types
 from six import string_types
 
@@ -201,21 +202,14 @@ class AnalyticsDB(object):
 		user = Users( user_ds_id=uid )
 		# We'd like to use 'merge' here, but we cannot (in sqlite) if our primary key
 		# is a sequence.
-		try:
-			self.session.add( user )
-			self.session.flush()
-			logger.info( 'Created user (user=%s) (user_id=%s) (user_ds_id=%s)', username, user.user_id, uid )
-		except IntegrityError:
-			# TODO We need to fetch actual user info
-			logger.debug( 'User (%s) (db_id=%s) already exists on attempted insert', uid, user.user_id )
-			# Can we rollback without losing everything we've already worked on?
-			# Perhaps via transaction.savepoint?
-			# self.session.rollback()
-			# user = self.session.query(Users).filter( Users.user_ds_id == uid ).first()
+		# For race conditions, let's just throw since we cannot really handle retrying
+		# gracefully at this level. A job-level retry should work though.
+		self.session.add( user )
+		self.session.flush()
+		logger.info( 'Created user (user=%s) (user_id=%s) (user_ds_id=%s)', username, user.user_id, uid )
 		return user
 
 	def _get_or_create_user(self, user):
-		# TODO Do we have to worry about race conditions?
 		uid = _userid.get_id( user )
 		found_user = self.session.query(Users).filter( Users.user_ds_id == uid ).first()
 		return found_user or self.create_user( user )
