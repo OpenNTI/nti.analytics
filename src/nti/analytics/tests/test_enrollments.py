@@ -38,23 +38,17 @@ class TestEnrollments( NTIAnalyticsTestCase ):
 		component.getGlobalSiteManager().unregisterUtility( self.db, provided=IAnalyticsDB )
 		self.session.close()
 
-	def _shared_setup(self):
+	@WithMockDSTrans
+	def test_enrollments(self):
 		principal = User.create_user( username='sjohnson@nextthought.com', dataserver=self.ds )
 		self.ds.root[principal.id] = principal
-
 		admin = courses.CourseAdministrativeLevel()
 		self.ds.root['admin'] = admin
 		course = courses.CourseInstance()
 		admin['course'] = course
-
 		self.section = course.SubInstances['section1'] = courses.ContentCourseSubInstance()
-
 		self.principal  = principal
 		self.course = course
-
-	@WithMockDSTrans
-	def test_enrollments(self):
-		self._shared_setup()
 
 		results = self.session.query( CourseEnrollments ).all()
 		assert_that( results, has_length( 0 ) )

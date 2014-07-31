@@ -88,10 +88,16 @@ class TestIdentifier(_Identifier):
 		self.cache = dict()
 
 	def get_id( self, obj ):
+		# Opt for ds_intid if we're in a mock_ds
+		result = getattr( obj, '_ds_intid', None )
+		if result:
+			return result
+
+		# Otherwise, let's check cache
 		if obj in self.cache:
 			return self.cache.get( obj )
 
-		result = None
+		# Ok, make something up.
 		if isinstance( obj, ( integer_types, string_types ) ):
 			result = obj
 		elif hasattr( obj, 'intid' ):

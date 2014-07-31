@@ -146,10 +146,11 @@ class AnalyticsDB(object):
 	max_overflow = 10
 	pool_recycle = 300
 
-	def __init__( self, dburi=None, twophase=False, autocommit=False, defaultSQLite=False ):
+	def __init__( self, dburi=None, twophase=False, autocommit=False, defaultSQLite=False, testmode=False ):
 		self.dburi = dburi
 		self.twophase = twophase
 		self.autocommit = autocommit
+		self.testmode = testmode
 
 		if defaultSQLite and not dburi:
 			data_dir = os.getenv( 'DATASERVER_DATA_DIR' ) or '/tmp'
@@ -174,7 +175,7 @@ class AnalyticsDB(object):
 
 	@Lazy
 	def sessionmaker(self):
-		if self.autocommit:
+		if self.autocommit or self.testmode:
 			result = sessionmaker(bind=self.engine,
 							  	  twophase=self.twophase)
 		else:
@@ -186,7 +187,6 @@ class AnalyticsDB(object):
 
 		return result
 
-
 	@Lazy
 	def session(self):
 		# This property proxies into a thread-local session.
@@ -197,21 +197,21 @@ class AnalyticsDB(object):
 		# them (e.g. community owned forums).
 		username = getattr( user, 'username', None )
 		uid = _userid.get_id( user )
-		if not uid:
-			# Nothing we can do, not sure how we got here. Probably indicative of
-			# old or stale data.
-			logger.exception( 'User has no user_id and cannot be inserted (uid=%s) (user=%s)', uid, user )
-			return
+
 		user = Users( user_ds_id=uid )
 		# We'd like to use 'merge' here, but we cannot (in sqlite) if our primary key
 		# is a sequence.
-		self.session.add( user )
 		try:
+			self.session.add( user )
 			self.session.flush()
 			logger.info( 'Created user (user=%s) (user_id=%s) (user_ds_id=%s)', username, user.user_id, uid )
 		except IntegrityError:
-			# TODO Fetch actual user? Do we want to rollback session to do so?
+			# TODO We need to fetch actual user info
 			logger.debug( 'User (%s) (db_id=%s) already exists on attempted insert', uid, user.user_id )
+			# Can we rollback without losing everything we've already worked on?
+			# Perhaps via transaction.savepoint?
+			# self.session.rollback()
+			# user = self.session.query(Users).filter( Users.user_ds_id == uid ).first()
 		return user
 
 	def _get_or_create_user(self, user):

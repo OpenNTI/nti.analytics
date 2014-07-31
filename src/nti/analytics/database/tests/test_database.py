@@ -73,7 +73,7 @@ from . import DEFAULT_INTID
 class TestUsers(unittest.TestCase):
 
 	def setUp(self):
-		self.db = AnalyticsDB( dburi='sqlite://' )
+		self.db = AnalyticsDB( dburi='sqlite://', testmode=True )
 		self.session = self.db.session
 		assert_that( self.db.engine.table_names(), has_length( 35 ) )
 
@@ -99,6 +99,8 @@ class TestUsers(unittest.TestCase):
 
 		# Dupe, but not inserted
 		self.db._get_or_create_user( fooser )
+		results = self.session.query(Users).all()
+		assert_that( results, has_length( 1 ) )
 
 		# And passing in just user ids
 		self.db.create_user( 42 )
@@ -110,8 +112,16 @@ class TestUsers(unittest.TestCase):
 		results = self.session.query(Users).all()
 		assert_that( results, has_length( 3 ) )
 
+		# Save everything we have.
+		self.session.commit()
+
 		# Idempotent
-		self.db.create_user( fooser )
+		new_user = self.db.create_user( fooser )
+		#assert_that( new_user.user_id, is_( 1 ) )
+		assert_that( new_user.user_ds_id, is_( fooser ) )
+#
+# 		results = self.session.query(Users).all()
+# 		assert_that( results, has_length( 3 ) )
 
 	def test_user_constraints(self):
 		results = self.session.query(Users).all()
