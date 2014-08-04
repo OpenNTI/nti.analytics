@@ -11,6 +11,7 @@
 
 	<include package="." file="meta.zcml" />
 
+	<!-- Non devmode is config driven -->
 	<configure zcml:condition="have devmode">
 
 		<!-- In-memory sqlite for test mode -->

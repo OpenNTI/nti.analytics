@@ -30,8 +30,9 @@ class IRegisterAnalyticsDB(interface.Interface):
 	twophase = schema.Bool(title="twophase commit", required=False)
 	autocommit = fields.Bool(title="autocommit", required=False)
 	defaultSQLite = schema.Bool(title="default to SQLite", required=False)
+	config = fields.TextLine(title="path to config file", required=False)
 
-def registerAnalyticsDB(_context, dburi=None, twophase=False, autocommit=False, defaultSQLite=False, name=u""):
+def registerAnalyticsDB(_context, dburi=None, twophase=False, autocommit=False, defaultSQLite=False, config=None, name=u""):
 	"""
 	Register the db
 	"""
@@ -40,6 +41,7 @@ def registerAnalyticsDB(_context, dburi=None, twophase=False, autocommit=False, 
 									dburi=dburi,
 									twophase=twophase,
 									autocommit=autocommit,
-									defaultSQLite=defaultSQLite )
+									defaultSQLite=defaultSQLite,
+									config=config )
 	utility(_context, provides=analytics_interfaces.IAnalyticsDB, factory=factory, name=name)
 

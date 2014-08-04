@@ -10,6 +10,7 @@ logger = __import__('logging').getLogger(__name__)
 
 import os
 import json
+import ConfigParser
 
 from six import integer_types
 from six import string_types
@@ -147,7 +148,7 @@ class AnalyticsDB(object):
 	max_overflow = 10
 	pool_recycle = 300
 
-	def __init__( self, dburi=None, twophase=False, autocommit=False, defaultSQLite=False, testmode=False ):
+	def __init__( self, dburi=None, twophase=False, autocommit=False, defaultSQLite=False, testmode=False, config=None ):
 		self.dburi = dburi
 		self.twophase = twophase
 		self.autocommit = autocommit
@@ -158,8 +159,18 @@ class AnalyticsDB(object):
 			data_dir = os.path.expanduser( data_dir )
 			data_file = os.path.join( data_dir, 'analytics-sqlite.db' )
 			self.dburi = "sqlite:///%s" % data_file
+		elif config:
+			config_name = os.path.expandvars(config)
+			parser = ConfigParser.ConfigParser()
+			parser.read([config_name])
+			if parser.has_option('analytics', 'dburi'):
+				self.dburi = parser.get('analytics', 'dburi')
+			if parser.has_option('analytics', 'twophase'):
+				self.twophase = parser.getboolean('analytics', 'twophase')
+			if parser.has_option('analytics', 'autocommit'):
+				self.autocommit = parser.getboolean('analytics', 'autocommit')
 
-		logger.info( "Creating database at '%s'", self.dburi )
+		logger.info( "Connecting to database at '%s'", self.dburi )
 		self.metadata = AnalyticsMetadata( self.engine )
 
 	@Lazy
