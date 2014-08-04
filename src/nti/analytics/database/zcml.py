@@ -25,23 +25,21 @@ class IRegisterAnalyticsDB(interface.Interface):
 	"""
 	The arguments needed for registering the analytics db.
 	"""
-	name = fields.TextLine(title="db name identifier (site)", required=False, default="")
 	dburi = fields.TextLine(title="db uri", required=False)
 	twophase = schema.Bool(title="twophase commit", required=False)
 	autocommit = fields.Bool(title="autocommit", required=False)
 	defaultSQLite = schema.Bool(title="default to SQLite", required=False)
 	config = fields.TextLine(title="path to config file", required=False)
 
-def registerAnalyticsDB(_context, dburi=None, twophase=False, autocommit=False, defaultSQLite=False, config=None, name=u""):
+def registerAnalyticsDB(_context, dburi=None, twophase=False, autocommit=False, defaultSQLite=False, config=None):
 	"""
 	Register the db
 	"""
-	logger.info( "Registering analyticsDB for '%s'" % name )
 	factory = functools.partial(	AnalyticsDB,
 									dburi=dburi,
 									twophase=twophase,
 									autocommit=autocommit,
 									defaultSQLite=defaultSQLite,
 									config=config )
-	utility(_context, provides=analytics_interfaces.IAnalyticsDB, factory=factory, name=name)
+	utility(_context, provides=analytics_interfaces.IAnalyticsDB, factory=factory)
 
