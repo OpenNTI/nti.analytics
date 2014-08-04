@@ -20,7 +20,14 @@ from nti.async import get_job_queue as async_queue
 
 from nti.analytics import QUEUE_NAME
 from nti.analytics.interfaces import IAnalyticsQueue
-from nti.analytics.tests import ImmediateQueueRunner
+
+class ImmediateQueueRunner(object):
+	"""
+	A queue that immediately runs the given job. This is generally
+	desired for test or dev mode.
+	"""
+	def put( self, job ):
+		job()
 
 def registerImmediateProcessingQueue(_context):
 	logger.info( "Registering immediate analytics processing queue" )

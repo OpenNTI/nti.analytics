@@ -16,14 +16,12 @@
 
 		<!-- In-memory sqlite for test mode -->
 		<configure zcml:condition="have testmode">
-
 			<adb:registerAnalyticsDB 	defaultSQLite="True"
 										dburi="sqlite://" />
 
 		</configure>
 
 		<configure zcml:condition="not-have testmode">
-
 			<adb:registerAnalyticsDB 	defaultSQLite="True"/>
 
 		</configure>

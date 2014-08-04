@@ -118,8 +118,3 @@ class TestIdentifier(_Identifier):
 from nti.analytics import identifier
 identifier._DSIdentifier.get_id = identifier._NtiidIdentifier.get_id \
 = identifier.SessionId.get_id = TestIdentifier().get_id
-
-class ImmediateQueueRunner(object):
-	"""A queue that immediately runs the given job."""
-	def put( self, job ):
-		job()
