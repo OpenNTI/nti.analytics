@@ -19,6 +19,7 @@ from sqlalchemy import DateTime
 
 from sqlalchemy.schema import Index
 from sqlalchemy.schema import Sequence
+from sqlalchemy.schema import PrimaryKeyConstraint
 
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.declarative import declared_attr
@@ -110,6 +111,11 @@ class DynamicFriendsListsMemberAdded(Base,BaseTableMixin,DynamicFriendsListMixin
 class DynamicFriendsListsMemberRemoved(Base,BaseTableMixin,DynamicFriendsListMixin,FriendMixin):
 	__tablename__ = 'DynamicFriendsListsMemberRemoved'
 
+	# Make sure we allow multiple removals
+	__table_args__ = (
+        PrimaryKeyConstraint('user_id', 'dfl_id', 'target_id', 'timestamp'),
+    )
+
 class FriendsListsCreated(Base,BaseTableMixin,DeletedMixin):
 	__tablename__ = 'FriendsListsCreated'
 	friends_list_id = Column('friends_list_id', Integer, nullable=False, index=True, primary_key=True )
@@ -125,11 +131,21 @@ class FriendsListsMemberAdded(Base,BaseTableMixin,FriendsListMixin,FriendMixin):
 class FriendsListsMemberRemoved(Base,BaseTableMixin,FriendsListMixin,FriendMixin):
 	__tablename__ = 'FriendsListsMemberRemoved'
 
+	# Make sure we allow multiple removals
+	__table_args__ = (
+        PrimaryKeyConstraint('user_id', 'friends_list_id', 'target_id', 'timestamp'),
+    )
+
 class ContactsAdded(Base,BaseTableMixin,FriendMixin):
 	__tablename__ = 'ContactsAdded'
 
 class ContactsRemoved(Base,BaseTableMixin,FriendMixin):
 	__tablename__ = 'ContactsRemoved'
+
+	# Make sure we allow multiple contact drops
+	__table_args__ = (
+        PrimaryKeyConstraint('user_id', 'target_id', 'timestamp'),
+    )
 
 class BlogMixin(BaseViewMixin):
 
@@ -152,6 +168,7 @@ class CourseMixin(object):
 		return (Index('ix_%s_user_course' % cls.__tablename__, 'user_id', 'course_id'),)
 
 class ResourceMixin(CourseMixin,BaseViewMixin):
+	# TODO We are not indexing here, should we, or will we just look up by course?
 	# ntiid, 256 seems like it would be enough...
 	resource_id = Column('resource_id', String(256), nullable=False, primary_key=True)
 
@@ -209,7 +226,7 @@ class ForumsCreated(Base,BaseTableMixin,CourseMixin,DeletedMixin):
 class ForumMixin(CourseMixin):
 	@declared_attr
 	def forum_id(cls):
-		return Column('forum_id', Integer, ForeignKey("ForumsCreated.forum_id"), nullable=False, primary_key=True)
+		return Column('forum_id', Integer, ForeignKey("ForumsCreated.forum_id"), nullable=False, index=True, primary_key=True)
 
 class TopicsCreated(Base,BaseTableMixin,ForumMixin,DeletedMixin):
 	__tablename__ = 'TopicsCreated'
@@ -218,7 +235,7 @@ class TopicsCreated(Base,BaseTableMixin,ForumMixin,DeletedMixin):
 class TopicMixin(ForumMixin):
 	@declared_attr
 	def topic_id(cls):
-		return Column('topic_id', Integer, ForeignKey("TopicsCreated.topic_id"), nullable=False, primary_key=True)
+		return Column('topic_id', Integer, ForeignKey("TopicsCreated.topic_id"), nullable=False, index=True, primary_key=True)
 
 class TopicsViewed(Base,BaseViewMixin,TopicMixin,TimeLengthMixin):
 	__tablename__ = 'TopicsViewed'
@@ -253,10 +270,15 @@ class EnrollmentTypes(Base):
 
 class CourseEnrollments(Base,BaseTableMixin,CourseMixin):
 	__tablename__ = 'CourseEnrollments'
-	type_id = Column( 'type_id', Integer, ForeignKey( 'EnrollmentTypes.type_id' ), nullable=False )
+	type_id = Column( 'type_id', Integer, ForeignKey( 'EnrollmentTypes.type_id' ), index=True, nullable=False )
 
 class CourseDrops(Base,BaseTableMixin,CourseMixin):
 	__tablename__ = 'CourseDrops'
+
+	# Make sure we allow multiple course drops, timestamp should be non-null here.
+	__table_args__ = (
+        PrimaryKeyConstraint('course_id', 'user_id', 'timestamp'),
+    )
 
 class AssignmentMixin(BaseTableMixin,CourseMixin,TimeLengthMixin):
 	# Max length of 160 as of 8.1.14
@@ -271,7 +293,7 @@ class AssignmentsTaken(Base,AssignmentMixin):
 class AssignmentSubmissionMixin(BaseTableMixin):
 	@declared_attr
 	def submission_id(cls):
-		return Column('submission_id', Integer, ForeignKey("AssignmentsTaken.submission_id"), nullable=False, primary_key=True)
+		return Column('submission_id', Integer, ForeignKey("AssignmentsTaken.submission_id"), nullable=False, index=True, primary_key=True)
 
 
 class DetailMixin(TimeLengthMixin):
@@ -279,7 +301,7 @@ class DetailMixin(TimeLengthMixin):
 	# Max length of 114 as of 8.1.14
 	@declared_attr
 	def question_id(cls):
-		return Column('question_id', String(256), nullable=False, primary_key=True)
+		return Column('question_id', String(256), nullable=False, index=True, primary_key=True)
 
 	@declared_attr
 	def question_part_id(cls):
@@ -343,7 +365,7 @@ class SelfAssessmentsTaken(Base,AssignmentMixin):
 # SelfAssessments will not have feedback or multiple graders
 class SelfAssessmentDetails(Base,BaseTableMixin,DetailMixin,GradeDetailMixin):
  	__tablename__ = 'SelfAssessmentDetails'
- 	submission_id = Column('submission_id', Integer, ForeignKey("SelfAssessmentsTaken.submission_id"), nullable=False, primary_key=True)
+ 	submission_id = Column('submission_id', Integer, ForeignKey("SelfAssessmentsTaken.submission_id"), nullable=False, index=True, primary_key=True)
 
 
 ## TODO LIST
