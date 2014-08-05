@@ -19,10 +19,9 @@ from dolmen.builtins.interfaces import IIterable
 
 from nti.async.interfaces import IQueue
 
-@component.adapter(IQueue)
-class IAnalyticsQueue(interface.Interface):
+class IAnalyticsQueueFactory(interface.Interface):
 	"""
-	The analytics processing queue.
+	A factory for analytics processing queues.
 	"""
 
 class IObjectProcessor(interface.Interface):

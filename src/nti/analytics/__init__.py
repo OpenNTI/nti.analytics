@@ -20,7 +20,7 @@ from .database import interfaces as analytic_interfaces
 
 from nti.async import create_job as create_job_async
 
-from nti.analytics.interfaces import IAnalyticsQueue
+from nti.analytics.interfaces import IAnalyticsQueueFactory
 
 QUEUE_NAME = '++etc++analytics++queue'
 
@@ -45,5 +45,6 @@ def create_job(func, *args, **kwargs):
 	return create_job_async( _execute_job, *args, **kwargs )
 
 def get_job_queue():
-	return component.getUtility( IAnalyticsQueue )
+	factory = component.getUtility( IAnalyticsQueueFactory )
+	return factory.get_queue()
 

@@ -19,7 +19,7 @@ from zope.component.zcml import utility
 from nti.async import get_job_queue as async_queue
 
 from nti.analytics import QUEUE_NAME
-from nti.analytics.interfaces import IAnalyticsQueue
+from nti.analytics.interfaces import IAnalyticsQueueFactory
 
 class ImmediateQueueRunner(object):
 	"""
@@ -29,12 +29,27 @@ class ImmediateQueueRunner(object):
 	def put( self, job ):
 		job()
 
+@interface.implementer(IAnalyticsQueueFactory)
+class _ImmediateQueueFactory(object):
+
+	def get_queue( self ):
+		return ImmediateQueueRunner()
+
+@interface.implementer(IAnalyticsQueueFactory)
+class _AnalyticsProcessingQueueFactory(object):
+
+	def get_queue( self ):
+		queue = async_queue( QUEUE_NAME )
+		if queue is None:
+			raise ValueError( "No queue exists for analytics processing. Evolve error?" )
+		return queue
+
 def registerImmediateProcessingQueue(_context):
 	logger.info( "Registering immediate analytics processing queue" )
-	queue = ImmediateQueueRunner()
-	utility(_context, provides=IAnalyticsQueue, component=queue )
+	factory = _ImmediateQueueFactory()
+	utility( _context, provides=IAnalyticsQueueFactory, component=factory )
 
 def registerProcessingQueue(_context):
 	logger.info( "Registering analytics processing queue" )
-	queue = async_queue( QUEUE_NAME )
-	utility(_context, provides=IAnalyticsQueue, component=queue )
+	factory = _AnalyticsProcessingQueueFactory()
+	utility( _context, provides=IAnalyticsQueueFactory, component=factory )
