@@ -25,6 +25,8 @@ from sqlalchemy.ext.declarative import declared_attr
 
 Base = declarative_base()
 
+SESSION_COLUMN_TYPE = String( 64 )
+
 class Users(Base):
 	__tablename__ = 'Users'
 	# Sequence must be primary key, even though we'd like to not do so (for merge purposes).
@@ -34,7 +36,7 @@ class Users(Base):
 
 class Sessions(Base):
 	__tablename__ = 'Sessions'
-	session_id = Column('session_id', String(1048), primary_key=True)
+	session_id = Column('session_id', SESSION_COLUMN_TYPE, primary_key=True)
 	user_id = Column('user_id', Integer, ForeignKey("Users.user_id"), nullable=False )
 	ip_addr = Column('ip_addr', String(64))
 	platform = Column('platform', String(64))
@@ -49,7 +51,7 @@ class BaseTableMixin(object):
 	# Does the same apply to users?  Perhaps we don't have a 'creator' stored.
 	@declared_attr
 	def session_id(cls):
-		return Column('session_id', String(1048), ForeignKey("Sessions.session_id"), nullable=True )
+		return Column('session_id', SESSION_COLUMN_TYPE, ForeignKey("Sessions.session_id"), nullable=True )
 
 	@declared_attr
 	def user_id(cls):
@@ -63,7 +65,7 @@ class BaseViewMixin(object):
 	# It will have to be fine-grain to avoid collisions.
 	@declared_attr
 	def session_id(cls):
-		return Column('session_id', String(1048), ForeignKey("Sessions.session_id"), nullable=True )
+		return Column('session_id', SESSION_COLUMN_TYPE, ForeignKey("Sessions.session_id"), nullable=True )
 
 	@declared_attr
 	def user_id(cls):
@@ -143,17 +145,18 @@ class BlogsViewed(Base,BlogMixin):
 	__tablename__ = 'BlogsViewed'
 
 class CourseMixin(object):
-	course_id = Column('course_id', String(64), nullable=False, index=True, primary_key=True)
+	course_id = Column('course_id', Integer, nullable=False, index=True, primary_key=True)
 
 	@declared_attr
 	def __table_args__(cls):
 		return (Index('ix_%s_user_course' % cls.__tablename__, 'user_id', 'course_id'),)
 
 class ResourceMixin(CourseMixin,BaseViewMixin):
-	# ntiid, 1048 seems like it would be enough...
-	resource_id = Column('resource_id', String(1048), nullable=False, primary_key=True)
+	# ntiid, 256 seems like it would be enough...
+	resource_id = Column('resource_id', String(256), nullable=False, primary_key=True)
 
 class ResourceViewMixin(ResourceMixin):
+	# FIXME Needs to be defined
 	context_path = Column('context_path', String(1048), nullable=False)
 
 # Time length in seconds
@@ -256,9 +259,10 @@ class CourseDrops(Base,BaseTableMixin,CourseMixin):
 	__tablename__ = 'CourseDrops'
 
 class AssignmentMixin(BaseTableMixin,CourseMixin,TimeLengthMixin):
+	# Max length of 160 as of 8.1.14
 	@declared_attr
 	def assignment_id(cls):
-		return Column('assignment_id', String(1048), nullable=False, index=True, primary_key=True )
+		return Column('assignment_id', String(256), nullable=False, index=True, primary_key=True )
 
 class AssignmentsTaken(Base,AssignmentMixin):
 	__tablename__ = 'AssignmentsTaken'
@@ -272,9 +276,10 @@ class AssignmentSubmissionMixin(BaseTableMixin):
 
 class DetailMixin(TimeLengthMixin):
 	# TODO Can we rely on these parts/ids being integers?
+	# Max length of 114 as of 8.1.14
 	@declared_attr
 	def question_id(cls):
-		return Column('question_id', String(1048), nullable=False, primary_key=True)
+		return Column('question_id', String(256), nullable=False, primary_key=True)
 
 	@declared_attr
 	def question_part_id(cls):
@@ -311,13 +316,13 @@ class AssignmentGrades(Base,GradeMixin):
 	grade_id = Column('grade_id', Integer, Sequence( 'assignment_grade_id_seq' ), primary_key=True, index=True )
  	# TODO Our seq has to be the only primary_key, thus we cannot use AssignmentSubmissionMixin. Ugh.
  	submission_id = Column('submission_id', Integer, ForeignKey("AssignmentsTaken.submission_id"), nullable=False, index=True)
- 	session_id = Column('session_id', String(1048), ForeignKey("Sessions.session_id"), nullable=True )
+ 	session_id = Column('session_id', SESSION_COLUMN_TYPE, ForeignKey("Sessions.session_id"), nullable=True )
 	user_id = Column('user_id', Integer, ForeignKey("Users.user_id"), index=True, nullable=True )
 	timestamp = Column('timestamp', DateTime, nullable=True )
 
 class AssignmentDetailGrades(Base,GradeDetailMixin,AssignmentSubmissionMixin):
 	__tablename__ = 'AssignmentDetailGrades'
-	question_id = Column('question_id', String(1048), ForeignKey("AssignmentDetails.question_id"), nullable=False, primary_key=True)
+	question_id = Column('question_id', String(256), ForeignKey("AssignmentDetails.question_id"), nullable=False, primary_key=True)
 	question_part_id = Column('question_part_id', Integer, ForeignKey("AssignmentDetails.question_part_id"), nullable=True, primary_key=True)
 
 
