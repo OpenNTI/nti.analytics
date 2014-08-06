@@ -61,7 +61,7 @@ class AssignmentMixin(BaseTableMixin,CourseMixin,TimeLengthMixin):
 
 class AssignmentsTaken(Base,AssignmentMixin):
 	__tablename__ = 'AssignmentsTaken'
-	submission_id = Column('submission_id', Integer, unique=True, primary_key=True, index=True )
+	submission_id = Column('submission_id', Integer, unique=True, primary_key=True, index=True, autoincrement=False )
 
 class AssignmentSubmissionMixin(BaseTableMixin):
 	@declared_attr
@@ -78,7 +78,7 @@ class DetailMixin(TimeLengthMixin):
 
 	@declared_attr
 	def question_part_id(cls):
-		return Column('question_part_id', Integer, nullable=False, primary_key=True)
+		return Column('question_part_id', Integer, nullable=False, primary_key=True, autoincrement=False)
 
 	# TODO separate submissions by question types?
 	@declared_attr
@@ -132,7 +132,7 @@ class AssignmentFeedback(Base,AssignmentSubmissionMixin,DeletedMixin):
 
 class SelfAssessmentsTaken(Base,AssignmentMixin):
 	__tablename__ = 'SelfAssessmentsTaken'
-	submission_id = Column('submission_id', Integer, unique=True, primary_key=True, index=True )
+	submission_id = Column('submission_id', Integer, unique=True, primary_key=True, index=True, autoincrement=False )
 
 
 # SelfAssessments will not have feedback or multiple graders

@@ -55,11 +55,11 @@ class TopicMixin(ForumMixin):
 
 class ForumsCreated(Base,BaseTableMixin,CourseMixin,DeletedMixin):
 	__tablename__ = 'ForumsCreated'
-	forum_id = Column('forum_id', Integer, primary_key=True, index=True)
+	forum_id = Column('forum_id', Integer, primary_key=True, index=True, autoincrement=False)
 
 class TopicsCreated(Base,BaseTableMixin,ForumMixin,DeletedMixin):
 	__tablename__ = 'TopicsCreated'
-	topic_id = Column('topic_id', Integer, primary_key=True )
+	topic_id = Column('topic_id', Integer, primary_key=True, autoincrement=False )
 
 class ForumCommentsCreated(Base,CommentsMixin,TopicMixin):
 	__tablename__ = 'ForumCommentsCreated'

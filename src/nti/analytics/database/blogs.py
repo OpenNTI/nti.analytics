@@ -46,7 +46,7 @@ class BlogMixin(BaseViewMixin):
 
 class BlogsCreated(Base,BaseTableMixin,DeletedMixin):
 	__tablename__ = 'BlogsCreated'
-	blog_id = Column('blog_id', Integer, nullable=False, index=True, primary_key=True )
+	blog_id = Column('blog_id', Integer, nullable=False, index=True, primary_key=True, autoincrement=False )
 
 class BlogsViewed(Base,BlogMixin):
 	__tablename__ = 'BlogsViewed'

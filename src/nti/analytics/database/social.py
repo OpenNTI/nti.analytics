@@ -63,7 +63,7 @@ class FriendsListMixin(object):
 # This information needs to be obscured to protect privacy.
 class ChatsInitiated(Base,BaseTableMixin):
 	__tablename__ = 'ChatsInitiated'
-	chat_id = Column('chat_id', Integer, nullable=False, index=True, primary_key=True )
+	chat_id = Column('chat_id', Integer, nullable=False, index=True, primary_key=True, autoincrement=False )
 
 # Note, we're not tracking when users leave chat rooms.
 class ChatsJoined(Base,BaseTableMixin):
@@ -72,7 +72,7 @@ class ChatsJoined(Base,BaseTableMixin):
 
 class DynamicFriendsListsCreated(Base,BaseTableMixin,DeletedMixin):
 	__tablename__ = 'DynamicFriendsListsCreated'
-	dfl_id = Column('dfl_id', Integer, nullable=False, index=True, primary_key=True )
+	dfl_id = Column('dfl_id', Integer, nullable=False, index=True, primary_key=True, autoincrement=False )
 
 class DynamicFriendsListsMemberAdded(Base,BaseTableMixin,DynamicFriendsListMixin,FriendMixin):
 	__tablename__ = 'DynamicFriendsListsMemberAdded'
@@ -87,7 +87,7 @@ class DynamicFriendsListsMemberRemoved(Base,BaseTableMixin,DynamicFriendsListMix
 
 class FriendsListsCreated(Base,BaseTableMixin,DeletedMixin):
 	__tablename__ = 'FriendsListsCreated'
-	friends_list_id = Column('friends_list_id', Integer, nullable=False, index=True, primary_key=True )
+	friends_list_id = Column('friends_list_id', Integer, nullable=False, index=True, primary_key=True, autoincrement=False )
 
 
 class FriendsListsMemberAdded(Base,BaseTableMixin,FriendsListMixin,FriendMixin):
