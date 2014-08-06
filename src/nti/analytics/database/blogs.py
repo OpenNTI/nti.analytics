@@ -13,6 +13,7 @@ from sqlalchemy import Integer
 from sqlalchemy import ForeignKey
 
 from sqlalchemy.ext.declarative import declared_attr
+from sqlalchemy.schema import PrimaryKeyConstraint
 
 import zope.intid
 
@@ -38,22 +39,29 @@ from nti.analytics.database.meta_mixins import CommentsMixin
 
 from nti.analytics.database.users import get_or_create_user
 
-class BlogMixin(BaseViewMixin):
+class BlogMixin(object):
 
 	@declared_attr
 	def blog_id(cls):
-		return Column('blog_id', Integer, ForeignKey("BlogsCreated.blog_id"), nullable=False, index=True, primary_key=True )
+		return Column('blog_id', Integer, ForeignKey("BlogsCreated.blog_id"), nullable=False, index=True)
 
 class BlogsCreated(Base,BaseTableMixin,DeletedMixin):
 	__tablename__ = 'BlogsCreated'
 	blog_id = Column('blog_id', Integer, nullable=False, index=True, primary_key=True, autoincrement=False )
 
-class BlogsViewed(Base,BlogMixin):
+class BlogsViewed(Base,BaseViewMixin,BlogMixin):
 	__tablename__ = 'BlogsViewed'
+
+	__table_args__ = (
+        PrimaryKeyConstraint('user_id', 'blog_id', 'timestamp'),
+    )
 
 class BlogCommentsCreated(Base,CommentsMixin,BlogMixin):
 	__tablename__ = 'BlogCommentsCreated'
 
+	__table_args__ = (
+        PrimaryKeyConstraint('comment_id'),
+    )
 
 def create_blog( user, nti_session, blog_entry ):
 	db = get_analytics_db()

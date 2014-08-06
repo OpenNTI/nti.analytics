@@ -43,17 +43,17 @@ from nti.analytics.database.users import get_or_create_user
 class DynamicFriendsListMixin(object):
 	@declared_attr
 	def dfl_id(cls):
-		return Column('dfl_id', Integer, ForeignKey("DynamicFriendsListsCreated.dfl_id"), nullable=False, index=True, primary_key=True )
+		return Column('dfl_id', Integer, ForeignKey("DynamicFriendsListsCreated.dfl_id"), nullable=False, index=True )
 
 class FriendMixin(object):
 	@declared_attr
 	def target_id(cls):
-		return Column('target_id', Integer, ForeignKey("Users.user_id"), index=True, primary_key=True)
+		return Column('target_id', Integer, ForeignKey("Users.user_id"), index=True)
 
 class FriendsListMixin(object):
 	@declared_attr
 	def friends_list_id(cls):
-		return Column('friends_list_id', Integer, ForeignKey("FriendsListsCreated.friends_list_id"), nullable=False, index=True, primary_key=True )
+		return Column('friends_list_id', Integer, ForeignKey("FriendsListsCreated.friends_list_id"), nullable=False, index=True )
 
 
 # TODO Some of these objects do not exist in the ds, thus we'll need a sequence.  Hopefully
@@ -68,7 +68,11 @@ class ChatsInitiated(Base,BaseTableMixin):
 # Note, we're not tracking when users leave chat rooms.
 class ChatsJoined(Base,BaseTableMixin):
 	__tablename__ = 'ChatsJoined'
-	chat_id = Column('chat_id', Integer, ForeignKey("ChatsInitiated.chat_id"), nullable=False, index=True, primary_key=True )
+	chat_id = Column('chat_id', Integer, ForeignKey("ChatsInitiated.chat_id"), nullable=False, index=True )
+
+	__table_args__ = (
+        PrimaryKeyConstraint('chat_id', 'user_id', 'timestamp'),
+    )
 
 class DynamicFriendsListsCreated(Base,BaseTableMixin,DeletedMixin):
 	__tablename__ = 'DynamicFriendsListsCreated'
@@ -77,12 +81,16 @@ class DynamicFriendsListsCreated(Base,BaseTableMixin,DeletedMixin):
 class DynamicFriendsListsMemberAdded(Base,BaseTableMixin,DynamicFriendsListMixin,FriendMixin):
 	__tablename__ = 'DynamicFriendsListsMemberAdded'
 
+	__table_args__ = (
+        PrimaryKeyConstraint('dfl_id', 'target_id'),
+    )
+
 class DynamicFriendsListsMemberRemoved(Base,BaseTableMixin,DynamicFriendsListMixin,FriendMixin):
 	__tablename__ = 'DynamicFriendsListsMemberRemoved'
 
 	# Make sure we allow multiple removals
 	__table_args__ = (
-        PrimaryKeyConstraint('user_id', 'dfl_id', 'target_id', 'timestamp'),
+        PrimaryKeyConstraint('dfl_id', 'target_id', 'timestamp'),
     )
 
 class FriendsListsCreated(Base,BaseTableMixin,DeletedMixin):
@@ -93,16 +101,24 @@ class FriendsListsCreated(Base,BaseTableMixin,DeletedMixin):
 class FriendsListsMemberAdded(Base,BaseTableMixin,FriendsListMixin,FriendMixin):
 	__tablename__ = 'FriendsListsMemberAdded'
 
+	__table_args__ = (
+        PrimaryKeyConstraint('friends_list_id', 'target_id'),
+    )
+
 class FriendsListsMemberRemoved(Base,BaseTableMixin,FriendsListMixin,FriendMixin):
 	__tablename__ = 'FriendsListsMemberRemoved'
 
 	# Make sure we allow multiple removals
 	__table_args__ = (
-        PrimaryKeyConstraint('user_id', 'friends_list_id', 'target_id', 'timestamp'),
+        PrimaryKeyConstraint('friends_list_id', 'target_id', 'timestamp'),
     )
 
 class ContactsAdded(Base,BaseTableMixin,FriendMixin):
 	__tablename__ = 'ContactsAdded'
+
+	__table_args__ = (
+        PrimaryKeyConstraint('user_id', 'target_id'),
+    )
 
 class ContactsRemoved(Base,BaseTableMixin,FriendMixin):
 	__tablename__ = 'ContactsRemoved'

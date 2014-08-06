@@ -13,6 +13,8 @@ from sqlalchemy import Integer
 from sqlalchemy import Boolean
 from sqlalchemy import Enum
 
+from sqlalchemy.schema import PrimaryKeyConstraint
+
 import zope.intid
 
 from nti.analytics.common import timestamp_type
@@ -37,6 +39,10 @@ from nti.analytics.database.users import get_or_create_user
 class CourseResourceViews(Base,ResourceViewMixin,TimeLengthMixin):
 	__tablename__ = 'CourseResourceViews'
 
+	__table_args__ = (
+        PrimaryKeyConstraint('resource_id', 'user_id', 'timestamp'),
+    )
+
 
 # Would we query on these separate event types? Probably not.
 # If so, we may break them out into separate tables.
@@ -49,6 +55,10 @@ class VideoEvents(Base,ResourceViewMixin,TimeLengthMixin):
 	video_start_time = Column('video_start_time', Integer, nullable=False )
 	video_end_time = Column('video_end_time', Integer, nullable=False )
 	with_transcript = Column('with_transcript', Boolean, nullable=False )
+
+	__table_args__ = (
+        PrimaryKeyConstraint('resource_id', 'user_id', 'timestamp'),
+    )
 
 
 def create_course_resource_view(user, nti_session, timestamp, course, context_path, resource, time_length):

@@ -19,6 +19,7 @@ from sqlalchemy import Text
 from sqlalchemy import DateTime
 
 from sqlalchemy.schema import Sequence
+from sqlalchemy.schema import PrimaryKeyConstraint
 
 from sqlalchemy.ext.declarative import declared_attr
 
@@ -57,16 +58,20 @@ class AssignmentMixin(BaseTableMixin,CourseMixin,TimeLengthMixin):
 	# Max length of 160 as of 8.1.14
 	@declared_attr
 	def assignment_id(cls):
-		return Column('assignment_id', String(256), nullable=False, index=True, primary_key=True )
+		return Column('assignment_id', String(256), nullable=False, index=True )
 
 class AssignmentsTaken(Base,AssignmentMixin):
 	__tablename__ = 'AssignmentsTaken'
-	submission_id = Column('submission_id', Integer, unique=True, primary_key=True, index=True, autoincrement=False )
+	submission_id = Column('submission_id', Integer, unique=True, index=True, autoincrement=False )
+
+	__table_args__ = (
+        PrimaryKeyConstraint('submission_id'),
+    )
 
 class AssignmentSubmissionMixin(BaseTableMixin):
 	@declared_attr
 	def submission_id(cls):
-		return Column('submission_id', Integer, ForeignKey("AssignmentsTaken.submission_id"), nullable=False, index=True, primary_key=True)
+		return Column('submission_id', Integer, ForeignKey("AssignmentsTaken.submission_id"), nullable=False, index=True)
 
 
 class DetailMixin(TimeLengthMixin):
@@ -74,11 +79,11 @@ class DetailMixin(TimeLengthMixin):
 	# Max length of 114 as of 8.1.14
 	@declared_attr
 	def question_id(cls):
-		return Column('question_id', String(256), nullable=False, index=True, primary_key=True)
+		return Column('question_id', String(256), nullable=False, index=True)
 
 	@declared_attr
 	def question_part_id(cls):
-		return Column('question_part_id', Integer, nullable=False, primary_key=True, autoincrement=False)
+		return Column('question_part_id', Integer, nullable=False, autoincrement=False)
 
 	# TODO separate submissions by question types?
 	@declared_attr
@@ -106,20 +111,24 @@ class GradeDetailMixin(GradeMixin):
 class AssignmentDetails(Base,DetailMixin,AssignmentSubmissionMixin):
 	__tablename__ = 'AssignmentDetails'
 
-class AssignmentGrades(Base,GradeMixin):
+	__table_args__ = (
+        PrimaryKeyConstraint('submission_id', 'question_id', 'question_part_id'),
+    )
+
+class AssignmentGrades(Base,AssignmentSubmissionMixin,GradeMixin):
 	__tablename__ = 'AssignmentGrades'
 	grade_id = Column('grade_id', Integer, Sequence( 'assignment_grade_id_seq' ), primary_key=True, index=True )
- 	# TODO Our seq has to be the only primary_key, thus we cannot use AssignmentSubmissionMixin. Ugh.
- 	submission_id = Column('submission_id', Integer, ForeignKey("AssignmentsTaken.submission_id"), nullable=False, index=True)
- 	session_id = Column('session_id', SESSION_COLUMN_TYPE, ForeignKey("Sessions.session_id"), nullable=True )
-	user_id = Column('user_id', Integer, ForeignKey("Users.user_id"), index=True, nullable=True )
-	timestamp = Column('timestamp', DateTime, nullable=True )
 
 class AssignmentDetailGrades(Base,GradeDetailMixin,AssignmentSubmissionMixin):
 	__tablename__ = 'AssignmentDetailGrades'
-	question_id = Column('question_id', String(256), ForeignKey("AssignmentDetails.question_id"), nullable=False, primary_key=True)
-	question_part_id = Column('question_part_id', Integer, ForeignKey("AssignmentDetails.question_part_id"), nullable=True, primary_key=True)
+	question_id = Column('question_id', String(256), ForeignKey("AssignmentDetails.question_id"), nullable=False)
+	question_part_id = Column('question_part_id', Integer, ForeignKey("AssignmentDetails.question_part_id"), nullable=True)
 
+	# Cannot have multiple graders with this primary key, but our
+	# grader can be null.
+	__table_args__ = (
+        PrimaryKeyConstraint('submission_id', 'question_id', 'question_part_id'),
+    )
 
 # Each feedback 'tree' should have an associated grade with it.
 class AssignmentFeedback(Base,AssignmentSubmissionMixin,DeletedMixin):
@@ -127,8 +136,7 @@ class AssignmentFeedback(Base,AssignmentSubmissionMixin,DeletedMixin):
 	feedback_id = Column( 'feedback_id', Integer, nullable=False, unique=True, primary_key=True )
 	feedback_length = Column( 'feedback_length', Integer, nullable=True )
 	# Tie our feedback to our submission and grader.
-	grade_id = Column('grade_id', Integer, ForeignKey("AssignmentGrades.grade_id"), nullable=False, primary_key=True)
-
+	grade_id = Column('grade_id', Integer, ForeignKey("AssignmentGrades.grade_id"), nullable=False )
 
 class SelfAssessmentsTaken(Base,AssignmentMixin):
 	__tablename__ = 'SelfAssessmentsTaken'
@@ -138,9 +146,11 @@ class SelfAssessmentsTaken(Base,AssignmentMixin):
 # SelfAssessments will not have feedback or multiple graders
 class SelfAssessmentDetails(Base,BaseTableMixin,DetailMixin,GradeDetailMixin):
  	__tablename__ = 'SelfAssessmentDetails'
- 	submission_id = Column('submission_id', Integer, ForeignKey("SelfAssessmentsTaken.submission_id"), nullable=False, index=True, primary_key=True)
+ 	submission_id = Column('submission_id', Integer, ForeignKey("SelfAssessmentsTaken.submission_id"), nullable=False, index=True)
 
-
+	__table_args__ = (
+        PrimaryKeyConstraint('submission_id', 'question_id', 'question_part_id'),
+    )
 
 def _get_duration( submission ):
 	"""

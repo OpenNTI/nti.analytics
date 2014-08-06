@@ -30,7 +30,7 @@ class BaseTableMixin(object):
 
 	@declared_attr
 	def user_id(cls):
-		return Column('user_id', Integer, ForeignKey("Users.user_id"), index=True, nullable=True, primary_key=True )
+		return Column('user_id', Integer, ForeignKey("Users.user_id"), index=True, nullable=True )
 
 	timestamp = Column('timestamp', DateTime, nullable=True )
 
@@ -44,25 +44,25 @@ class BaseViewMixin(object):
 
 	@declared_attr
 	def user_id(cls):
-		return Column('user_id', Integer, ForeignKey("Users.user_id"), index=True, primary_key=True )
+		return Column('user_id', Integer, ForeignKey("Users.user_id"), index=True )
 
-	timestamp = Column('timestamp', DateTime, primary_key=True )
+	timestamp = Column('timestamp', DateTime)
 
 class DeletedMixin(object):
 	deleted = Column('deleted', DateTime)
 
 class CourseMixin(object):
-	course_id = Column('course_id', Integer, nullable=False, index=True, primary_key=True)
+	course_id = Column('course_id', Integer, nullable=False, index=True, autoincrement=False)
 
 	@declared_attr
 	def __table_args__(cls):
 		return (Index('ix_%s_user_course' % cls.__tablename__, 'user_id', 'course_id'),)
 
-class ResourceMixin(CourseMixin,BaseViewMixin):
+class ResourceMixin(CourseMixin):
 	# ntiid, 256 seems like it would be enough...
-	resource_id = Column('resource_id', String(256), nullable=False, index=True, primary_key=True)
+	resource_id = Column('resource_id', String(256), nullable=False, index=True)
 
-class ResourceViewMixin(ResourceMixin):
+class ResourceViewMixin(ResourceMixin,BaseViewMixin):
 	# FIXME Needs to be defined
 	context_path = Column('context_path', String(1048), nullable=False)
 
@@ -74,7 +74,7 @@ class CommentsMixin(BaseTableMixin,DeletedMixin):
 	# comment_id should be the DS intid
 	@declared_attr
 	def comment_id(cls):
-		return Column('comment_id', Integer, nullable=False, primary_key=True)
+		return Column('comment_id', Integer, nullable=False, autoincrement=False)
 
 	# parent_id should point to a parent comment; top-level comments will have null parent_ids
 	@declared_attr

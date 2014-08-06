@@ -38,6 +38,10 @@ from nti.analytics.database.users import get_or_create_user
 class CourseCatalogViews(Base,BaseViewMixin,CourseMixin,TimeLengthMixin):
 	__tablename__ = 'CourseCatalogViews'
 
+	__table_args__ = (
+        PrimaryKeyConstraint('user_id', 'course_id', 'timestamp'),
+    )
+
 # TODO how will we populate this, at migration time based on client?
 # or perhaps statically at first.
 class EnrollmentTypes(Base):
@@ -49,7 +53,11 @@ class CourseEnrollments(Base,BaseTableMixin,CourseMixin):
 	__tablename__ = 'CourseEnrollments'
 	type_id = Column( 'type_id', Integer, ForeignKey( 'EnrollmentTypes.type_id' ), index=True, nullable=False )
 
-class CourseDrops(Base,BaseTableMixin,CourseMixin):
+	__table_args__ = (
+        PrimaryKeyConstraint('course_id', 'user_id'),
+    )
+
+class CourseDrops(Base,BaseViewMixin,CourseMixin):
 	__tablename__ = 'CourseDrops'
 
 	# Make sure we allow multiple course drops, timestamp should be non-null here.

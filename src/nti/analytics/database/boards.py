@@ -12,6 +12,7 @@ from sqlalchemy import Column
 from sqlalchemy import Integer
 from sqlalchemy import ForeignKey
 
+from sqlalchemy.schema import PrimaryKeyConstraint
 from sqlalchemy.ext.declarative import declared_attr
 
 import zope.intid
@@ -45,27 +46,39 @@ from nti.analytics.database.users import get_or_create_user
 class ForumMixin(CourseMixin):
 	@declared_attr
 	def forum_id(cls):
-		return Column('forum_id', Integer, ForeignKey("ForumsCreated.forum_id"), nullable=False, index=True, primary_key=True)
+		return Column('forum_id', Integer, ForeignKey("ForumsCreated.forum_id"), nullable=False, index=True )
 
 class TopicMixin(ForumMixin):
 	@declared_attr
 	def topic_id(cls):
-		return Column('topic_id', Integer, ForeignKey("TopicsCreated.topic_id"), nullable=False, index=True, primary_key=True)
+		return Column('topic_id', Integer, ForeignKey("TopicsCreated.topic_id"), nullable=False, index=True )
 
 
 class ForumsCreated(Base,BaseTableMixin,CourseMixin,DeletedMixin):
 	__tablename__ = 'ForumsCreated'
 	forum_id = Column('forum_id', Integer, primary_key=True, index=True, autoincrement=False)
 
+	__table_args__ = (
+        PrimaryKeyConstraint('forum_id'),
+    )
+
 class TopicsCreated(Base,BaseTableMixin,ForumMixin,DeletedMixin):
 	__tablename__ = 'TopicsCreated'
-	topic_id = Column('topic_id', Integer, primary_key=True, autoincrement=False )
+	topic_id = Column('topic_id', Integer, primary_key=True, autoincrement=False, index=True )
 
 class ForumCommentsCreated(Base,CommentsMixin,TopicMixin):
 	__tablename__ = 'ForumCommentsCreated'
 
+	__table_args__ = (
+        PrimaryKeyConstraint('comment_id'),
+    )
+
 class TopicsViewed(Base,BaseViewMixin,TopicMixin,TimeLengthMixin):
 	__tablename__ = 'TopicsViewed'
+
+	__table_args__ = (
+        PrimaryKeyConstraint('user_id', 'topic_id', 'timestamp'),
+    )
 
 def create_forum(user, nti_session, course, forum):
 	db = get_analytics_db()

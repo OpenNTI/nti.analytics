@@ -16,6 +16,7 @@ from sqlalchemy import Integer
 from sqlalchemy import ForeignKey
 from sqlalchemy import Enum
 
+from sqlalchemy.schema import PrimaryKeyConstraint
 from sqlalchemy.ext.declarative import declared_attr
 
 import zope.intid
@@ -39,8 +40,11 @@ _resourceid = ResourceId()
 from nti.analytics.database import Base
 from nti.analytics.database import get_analytics_db
 
+from nti.analytics.database.meta_mixins import BaseTableMixin
+from nti.analytics.database.meta_mixins import BaseViewMixin
 from nti.analytics.database.meta_mixins import DeletedMixin
 from nti.analytics.database.meta_mixins import ResourceMixin
+from nti.analytics.database.meta_mixins import ResourceViewMixin
 
 from nti.analytics.database.users import get_or_create_user
 
@@ -48,20 +52,24 @@ class NoteMixin(ResourceMixin):
 
 	@declared_attr
 	def note_id(cls):
-		return Column('note_id', Integer, ForeignKey("NotesCreated.note_id"), nullable=False, index=True, primary_key=True )
+		return Column('note_id', Integer, ForeignKey("NotesCreated.note_id"), nullable=False, index=True )
 
 
-class NotesCreated(Base,ResourceMixin,DeletedMixin):
+class NotesCreated(Base,BaseTableMixin,ResourceMixin,DeletedMixin):
 	__tablename__ = 'NotesCreated'
 	note_id = Column('note_id', Integer, nullable=False, index=True, primary_key=True, autoincrement=False )
 	# Parent-id should be other notes; top-level notes will have null parent_ids
 	parent_id = Column('parent_id', Integer, nullable=True)
 	sharing = Column('sharing', Enum( 'PUBLIC', 'COURSE', 'OTHER', 'UNKNOWN' ), nullable=False )
 
-class NotesViewed(Base,NoteMixin):
+class NotesViewed(Base,BaseViewMixin,NoteMixin):
 	__tablename__ = 'NotesViewed'
 
-class HighlightsCreated(Base,ResourceMixin,DeletedMixin):
+	__table_args__ = (
+        PrimaryKeyConstraint('note_id', 'user_id', 'timestamp'),
+    )
+
+class HighlightsCreated(Base,BaseTableMixin,ResourceMixin,DeletedMixin):
 	__tablename__ = 'HighlightsCreated'
 	highlight_id = Column('highlight_id', Integer, nullable=False, index=True, primary_key=True, autoincrement=False )
 
