@@ -27,14 +27,14 @@
 	<include package=".database" file="configure.zcml" />
 
 	<!-- subscribers -->
-	<subscriber handler=".discussions._topic_added" />
-	<subscriber handler=".discussions._topic_removed" />
+	<subscriber handler=".boards._topic_added" />
+	<subscriber handler=".boards._topic_removed" />
 
-	<subscriber handler=".discussions._forum_added" />
-	<subscriber handler=".discussions._forum_removed" />
+	<subscriber handler=".boards._forum_added" />
+	<subscriber handler=".boards._forum_removed" />
 
-	<subscriber handler=".discussions._add_general_forum_comment" />
-	<subscriber handler=".discussions._modify_general_forum_comment" />
+	<subscriber handler=".boards._add_general_forum_comment" />
+	<subscriber handler=".boards._modify_general_forum_comment" />
 
 	<subscriber handler=".blogs._blog_added" />
 	<subscriber handler=".blogs._blog_removed" />
