@@ -46,6 +46,7 @@ _submissionid = SubmissionId()
 _feedbackid = FeedbackId()
 
 from nti.analytics.database import SESSION_COLUMN_TYPE
+from nti.analytics.database import NTIID_COLUMN_TYPE
 from nti.analytics.database import Base
 from nti.analytics.database import get_analytics_db
 
@@ -58,7 +59,7 @@ class AssignmentMixin(BaseTableMixin,CourseMixin,TimeLengthMixin):
 	# Max length of 160 as of 8.1.14
 	@declared_attr
 	def assignment_id(cls):
-		return Column('assignment_id', String(256), nullable=False, index=True )
+		return Column('assignment_id', NTIID_COLUMN_TYPE, nullable=False, index=True )
 
 class AssignmentsTaken(Base,AssignmentMixin):
 	__tablename__ = 'AssignmentsTaken'
@@ -79,11 +80,11 @@ class DetailMixin(TimeLengthMixin):
 	# Max length of 114 as of 8.1.14
 	@declared_attr
 	def question_id(cls):
-		return Column('question_id', String(256), nullable=False, index=True)
+		return Column('question_id', NTIID_COLUMN_TYPE, nullable=False, index=True)
 
 	@declared_attr
 	def question_part_id(cls):
-		return Column('question_part_id', Integer, nullable=False, autoincrement=False)
+		return Column('question_part_id', Integer, nullable=False, autoincrement=False, index=True )
 
 	# TODO separate submissions by question types?
 	@declared_attr
@@ -100,7 +101,7 @@ class GradeMixin(object):
 	# 'Null' for auto-graded parts.
 	@declared_attr
 	def grader(cls):
-		return Column('grader', ForeignKey("Users.user_id"), nullable=True, index=True )
+		return Column('grader', Integer, ForeignKey("Users.user_id"), nullable=True, index=True )
 
 class GradeDetailMixin(GradeMixin):
 	# For multiple choice types
@@ -121,8 +122,8 @@ class AssignmentGrades(Base,AssignmentSubmissionMixin,GradeMixin):
 
 class AssignmentDetailGrades(Base,GradeDetailMixin,AssignmentSubmissionMixin):
 	__tablename__ = 'AssignmentDetailGrades'
-	question_id = Column('question_id', String(256), ForeignKey("AssignmentDetails.question_id"), nullable=False)
-	question_part_id = Column('question_part_id', Integer, ForeignKey("AssignmentDetails.question_part_id"), nullable=True)
+	question_id = Column('question_id', NTIID_COLUMN_TYPE, ForeignKey("AssignmentDetails.question_id"), nullable=False)
+	question_part_id = Column('question_part_id', Integer, ForeignKey("AssignmentDetails.question_part_id"), nullable=True, autoincrement=False)
 
 	# Cannot have multiple graders with this primary key, but our
 	# grader can be null.
