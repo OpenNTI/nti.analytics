@@ -168,9 +168,8 @@ class CourseMixin(object):
 		return (Index('ix_%s_user_course' % cls.__tablename__, 'user_id', 'course_id'),)
 
 class ResourceMixin(CourseMixin,BaseViewMixin):
-	# TODO We are not indexing here, should we, or will we just look up by course?
 	# ntiid, 256 seems like it would be enough...
-	resource_id = Column('resource_id', String(256), nullable=False, primary_key=True)
+	resource_id = Column('resource_id', String(256), nullable=False, index=True, primary_key=True)
 
 class ResourceViewMixin(ResourceMixin):
 	# FIXME Needs to be defined
