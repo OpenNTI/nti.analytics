@@ -29,7 +29,7 @@ from nti.analytics.database import interfaces as analytic_interfaces
 from nti.dataserver import users
 
 from nti.analytics.database.database import AnalyticsDB
-from nti.analytics.database.metadata import Users
+from nti.analytics.database.users import Users
 
 from hamcrest import assert_that
 from hamcrest import has_length

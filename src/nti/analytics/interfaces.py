@@ -7,7 +7,6 @@ from __future__ import print_function, unicode_literals, absolute_import, divisi
 __docformat__ = "restructuredtext en"
 
 from zope import interface
-from zope import component
 
 from nti.schema.field import Number
 from nti.schema.field import Object
@@ -16,8 +15,6 @@ from nti.schema.field import DecodingValidTextLine as ValidTextLine
 from nti.schema.field import IndexedIterable as TypedIterable
 
 from dolmen.builtins.interfaces import IIterable
-
-from nti.async.interfaces import IQueue
 
 class IAnalyticsQueueFactory(interface.Interface):
 	"""

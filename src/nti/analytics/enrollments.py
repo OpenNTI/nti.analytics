@@ -23,22 +23,23 @@ from nti.contenttypes.courses.enrollment import DefaultPrincipalEnrollments
 from datetime import datetime
 
 from nti.analytics import interfaces as analytics_interfaces
+from nti.analytics.database import enrollments as db_enrollments
 
 from .common import get_nti_session_id
 from .common import process_event
 from .common import get_entity
 from .common import process_event
 
-def _add_drop( db, oid, username, scope, nti_session=None, timestamp=None ):
+def _add_drop( oid, username, scope, nti_session=None, timestamp=None ):
 	course = ntiids.find_object_with_ntiid( oid )
 	user = get_entity( username )
 	if 		user is not None \
 		and course is not None:
 
-		db.create_course_drop( user, nti_session, timestamp, course )
+		db_enrollments.create_course_drop( user, nti_session, timestamp, course )
 		logger.debug( "User dropped (user=%s) (course=%s)", user, course )
 
-def _add_enrollment( db, oid, username, scope, nti_session=None, timestamp=None ):
+def _add_enrollment( oid, username, scope, nti_session=None, timestamp=None ):
 	course = ntiids.find_object_with_ntiid( oid )
 	user = get_entity( username )
 	if 		user is not None \
@@ -46,7 +47,7 @@ def _add_enrollment( db, oid, username, scope, nti_session=None, timestamp=None 
 
 		user = get_entity( username )
 		enrollment_type = scope
-		db.create_course_enrollment( user, nti_session, timestamp, course, enrollment_type )
+		db_enrollments.create_course_enrollment( user, nti_session, timestamp, course, enrollment_type )
 		logger.debug( "User enrollment (user=%s) (course=%s) (type=%s)", user, course, enrollment_type )
 
 def _handle_event( record, to_call ):

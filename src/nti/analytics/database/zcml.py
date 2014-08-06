@@ -17,8 +17,8 @@ from zope import interface
 from zope.configuration import fields
 from zope.component.zcml import utility
 
-from . import interfaces as analytics_interfaces
-from .database import AnalyticsDB
+from nti.analytics.database.interfaces import IAnalyticsDB
+from nti.analytics.database.database import AnalyticsDB
 
 
 class IRegisterAnalyticsDB(interface.Interface):
@@ -41,5 +41,5 @@ def registerAnalyticsDB(_context, dburi=None, twophase=False, autocommit=False, 
 									autocommit=autocommit,
 									defaultSQLite=defaultSQLite,
 									config=config )
-	utility(_context, provides=analytics_interfaces.IAnalyticsDB, factory=factory)
+	utility(_context, provides=IAnalyticsDB, factory=factory)
 

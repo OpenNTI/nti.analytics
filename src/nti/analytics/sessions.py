@@ -19,6 +19,8 @@ from .common import get_id_for_session
 from .common import get_entity
 from .common import process_event
 
+from nti.analytics.database import users as db_users
+
 from nti.analytics import interfaces as analytic_interfaces
 
 # Note: these are socket sessions, and may not be the best thing to store/listen-fo.
@@ -26,10 +28,10 @@ from nti.analytics import interfaces as analytic_interfaces
 # 2. Multiple created per *actual* session (though this may change)
 # 3. Tied to #2, picking one of the open sessions for a user is arbitrary.
 
-def _add_session( db, user, nti_session, timestamp, ip_addr=None, platform=None, version=None ):
+def _add_session( user, nti_session, timestamp, ip_addr=None, platform=None, version=None ):
 	if nti_session:
 		user = get_entity( user )
-		db.create_session( user, nti_session, timestamp, ip_addr, platform, version )
+		db_users.create_session( user, nti_session, timestamp, ip_addr, platform, version )
 		logger.debug( 'Session created (user=%s)', user )
 
 def _process_session_created( nti_session ):
@@ -47,9 +49,9 @@ def _process_session_created( nti_session ):
 def _session_created( nti_session, event ):
 	_process_session_created( nti_session )
 
-def _remove_session( db, nti_session, user=None, timestamp=None ):
+def _remove_session( nti_session, user=None, timestamp=None ):
 	if nti_session:
-		db.end_session( nti_session, timestamp )
+		db_users.end_session( nti_session, timestamp )
 		logger.debug( 'Session destroyed (user=%s)', user )
 
 @component.adapter( sio_interfaces.ISocketSession, sio_interfaces.ISocketSessionDisconnectedEvent )

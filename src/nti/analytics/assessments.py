@@ -24,6 +24,7 @@ from nti.intid import interfaces as intid_interfaces
 from datetime import datetime
 
 from nti.analytics import interfaces as analytic_interfaces
+from nti.analytics.database import assessments as db_assessments
 
 from .common import get_creator
 from .common import get_nti_session_id
@@ -37,7 +38,7 @@ from .common import get_entity
 from nti.analytics.identifier import FeedbackId
 _feedbackid = FeedbackId()
 
-def _self_assessment_taken( db, oid, nti_session=None ):
+def _self_assessment_taken( oid, nti_session=None ):
 	submission = ntiids.find_object_with_ntiid( oid )
 	if submission is not None:
 		user = get_creator( submission )
@@ -45,7 +46,7 @@ def _self_assessment_taken( db, oid, nti_session=None ):
 		# TODO This doesn't work for some submissions, why (see resource_tags.py)?
 		__traceback_info__ = submission.containerId
 		course = get_course_by_ntiid( submission.containerId )
-		db.create_self_assessment_taken( user, nti_session, timestamp, course, submission )
+		db_assessments.create_self_assessment_taken( user, nti_session, timestamp, course, submission )
 		logger.debug("Self-assessment submitted (user=%s) (assignment=%s)", user, submission.questionSetId )
 
 def _process_question_set( question_set, nti_session=None ):
@@ -84,17 +85,17 @@ def _question_grade_modified( question, event ):
 	pass
 
 # Assignments
-def _assignment_taken( db, oid, nti_session=None ):
+def _assignment_taken( oid, nti_session=None ):
 	submission = ntiids.find_object_with_ntiid(oid)
 	if submission is not None:
 		user = get_creator( submission )
 		timestamp = get_created_timestamp( submission )
 		course = get_course( submission )
-		db.create_assignment_taken( user, nti_session, timestamp, course, submission )
+		db_assessments.create_assignment_taken( user, nti_session, timestamp, course, submission )
 		logger.debug("Assignment submitted (user=%s) (assignment=%s)", user, submission.assignmentId )
 
 		for feedback in submission.Feedback.values():
-			_do_add_feedback( db, nti_session, feedback, submission )
+			_do_add_feedback( nti_session, feedback, submission )
 
 @component.adapter(app_assessment_interfaces.IUsersCourseAssignmentHistoryItem,
 				   intid_interfaces.IIntIdAddedEvent)
@@ -103,12 +104,12 @@ def _assignment_history_item_added( item, event ):
 	nti_session = get_nti_session_id( user )
 	process_event( _assignment_taken, item, nti_session=nti_session )
 
-def _set_grade( db, oid, username, graded_val, nti_session=None, timestamp=None ):
+def _set_grade( oid, username, graded_val, nti_session=None, timestamp=None ):
 	submission = ntiids.find_object_with_ntiid(oid)
 	if submission is not None:
 		grader = get_entity( username )
 		user = get_creator( submission )
-		db.grade_submission( user, nti_session, timestamp, grader, graded_val, submission )
+		db_assessments.grade_submission( user, nti_session, timestamp, grader, graded_val, submission )
 		assignment_id = getattr( submission, 'assignmentId', None )
 		logger.debug( 	"Setting grade for assignment (user=%s) (grade=%s) (grader=%s) (assignment=%s)",
 						user,
@@ -146,23 +147,23 @@ def _grade_added(grade, event):
 		return
 	_grade_submission( grade, submission )
 
-def _do_add_feedback( db, nti_session, feedback, submission ):
+def _do_add_feedback( nti_session, feedback, submission ):
 	user = get_creator( feedback )
 	timestamp = get_created_timestamp( feedback )
 
-	db.create_submission_feedback( user, nti_session, timestamp, submission, feedback )
+	db_assessments.create_submission_feedback( user, nti_session, timestamp, submission, feedback )
 	logger.debug( "Assignment feedback added (user=%s) (%s)", user, feedback )
 
 # Feedback
-def _add_feedback( db, oid, nti_session=None ):
+def _add_feedback( oid, nti_session=None ):
 	feedback = ntiids.find_object_with_ntiid(oid)
 	if feedback is not None:
 		submission = get_object_root( feedback, app_assessment_interfaces.IUsersCourseAssignmentHistoryItem )
-		_do_add_feedback( db, nti_session, feedback, submission )
+		_do_add_feedback( nti_session, feedback, submission )
 
 
-def _remove_feedback( db, feedback_id, timestamp=None ):
-	db.delete_feedback( timestamp, feedback_id )
+def _remove_feedback( feedback_id, timestamp=None ):
+	db_assessments.delete_feedback( timestamp, feedback_id )
 	logger.debug("Assignment feedback removed (%s)", feedback_id )
 
 @component.adapter(app_assessment_interfaces.IUsersCourseAssignmentHistoryItemFeedback,

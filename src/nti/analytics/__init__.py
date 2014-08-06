@@ -16,7 +16,6 @@ from zope import component
 from zc.blist import BList
 
 from nti.dataserver import interfaces as nti_interfaces
-from .database import interfaces as analytic_interfaces
 
 from nti.async import create_job as create_job_async
 
@@ -24,21 +23,12 @@ from nti.analytics.interfaces import IAnalyticsQueueFactory
 
 QUEUE_NAME = '++etc++analytics++queue'
 
-def get_analytics_db():
-	return component.getUtility( analytic_interfaces.IAnalyticsDB )
-
 def _execute_job( *args, **kwargs ):
 	""" Execute our job, pass it a kwarg analytics db. """
-	db = get_analytics_db()
-
-	__traceback_info__ = db.session
-
-	effective_kwargs = dict( kwargs )
-	effective_kwargs['db'] = db
 	args = BList( args )
 	func = args.pop( 0 )
 
-	func( *args, **effective_kwargs )
+	func( *args, **kwargs )
 
 def create_job(func, *args, **kwargs):
 	args = [func] + list(args)

@@ -12,8 +12,9 @@ from hamcrest import has_length
 from hamcrest import assert_that
 
 from nti.analytics import _execute_job
-from nti.analytics import get_analytics_db
-from nti.analytics.database.metadata import Users
+from nti.analytics.database import get_analytics_db
+from nti.analytics.database import users as db_users
+from nti.analytics.database.users import Users
 
 # For new objects, this is the default intid stored in the database.
 # For subsequent objects, this will increase by one.
@@ -47,14 +48,13 @@ class TestJob(nti.testing.base.ConfiguringTestBase):
 	def setUp(self):
 		self.configure_string(ZCML_STRING)
 
-	def _read_call( self, db ):
-		# Database arg passed in
+	def _read_call( self ):
+		db = get_analytics_db()
 		session = db.session()
 		return session.query(Users).all()
 
-	def _good_call(self, db, valid_new_user ):
-		# New valid user
-		db.create_user( valid_new_user )
+	def _good_call(self, valid_new_user ):
+		db_users.create_user( valid_new_user )
 
 	def test_job(self):
 		db = get_analytics_db()

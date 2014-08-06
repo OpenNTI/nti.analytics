@@ -28,6 +28,8 @@ from .common import process_event
 from .common import get_created_timestamp
 from .common import get_entity
 
+from nti.analytics.database import social as db_social
+
 from nti.analytics.identifier import FriendsListId
 from nti.analytics.identifier import DFLId
 _dflid = DFLId()
@@ -44,11 +46,11 @@ def _is_contacts_friends_list( obj ):
 		and 'mycontacts' in obj.__name__
 
 # Chat
-def _add_meeting( db, oid, nti_session=None ):
+def _add_meeting( oid, nti_session=None ):
 	new_chat = ntiids.find_object_with_ntiid(oid)
 	if new_chat is not None:
 		creator = get_creator( new_chat )
-		db.create_chat_initiated( creator, nti_session, new_chat )
+		db_social.create_chat_initiated( creator, nti_session, new_chat )
 		logger.debug( "Meeting created (user=%s) (meeting=%s)", creator, new_chat )
 
 		timestamp = get_created_timestamp( new_chat )
@@ -58,7 +60,7 @@ def _add_meeting( db, oid, nti_session=None ):
 			count += 1
 			user_joined = get_entity( user_joined )
 			if user_joined is not None:
-				db.chat_joined( user_joined, nti_session, timestamp, new_chat )
+				db_social.chat_joined( user_joined, nti_session, timestamp, new_chat )
 		logger.debug( "Meeting joined by users (count=%s)", count )
 
 @component.adapter(chat_interfaces.IMeeting, intid_interfaces.IIntIdAddedEvent)
@@ -74,7 +76,7 @@ def _meeting_joined( meeting, event ):
 	pass
 
 # Contacts
-def _add_contacts( db, oid, timestamp=None, nti_session=None ):
+def _add_contacts( oid, timestamp=None, nti_session=None ):
 	""" Intended, during migration, to add all of a user's contacts. """
 	user = ntiids.find_object_with_ntiid(oid)
 	if user is not None:
@@ -85,37 +87,36 @@ def _add_contacts( db, oid, timestamp=None, nti_session=None ):
 		entities_followed = (get_entity( x )
 							for x in entities_followed
 							if nti_interfaces.IUser.providedBy( x ) )
-		count = db.update_contacts( user, nti_session, timestamp, entities_followed )
+		count = db_social.update_contacts( user, nti_session, timestamp, entities_followed )
 		logger.debug( "Contacts added (user=%s) (count=%s)", user, count )
 
 # Friends List
-def _add_friends_list( db, oid, nti_session=None ):
+def _add_friends_list( oid, nti_session=None ):
 	friends_list = ntiids.find_object_with_ntiid(oid)
 	if friends_list is not None:
 		user = get_creator( friends_list )
 		timestamp = get_created_timestamp( friends_list )
-		db.create_friends_list( user, nti_session, timestamp, friends_list )
-		db.update_friends_list( user, nti_session, timestamp, friends_list )
+		db_social.create_friends_list( user, nti_session, timestamp, friends_list )
 		logger.debug( 	"FriendsList created (user=%s) (friends_list=%s) (count=%s)",
 						user,
 						friends_list,
 						len( friends_list ) )
 
-def _remove_friends_list(db, friends_list_id, timestamp=None):
-	db.remove_friends_list( timestamp, friends_list_id )
+def _remove_friends_list(friends_list_id, timestamp=None):
+	db_social.remove_friends_list( timestamp, friends_list_id )
 	logger.debug( "FriendsList removed (friends_list=%s)", friends_list_id )
 
-def _update_friends_list( db, oid, nti_session=None, timestamp=None ):
+def _update_friends_list( oid, nti_session=None, timestamp=None ):
 	friends_list = ntiids.find_object_with_ntiid( oid )
 	if friends_list is not None:
 		# Creator makes sense for contacts, but what about friends_list?
 		user = get_creator( friends_list )
 		# We end up comparing membership lists. Expensive?
 		if _is_contacts_friends_list( friends_list ):
-			result = db.update_contacts( user, nti_session, timestamp, friends_list )
+			result = db_social.update_contacts( user, nti_session, timestamp, friends_list )
 			logger.debug( 'Update contacts (user=%s) (count=%s)', user, result )
 		else:
-			result = db.update_friends_list( user, nti_session, timestamp, friends_list )
+			result = db_social.update_friends_list( user, nti_session, timestamp, friends_list )
 			logger.debug( 'Update FriendsList (user=%s) (count=%s)', user, result )
 
 @component.adapter(nti_interfaces.IFriendsList, intid_interfaces.IIntIdAddedEvent)
@@ -142,22 +143,22 @@ def _friendslist_deleted(obj, event):
 
 
 # DFL
-def _add_dfl( db, oid, nti_session=None ):
+def _add_dfl( oid, nti_session=None ):
 	dfl = ntiids.find_object_with_ntiid(oid)
 	if dfl is not None:
 		user = get_creator( dfl )
-		db.create_dynamic_friends_list( user, nti_session, dfl )
+		db_social.create_dynamic_friends_list( user, nti_session, dfl )
 		for member in dfl:
 			member = get_entity( member )
 			if member is not None:
-				db.create_dynamic_friends_member( user, nti_session, None, dfl, member )
+				db_social.create_dynamic_friends_member( user, nti_session, None, dfl, member )
 		logger.debug( "DFL created (user=%s) (dfl=%s) (count=%s)", user, dfl, len( dfl ) )
 
-def _remove_dfl( db, dfl_id, timestamp=None ):
-	db.remove_dynamic_friends_list( timestamp, dfl_id )
+def _remove_dfl( dfl_id, timestamp=None ):
+	db_social.remove_dynamic_friends_list( timestamp, dfl_id )
 	logger.debug( "DFL destroyed (dfl=%s)", dfl_id )
 
-def _add_dfl_member( db, source, target, username=None, timestamp=None, nti_session=None ):
+def _add_dfl_member( source, target, username=None, timestamp=None, nti_session=None ):
 	dfl = get_entity( target )
 	member = get_entity( source )
 	everyone = users.Entity.get_entity('Everyone')
@@ -166,15 +167,15 @@ def _add_dfl_member( db, source, target, username=None, timestamp=None, nti_sess
 		and member is not None \
 		and dfl != everyone:
 		user = get_entity( username )
-		db.create_dynamic_friends_member( user, nti_session, timestamp, dfl, member )
+		db_social.create_dynamic_friends_member( user, nti_session, timestamp, dfl, member )
 		logger.debug( "DFL joined (member=%s) (dfl=%s)", member, dfl )
 
-def _remove_dfl_member( db, source, target, username=None, timestamp=None, nti_session=None ):
+def _remove_dfl_member( source, target, username=None, timestamp=None, nti_session=None ):
 	dfl = get_entity( target )
 	if dfl is not None:
 		user = get_entity( username )
 		member = get_entity( source )
-		db.remove_dynamic_friends_member( user, nti_session, timestamp, dfl, member )
+		db_social.remove_dynamic_friends_member( user, nti_session, timestamp, dfl, member )
 		logger.debug( "DFL left (member=%s) (dfl=%s)", member, dfl )
 
 @component.adapter(	nti_interfaces.IDynamicSharingTargetFriendsList,

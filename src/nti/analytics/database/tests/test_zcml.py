@@ -23,7 +23,7 @@ from zope import component
 from nti.analytics.database.interfaces import IAnalyticsDB
 from nti.analytics.database.database import AnalyticsDB
 
-from nti.analytics import get_analytics_db
+from nti.analytics.database import get_analytics_db
 
 import nti.testing.base
 

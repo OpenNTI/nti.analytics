@@ -15,7 +15,8 @@ from nti.analytics.interfaces import IResourceEvent
 
 from .common import get_entity
 from .common import process_event
-from .common import get_course_by_ntiid
+
+from nti.analytics.database import resource_views as db_resource_views
 
 def _get_course( event ):
 	# TODO We also have event.course, not sure what the app would pass us (ntiid?).
@@ -69,7 +70,7 @@ def _validate_video_event( event ):
 	event.video_end_time = int( end )
 
 
-def _add_resource_event( db, event, nti_session=None ):
+def _add_resource_event( event, nti_session=None ):
 	_validate_resource_event( event )
 
 	user = get_entity( event.user )
@@ -79,7 +80,7 @@ def _add_resource_event( db, event, nti_session=None ):
 		and resource_id \
 		and course is not None:
 
-		db.create_course_resource_view( user,
+		db_resource_views.create_course_resource_view( user,
 									nti_session,
 									event.timestamp,
 									course,
@@ -90,7 +91,7 @@ def _add_resource_event( db, event, nti_session=None ):
 						user, course, resource_id, event.time_length )
 
 
-def _add_video_event( db, event, nti_session=None ):
+def _add_video_event( event, nti_session=None ):
 	_validate_video_event( event )
 
 	user = get_entity( event.user )
@@ -100,7 +101,7 @@ def _add_video_event( db, event, nti_session=None ):
 		and resource_id \
 		and course is not None:
 
-		db.create_video_event( user,
+		db_resource_views.create_video_event( user,
 							nti_session,
 							event.timestamp,
 							course,

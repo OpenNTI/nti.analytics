@@ -25,6 +25,8 @@ from .common import get_nti_session_id
 from .common import process_event
 from .common import get_course_by_ntiid
 
+from nti.analytics.database import resource_tags as db_resource_tags
+
 from nti.analytics.identifier import NoteId
 from nti.analytics.identifier import HighlightId
 _noteid = NoteId()
@@ -38,17 +40,17 @@ def get_course( obj ):
 	return get_course_by_ntiid( obj.containerId )
 
 # Notes
-def _add_note( db, oid, nti_session=None ):
+def _add_note( oid, nti_session=None ):
 	note = ntiids.find_object_with_ntiid( oid )
 	if note is not None:
 		user = get_creator( note )
 		course = get_course( note )
-		db.create_note( user, nti_session, course, note )
+		db_resource_tags.create_note( user, nti_session, course, note )
 		logger.debug( 	"Note created (user=%s) (course=%s) (note=%s)",
 						user, course, note )
 
-def _remove_note( db, note_id, timestamp=None ):
-	db.delete_note( timestamp, note_id )
+def _remove_note( note_id, timestamp=None ):
+	db_resource_tags.delete_note( timestamp, note_id )
 	logger.debug( "Note deleted (note=%s)", note_id )
 
 @component.adapter(	nti_interfaces.INote,
@@ -69,16 +71,16 @@ def _note_removed( obj, event ):
 
 
 # Highlights
-def _add_highlight( db, oid, nti_session=None ):
+def _add_highlight( oid, nti_session=None ):
 	highlight = ntiids.find_object_with_ntiid( oid )
 	if highlight is not None:
 		user = get_creator( highlight )
 		course = get_course( highlight )
-		db.create_highlight( user, nti_session, course, highlight )
+		db_resource_tags.create_highlight( user, nti_session, course, highlight )
 		logger.debug( "Highlight created (user=%s) (course=%s)", user, course )
 
-def _remove_highlight( db, highlight_id, timestamp=None ):
-	db.delete_highlight( timestamp, highlight_id )
+def _remove_highlight( highlight_id, timestamp=None ):
+	db_resource_tags.delete_highlight( timestamp, highlight_id )
 	logger.debug( "Highlight deleted (highlight_id=%s)", highlight_id )
 
 @component.adapter(	nti_interfaces.IHighlight,

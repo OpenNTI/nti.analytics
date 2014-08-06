@@ -10,9 +10,6 @@ __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
-import functools
-
-from zope import schema
 from zope import interface
 from zope.component.zcml import utility
 

@@ -1,0 +1,187 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*
+"""
+$Id$
+"""
+from __future__ import print_function, unicode_literals, absolute_import, division
+__docformat__ = "restructuredtext en"
+
+logger = __import__('logging').getLogger(__name__)
+
+from six import integer_types
+from six import string_types
+
+from sqlalchemy import Column
+from sqlalchemy import Integer
+from sqlalchemy import ForeignKey
+from sqlalchemy import Enum
+
+from sqlalchemy.ext.declarative import declared_attr
+
+import zope.intid
+
+from nti.dataserver.users.entity import Entity
+
+from nti.analytics.common import get_created_timestamp
+from nti.analytics.common import timestamp_type
+
+from nti.analytics.identifier import SessionId
+from nti.analytics.identifier import CourseId
+from nti.analytics.identifier import NoteId
+from nti.analytics.identifier import HighlightId
+from nti.analytics.identifier import ResourceId
+_sessionid = SessionId()
+_courseid = CourseId()
+_noteid = NoteId()
+_highlightid = HighlightId()
+_resourceid = ResourceId()
+
+from nti.analytics.database import Base
+from nti.analytics.database import get_analytics_db
+
+from nti.analytics.database.meta_mixins import DeletedMixin
+from nti.analytics.database.meta_mixins import ResourceMixin
+
+from nti.analytics.database.users import get_or_create_user
+
+class NoteMixin(ResourceMixin):
+
+	@declared_attr
+	def note_id(cls):
+		return Column('note_id', Integer, ForeignKey("NotesCreated.note_id"), nullable=False, index=True, primary_key=True )
+
+
+class NotesCreated(Base,ResourceMixin,DeletedMixin):
+	__tablename__ = 'NotesCreated'
+	note_id = Column('note_id', Integer, nullable=False, index=True, primary_key=True )
+	# Parent-id should be other notes; top-level notes will have null parent_ids
+	parent_id = Column('parent_id', Integer, nullable=True)
+	sharing = Column('sharing', Enum( 'PUBLIC', 'COURSE', 'OTHER', 'UNKNOWN' ), nullable=False )
+
+class NotesViewed(Base,NoteMixin):
+	__tablename__ = 'NotesViewed'
+
+class HighlightsCreated(Base,ResourceMixin,DeletedMixin):
+	__tablename__ = 'HighlightsCreated'
+	highlight_id = Column('highlight_id', Integer, nullable=False, index=True, primary_key=True )
+
+
+def _get_sharing_enum( note, course ):
+	# Logic duped in coursewarereports.views.admin_views
+	if 		not course \
+		or 	isinstance( course, ( integer_types, string_types ) ):
+		# TODO What do we want to do here?
+		logger.warn( 'Could not retrieve course from object (%s)', note )
+		return 'UNKNOWN'
+	scopes = course.LegacyScopes
+	public = scopes['public']
+	course_only = scopes['restricted']
+
+	public_object = Entity.get_entity( public )
+	course_only_object = Entity.get_entity( course_only )
+
+	# Note: we could also do private if not shared at all
+	# or perhaps we want to store who we're sharing to.
+	result = 'OTHER'
+
+	if public_object in note.sharingTargets:
+		result = 'PUBLIC'
+	elif course_only_object in note.sharingTargets:
+		result = 'COURSE'
+
+	return result
+
+def create_note(user, nti_session, course, note):
+	db = get_analytics_db()
+	user = get_or_create_user(user )
+	uid = user.user_id
+	sid = _sessionid.get_id( nti_session )
+	rid = _resourceid.get_id( note.containerId )
+	nid = _noteid.get_id( note )
+	course_id = _courseid.get_id( course )
+	timestamp = get_created_timestamp( note )
+	sharing = _get_sharing_enum( note, course )
+
+	pid = None
+	parent_note = getattr( note, 'inReplyTo', None )
+	if parent_note is not None:
+		pid = _noteid.get_id( parent_note )
+
+	new_object = NotesCreated( 	user_id=uid,
+								session_id=sid,
+								timestamp=timestamp,
+								course_id=course_id,
+								note_id=nid,
+								resource_id=rid,
+								parent_id=pid,
+								sharing=sharing )
+	db.session.add( new_object )
+
+def delete_note(timestamp, note_id):
+	db = get_analytics_db()
+	timestamp = timestamp_type( timestamp )
+	note = db.session.query(NotesCreated).filter(
+							NotesCreated.note_id == note_id ).one()
+	note.deleted=timestamp
+	db.session.flush()
+
+def create_note_view(user, nti_session, timestamp, course, note):
+	db = get_analytics_db()
+	user = get_or_create_user(user )
+	uid = user.user_id
+	sid = _sessionid.get_id( nti_session )
+	rid = _resourceid.get_id( note.containerId )
+	nid = _noteid.get_id( note )
+	course_id = _courseid.get_id( course )
+	timestamp = timestamp_type( timestamp )
+
+	new_object = NotesViewed( 	user_id=uid,
+								session_id=sid,
+								timestamp=timestamp,
+								course_id=course_id,
+								resource_id=rid,
+								note_id=nid )
+	db.session.add( new_object )
+
+def create_highlight(user, nti_session, course, highlight):
+	db = get_analytics_db()
+	user = get_or_create_user(user )
+	uid = user.user_id
+	sid = _sessionid.get_id( nti_session )
+	rid = _resourceid.get_id( highlight.containerId )
+	hid = _highlightid.get_id( highlight )
+	course_id = _courseid.get_id( course )
+
+	timestamp = get_created_timestamp( highlight )
+
+	new_object = HighlightsCreated( user_id=uid,
+									session_id=sid,
+									timestamp=timestamp,
+									course_id=course_id,
+									highlight_id=hid,
+									resource_id=rid)
+	db.session.add( new_object )
+
+def delete_highlight(timestamp, highlight_id):
+	db = get_analytics_db()
+	timestamp = timestamp_type( timestamp )
+	highlight = db.session.query(HighlightsCreated).filter(
+								HighlightsCreated.highlight_id == highlight_id ).one()
+	highlight.deleted=timestamp
+	db.session.flush()
+
+
+def get_notes_created_for_course(course):
+	db = get_analytics_db()
+	course_id = _courseid.get_id( course )
+	results = db.session.query(NotesCreated).filter( 	NotesCreated.course_id == course_id,
+														NotesCreated.deleted == None  ).all()
+	return results
+
+def get_highlights_created_for_course(course):
+	db = get_analytics_db()
+	course_id = _courseid.get_id( course )
+	results = db.session.query(HighlightsCreated).filter( HighlightsCreated.course_id == course_id,
+															HighlightsCreated.deleted == None  ).all()
+	return results
+

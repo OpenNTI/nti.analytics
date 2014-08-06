@@ -15,8 +15,8 @@ from nti.analytics.database.interfaces import IAnalyticsDB
 from hamcrest import assert_that
 from hamcrest import has_length
 
-from nti.analytics.database.metadata import CourseEnrollments
-from nti.analytics.database.metadata import CourseDrops
+from nti.analytics.database.enrollments import CourseEnrollments
+from nti.analytics.database.enrollments import CourseDrops
 
 from nti.contenttypes.courses import courses
 from nti.contenttypes.courses import interfaces

@@ -27,13 +27,15 @@ from .common import get_nti_session_id
 from .common import get_object_root
 from .common import process_event
 
+from nti.analytics.database import blogs as db_blogs
+
 from nti.analytics.identifier import BlogId
 from nti.analytics.identifier import CommentId
 _commentid = CommentId()
 _blogid = BlogId()
 
 # Comments
-def _add_comment( db, oid, nti_session=None ):
+def _add_comment( oid, nti_session=None ):
 	comment = ntiids.find_object_with_ntiid( oid )
 	if comment is not None:
 		user = get_creator( comment )
@@ -42,11 +44,11 @@ def _add_comment( db, oid, nti_session=None ):
 			# TODO Need to find out which type we should look for.
 			blog = get_object_root( comment, frm_interfaces.IPersonalBlogEntryPost )
 		if blog:
-			db.create_blog_comment( user, nti_session, blog, comment )
+			db_blogs.create_blog_comment( user, nti_session, blog, comment )
 			logger.debug( "Blog comment created (user=%s) (blog=%s)", user, blog )
 
-def _remove_comment( db, comment_id, timestamp=None ):
-	db.delete_blog_comment( timestamp, comment_id )
+def _remove_comment( comment_id, timestamp=None ):
+	db_blogs.delete_blog_comment( timestamp, comment_id )
 	logger.debug( "Blog comment deleted (blog=%s)", comment_id )
 
 @component.adapter( frm_interfaces.IPersonalBlogComment,
@@ -69,11 +71,11 @@ def _modify_personal_blog_comment(comment, event):
 
 
 # Blogs
-def _add_blog( db, oid, nti_session=None ):
+def _add_blog( oid, nti_session=None ):
 	blog = ntiids.find_object_with_ntiid( oid )
 	if blog is not None:
 		user = get_creator( blog )
-		db.create_blog( user, nti_session, blog )
+		db_blogs.create_blog( user, nti_session, blog )
 		logger.debug( "Blog created (user=%s) (blog=%s)", user, blog )
 
 def _do_blog_added( blog, event ):
