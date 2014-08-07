@@ -47,6 +47,15 @@ class SkipVideoEvent(SchemaConfigured):
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.skipvideoevent'
 	event_type = 'SKIP'
 
+@interface.implementer(interfaces.ICourseCatalogViewEvent)
+@WithRepr
+class CourseCatalogViewEvent(SchemaConfigured):
+	createDirectFieldProperties(interfaces.ICourseCatalogViewEvent)
+
+	__external_can_create__ = True
+	__external_class_name__ = "CourseCatalogViewEvent"
+	mime_type = mimeType = 'application/vnd.nextthought.analytics.coursecatalogviewevent'
+
 @interface.implementer(interfaces.IBatchResourceEvents)
 @WithRepr
 @NoPickle

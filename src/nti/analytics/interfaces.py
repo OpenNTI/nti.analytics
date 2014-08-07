@@ -27,27 +27,31 @@ class IObjectProcessor(interface.Interface):
 		"""
 		Does analytic processing for the given object.
 		"""
-
-class IResourceEvent(interface.Interface):
+class ICourseEvent(interface.Interface):
 	"""
-	Describes a resource viewing event.
+	A course event.
 	"""
-
 	timestamp = Number(title=u"The timestamp when this event occurred.",
 						default=0.0)
 
 	user = ValidTextLine(title='User who created the event')
 
-	course = ValidTextLine(title='Course id')
+	course = ValidTextLine(title='Course ntiid')
 
+	time_length = Number(title=u"The time length of the event, in seconds",
+						default=0)
+
+class IResourceEvent(ICourseEvent):
+	"""
+	Describes a resource viewing event.
+	"""
 	# TODO This is really undefined...
 	context_path = ValidTextLine(title='Context path',
 								description='Slash separated values describing where the event occurred.')
 
 	resource_id = ValidTextLine(title="The resource ntiid.")
 
-	time_length = Number(title=u"The time length of the event, in seconds",
-						default=0)
+
 
 class IVideoEvent(IResourceEvent):
 	"""
@@ -63,7 +67,12 @@ class IVideoEvent(IResourceEvent):
 
 	with_transcript = Bool(title=u"Whether the video was viewed with a transcript or not.")
 
+class ICourseCatalogViewEvent(ICourseEvent):
+	"""
+	Describes a course catalog viewing event.
+	"""
+
 class IBatchResourceEvents( IIterable ):
 	events = TypedIterable(
 		title="The events in this batch",
-		value_type=Object( IResourceEvent ) )
+		value_type=Object( ICourseEvent ) )

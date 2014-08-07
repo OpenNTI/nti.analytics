@@ -87,7 +87,8 @@
 	<include package="nti.externalization" file="meta.zcml" />
 	<include package="nti.externalization" />
 	<ext:registerAutoPackageIO
-		root_interfaces=".interfaces.IResourceEvent
+		root_interfaces=".interfaces.ICourseCatalogViewEvent
+						 .interfaces.IResourceEvent
 						 .interfaces.IVideoEvent
 						 .interfaces.IBatchResourceEvents"
 		modules=".model" />
@@ -98,6 +99,10 @@
 
 	<adapter factory=".internalization._VideoEventUpdater"
 			 for=".interfaces.IVideoEvent"
+			 provides="nti.externalization.interfaces.IInternalObjectUpdater" />
+
+	<adapter factory=".internalization._CourseCatalogEventUpdater"
+			 for=".interfaces.ICourseCatalogViewEvent"
 			 provides="nti.externalization.interfaces.IInternalObjectUpdater" />
 
 	<!-- Inline jobs for dev -->

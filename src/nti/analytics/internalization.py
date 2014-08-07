@@ -16,6 +16,7 @@ from nti.externalization.datastructures import InterfaceObjectIO
 
 from nti.analytics.interfaces import IVideoEvent
 from nti.analytics.interfaces import IResourceEvent
+from nti.analytics.interfaces import ICourseCatalogViewEvent
 
 @interface.implementer(IInternalObjectUpdater)
 @component.adapter(IVideoEvent)
@@ -37,4 +38,15 @@ class _ResourceEventUpdater(object):
 
 	def updateFromExternalObject(self, parsed, *args, **kwargs):
 		result = InterfaceObjectIO( self.obj, IResourceEvent ).updateFromExternalObject( parsed )
+		return result
+
+@interface.implementer(IInternalObjectUpdater)
+@component.adapter(ICourseCatalogViewEvent)
+class _CourseCatalogEventUpdater(object):
+
+	def __init__(self, obj):
+		self.obj = obj
+
+	def updateFromExternalObject(self, parsed, *args, **kwargs):
+		result = InterfaceObjectIO( self.obj, ICourseCatalogViewEvent ).updateFromExternalObject( parsed )
 		return result
