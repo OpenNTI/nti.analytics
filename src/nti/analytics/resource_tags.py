@@ -24,6 +24,7 @@ from .common import get_creator
 from .common import get_nti_session_id
 from .common import process_event
 from .common import get_course_by_ntiid
+from .common import get_course
 
 from nti.analytics.database import resource_tags as db_resource_tags
 
@@ -32,19 +33,24 @@ from nti.analytics.identifier import HighlightId
 _noteid = NoteId()
 _highlightid = HighlightId()
 
-def get_course( obj ):
+def _get_course( obj ):
 	# TODO This doesnt work for some notes/highlights, why?
 	# ex: tag:nextthought.com,2011-10:OU-NTIVideo-CHEM4970_Chemistry_of_Beer.ntivideo.introduction_video_1
 	# Maybe course is not loaded.
 	__traceback_info__ = obj.containerId
-	return get_course_by_ntiid( obj.containerId )
+	try:
+		result = get_course_by_ntiid( obj.containerId )
+	except TypeError as e:
+		# Ok, try something else
+		result = get_course( obj )
+	return result
 
 # Notes
 def _add_note( oid, nti_session=None ):
 	note = ntiids.find_object_with_ntiid( oid )
 	if note is not None:
 		user = get_creator( note )
-		course = get_course( note )
+		course = _get_course( note )
 		db_resource_tags.create_note( user, nti_session, course, note )
 		logger.debug( 	"Note created (user=%s) (course=%s) (note=%s)",
 						user, course, note )
@@ -75,7 +81,7 @@ def _add_highlight( oid, nti_session=None ):
 	highlight = ntiids.find_object_with_ntiid( oid )
 	if highlight is not None:
 		user = get_creator( highlight )
-		course = get_course( highlight )
+		course = _get_course( highlight )
 		db_resource_tags.create_highlight( user, nti_session, course, highlight )
 		logger.debug( "Highlight created (user=%s) (course=%s)", user, course )
 
