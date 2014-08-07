@@ -95,6 +95,7 @@ def to_external_ntiid_oid(obj):
 def get_course( obj ):
 	result = get_object_root( obj, ICourseInstance )
 	# TODO Should we fall back and look up by ntiid here?
+	__traceback_info__ = result
 	return result
 
 # Copied from nti.store.content_utils
@@ -109,6 +110,7 @@ def _get_collection_root(ntiid):
 
 def get_course_by_ntiid( ntiid ):
 	course = _get_collection_root( ntiid )
+	__traceback_info__ = course
 	return ICourseInstance( course )
 
 
