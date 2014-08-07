@@ -34,15 +34,8 @@ _noteid = NoteId()
 _highlightid = HighlightId()
 
 def _get_course( obj ):
-	# TODO This doesnt work for some notes/highlights, why?
-	# ex: tag:nextthought.com,2011-10:OU-NTIVideo-CHEM4970_Chemistry_of_Beer.ntivideo.introduction_video_1
-	# Maybe course is not loaded.
 	__traceback_info__ = obj.containerId
-	try:
-		result = get_course_by_ntiid( obj.containerId )
-	except TypeError as e:
-		# Ok, try something else
-		result = get_course( obj )
+	result = get_course_by_ntiid( obj.containerId )
 	return result
 
 # Notes

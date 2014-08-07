@@ -14,7 +14,10 @@ from nti.dataserver.users import Entity
 from nti.dataserver import interfaces as nti_interfaces
 
 from nti.contenttypes.courses.interfaces import ICourseInstance
-from nti.contentlibrary import interfaces as lib_interfaces
+
+from nti.contentlibrary.interfaces import IContentPackageLibrary
+from nti.contentlibrary.indexed_data.interfaces import IAudioIndexedDataContainer
+from nti.contentlibrary.indexed_data.interfaces import IVideoIndexedDataContainer
 
 from nti.externalization import externalization
 
@@ -97,21 +100,48 @@ def get_course( obj ):
 	__traceback_info__ = result, obj
 	return ICourseInstance( result )
 
-# Copied from nti.store.content_utils
-def _get_paths(ntiid):
-    library = component.queryUtility(lib_interfaces.IContentPackageLibrary)
-    paths = library.pathToNTIID(ntiid) if library and ntiid else ()
-    return paths or ()
+# Copied from digest_email
+def _path_to_ugd_container(name):
+	__traceback_info__ = name
+	assert name.startswith('tag:')
 
-def _get_collection_root(ntiid):
-    paths = _get_paths(ntiid)
-    return paths[0] if paths else None
+	# Try to find a content unit, in decreasing order of chance
+	lib = component.getUtility(IContentPackageLibrary)
+	path = lib.pathToNTIID(name)
+	if path:
+		return path
 
-def get_course_by_ntiid( ntiid ):
-	course = _get_collection_root( ntiid )
-	__traceback_info__ = course
-	return ICourseInstance( course )
+	ifaces = (IAudioIndexedDataContainer,IVideoIndexedDataContainer)
+	def _search(unit):
+		for iface in ifaces:
+			if iface(unit).contains_data_item_with_ntiid(name):
+				return lib.pathToNTIID(unit.ntiid)
+		for child in unit.children:
+			r = _search(child)
+			if r:
+				return r
 
+	for package in lib.contentPackages:
+		r = _search(package)
+		if r:
+			return r
+	paths = lib.pathsToEmbeddedNTIID(name)
+	if paths:
+		return paths[0]
+
+def get_course_by_ntiid(name):
+	"Return an arbitrary course associated with the content ntiid"
+	path = _path_to_ugd_container(name)
+	__traceback_info__ = path
+	if path:
+		course = None
+		for unit in reversed(path):
+			# The adapter function here is where the arbitraryness
+			# comes in
+			course = ICourseInstance( unit, None )
+			if course is not None:
+				return course
+	raise TypeError( "No course found for path (%s)" % path )
 
 def process_event( object_op, obj=None, **kwargs ):
 	effective_kwargs = kwargs

@@ -19,10 +19,6 @@ from .common import process_event
 from nti.analytics.database import resource_views as db_resource_views
 
 def _get_course( event ):
-	# TODO We also have event.course, not sure what the app would pass us (ntiid?).
-	# Try to look up via resource ntiid (don't think this will work).
-	# Could resource -> bundle -> course
-	#return get_course_by_ntiid( event.resource_id )
 	return ntiids.find_object_with_ntiid( event.course )
 
 def _validate_resource_event( event ):
