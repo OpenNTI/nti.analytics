@@ -65,9 +65,7 @@ class AssignmentsTaken(Base,AssignmentMixin):
 	__tablename__ = 'AssignmentsTaken'
 	submission_id = Column('submission_id', Integer, unique=True, index=True, autoincrement=False )
 
-	__table_args__ = (
-        PrimaryKeyConstraint('submission_id'),
-    )
+	assignments_taken_id = Column('assignment_taken_id', Integer, Sequence( 'assignments_taken_seq' ), primary_key=True )
 
 class AssignmentSubmissionMixin(BaseTableMixin):
 	@declared_attr
@@ -112,9 +110,7 @@ class GradeDetailMixin(GradeMixin):
 class AssignmentDetails(Base,DetailMixin,AssignmentSubmissionMixin):
 	__tablename__ = 'AssignmentDetails'
 
-	__table_args__ = (
-        PrimaryKeyConstraint('submission_id', 'question_id', 'question_part_id'),
-    )
+	assignment_details_id = Column('assignment_details_id', Integer, Sequence( 'assignment_details_seq' ), primary_key=True )
 
 class AssignmentGrades(Base,AssignmentSubmissionMixin,GradeMixin):
 	__tablename__ = 'AssignmentGrades'
@@ -122,14 +118,13 @@ class AssignmentGrades(Base,AssignmentSubmissionMixin,GradeMixin):
 
 class AssignmentDetailGrades(Base,GradeDetailMixin,AssignmentSubmissionMixin):
 	__tablename__ = 'AssignmentDetailGrades'
-	question_id = Column('question_id', NTIID_COLUMN_TYPE, ForeignKey("AssignmentDetails.question_id"), nullable=False)
-	question_part_id = Column('question_part_id', Integer, ForeignKey("AssignmentDetails.question_part_id"), nullable=True, autoincrement=False)
+	# We cannot use foreign keys since the parent key must be unique, and
+	# we cannot have this as part of a primary key due to its size (mysql).
+	question_id = Column('question_id', NTIID_COLUMN_TYPE, nullable=False)
+	question_part_id = Column('question_part_id', Integer, nullable=True, autoincrement=False)
 
-	# Cannot have multiple graders with this primary key, but our
-	# grader can be null.
-	__table_args__ = (
-        PrimaryKeyConstraint('submission_id', 'question_id', 'question_part_id'),
-    )
+	assignment_detail_grades_id = Column('assignment_detail_grades_id', Integer, Sequence( 'assignment_detail_grades_seq' ), primary_key=True )
+
 
 # Each feedback 'tree' should have an associated grade with it.
 class AssignmentFeedback(Base,AssignmentSubmissionMixin,DeletedMixin):
@@ -149,9 +144,7 @@ class SelfAssessmentDetails(Base,BaseTableMixin,DetailMixin,GradeDetailMixin):
  	__tablename__ = 'SelfAssessmentDetails'
  	submission_id = Column('submission_id', Integer, ForeignKey("SelfAssessmentsTaken.submission_id"), nullable=False, index=True)
 
-	__table_args__ = (
-        PrimaryKeyConstraint('submission_id', 'question_id', 'question_part_id'),
-    )
+	self_assessment_details_id = Column('self_assessment_details_id', Integer, Sequence( 'self_assessment_details_seq' ), primary_key=True )
 
 def _get_duration( submission ):
 	"""

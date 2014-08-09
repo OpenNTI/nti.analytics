@@ -10,7 +10,7 @@ from nti.analytics.database.interfaces import IAnalyticsDB
 Base = declarative_base()
 
 SESSION_COLUMN_TYPE = String( 64 )
-NTIID_COLUMN_TYPE = String( 164 )
+NTIID_COLUMN_TYPE = String( 256 )
 
 def get_analytics_db():
 	return component.getUtility( IAnalyticsDB )
