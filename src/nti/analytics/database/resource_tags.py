@@ -76,11 +76,6 @@ class HighlightsCreated(Base,BaseTableMixin,ResourceMixin,DeletedMixin):
 
 def _get_sharing_enum( note, course ):
 	# Logic duped in coursewarereports.views.admin_views
-	if 		not course \
-		or 	isinstance( course, ( integer_types, string_types ) ):
-		# TODO What do we want to do here?
-		logger.warn( 'Could not retrieve course from object (%s)', note )
-		return 'UNKNOWN'
 	public_scope, = course.SharingScopes.getAllScopesImpliedbyScope('Public')
 	other_scopes = [x for x in course.SharingScopes.values() if x != public_scope]
 
