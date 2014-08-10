@@ -81,21 +81,20 @@ def _get_sharing_enum( note, course ):
 		# TODO What do we want to do here?
 		logger.warn( 'Could not retrieve course from object (%s)', note )
 		return 'UNKNOWN'
-	scopes = course.LegacyScopes
-	public = scopes['public']
-	course_only = scopes['restricted']
-
-	public_object = Entity.get_entity( public )
-	course_only_object = Entity.get_entity( course_only )
+	public_scope, = course.SharingScopes.getAllScopesImpliedbyScope('Public')
+	other_scopes = [x for x in course.SharingScopes.values() if x != public_scope]
 
 	# Note: we could also do private if not shared at all
 	# or perhaps we want to store who we're sharing to.
 	result = 'OTHER'
 
-	if public_object in note.sharingTargets:
+	if public_scope in note.sharingTargets:
 		result = 'PUBLIC'
-	elif course_only_object in note.sharingTargets:
-		result = 'COURSE'
+	else:
+		for course_only_scope in other_scopes:
+			if course_only_scope in note.sharingTargets:
+				result = 'COURSE'
+				break
 
 	return result
 

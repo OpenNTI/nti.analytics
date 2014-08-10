@@ -23,7 +23,10 @@
 
 		<configure zcml:condition="not-have testmode">
 			<adb:registerAnalyticsDB 	defaultSQLite="True"/>
-
+		<!--
+			<adb:registerAnalyticsDB 	defaultSQLite="False"
+										dburi="mysql+pymysql://root@localhost:3306/Analytics" />
+		-->
 		</configure>
 	</configure>
 

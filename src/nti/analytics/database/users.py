@@ -39,7 +39,7 @@ class Users(Base):
 
 class Sessions(Base):
 	__tablename__ = 'Sessions'
-	session_id = Column('session_id', SESSION_COLUMN_TYPE, primary_key=True)
+	session_id = Column('session_id', SESSION_COLUMN_TYPE, primary_key=True )
 	user_id = Column('user_id', Integer, ForeignKey("Users.user_id"), nullable=False )
 	ip_addr = Column('ip_addr', String(64))
 	platform = Column('platform', String(64))
