@@ -59,7 +59,7 @@ class SessionId(_Identifier):
 
 	def get_id( self, nti_session ):
 		# We're likely getting session_ids here, which we will just return.
-		result = getattr( nti_session, 'session_id', None )
+		result = getattr( nti_session, 'session_id', nti_session )
 		return result
 
 class CourseId(_DSIdentifier):
