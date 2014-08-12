@@ -8,6 +8,7 @@ __docformat__ = "restructuredtext en"
 # pylint: disable=W0212,R0904
 
 import unittest
+import fudge
 
 from zope import component
 
@@ -563,7 +564,10 @@ class TestCourseResources(AnalyticsTestBase):
 		assert_that( resource_view.time_length, is_( time_length ) )
 		assert_that( resource_view.with_transcript )
 
-	def test_note(self):
+	@fudge.patch( 'nti.analytics.database.resource_tags._get_sharing_enum' )
+	def test_note(self, mock_sharing_enum):
+		mock_sharing_enum.is_callable().returns( 'UNKNOWN' )
+
 		results = self.session.query( NotesCreated ).all()
 		assert_that( results, has_length( 0 ) )
 		results = self.session.query( NotesViewed ).all()

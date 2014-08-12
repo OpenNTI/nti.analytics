@@ -29,12 +29,6 @@ import zope.testing.cleanup
 
 from nti.analytics import identifier
 
-def _get_sharing_enum( note, course ):
-	return 'UNKNOWN'
-
-from nti.analytics.database import resource_tags
-resource_tags._get_sharing_enum = _get_sharing_enum
-
 from nti.analytics.tests import DEFAULT_INTID
 
 from nti.analytics.tests import TestIdentifier
