@@ -48,7 +48,6 @@ class CourseResourceViews(Base,ResourceViewMixin,TimeLengthMixin):
 
 # Would we query on these separate event types? Probably not.
 # If so, we may break them out into separate tables.
-# TODO We need to document what timestamp is here (start of event, end of event?)
 # TODO Rewatch events? (kaltura player doesn't really have this right now; we could infer...)
 class VideoEvents(Base,ResourceViewMixin,TimeLengthMixin):
 	__tablename__ = 'VideoEvents'

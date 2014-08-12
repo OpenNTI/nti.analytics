@@ -15,7 +15,6 @@ from sqlalchemy import ForeignKey
 from sqlalchemy import DateTime
 
 from sqlalchemy.schema import Index
-
 from sqlalchemy.ext.declarative import declared_attr
 
 from nti.analytics.database import NTIID_COLUMN_TYPE

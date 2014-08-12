@@ -99,7 +99,8 @@ def _add_note_event( event, nti_session=None ):
 								course,
 								note )
 	logger.debug( 	"Course note view event (user=%s) (course=%s)",
-					user, course )
+					user,
+					getattr( course, '__name__', course ) )
 
 def _add_topic_event( event, nti_session=None ):
 	_validate_course_event( event )
@@ -115,7 +116,10 @@ def _add_topic_event( event, nti_session=None ):
 								topic,
 								event.time_length )
 	logger.debug( 	"Course topic view event (user=%s) (course=%s) (topic=%s) (time_length=%s)",
-					user, course, topic, event.time_length )
+					user,
+					getattr( course, '__name__', course ),
+					getattr( topic, '__name__', topic ),
+					event.time_length )
 
 def _add_blog_event( event, nti_session=None ):
 	_validate_analytics_event( event )
@@ -143,7 +147,9 @@ def _add_catalog_event( event, nti_session=None ):
 								course,
 								event.time_length )
 	logger.debug( 	"Course catalog view event (user=%s) (course=%s) (time_length=%s)",
-					user, course, event.time_length )
+					user,
+					getattr( course, '__name__', course ),
+					event.time_length )
 
 def _add_resource_event( event, nti_session=None ):
 	_validate_resource_event( event )
@@ -160,7 +166,9 @@ def _add_resource_event( event, nti_session=None ):
 								resource_id,
 								event.time_length )
 	logger.debug( 	"Resource view event (user=%s) (course=%s) (resource=%s) (time_length=%s)",
-					user, course, resource_id, event.time_length )
+					user,
+					getattr( course, '__name__', course ),
+					resource_id, event.time_length )
 
 
 def _add_video_event( event, nti_session=None ):
@@ -182,7 +190,9 @@ def _add_video_event( event, nti_session=None ):
 						event.video_end_time,
 						event.with_transcript )
 	logger.debug( 	"Video event (user=%s) (course=%s) (resource=%s) (type=%s) (start=%s) (end=%s) (time_length=%s)",
-					user, course, resource_id,
+					user,
+					getattr( course, '__name__', course ),
+					resource_id,
 					event.event_type, event.video_start_time,
 					event.video_end_time, event.time_length )
 

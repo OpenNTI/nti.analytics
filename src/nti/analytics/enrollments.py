@@ -37,7 +37,9 @@ def _add_drop( oid, username, scope, nti_session=None, timestamp=None ):
 		and course is not None:
 
 		db_enrollments.create_course_drop( user, nti_session, timestamp, course )
-		logger.debug( "User dropped (user=%s) (course=%s)", user, course )
+		logger.debug( "User dropped (user=%s) (course=%s)",
+					user,
+					getattr( course, '__name__', course ) )
 
 def _add_enrollment( oid, username, scope, nti_session=None, timestamp=None ):
 	course = ntiids.find_object_with_ntiid( oid )
@@ -48,7 +50,10 @@ def _add_enrollment( oid, username, scope, nti_session=None, timestamp=None ):
 		user = get_entity( username )
 		enrollment_type = scope
 		db_enrollments.create_course_enrollment( user, nti_session, timestamp, course, enrollment_type )
-		logger.debug( "User enrollment (user=%s) (course=%s) (type=%s)", user, course, enrollment_type )
+		logger.debug( "User enrollment (user=%s) (course=%s) (type=%s)",
+					user,
+					getattr( course, '__name__', course ),
+					enrollment_type )
 
 def _handle_event( record, to_call ):
 	timestamp = datetime.utcnow()

@@ -60,7 +60,9 @@ def _add_comment( oid, nti_session=None ):
 		if topic:
 			db_boards.create_forum_comment( user, nti_session, course, topic, comment )
 			logger.debug( 	"Forum comment created (user=%s) (topic=%s) (course=%s)",
-							user, topic, course )
+							user,
+							getattr( topic, '__name__', topic ),
+							getattr( course, '__name__', course ) )
 
 def _remove_comment( comment_id, timestamp ):
 	db_boards.delete_forum_comment( timestamp, comment_id )
@@ -90,7 +92,9 @@ def _add_topic( oid, nti_session=None ):
 		user = get_creator( topic )
 		course = get_course( topic )
 		db_boards.create_topic( user, nti_session, course, topic )
-		logger.debug( "Topic created (user=%s) (topic=%s)", user, topic )
+		logger.debug( "Topic created (user=%s) (topic=%s)",
+					user,
+					getattr( topic, '__name__', topic ))
 
 def _remove_topic( topic_id, timestamp=None ):
 	db_boards.delete_topic( timestamp, topic_id )
@@ -122,7 +126,9 @@ def _add_forum( oid, nti_session=None ):
 		course = get_course( forum )
 		db_boards.create_forum( user, nti_session, course, forum )
 		logger.debug( 	"Forum created (user=%s) (forum=%s) (course=%s)",
-						user, forum, course )
+						user,
+						getattr( forum, '__name__', forum ),
+						getattr( course, '__name__', course ) )
 
 @component.adapter( frm_interfaces.IForum, intid_interfaces.IIntIdAddedEvent )
 def _forum_added( forum, event ):

@@ -46,7 +46,9 @@ def _add_note( oid, nti_session=None ):
 		course = _get_course( note )
 		db_resource_tags.create_note( user, nti_session, course, note )
 		logger.debug( 	"Note created (user=%s) (course=%s) (note=%s)",
-						user, course, note )
+						user,
+						getattr( course, '__name__', course ),
+						note )
 
 def _remove_note( note_id, timestamp=None ):
 	db_resource_tags.delete_note( timestamp, note_id )
@@ -76,7 +78,9 @@ def _add_highlight( oid, nti_session=None ):
 		user = get_creator( highlight )
 		course = _get_course( highlight )
 		db_resource_tags.create_highlight( user, nti_session, course, highlight )
-		logger.debug( "Highlight created (user=%s) (course=%s)", user, course )
+		logger.debug( "Highlight created (user=%s) (course=%s)",
+					user,
+					getattr( course, '__name__', course ) )
 
 def _remove_highlight( highlight_id, timestamp=None ):
 	db_resource_tags.delete_highlight( timestamp, highlight_id )
