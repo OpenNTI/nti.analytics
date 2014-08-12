@@ -242,7 +242,7 @@ class TestResourceEvents(NTIAnalyticsTestCase):
 			"time_length":24791,
 			"MimeType":"application/vnd.nextthought.analytics.watchvideoevent",
 			"user":"andrew.ligon",
-			"timestamp": 012345.6}
+			"timestamp": 1407645254.609799}
 
 		factory = internalization.find_factory_for(ext_obj)
 		assert_that(factory, is_(not_none()))
@@ -259,7 +259,7 @@ class TestResourceEvents(NTIAnalyticsTestCase):
 		assert_that(new_io, has_property('event_type', is_( WatchVideoEvent.event_type )))
 		assert_that(new_io, has_property('video_start_time', is_( 0 )))
 		assert_that(new_io, has_property('video_end_time', is_( 30 )))
-		assert_that(new_io, has_property('timestamp', is_( 012345.6 )))
+		assert_that(new_io, has_property('timestamp', is_( 1407645254.609799 )))
 
 		assert_that( new_io, is_( WatchVideoEvent ) )
 

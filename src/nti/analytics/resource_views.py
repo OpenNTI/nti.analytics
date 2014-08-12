@@ -17,8 +17,9 @@ from nti.analytics.interfaces import ITopicViewEvent
 from nti.analytics.interfaces import IResourceEvent
 from nti.analytics.interfaces import ICourseCatalogViewEvent
 
-from .common import get_entity
-from .common import process_event
+from nti.analytics.common import get_entity
+from nti.analytics.common import get_nti_session_id
+from nti.analytics.common import process_event
 
 from nti.analytics.database import resource_tags as db_resource_tags
 from nti.analytics.database import resource_views as db_resource_views
@@ -189,8 +190,11 @@ def _add_video_event( event, nti_session=None ):
 def handle_events( batch_events ):
 
 	for event in batch_events:
+		# TODO
 		# Try to grab a session, careful not to raise so we don't
-		# lose our otherwise valid events.
+		# lose our otherwise valid events.  Since the batch send
+		# time on the client side is currently 10s, we can reasonably
+		# expect a valid session to exist.  This is still a bit sketchy.
 		user = get_entity( event.user )
 		nti_session = get_nti_session_id( user )
 
