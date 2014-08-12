@@ -20,7 +20,7 @@ from nti.analytics.interfaces import ICourseCatalogViewEvent
 from .common import get_entity
 from .common import process_event
 
-from nti.analytics.database import resource_views as db_resource_tags
+from nti.analytics.database import resource_tags as db_resource_tags
 from nti.analytics.database import resource_views as db_resource_views
 from nti.analytics.database import enrollments as db_enrollments
 from nti.analytics.database import boards as db_boards
@@ -40,7 +40,7 @@ def _validate_analytics_event( event ):
 		raise ValueError( 'Event received with non-existent user (user=%s) (event=%s)' %
 							( event.user, event ) )
 
-	time_length = getattr( event, time_length, 0 )
+	time_length = getattr( event, 'time_length', 0 )
 	if time_length < 0:
 		raise ValueError( """Event received with negative time_length
 							(user=%s) (time_length=%s) (event=%s)""" %
@@ -114,7 +114,7 @@ def _add_topic_event( event, nti_session=None ):
 								topic,
 								event.time_length )
 	logger.debug( 	"Course topic view event (user=%s) (course=%s) (topic=%s) (time_length=%s)",
-					user, course, topic, time_length )
+					user, course, topic, event.time_length )
 
 def _add_blog_event( event, nti_session=None ):
 	_validate_analytics_event( event )
@@ -128,7 +128,7 @@ def _add_blog_event( event, nti_session=None ):
 								blog,
 								event.time_length )
 	logger.debug( 	"Blog view event (user=%s) (blog=%s) (time_length=%s)",
-					user, blog, time_length )
+					user, blog, event.time_length )
 
 def _add_catalog_event( event, nti_session=None ):
 	_validate_course_event( event )
@@ -190,7 +190,7 @@ def handle_events( batch_events ):
 	# TODO We likely don't have valid sessions to pass along.
 	# We could try to grab one if the event is not too old...
 	for event in batch_events:
-		if INoteViewEvent( event ):
+		if INoteViewEvent.providedBy( event ):
 			process_event( _add_note_event, event=event )
 		elif IBlogViewEvent.providedBy( event ):
 			process_event( _add_blog_event, event=event )
