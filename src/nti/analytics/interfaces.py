@@ -10,6 +10,7 @@ from zope import interface
 
 from nti.schema.field import Number
 from nti.schema.field import Float
+from nti.schema.field import Datetime
 from nti.schema.field import Object
 from nti.schema.field import Bool
 from nti.schema.field import DecodingValidTextLine as ValidTextLine
@@ -32,8 +33,7 @@ class IAnalyticsViewEvent(interface.Interface):
 	"""
 	A course event.
 	"""
-	timestamp = Number(title=u"The timestamp when this event occurred.",
-						default=0.0)
+	timestamp = Datetime(title=u"The date when this event occurred")
 
 	user = ValidTextLine(title='User who created the event')
 

@@ -187,21 +187,25 @@ def _add_video_event( event, nti_session=None ):
 
 
 def handle_events( batch_events ):
-	# TODO We likely don't have valid sessions to pass along.
-	# We could try to grab one if the event is not too old...
+
 	for event in batch_events:
+		# Try to grab a session, careful not to raise so we don't
+		# lose our otherwise valid events.
+		user = get_entity( event.user )
+		nti_session = get_nti_session_id( user )
+
 		if INoteViewEvent.providedBy( event ):
-			process_event( _add_note_event, event=event )
+			process_event( _add_note_event, event=event, nti_session=nti_session )
 		elif IBlogViewEvent.providedBy( event ):
-			process_event( _add_blog_event, event=event )
+			process_event( _add_blog_event, event=event, nti_session=nti_session )
 		elif ITopicViewEvent.providedBy( event ):
-			process_event( _add_topic_event, event=event )
+			process_event( _add_topic_event, event=event, nti_session=nti_session )
 		elif IVideoEvent.providedBy( event ):
-			process_event( _add_video_event, event=event )
+			process_event( _add_video_event, event=event, nti_session=nti_session )
 		elif IResourceEvent.providedBy( event ):
-			process_event( _add_resource_event, event=event )
+			process_event( _add_resource_event, event=event, nti_session=nti_session )
 		elif ICourseCatalogViewEvent.providedBy( event ):
-			process_event( _add_catalog_event, event=event )
+			process_event( _add_catalog_event, event=event, nti_session=nti_session )
 	# If we validated early, we could return something meaningful.
 	# But we'd have to handle all validation exceptions as to not lose the valid
 	# events. The nti.async.processor does this and at least drops the bad

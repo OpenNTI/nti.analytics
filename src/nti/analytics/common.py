@@ -71,7 +71,7 @@ def get_nti_session_id( user ):
 
 def get_id_for_session( nti_session ):
 	""" Given an nti_session, return the unique id """
-	return _sessionid.get_id( nti_session )
+	return _sessionid.get_id( nti_session ) if nti_session else None
 
 def get_object_root( obj, type_to_find ):
 	""" Work up the parent tree looking for 'type_to_find', returning None if not found. """
