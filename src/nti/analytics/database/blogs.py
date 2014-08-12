@@ -36,6 +36,7 @@ from nti.analytics.database.meta_mixins import BaseTableMixin
 from nti.analytics.database.meta_mixins import BaseViewMixin
 from nti.analytics.database.meta_mixins import DeletedMixin
 from nti.analytics.database.meta_mixins import CommentsMixin
+from nti.analytics.database.meta_mixins import TimeLengthMixin
 
 from nti.analytics.database.users import get_or_create_user
 
@@ -49,7 +50,7 @@ class BlogsCreated(Base,BaseTableMixin,DeletedMixin):
 	__tablename__ = 'BlogsCreated'
 	blog_id = Column('blog_id', Integer, nullable=False, index=True, primary_key=True, autoincrement=False )
 
-class BlogsViewed(Base,BaseViewMixin,BlogMixin):
+class BlogsViewed(Base,BaseViewMixin,BlogMixin,TimeLengthMixin):
 	__tablename__ = 'BlogsViewed'
 
 	__table_args__ = (
@@ -89,7 +90,7 @@ def delete_blog( timestamp, blog_id ):
 									{ BlogCommentsCreated.deleted : timestamp } )
 	db.session.flush()
 
-def create_blog_view(user, nti_session, timestamp, blog_entry):
+def create_blog_view(user, nti_session, timestamp, blog_entry, time_length):
 	db = get_analytics_db()
 	user = get_or_create_user(user )
 	uid = user.user_id
@@ -100,7 +101,8 @@ def create_blog_view(user, nti_session, timestamp, blog_entry):
 	new_object = BlogsViewed( 	user_id=uid,
 								session_id=sid,
 								timestamp=timestamp,
-								blog_id=blog_id )
+								blog_id=blog_id,
+								time_length=time_length )
 	db.session.add( new_object )
 
 def create_blog_comment(user, nti_session, blog, comment ):

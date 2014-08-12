@@ -56,6 +56,33 @@ class CourseCatalogViewEvent(SchemaConfigured):
 	__external_class_name__ = "CourseCatalogViewEvent"
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.coursecatalogviewevent'
 
+@interface.implementer(interfaces.IBlogViewEvent)
+@WithRepr
+class BlogViewEvent(SchemaConfigured):
+	createDirectFieldProperties(interfaces.IBlogViewEvent)
+
+	__external_can_create__ = True
+	__external_class_name__ = "BlogViewEvent"
+	mime_type = mimeType = 'application/vnd.nextthought.analytics.blogviewevent'
+
+@interface.implementer(interfaces.INoteViewEvent)
+@WithRepr
+class NoteViewEvent(SchemaConfigured):
+	createDirectFieldProperties(interfaces.INoteViewEvent)
+
+	__external_can_create__ = True
+	__external_class_name__ = "NoteViewEvent"
+	mime_type = mimeType = 'application/vnd.nextthought.analytics.noteviewevent'
+
+@interface.implementer(interfaces.ITopicViewEvent)
+@WithRepr
+class TopicViewEvent(SchemaConfigured):
+	createDirectFieldProperties(interfaces.ITopicViewEvent)
+
+	__external_can_create__ = True
+	__external_class_name__ = "TopicViewEvent"
+	mime_type = mimeType = 'application/vnd.nextthought.analytics.topicviewevent'
+
 @interface.implementer(interfaces.IBatchResourceEvents)
 @WithRepr
 @NoPickle

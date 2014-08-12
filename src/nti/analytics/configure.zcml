@@ -90,6 +90,9 @@
 		root_interfaces=".interfaces.ICourseCatalogViewEvent
 						 .interfaces.IResourceEvent
 						 .interfaces.IVideoEvent
+						 .interfaces.IBlogViewEvent
+						 .interfaces.INoteViewEvent
+						 .interfaces.ITopicViewEvent
 						 .interfaces.IBatchResourceEvents"
 		modules=".model" />
 
@@ -103,6 +106,18 @@
 
 	<adapter factory=".internalization._CourseCatalogEventUpdater"
 			 for=".interfaces.ICourseCatalogViewEvent"
+			 provides="nti.externalization.interfaces.IInternalObjectUpdater" />
+
+	<adapter factory=".internalization._BlogViewEventUpdater"
+			 for=".interfaces.IBlogViewEvent"
+			 provides="nti.externalization.interfaces.IInternalObjectUpdater" />
+
+	<adapter factory=".internalization._NoteViewEventUpdater"
+			 for=".interfaces.INoteViewEvent"
+			 provides="nti.externalization.interfaces.IInternalObjectUpdater" />
+
+	<adapter factory=".internalization._TopicViewEventUpdater"
+			 for=".interfaces.ITopicViewEvent"
 			 provides="nti.externalization.interfaces.IInternalObjectUpdater" />
 
 	<!-- Inline jobs for dev -->

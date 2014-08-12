@@ -9,6 +9,7 @@ __docformat__ = "restructuredtext en"
 from zope import interface
 
 from nti.schema.field import Number
+from nti.schema.field import Float
 from nti.schema.field import Object
 from nti.schema.field import Bool
 from nti.schema.field import DecodingValidTextLine as ValidTextLine
@@ -27,7 +28,7 @@ class IObjectProcessor(interface.Interface):
 		"""
 		Does analytic processing for the given object.
 		"""
-class ICourseEvent(interface.Interface):
+class IAnalyticsViewEvent(interface.Interface):
 	"""
 	A course event.
 	"""
@@ -36,10 +37,26 @@ class ICourseEvent(interface.Interface):
 
 	user = ValidTextLine(title='User who created the event')
 
-	course = ValidTextLine(title='Course ntiid')
-
 	time_length = Number(title=u"The time length of the event, in seconds",
 						default=0)
+
+class IBlogViewEvent(IAnalyticsViewEvent):
+	"""
+	A blog viewing event.
+	"""
+	blog_id = ValidTextLine(title="The blog ntiid.")
+
+class ICourseEvent(IAnalyticsViewEvent):
+	"""
+	A course event.
+	"""
+	course = ValidTextLine(title='Course ntiid')
+
+class ITopicViewEvent(ICourseEvent):
+	"""
+	A topic viewing event.
+	"""
+	topic_id = ValidTextLine(title='Topic ntiid')
 
 class IResourceEvent(ICourseEvent):
 	"""
@@ -51,7 +68,12 @@ class IResourceEvent(ICourseEvent):
 
 	resource_id = ValidTextLine(title="The resource ntiid.")
 
-
+class INoteViewEvent(ICourseEvent):
+	"""
+	A note viewing event.
+	"""
+	# TODO context_path?
+	note_id = ValidTextLine(title="The note ntiid.")
 
 class IVideoEvent(IResourceEvent):
 	"""
@@ -75,4 +97,4 @@ class ICourseCatalogViewEvent(ICourseEvent):
 class IBatchResourceEvents( IIterable ):
 	events = TypedIterable(
 		title="The events in this batch",
-		value_type=Object( ICourseEvent ) )
+		value_type=Object( IAnalyticsViewEvent ) )

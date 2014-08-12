@@ -491,7 +491,7 @@ class TestSocial(AnalyticsTestBase):
 		results = self.session.query( BlogsViewed ).all()
 		assert_that( results, has_length( 0 ) )
 
-		db_blogs.create_blog_view( test_user_ds_id, test_session_id, datetime.now(), new_blog_id )
+		db_blogs.create_blog_view( test_user_ds_id, test_session_id, datetime.now(), new_blog_id, 18 )
 		results = self.session.query( BlogsViewed ).all()
 		assert_that( results, has_length( 1 ) )
 
@@ -500,6 +500,7 @@ class TestSocial(AnalyticsTestBase):
 		assert_that( blog.blog_id, is_( 999 ) )
 		assert_that( blog.session_id, is_( test_session_id ) )
 		assert_that( blog.timestamp, not_none() )
+		assert_that( blog.time_length, is_( 18 ) )
 
 class TestCourseResources(AnalyticsTestBase):
 
