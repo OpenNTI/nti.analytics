@@ -31,8 +31,11 @@ def all_objects_iids(users=()):
             else:
                 creator = getattr(obj, 'creator', None)
                 creator = getattr(creator, 'username', creator)
-                creator = creator.lower() if creator else ''
-
+                try:
+                	creator = creator.lower() if creator else ''
+                except AttributeError:
+                	# TODO system_user type?
+                	pass
                 # TODO we're losing deleted comments here.
                 if    not nti_interfaces.IDeletedObjectPlaceholder.providedBy(obj) and \
                     (not usernames or creator in usernames):
