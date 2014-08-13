@@ -49,4 +49,4 @@ def registerAnalyticsDB(_context, dburi=None, twophase=False, autocommit=False, 
 @component.adapter( IDataserverClosedEvent )
 def _closed_dataserver( event ):
 	db = AnalyticsDB( dburi='sqlite://' )
-	component.getGlobalSiteManager().registerUtility( db, IAnalyticsDB )
+	component.getSiteManager().registerUtility( db, IAnalyticsDB )
