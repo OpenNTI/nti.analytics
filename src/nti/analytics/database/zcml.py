@@ -12,14 +12,16 @@ logger = __import__('logging').getLogger(__name__)
 
 import functools
 
+from zope import component
 from zope import schema
 from zope import interface
 from zope.configuration import fields
 from zope.component.zcml import utility
 
+from nti.dataserver.interfaces import IDataserverClosedEvent
+
 from nti.analytics.database.interfaces import IAnalyticsDB
 from nti.analytics.database.database import AnalyticsDB
-
 
 class IRegisterAnalyticsDB(interface.Interface):
 	"""
@@ -43,3 +45,8 @@ def registerAnalyticsDB(_context, dburi=None, twophase=False, autocommit=False, 
 									config=config )
 	utility(_context, provides=IAnalyticsDB, factory=factory)
 
+# Should only be called in testmode. Resets our in-memory database.
+@component.adapter( IDataserverClosedEvent )
+def _closed_dataserver( event ):
+	db = AnalyticsDB( dburi='sqlite://' )
+	component.getGlobalSiteManager().registerUtility( db, IAnalyticsDB )

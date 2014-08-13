@@ -19,6 +19,7 @@
 			<adb:registerAnalyticsDB 	defaultSQLite="True"
 										dburi="sqlite://" />
 
+			<subscriber handler="nti.analytics.database.zcml._closed_dataserver" />
 		</configure>
 
 		<configure zcml:condition="not-have testmode">
