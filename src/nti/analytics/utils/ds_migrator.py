@@ -13,14 +13,32 @@ import argparse
 import time
 import transaction
 import sys
+import logging
+
+import zope.exceptions
+import zope.browserpage
 
 from zope import component
+from zope.container.contained import Contained
+from zope.configuration import xmlconfig, config
+from zope.dottedname import resolve as dottedname
+
+from z3c.autoinclude.zcml import includePluginsDirective
 
 from nti.dataserver.utils import run_with_dataserver
 from nti.dataserver.interfaces import IDataserverTransactionRunner
 
 from nti.analytics.utils import all_objects_iids
 from nti.analytics.interfaces import IObjectProcessor
+
+class PluginPoint(Contained):
+
+	def __init__(self, name):
+		self.__name__ = name
+
+PP_APP = PluginPoint('nti.app')
+PP_APP_SITES = PluginPoint('nti.app.sites')
+PP_APP_PRODUCTS = PluginPoint('nti.app.products')
 
 class _AnalyticsMigrator(object):
 
@@ -50,7 +68,7 @@ class _AnalyticsMigrator(object):
 
 		return count
 
-	def _init_migration( self ):
+	def __call__( self ):
 		logger.info( 'Initializing analytics ds migrator (usernames=%s) (last_oid=%s) (batch_size=%s)',
 					len( self.usernames ), self.last_oid, self.batch_size )
 		now = time.time()
@@ -80,56 +98,126 @@ class _AnalyticsMigrator(object):
 		elapsed = time.time() - now
 		logger.info("Total objects processed (size=%s) (time=%s)", total, elapsed)
 
-def start_migration( args ):
-	arg_parser = argparse.ArgumentParser(description="Create a user-type object")
-	arg_parser.add_argument('--usernames', help="The usernames to migrate")
-	arg_parser.add_argument('--env_dir', help="Dataserver environment root directory")
-	arg_parser.add_argument('--batch_size', help="Commit after each batch")
-	arg_parser.add_argument('--site', dest='site', help="request SITE")
-	arg_parser.add_argument('-v', '--verbose', help="Be verbose", action='store_true',
-							dest='verbose')
-	args = arg_parser.parse_args(args=args)
+class Processor(object):
 
-	env_dir = args.env_dir
-	if not env_dir:
-		env_dir = os.getenv( 'DATASERVER_DIR' )
-	if not env_dir or not os.path.exists(env_dir) and not os.path.isdir(env_dir):
-		raise ValueError( "Invalid dataserver environment root directory", env_dir )
+	conf_package = 'nti.appserver'
 
-	last_oid_file = env_dir + '/.analytics_ds_migrator'
-	last_oid = 0
-	if os.path.exists( last_oid_file ):
-		with open( last_oid_file, 'r' ) as f:
-			file_last_oid = f.read()
-			if file_last_oid:
-				last_oid = int( file_last_oid )
+	def create_arg_parser(self):
+		arg_parser = argparse.ArgumentParser(description="Create a user-type object")
+		arg_parser.add_argument('--usernames', dest='usernames', help="The usernames to migrate")
+		arg_parser.add_argument('--env_dir', dest='env_dir', help="Dataserver environment root directory")
+		arg_parser.add_argument('--batch_size', dest='batch_size', help="Commit after each batch")
+		arg_parser.add_argument('--site', dest='site', help="request SITE")
+		arg_parser.add_argument('-v', '--verbose', help="Be verbose", action='store_true',
+								dest='verbose')
+		return arg_parser
 
-	usernames = args.usernames
-	if usernames:
-		usernames = usernames.split(',')
-	else:
-		usernames = ()
+	def create_context(self, env_dir):
+		etc = os.getenv('DATASERVER_ETC_DIR') or os.path.join(env_dir, 'etc')
+		etc = os.path.expanduser(etc)
 
-	batch_size = 2000
-	if args.batch_size:
-		batch_size = args.batch_size
+		context = config.ConfigurationMachine()
+		xmlconfig.registerCommonDirectives(context)
 
-	conf_packages = ('nti.analytics','nti.appserver', 'nti.dataserver',)
+		slugs = os.path.join(etc, 'package-includes')
+		if os.path.exists(slugs) and os.path.isdir(slugs):
+			package = dottedname.resolve('nti.dataserver')
+			context = xmlconfig.file('configure.zcml', package=package, context=context)
+			xmlconfig.include(context, files=os.path.join(slugs, '*.zcml'),
+							  package=self.conf_package)
 
-	analytics_migrator = _AnalyticsMigrator( usernames, last_oid, last_oid_file, batch_size )
+		library_zcml = os.path.join(etc, 'library.zcml')
+		if not os.path.exists(library_zcml):
+			raise Exception("Could not locate library zcml file %s", library_zcml)
 
-	# TODO Nested transactions here; not really a problem since
-	# this top level transaction has nothing to commit, but it
-	# needs to be cleaned up.
-	run_with_dataserver(environment_dir=env_dir,
-						 xmlconfig_packages=conf_packages,
-						 verbose=args.verbose,
-						 function=analytics_migrator._init_migration )
+		xmlconfig.include(context, file=library_zcml, package=self.conf_package)
 
+		# Include zope.browserpage.meta.zcm for tales:expressiontype
+		# before including the products
+		xmlconfig.include(context, file="meta.zcml", package=zope.browserpage)
 
-def main(args=None):
-	start_migration(args)
-	sys.exit(0)
+		# include plugins
+		includePluginsDirective(context, PP_APP)
+		includePluginsDirective(context, PP_APP_SITES)
+		includePluginsDirective(context, PP_APP_PRODUCTS)
+
+		return context
+
+	def set_log_formatter(self, args):
+		ei = '%(asctime)s %(levelname)-5.5s [%(name)s][%(thread)d][%(threadName)s] %(message)s'
+		logging.root.handlers[0].setFormatter(zope.exceptions.log.Formatter(ei))
+
+	def setup_site(self, args):
+		site = getattr(args, 'site', None)
+		if site:
+			logger.info( 'Using site (%s)', site )
+			from pyramid.testing import DummyRequest
+			from pyramid.testing import setUp as psetUp
+
+			request = DummyRequest()
+			config = psetUp(registry=component.getGlobalSiteManager(),
+							request=request,
+							hook_zca=False)
+			config.setup_registry()
+			request.headers['origin'] = \
+							'http://' + site if not site.startswith('http') else site
+			# zope_site_tween tweaks some things on the request that we need to as well
+			request.possible_site_names = \
+					(site if not site.startswith('http') else site[7:],)
+
+	def process_args(self, args,last_oid,last_oid_file):
+		self.setup_site(args)
+		self.set_log_formatter(args)
+
+		usernames = args.usernames
+		if usernames:
+			usernames = usernames.split(',')
+		else:
+			usernames = ()
+
+		batch_size = 2000
+		if args.batch_size:
+			batch_size = args.batch_size
+
+		name = getattr(args, 'name', None) or u''
+		exit_on_error = getattr(args, 'exit_error', True)
+
+		analytics_migrator = _AnalyticsMigrator( usernames, last_oid, last_oid_file, batch_size )
+		result = analytics_migrator()
+		sys.exit(result)
+
+	def __call__(self, *args, **kwargs ):
+		arg_parser = self.create_arg_parser()
+		args = arg_parser.parse_args()
+
+		env_dir = args.env_dir
+		if not env_dir:
+			env_dir = os.getenv( 'DATASERVER_DIR' )
+		if not env_dir or not os.path.exists(env_dir) and not os.path.isdir(env_dir):
+			raise ValueError( "Invalid dataserver environment root directory", env_dir )
+
+		last_oid_file = env_dir + '/.analytics_ds_migrator'
+		last_oid = 0
+		if os.path.exists( last_oid_file ):
+			with open( last_oid_file, 'r' ) as f:
+				file_last_oid = f.read()
+				if file_last_oid:
+					last_oid = int( file_last_oid )
+
+		conf_packages = ('nti.analytics','nti.appserver', 'nti.dataserver',)
+		context = self.create_context(env_dir)
+
+		# TODO Nested transactions here; not really a problem since
+		# this top level transaction has nothing to commit, but it
+		# needs to be cleaned up.
+		run_with_dataserver(environment_dir=env_dir,
+							 xmlconfig_packages=conf_packages,
+							 verbose=args.verbose,
+							 context=context,
+							 function=lambda: self.process_args(args,last_oid,last_oid_file) )
+
+def main():
+	return Processor()()
 
 if __name__ == '__main__':
 	main()

@@ -75,8 +75,12 @@ def create_blog( user, nti_session, blog_entry ):
 	timestamp = get_created_timestamp( blog_entry )
 
 	blog_length = None
-	if blog_entry.description is not None:
-		blog_length = len( blog_entry.description )
+
+	try:
+		if blog_entry.description is not None:
+			blog_length = len( blog_entry.description )
+	except AttributeError:
+		blog_length = sum( len( x ) for x in blog_entry.body )
 
 	new_object = BlogsCreated( 	user_id=uid,
 								session_id=sid,
