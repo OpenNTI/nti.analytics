@@ -22,8 +22,10 @@
 			<subscriber handler="nti.analytics.database.zcml._closed_dataserver" />
 		</configure>
 
+		<!-- (temporarily?) in-memory -->
 		<configure zcml:condition="not-have testmode">
-			<adb:registerAnalyticsDB 	defaultSQLite="True"/>
+			<adb:registerAnalyticsDB 	defaultSQLite="True"
+										dburi="sqlite://" />
 		<!--
 			<adb:registerAnalyticsDB 	defaultSQLite="False"
 										dburi="mysql+pymysql://root@localhost:3306/Analytics" />
