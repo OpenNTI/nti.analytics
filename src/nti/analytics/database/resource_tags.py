@@ -61,6 +61,7 @@ class NotesCreated(Base,BaseTableMixin,ResourceMixin,DeletedMixin):
 	# Parent-id should be other notes; top-level notes will have null parent_ids
 	parent_id = Column('parent_id', Integer, nullable=True)
 	sharing = Column('sharing', Enum( 'PUBLIC', 'COURSE', 'OTHER', 'UNKNOWN' ), nullable=False )
+	note_length = Column('note_length', Integer, nullable=True )
 
 class NotesViewed(Base,BaseViewMixin,NoteMixin):
 	__tablename__ = 'NotesViewed'
@@ -104,6 +105,8 @@ def create_note(user, nti_session, course, note):
 	timestamp = get_created_timestamp( note )
 	sharing = _get_sharing_enum( note, course )
 
+	note_length = sum( len( x ) for x in note.body )
+
 	pid = None
 	parent_note = getattr( note, 'inReplyTo', None )
 	if parent_note is not None:
@@ -116,6 +119,7 @@ def create_note(user, nti_session, course, note):
 								note_id=nid,
 								resource_id=rid,
 								parent_id=pid,
+								note_length=note_length,
 								sharing=sharing )
 	db.session.add( new_object )
 

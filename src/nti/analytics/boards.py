@@ -38,6 +38,13 @@ _commentid = CommentId()
 _topicid = TopicId()
 _forumid = ForumId()
 
+def get_topics_created_for_user( *args, **kwargs ):
+	return db_boards.get_topics_created_for_user( *args, **kwargs  )
+
+def get_forum_comments_for_user( *args, **kwargs  ):
+	return db_boards.get_forum_comments_for_user( *args, **kwargs  )
+
+
 def _is_topic( obj ):
 	# Exclude blogs
 	result = 	frm_interfaces.ITopic.providedBy(obj) \

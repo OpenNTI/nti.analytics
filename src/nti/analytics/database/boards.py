@@ -173,6 +173,8 @@ def create_forum_comment(user, nti_session, course, topic, comment):
 	pid = None
 	timestamp = get_created_timestamp( comment )
 
+	comment_length = sum( len( x ) for x in comment.body )
+
 	parent_comment = getattr( comment, 'inReplyTo', None )
 	if parent_comment is not None:
 		pid = _commentid.get_id( parent_comment )
@@ -184,6 +186,7 @@ def create_forum_comment(user, nti_session, course, topic, comment):
 										forum_id=fid,
 										topic_id=did,
 										parent_id=pid,
+										comment_length=comment_length,
 										comment_id=cid )
 	db.session.add( new_object )
 
@@ -204,6 +207,11 @@ def get_forum_comments_for_user(user, course):
 	results = db.session.query(ForumCommentsCreated).filter( 	ForumCommentsCreated.user_id == uid,
 															ForumCommentsCreated.course_id == course_id,
 															ForumCommentsCreated.deleted == None ).all()
+
+	for fcc in results:
+		comment = _commentid.get_object( fcc.comment_id )
+		setattr( fcc, 'comment', comment )
+
 	return results
 
 def get_topics_created_for_user(user, course):
@@ -214,6 +222,10 @@ def get_topics_created_for_user(user, course):
 	results = db.session.query(TopicsCreated).filter( TopicsCreated.user_id == uid,
 														TopicsCreated.course_id == course_id,
 														TopicsCreated.deleted == None  ).all()
+
+	for tc in results:
+		topic = _topicid.get_object( tc.topic_id )
+		setattr( tc, 'topic', topic )
 	return results
 
 #TopicReport
@@ -236,7 +248,7 @@ def get_topics_created_for_forum(forum):
 	db = get_analytics_db()
 	forum_id = _forumid.get_id( forum )
 	results = db.session.query(TopicsCreated).filter( TopicsCreated.forum_id == forum_id,
-															TopicsCreated.deleted == None  ).all()
+													TopicsCreated.deleted == None  ).all()
 	return results
 
 

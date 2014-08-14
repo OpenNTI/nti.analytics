@@ -86,6 +86,7 @@ class TestIdentifier(_Identifier):
 	def __init__(self):
 		self.default_intid = DEFAULT_INTID
 		self.cache = dict()
+		self.id_map = dict()
 
 	def get_id( self, obj ):
 		# Opt for ds_intid if we're in a mock_ds
@@ -115,6 +116,13 @@ class TestIdentifier(_Identifier):
 		self.cache[obj] = result
 		return result
 
+	def get_object(self, id):
+		return object()
+
 from nti.analytics import identifier
+# FIXME
 identifier._DSIdentifier.get_id = identifier._NtiidIdentifier.get_id \
 = identifier.SessionId.get_id = TestIdentifier().get_id
+
+identifier._DSIdentifier.get_object = identifier._NtiidIdentifier.get_object \
+= identifier.SessionId.get_object = TestIdentifier().get_object

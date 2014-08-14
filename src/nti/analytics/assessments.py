@@ -38,12 +38,20 @@ from .common import get_entity
 from nti.analytics.identifier import FeedbackId
 _feedbackid = FeedbackId()
 
+def get_self_assessments_for_user( *args, **kwargs ):
+	return db_assessments.get_self_assessments_for_user( *args, **kwargs  )
+
+def get_assignments_for_user( *args, **kwargs  ):
+	return db_assessments.get_assignments_for_user( *args, **kwargs )
+
+
 def _self_assessment_taken( oid, nti_session=None ):
 	submission = ntiids.find_object_with_ntiid( oid )
 	if submission is not None:
 		user = get_creator( submission )
 		timestamp = get_created_timestamp( submission )
 		# TODO This doesn't work for some submissions, why (see resource_tags.py)?
+		# Missing content/courses?
 		__traceback_info__ = submission.containerId
 		course = get_course_by_ntiid( submission.containerId )
 		db_assessments.create_self_assessment_taken( user, nti_session, timestamp, course, submission )

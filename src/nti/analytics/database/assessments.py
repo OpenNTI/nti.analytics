@@ -10,8 +10,13 @@ logger = __import__('logging').getLogger(__name__)
 
 import json
 
+import zope.intid
+
+from six import string_types
+
 from sqlalchemy import Column
 from sqlalchemy import Integer
+from sqlalchemy import Float
 from sqlalchemy import String
 from sqlalchemy import ForeignKey
 from sqlalchemy import Boolean
@@ -22,8 +27,6 @@ from sqlalchemy.schema import Sequence
 from sqlalchemy.schema import PrimaryKeyConstraint
 
 from sqlalchemy.ext.declarative import declared_attr
-
-import zope.intid
 
 from nti.app.products.gradebook.interfaces import IGrade
 
@@ -39,10 +42,12 @@ from nti.analytics.database.users import get_or_create_user
 from nti.analytics.identifier import SessionId
 from nti.analytics.identifier import CourseId
 from nti.analytics.identifier import SubmissionId
+from nti.analytics.identifier import QuestionSetId
 from nti.analytics.identifier import FeedbackId
 _sessionid = SessionId()
 _courseid = CourseId()
 _submissionid = SubmissionId()
+_questionsetid = QuestionSetId()
 _feedbackid = FeedbackId()
 
 from nti.analytics.database import SESSION_COLUMN_TYPE
@@ -95,6 +100,11 @@ class GradeMixin(object):
 	@declared_attr
 	def grade(cls):
 		return Column('grade', String(32), nullable=True )
+
+	# For easy aggregation
+	@declared_attr
+	def grade_num(cls):
+		return Column('grade_num', Float, nullable=True )
 
 	# 'Null' for auto-graded parts.
 	@declared_attr
@@ -174,6 +184,16 @@ def _get_response(part):
 
 	return result
 
+def _get_grade( grade_value ):
+	# Convert the webapp's "number - letter" scheme to a number, or None.
+	result = None
+	if grade_value and isinstance(grade_value, string_types) and grade_value.endswith(' -'):
+		try:
+			result = float(grade_value.split()[0])
+		except ValueError:
+			pass
+	return result
+
 def create_self_assessment_taken(user, nti_session, timestamp, course, submission ):
 	db = get_analytics_db()
 	user = get_or_create_user(user )
@@ -182,7 +202,7 @@ def create_self_assessment_taken(user, nti_session, timestamp, course, submissio
 	course_id = _courseid.get_id( course )
 	timestamp = timestamp_type( timestamp )
 	submission_id = _submissionid.get_id( submission )
-	self_assessment_id = submission.questionSetId
+	self_assessment_id = _questionsetid.get_id( submission.questionSetId )
 	# We likely will not have a grader.
 	grader = _get_grader_id( db, submission )
 	# TODO As a QAssessedQuestionSet. we will not have a duration.
@@ -204,7 +224,6 @@ def create_self_assessment_taken(user, nti_session, timestamp, course, submissio
 
 		for idx, part in enumerate( assessed_question.parts ):
 			grade = part.assessedValue
-			# TODO How do we do this?
 			is_correct = grade == 1
 			response = _get_response( part.submittedResponse )
 			grade_details = SelfAssessmentDetails( user_id=uid,
@@ -283,6 +302,8 @@ def create_assignment_taken(user, nti_session, timestamp, course, submission ):
 	# If None, we're pending right?
 	if graded_submission is not None:
 		grade = graded_submission.grade
+		grade_num = _get_grade( grade )
+
 		grader = _get_grader_id( db, submission )
 
 		graded = AssignmentGrades( 	user_id=uid,
@@ -290,6 +311,7 @@ def create_assignment_taken(user, nti_session, timestamp, course, submission ):
 									timestamp=timestamp,
 									submission_id=submission_id,
 									grade=grade,
+									grade_num=grade_num,
 									grader=grader )
 		db.session.add( graded )
 
@@ -303,7 +325,6 @@ def create_assignment_taken(user, nti_session, timestamp, course, submission ):
 
 				for idx, part in enumerate( assessed_question.parts ):
 					grade = part.assessedValue
-					# TODO How do we do this?
 					is_correct = grade == 1
 					grade_details = AssignmentDetailGrades( user_id=uid,
 															session_id=sid,
@@ -324,10 +345,13 @@ def grade_submission(user, nti_session, timestamp, grader, graded_val, submissio
 	grade_entry = _get_grade_entry( db, submission_id )
 	timestamp = timestamp_type( timestamp )
 
+	grade_num = _get_grade( graded_val )
+
 	if grade_entry:
 		# Update
 		# If we wanted, we could just append every 'set_grade' action.
 		grade_entry.grade = graded_val
+		grade_entry.grade_num = grade_num
 		grade_entry.timestamp = timestamp
 		grade_entry.grader = grader_id
 	else:
@@ -341,6 +365,7 @@ def grade_submission(user, nti_session, timestamp, grader, graded_val, submissio
 										timestamp=timestamp,
 										submission_id=submission_id,
 										grade=graded_val,
+										grade_num=grade_num,
 										grader=grader_id )
 
 		db.session.add( new_object )
@@ -394,6 +419,10 @@ def get_self_assessments_for_user(user, course):
 	course_id = _courseid.get_id( course )
 	results = db.session.query(SelfAssessmentsTaken).filter( 	SelfAssessmentsTaken.user_id == uid,
 																SelfAssessmentsTaken.course_id == course_id ).all()
+
+	for sat in results:
+		submission = _submissionid.get_object( sat.submission_id )
+		setattr( sat, 'submission', submission )
 	return results
 
 def get_assignments_for_user(user, course):
@@ -403,12 +432,19 @@ def get_assignments_for_user(user, course):
 	course_id = _courseid.get_id( course )
 	results = db.session.query(AssignmentsTaken).filter( 	AssignmentsTaken.user_id == uid,
 															AssignmentsTaken.course_id == course_id ).all()
+	for at in results:
+		submission = _submissionid.get_object( at.submission_id )
+		setattr( at, 'submission', submission )
 	return results
 
 def get_self_assessments_for_course(course):
 	db = get_analytics_db()
 	course_id = _courseid.get_id( course )
 	results = db.session.query(SelfAssessmentsTaken).filter( SelfAssessmentsTaken.course_id == course_id ).all()
+
+	for sat in results:
+		submission = _submissionid.get_object( sat.submission_id )
+		setattr( sat, 'submission', submission )
 	return results
 
 def get_assignments_for_course(course):

@@ -49,6 +49,7 @@ class BlogMixin(object):
 class BlogsCreated(Base,BaseTableMixin,DeletedMixin):
 	__tablename__ = 'BlogsCreated'
 	blog_id = Column('blog_id', Integer, nullable=False, index=True, primary_key=True, autoincrement=False )
+	blog_length = Column('blog_length', Integer, nullable=True, autoincrement=False)
 
 class BlogsViewed(Base,BaseViewMixin,BlogMixin,TimeLengthMixin):
 	__tablename__ = 'BlogsViewed'
@@ -73,9 +74,14 @@ def create_blog( user, nti_session, blog_entry ):
 
 	timestamp = get_created_timestamp( blog_entry )
 
+	blog_length = None
+	if blog_entry.description is not None:
+		blog_length = len( blog_entry.description )
+
 	new_object = BlogsCreated( 	user_id=uid,
 								session_id=sid,
 								timestamp=timestamp,
+								blog_length=blog_length,
 								blog_id=blog_id )
 	db.session.add( new_object )
 
@@ -119,11 +125,14 @@ def create_blog_comment(user, nti_session, blog, comment ):
 	if parent_comment is not None:
 		pid = _commentid.get_id( parent_comment )
 
+	comment_length = sum( len( x ) for x in comment.body )
+
 	new_object = BlogCommentsCreated( 	user_id=uid,
 										session_id=sid,
 										timestamp=timestamp,
 										blog_id=bid,
 										parent_id=pid,
+										comment_length=comment_length,
 										comment_id=cid )
 	db.session.add( new_object )
 

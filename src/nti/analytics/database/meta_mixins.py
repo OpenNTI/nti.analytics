@@ -75,6 +75,10 @@ class CommentsMixin(BaseTableMixin,DeletedMixin):
 	def comment_id(cls):
 		return Column('comment_id', Integer, nullable=False, autoincrement=False)
 
+	@declared_attr
+	def comment_length(cls):
+		return Column('comment_length', Integer, nullable=True, autoincrement=False)
+
 	# parent_id should point to a parent comment; top-level comments will have null parent_ids
 	@declared_attr
 	def parent_id(cls):

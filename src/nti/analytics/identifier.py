@@ -11,6 +11,8 @@ logger = __import__('logging').getLogger(__name__)
 import zope.intid
 from zope import component
 
+from nti.ntiids import ntiids
+
 from nti.utils.property import Lazy
 
 from six import string_types
@@ -41,6 +43,9 @@ class _DSIdentifier(_Identifier):
 		result = getattr( obj, '_ds_intid', None )
 		return result or self.intids.getId( obj )
 
+	def get_object( self, id ):
+		return self.intids.getObject( id )
+
 class _NtiidIdentifier(_Identifier):
 
 	def get_id(self, resource):
@@ -51,6 +56,8 @@ class _NtiidIdentifier(_Identifier):
 			result = getattr( resource, 'ntiid', None )
 		return result
 
+	def get_object( self, id ):
+		return ntiids.find_object_with_ntiid( id )
 
 class UserId(_DSIdentifier):
 	pass
@@ -98,6 +105,9 @@ class FriendsListId(_DSIdentifier):
 	pass
 
 class SubmissionId(_DSIdentifier):
+	pass
+
+class QuestionSetId(_NtiidIdentifier):
 	pass
 
 class FeedbackId(_DSIdentifier):

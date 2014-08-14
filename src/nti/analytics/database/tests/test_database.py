@@ -472,7 +472,8 @@ class TestSocial(AnalyticsTestBase):
 
 		# Add blog
 		new_blog_id = 999
-		db_blogs.create_blog( test_user_ds_id, test_session_id, new_blog_id )
+		new_blog = MockParent( None, intid=new_blog_id )
+		db_blogs.create_blog( test_user_ds_id, test_session_id, new_blog )
 		results = self.session.query( BlogsCreated ).all()
 		assert_that( results, has_length( 1 ) )
 
@@ -973,7 +974,8 @@ class TestBlogComments(AnalyticsTestBase):
 	def setUp(self):
 		super( TestBlogComments, self ).setUp()
 		self.blog_id = 999
-		db_blogs.create_blog( test_user_ds_id, test_session_id, self.blog_id )
+		new_blog = MockParent( None, intid=self.blog_id )
+		db_blogs.create_blog( test_user_ds_id, test_session_id, new_blog )
 
 	def tearDown(self):
 		self.session.close()
