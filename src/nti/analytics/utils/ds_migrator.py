@@ -62,13 +62,12 @@ class _AnalyticsMigrator(object):
 			try:
 				count = transaction_runner( self.init_db, retries=2, sleep=1 )
 				last_valid_id = self.last_oid
-				logger.info( 'Committed batch (%s)', count )
+				logger.info( 'Committed batch (%s) (last_oid=%s)', count, last_valid_id )
 				total += count
 				if 		( self.batch_size and count <= self.batch_size ) \
 					or 	self.batch_size is None:
 					break
 			finally:
-				logger.info( 'Storing state (last_oid=%s)', last_valid_id )
 				# Store our state
 				with open( self.last_oid_file, 'w+' ) as f:
 					f.write( str( last_valid_id ) )
