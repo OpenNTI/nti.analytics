@@ -18,11 +18,14 @@ from nti.dataserver import interfaces as nti_interfaces
 
 from .. import interfaces as analytic_interfaces
 
-def all_objects_iids(users=()):
+def all_objects_iids(users, last_oid):
 
     obj = intids = component.getUtility(zope.intid.IIntIds)
     usernames = {getattr(user, 'username', user).lower() for user in users or ()}
-    for uid in intids:
+
+	# These should be in order.
+    valid_intids = (x for x in intids if x > last_oid )
+    for uid in valid_intids:
         try:
             obj = intids.getObject(uid)
             if nti_interfaces.IEntity.providedBy(obj):
