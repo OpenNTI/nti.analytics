@@ -62,11 +62,16 @@ class _AnalyticsMigrator(object):
 			try:
 				count = transaction_runner( self.init_db, retries=2, sleep=1 )
 				last_valid_id = self.last_oid
-				logger.info( 'Committed batch (%s) (last_oid=%s)', count, last_valid_id )
 				total += count
+				logger.info( 'Committed batch (%s) (last_oid=%s) (total=%s)',
+							count, last_valid_id, total )
+
 				if 		( self.batch_size and count <= self.batch_size ) \
 					or 	self.batch_size is None:
 					break
+			except KeyboardInterrupt:
+				logger.info( 'Exiting analytics migrator' )
+				break
 			finally:
 				# Store our state
 				with open( self.last_oid_file, 'w+' ) as f:
@@ -80,6 +85,7 @@ def start_migration( args ):
 	arg_parser.add_argument('--usernames', help="The usernames to migrate")
 	arg_parser.add_argument('--env_dir', help="Dataserver environment root directory")
 	arg_parser.add_argument('--batch_size', help="Commit after each batch")
+	arg_parser.add_argument('--site', dest='site', help="request SITE")
 	arg_parser.add_argument('-v', '--verbose', help="Be verbose", action='store_true',
 							dest='verbose')
 	args = arg_parser.parse_args(args=args)
@@ -112,6 +118,9 @@ def start_migration( args ):
 
 	analytics_migrator = _AnalyticsMigrator( usernames, last_oid, last_oid_file, batch_size )
 
+	# TODO Nested transactions here; not really a problem since
+	# this top level transaction has nothing to commit, but it
+	# needs to be cleaned up.
 	run_with_dataserver(environment_dir=env_dir,
 						 xmlconfig_packages=conf_packages,
 						 verbose=args.verbose,
