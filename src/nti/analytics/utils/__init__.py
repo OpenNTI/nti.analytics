@@ -16,8 +16,6 @@ from ZODB.POSException import POSKeyError
 
 from nti.dataserver import interfaces as nti_interfaces
 
-from .. import interfaces as analytic_interfaces
-
 def all_objects_iids(users, last_oid):
 
     obj = intids = component.getUtility(zope.intid.IIntIds)
@@ -37,7 +35,6 @@ def all_objects_iids(users, last_oid):
                 try:
                 	creator = creator.lower() if creator else ''
                 except AttributeError:
-                	# TODO system_user type?
                 	pass
                 # TODO we're losing deleted comments here.
                 if    not nti_interfaces.IDeletedObjectPlaceholder.providedBy(obj) and \

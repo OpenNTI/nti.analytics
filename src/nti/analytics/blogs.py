@@ -11,6 +11,8 @@ logger = __import__('logging').getLogger(__name__)
 from zope import component
 from zope.lifecycleevent import interfaces as lce_interfaces
 
+from contentratings.interfaces import IObjectRatedEvent
+
 from nti.intid import interfaces as intid_interfaces
 
 from nti.dataserver import interfaces as nti_interfaces
@@ -26,6 +28,7 @@ from .common import get_creator
 from .common import get_nti_session_id
 from .common import get_object_root
 from .common import process_event
+from .common import get_rating_from_event
 
 from nti.analytics.database import blogs as db_blogs
 
@@ -33,6 +36,13 @@ from nti.analytics.identifier import BlogId
 from nti.analytics.identifier import CommentId
 _commentid = CommentId()
 _blogid = BlogId()
+
+def _is_blog( obj ):
+	return 	frm_interfaces.IPersonalBlogEntry.providedBy( obj ) \
+		or 	frm_interfaces.IPersonalBlogEntryPost.providedBy( obj )
+
+def _is_blog_comment( obj ):
+	return frm_interfaces.IPersonalBlogComment.providedBy( obj )
 
 # Comments
 def _add_comment( oid, nti_session=None ):
@@ -50,6 +60,24 @@ def _add_comment( oid, nti_session=None ):
 def _remove_comment( comment_id, timestamp=None ):
 	db_blogs.delete_blog_comment( timestamp, comment_id )
 	logger.debug( "Blog comment deleted (blog=%s)", comment_id )
+
+def _flag_comment( oid, state=False ):
+	comment = ntiids.find_object_with_ntiid( oid )
+	if comment is not None:
+		db_blogs.flag_comment( comment, state )
+		logger.debug( 'Blog comment flagged (comment=%s) (state=%s)', comment, state )
+
+def _favorite_comment( oid, delta=0 ):
+	comment = ntiids.find_object_with_ntiid( oid )
+	if comment is not None:
+		db_blogs.favorite_comment( comment, delta )
+		logger.debug( 'Comment favorite (comment=%s)', comment )
+
+def _like_comment( oid, delta=0 ):
+	comment = ntiids.find_object_with_ntiid( oid )
+	if comment is not None:
+		db_blogs.like_comment( comment, delta )
+		logger.debug( 'Comment liked (comment=%s)', comment )
 
 @component.adapter( frm_interfaces.IPersonalBlogComment,
 					intid_interfaces.IIntIdAddedEvent)
@@ -70,6 +98,8 @@ def _modify_personal_blog_comment(comment, event):
 		process_event( _remove_comment, comment_id=comment_id, timestamp=timestamp )
 
 
+
+
 # Blogs
 def _add_blog( oid, nti_session=None ):
 	blog = ntiids.find_object_with_ntiid( oid )
@@ -82,6 +112,47 @@ def _do_blog_added( blog, event ):
 	user = get_creator( blog )
 	nti_session = get_nti_session_id( user )
 	process_event( _add_blog, blog, nti_session=nti_session )
+
+def _flag_blog( oid, state=False ):
+	blog = ntiids.find_object_with_ntiid( oid )
+	if blog is not None:
+		db_blogs.flag_blog( blog, state )
+		logger.debug( 'Blog flagged (blog=%s) (state=%s)', blog, state )
+
+def _favorite_blog( oid, delta=0 ):
+	blog = ntiids.find_object_with_ntiid( oid )
+	if blog is not None:
+		db_blogs.favorite_blog( blog, delta )
+		logger.debug( 'Blog favorite (blog=%s)', blog )
+
+def _like_blog( oid, delta=0 ):
+	blog = ntiids.find_object_with_ntiid( oid )
+	if blog is not None:
+		db_blogs.like_blog( blog, delta )
+		logger.debug( 'Blog liked (blog=%s)', blog )
+
+
+@component.adapter( nti_interfaces.IObjectFlaggingEvent )
+def _blog_flagged( event ):
+	obj = event.object
+	state = True if nti_interfaces.IObjectFlaggedEvent.providedBy( event ) else False
+	if _is_blog( obj ):
+		process_event( _flag_blog, obj, state=state )
+
+	elif _is_blog_comment( obj ):
+		process_event( _flag_comment, obj, state=state )
+
+@component.adapter( IObjectRatedEvent )
+def _blog_rated( event ):
+	obj = event.object
+	if _is_blog( obj ):
+		is_favorite, delta = get_rating_from_event( event )
+		to_call = _favorite_blog if is_favorite else _like_blog
+		process_event( to_call, obj, delta=delta )
+	elif _is_blog_comment( obj ):
+		is_favorite, delta = get_rating_from_event( event )
+		to_call = _favorite_comment if is_favorite else _like_comment
+		process_event( to_call, obj, delta=delta )
 
 @component.adapter(	frm_interfaces.IPersonalBlogEntry,
 					intid_interfaces.IIntIdAddedEvent )
@@ -103,10 +174,9 @@ component.moduleProvides(analytic_interfaces.IObjectProcessor)
 
 def init( obj ):
 	result = True
-	if 		frm_interfaces.IPersonalBlogEntry.providedBy( obj ) \
-		or 	frm_interfaces.IPersonalBlogEntryPost.providedBy( obj ):
+	if _is_blog( obj ):
 		process_event( _add_blog, obj )
-	elif frm_interfaces.IPersonalBlogComment.providedBy( obj ):
+	elif _is_blog_comment( obj ):
 		process_event( _add_comment, obj )
 	else:
 		result = False

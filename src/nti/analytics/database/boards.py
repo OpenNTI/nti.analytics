@@ -147,6 +147,27 @@ def delete_topic(timestamp, topic_id):
 											{ ForumCommentsCreated.deleted : timestamp } )
 	db.session.flush()
 
+def like_topic( topic, delta ):
+	db = get_analytics_db()
+	topic_id = _topicid.get_id( topic )
+	db_topic = db.session.query(TopicsCreated).filter( TopicsCreated.topic_id == topic_id ).one()
+	db_topic.like_count += delta
+	db.session.flush()
+
+def favorite_topic( topic, delta ):
+	db = get_analytics_db()
+	topic_id = _topicid.get_id( topic )
+	db_topic = db.session.query(TopicsCreated).filter( TopicsCreated.topic_id == topic_id ).one()
+	db_topic.favorite_count += delta
+	db.session.flush()
+
+def flag_topic( topic, state ):
+	db = get_analytics_db()
+	topic_id = _topicid.get_id( topic )
+	db_topic = db.session.query(TopicsCreated).filter( TopicsCreated.topic_id == topic_id ).one()
+	db_topic.is_flagged = state
+	db.session.flush()
+
 def create_topic_view(user, nti_session, timestamp, course, topic, time_length):
 	db = get_analytics_db()
 	user = get_or_create_user(user )
@@ -207,6 +228,26 @@ def delete_forum_comment(timestamp, comment_id):
 	comment.deleted=timestamp
 	db.session.flush()
 
+def like_comment( comment, delta ):
+	db = get_analytics_db()
+	comment_id = _commentid.get_id( comment )
+	db_comment = db.session.query(ForumCommentsCreated).filter( ForumCommentsCreated.comment_id == comment_id ).one()
+	db_comment.like_count += delta
+	db.session.flush()
+
+def favorite_comment( comment, delta ):
+	db = get_analytics_db()
+	comment_id = _commentid.get_id( comment )
+	db_comment = db.session.query(ForumCommentsCreated).filter( ForumCommentsCreated.comment_id == comment_id ).one()
+	db_comment.favorite_count += delta
+	db.session.flush()
+
+def flag_comment( comment, state ):
+	db = get_analytics_db()
+	comment_id = _commentid.get_id( comment )
+	db_comment = db.session.query(ForumCommentsCreated).filter( ForumCommentsCreated.comment_id == comment_id ).one()
+	db_comment.is_flagged = state
+	db.session.flush()
 
 # StudentParticipationReport
 def get_forum_comments_for_user(user, course):

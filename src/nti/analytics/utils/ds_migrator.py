@@ -169,6 +169,10 @@ class Processor(object):
 		self.setup_site(args)
 		self.set_log_formatter(args)
 
+		if args.verbose:
+			for _, module in component.getUtilitiesFor(IObjectProcessor):
+				module.logger.setLevel(logging.DEBUG)
+
 		usernames = args.usernames
 		if usernames:
 			usernames = usernames.split(',')

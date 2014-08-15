@@ -11,6 +11,8 @@ logger = __import__('logging').getLogger(__name__)
 from zope import component
 from zope.lifecycleevent import interfaces as lce_interfaces
 
+from contentratings.interfaces import IObjectRatedEvent
+
 from nti.dataserver import interfaces as nti_interfaces
 from nti.dataserver.contenttypes.forums import interfaces as frm_interfaces
 
@@ -28,6 +30,7 @@ from .common import get_deleted_time
 from .common import get_object_root
 from .common import get_course
 from .common import process_event
+from .common import get_rating_from_event
 
 from nti.analytics.database import boards as db_boards
 
@@ -43,6 +46,7 @@ def get_topics_created_for_user( *args, **kwargs ):
 
 def get_forum_comments_for_user( *args, **kwargs  ):
 	return db_boards.get_forum_comments_for_user( *args, **kwargs  )
+
 
 
 def _is_topic( obj ):
@@ -75,6 +79,24 @@ def _remove_comment( comment_id, timestamp ):
 	db_boards.delete_forum_comment( timestamp, comment_id )
 	logger.debug( "Forum comment deleted (comment_id=%s)", comment_id )
 
+def _flag_comment( oid, state=False ):
+	comment = ntiids.find_object_with_ntiid( oid )
+	if comment is not None:
+		db_boards.flag_comment( comment, state )
+		logger.debug( 'Comment flagged (comment=%s) (state=%s)', comment, state )
+
+def _favorite_comment( oid, delta=0 ):
+	comment = ntiids.find_object_with_ntiid( oid )
+	if comment is not None:
+		db_boards.favorite_comment( comment, delta )
+		logger.debug( 'Comment favorite (comment=%s)', comment )
+
+def _like_comment( oid, delta=0 ):
+	comment = ntiids.find_object_with_ntiid( oid )
+	if comment is not None:
+		db_boards.like_comment( comment, delta )
+		logger.debug( 'Comment liked (comment=%s)', comment )
+
 @component.adapter( frm_interfaces.IGeneralForumComment,
 					intid_interfaces.IIntIdAddedEvent )
 def _add_general_forum_comment(comment, event):
@@ -92,6 +114,9 @@ def _modify_general_forum_comment(comment, event):
 			comment_id = _commentid.get_id( comment )
 			process_event( _remove_comment, comment_id=comment_id, timestamp=timestamp )
 
+
+
+
 # Topic
 def _add_topic( oid, nti_session=None ):
 	topic = ntiids.find_object_with_ntiid( oid )
@@ -107,6 +132,45 @@ def _remove_topic( topic_id, timestamp=None ):
 	db_boards.delete_topic( timestamp, topic_id )
 	logger.debug( "Topic deleted (topic_id=%s)", topic_id )
 
+def _flag_topic( oid, state=False ):
+	topic = ntiids.find_object_with_ntiid( oid )
+	if topic is not None:
+		db_boards.flag_topic( topic, state )
+		logger.debug( 'Topic flagged (topic=%s) (state=%s)', topic, state )
+
+def _favorite_topic( oid, delta=0 ):
+	topic = ntiids.find_object_with_ntiid( oid )
+	if topic is not None:
+		db_boards.favorite_topic( topic, delta )
+		logger.debug( 'Topic favorite (topic=%s)', topic )
+
+def _like_topic( oid, delta=0 ):
+	topic = ntiids.find_object_with_ntiid( oid )
+	if topic is not None:
+		db_boards.like_topic( topic, delta )
+		logger.debug( 'Topic liked (topic=%s)', topic )
+
+@component.adapter( nti_interfaces.IObjectFlaggingEvent )
+def _topic_flagged( event ):
+	obj = event.object
+	state = True if nti_interfaces.IObjectFlaggedEvent.providedBy( event ) else False
+	if _is_topic( obj ):
+		process_event( _flag_topic, obj, state=state )
+	elif _is_forum_comment( obj ):
+		process_event( _flag_comment, obj, state=state )
+
+@component.adapter( IObjectRatedEvent )
+def _topic_rated( event ):
+	obj = event.object
+	if _is_topic( obj ):
+		is_favorite, delta = get_rating_from_event( event )
+		to_call = _favorite_topic if is_favorite else _like_topic
+		process_event( to_call, obj, delta=delta )
+	elif _is_forum_comment( obj ):
+		is_favorite, delta = get_rating_from_event( event )
+		to_call = _favorite_comment if is_favorite else _like_comment
+		process_event( to_call, obj, delta=delta )
+
 @component.adapter( frm_interfaces.ITopic, intid_interfaces.IIntIdAddedEvent )
 def _topic_added( topic, event ):
 	if _is_topic( topic ):
@@ -120,6 +184,9 @@ def _topic_removed( topic, event ):
 		timestamp = datetime.utcnow()
 		topic_id = _topicid.get_id( topic )
 		process_event( _remove_topic, topic_id=topic_id, timestamp=timestamp )
+
+
+
 
 # Forum
 def _remove_forum( forum_id, timestamp ):

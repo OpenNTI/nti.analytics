@@ -14,3 +14,4 @@ NTIID_COLUMN_TYPE = String( 256 )
 
 def get_analytics_db():
 	return component.getUtility( IAnalyticsDB )
+

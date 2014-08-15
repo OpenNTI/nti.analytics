@@ -29,6 +29,8 @@
 	<!-- subscribers -->
 	<subscriber handler=".boards._topic_added" />
 	<subscriber handler=".boards._topic_removed" />
+	<subscriber handler=".boards._topic_flagged" />
+	<subscriber handler=".boards._topic_rated" />
 
 	<subscriber handler=".boards._forum_added" />
 	<subscriber handler=".boards._forum_removed" />
@@ -40,6 +42,8 @@
 	<subscriber handler=".blogs._blog_removed" />
 	<subscriber handler=".blogs._add_personal_blog_comment" />
 	<subscriber handler=".blogs._modify_personal_blog_comment" />
+	<subscriber handler=".blogs._blog_rated" />
+	<subscriber handler=".blogs._blog_flagged" />
 
 	<subscriber handler=".social._friendslist_added" />
 	<subscriber handler=".social._friendslist_modified" />
@@ -56,6 +60,8 @@
 	<subscriber handler=".resource_tags._note_removed" />
 	<subscriber handler=".resource_tags._highlight_added" />
 	<subscriber handler=".resource_tags._highlight_removed" />
+	<subscriber handler=".resource_tags._note_flagged" />
+	<subscriber handler=".resource_tags._note_rated" />
 
 	<subscriber handler=".sessions._session_created" />
 	<subscriber handler=".sessions._session_destroyed" />

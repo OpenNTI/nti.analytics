@@ -12,6 +12,8 @@ from zope import component
 
 from datetime import datetime
 
+from contentratings.interfaces import IObjectRatedEvent
+
 from nti.dataserver import interfaces as nti_interfaces
 
 from nti.ntiids import ntiids
@@ -25,6 +27,7 @@ from .common import get_nti_session_id
 from .common import process_event
 from .common import get_course_by_ntiid
 from .common import get_course
+from .common import get_rating_from_event
 
 from nti.analytics.database import resource_tags as db_resource_tags
 
@@ -54,6 +57,39 @@ def _remove_note( note_id, timestamp=None ):
 	db_resource_tags.delete_note( timestamp, note_id )
 	logger.debug( "Note deleted (note=%s)", note_id )
 
+def _flag_note( oid, state=False ):
+	note = ntiids.find_object_with_ntiid( oid )
+	if note is not None:
+		db_resource_tags.flag_note( note, state )
+		logger.debug( 'Note flagged (note=%s) (state=%s)', note, state )
+
+def _favorite_note( oid, delta=0 ):
+	note = ntiids.find_object_with_ntiid( oid )
+	if note is not None:
+		db_resource_tags.favorite_note( note, delta )
+		logger.debug( 'Note favorite (note=%s)', note )
+
+def _like_note( oid, delta=0 ):
+	note = ntiids.find_object_with_ntiid( oid )
+	if note is not None:
+		db_resource_tags.like_note( note, delta )
+		logger.debug( 'Note liked (note=%s)', note )
+
+@component.adapter( nti_interfaces.IObjectFlaggingEvent )
+def _note_flagged( event ):
+	obj = event.object
+	state = True if nti_interfaces.IObjectFlaggedEvent.providedBy( event ) else False
+	if _is_note( obj ):
+		process_event( _flag_note, obj, state=state )
+
+@component.adapter( IObjectRatedEvent )
+def _note_rated( event ):
+	obj = event.object
+	if _is_note( obj ):
+		is_favorite, delta = get_rating_from_event( event )
+		to_call = _favorite_note if is_favorite else _like_note
+		process_event( to_call, obj, delta=delta )
+
 @component.adapter(	nti_interfaces.INote,
 					intid_interfaces.IIntIdAddedEvent )
 def _note_added( obj, event ):
@@ -69,6 +105,8 @@ def _note_removed( obj, event ):
 		timestamp = datetime.utcnow()
 		note_id = _noteid.get_id( obj )
 		process_event( _remove_note, note_id=note_id, timestamp=timestamp )
+
+
 
 
 # Highlights
@@ -103,6 +141,10 @@ def _highlight_removed( obj, event ):
 		process_event( _remove_highlight, highlight_id=highlight_id, timestamp=timestamp )
 
 component.moduleProvides(analytic_interfaces.IObjectProcessor)
+
+
+
+
 
 def _is_note( obj ):
 	return nti_interfaces.INote.providedBy( obj )

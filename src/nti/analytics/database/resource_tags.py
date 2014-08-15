@@ -137,6 +137,27 @@ def delete_note(timestamp, note_id):
 	note.deleted=timestamp
 	db.session.flush()
 
+def like_note( note, delta ):
+	db = get_analytics_db()
+	note_id = _noteid.get_id( note )
+	db_note = db.session.query(NotesCreated).filter( NotesCreated.note_id == note_id ).one()
+	db_note.like_count += delta
+	db.session.flush()
+
+def favorite_note( note, delta ):
+	db = get_analytics_db()
+	note_id = _noteid.get_id( note )
+	db_note = db.session.query(NotesCreated).filter( NotesCreated.note_id == note_id ).one()
+	db_note.favorite_count += delta
+	db.session.flush()
+
+def flag_note( note, state ):
+	db = get_analytics_db()
+	note_id = _noteid.get_id( note )
+	db_note = db.session.query(NotesCreated).filter( NotesCreated.note_id == note_id ).one()
+	db_note.is_flagged = state
+	db.session.flush()
+
 def create_note_view(user, nti_session, timestamp, course, note):
 	db = get_analytics_db()
 	user = get_or_create_user(user )

@@ -10,10 +10,11 @@ logger = __import__('logging').getLogger(__name__)
 
 from ZODB.POSException import POSKeyError
 
-from nti.dataserver.users import Entity
 from nti.dataserver import interfaces as nti_interfaces
 from nti.dataserver import rating
 from nti.dataserver import liking
+from nti.dataserver.rating import IObjectUnratedEvent
+from nti.dataserver.users import Entity
 
 from nti.dataserver.interfaces import IGlobalFlagStorage
 
@@ -39,6 +40,15 @@ from six import integer_types
 
 from nti.analytics.identifier import SessionId
 _sessionid = SessionId()
+
+def get_rating_from_event( event ):
+	delta = -1 if IObjectUnratedEvent.providedBy( event ) else 1
+	is_favorite = None
+	if event.category == 'favorites':
+		is_favorite = True
+	elif event.category == 'likes':
+		is_favorite = False
+	return is_favorite, delta
 
 def get_likes( obj ):
 	return liking.like_count( obj )
