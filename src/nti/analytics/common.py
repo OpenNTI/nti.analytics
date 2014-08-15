@@ -12,6 +12,10 @@ from ZODB.POSException import POSKeyError
 
 from nti.dataserver.users import Entity
 from nti.dataserver import interfaces as nti_interfaces
+from nti.dataserver import rating
+from nti.dataserver import liking
+
+from nti.dataserver.interfaces import IGlobalFlagStorage
 
 from nti.contenttypes.courses.interfaces import ICourseInstance
 
@@ -35,6 +39,25 @@ from six import integer_types
 
 from nti.analytics.identifier import SessionId
 _sessionid = SessionId()
+
+def get_likes( obj ):
+	return liking.like_count( obj )
+
+def get_favorites( obj ):
+	return rating.rate_count( obj, 'favorites')
+
+def get_flagged( obj ):
+	flag_storage = component.queryUtility( IGlobalFlagStorage, None )
+	result = False
+	if flag_storage is not None:
+		result = flag_storage.is_flagged( obj )
+	return result
+
+def get_ratings( obj ):
+	like_count = get_likes( obj )
+	favorite_count = get_favorites( obj )
+	is_flagged = get_flagged( obj )
+	return like_count, favorite_count, is_flagged
 
 def get_entity(entity):
     if not nti_interfaces.IEntity.providedBy(entity):

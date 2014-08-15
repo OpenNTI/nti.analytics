@@ -19,6 +19,7 @@ import zope.intid
 
 from nti.analytics.common import get_created_timestamp
 from nti.analytics.common import timestamp_type
+from nti.analytics.common import get_ratings
 
 from nti.analytics.identifier import SessionId
 from nti.analytics.identifier import CourseId
@@ -37,6 +38,7 @@ from nti.analytics.database.meta_mixins import BaseViewMixin
 from nti.analytics.database.meta_mixins import DeletedMixin
 from nti.analytics.database.meta_mixins import CommentsMixin
 from nti.analytics.database.meta_mixins import TimeLengthMixin
+from nti.analytics.database.meta_mixins import RatingsMixin
 
 from nti.analytics.database.users import get_or_create_user
 
@@ -46,7 +48,7 @@ class BlogMixin(object):
 	def blog_id(cls):
 		return Column('blog_id', Integer, ForeignKey("BlogsCreated.blog_id"), nullable=False, index=True)
 
-class BlogsCreated(Base,BaseTableMixin,DeletedMixin):
+class BlogsCreated(Base,BaseTableMixin,DeletedMixin,RatingsMixin):
 	__tablename__ = 'BlogsCreated'
 	blog_id = Column('blog_id', Integer, nullable=False, index=True, primary_key=True, autoincrement=False )
 	blog_length = Column('blog_length', Integer, nullable=True, autoincrement=False)
@@ -58,7 +60,7 @@ class BlogsViewed(Base,BaseViewMixin,BlogMixin,TimeLengthMixin):
         PrimaryKeyConstraint('user_id', 'blog_id', 'timestamp'),
     )
 
-class BlogCommentsCreated(Base,CommentsMixin,BlogMixin):
+class BlogCommentsCreated(Base,CommentsMixin,BlogMixin,RatingsMixin):
 	__tablename__ = 'BlogCommentsCreated'
 
 	__table_args__ = (
@@ -71,6 +73,7 @@ def create_blog( user, nti_session, blog_entry ):
 	uid = user.user_id
 	sid = _sessionid.get_id( nti_session )
 	blog_id = _blogid.get_id( blog_entry )
+	like_count, favorite_count, is_flagged = get_ratings( blog_entry )
 
 	timestamp = get_created_timestamp( blog_entry )
 
@@ -86,7 +89,10 @@ def create_blog( user, nti_session, blog_entry ):
 								session_id=sid,
 								timestamp=timestamp,
 								blog_length=blog_length,
-								blog_id=blog_id )
+								blog_id=blog_id,
+								like_count=like_count,
+								favorite_count=favorite_count,
+								is_flagged=is_flagged )
 	db.session.add( new_object )
 
 def delete_blog( timestamp, blog_id ):
@@ -123,6 +129,7 @@ def create_blog_comment(user, nti_session, blog, comment ):
 	bid = _blogid.get_id( blog )
 	cid = _commentid.get_id( comment )
 	pid = None
+	like_count, favorite_count, is_flagged = get_ratings( comment )
 
 	timestamp = get_created_timestamp( comment )
 	parent_comment = getattr( comment, 'inReplyTo', None )
@@ -137,7 +144,10 @@ def create_blog_comment(user, nti_session, blog, comment ):
 										blog_id=bid,
 										parent_id=pid,
 										comment_length=comment_length,
-										comment_id=cid )
+										comment_id=cid,
+										like_count=like_count,
+										favorite_count=favorite_count,
+										is_flagged=is_flagged )
 	db.session.add( new_object )
 
 def delete_blog_comment(timestamp, comment_id):

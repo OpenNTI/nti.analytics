@@ -19,6 +19,7 @@ import zope.intid
 
 from nti.analytics.common import get_created_timestamp
 from nti.analytics.common import timestamp_type
+from nti.analytics.common import get_ratings
 
 from nti.analytics.identifier import SessionId
 from nti.analytics.identifier import CourseId
@@ -40,6 +41,7 @@ from nti.analytics.database.meta_mixins import CommentsMixin
 from nti.analytics.database.meta_mixins import CourseMixin
 from nti.analytics.database.meta_mixins import DeletedMixin
 from nti.analytics.database.meta_mixins import TimeLengthMixin
+from nti.analytics.database.meta_mixins import RatingsMixin
 
 from nti.analytics.database.users import get_or_create_user
 
@@ -62,11 +64,11 @@ class ForumsCreated(Base,BaseTableMixin,CourseMixin,DeletedMixin):
         PrimaryKeyConstraint('forum_id'),
     )
 
-class TopicsCreated(Base,BaseTableMixin,ForumMixin,DeletedMixin):
+class TopicsCreated(Base,BaseTableMixin,ForumMixin,DeletedMixin,RatingsMixin):
 	__tablename__ = 'TopicsCreated'
 	topic_id = Column('topic_id', Integer, primary_key=True, autoincrement=False, index=True )
 
-class ForumCommentsCreated(Base,CommentsMixin,TopicMixin):
+class ForumCommentsCreated(Base,CommentsMixin,TopicMixin,RatingsMixin):
 	__tablename__ = 'ForumCommentsCreated'
 
 	__table_args__ = (
@@ -121,13 +123,17 @@ def create_topic(user, nti_session, course, topic):
 	course_id = _courseid.get_id( course )
 
 	timestamp = get_created_timestamp( topic )
+	like_count, favorite_count, is_flagged = get_ratings( topic )
 
 	new_object = TopicsCreated( 	user_id=uid,
-										session_id=sid,
-										timestamp=timestamp,
-										course_id=course_id,
-										forum_id=fid,
-										topic_id=did )
+									session_id=sid,
+									timestamp=timestamp,
+									course_id=course_id,
+									forum_id=fid,
+									topic_id=did,
+									like_count=like_count,
+									favorite_count=favorite_count,
+									is_flagged=is_flagged )
 	db.session.add( new_object )
 
 def delete_topic(timestamp, topic_id):
@@ -172,6 +178,7 @@ def create_forum_comment(user, nti_session, course, topic, comment):
 	course_id = _courseid.get_id( course )
 	pid = None
 	timestamp = get_created_timestamp( comment )
+	like_count, favorite_count, is_flagged = get_ratings( comment )
 
 	comment_length = sum( len( x ) for x in comment.body )
 
@@ -187,7 +194,10 @@ def create_forum_comment(user, nti_session, course, topic, comment):
 										topic_id=did,
 										parent_id=pid,
 										comment_length=comment_length,
-										comment_id=cid )
+										comment_id=cid,
+										like_count=like_count,
+										favorite_count=favorite_count,
+										is_flagged=is_flagged )
 	db.session.add( new_object )
 
 def delete_forum_comment(timestamp, comment_id):

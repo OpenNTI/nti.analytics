@@ -25,6 +25,7 @@ from nti.dataserver.users.entity import Entity
 
 from nti.analytics.common import get_created_timestamp
 from nti.analytics.common import timestamp_type
+from nti.analytics.common import get_ratings
 
 from nti.analytics.identifier import SessionId
 from nti.analytics.identifier import CourseId
@@ -45,6 +46,7 @@ from nti.analytics.database.meta_mixins import BaseViewMixin
 from nti.analytics.database.meta_mixins import DeletedMixin
 from nti.analytics.database.meta_mixins import ResourceMixin
 from nti.analytics.database.meta_mixins import ResourceViewMixin
+from nti.analytics.database.meta_mixins import RatingsMixin
 
 from nti.analytics.database.users import get_or_create_user
 
@@ -55,7 +57,7 @@ class NoteMixin(ResourceMixin):
 		return Column('note_id', Integer, ForeignKey("NotesCreated.note_id"), nullable=False, index=True )
 
 
-class NotesCreated(Base,BaseTableMixin,ResourceMixin,DeletedMixin):
+class NotesCreated(Base,BaseTableMixin,ResourceMixin,DeletedMixin,RatingsMixin):
 	__tablename__ = 'NotesCreated'
 	note_id = Column('note_id', Integer, nullable=False, index=True, primary_key=True, autoincrement=False )
 	# Parent-id should be other notes; top-level notes will have null parent_ids
@@ -104,6 +106,7 @@ def create_note(user, nti_session, course, note):
 	course_id = _courseid.get_id( course )
 	timestamp = get_created_timestamp( note )
 	sharing = _get_sharing_enum( note, course )
+	like_count, favorite_count, is_flagged = get_ratings( note )
 
 	note_length = sum( len( x ) for x in note.body )
 
@@ -120,7 +123,10 @@ def create_note(user, nti_session, course, note):
 								resource_id=rid,
 								parent_id=pid,
 								note_length=note_length,
-								sharing=sharing )
+								sharing=sharing,
+								like_count=like_count,
+								favorite_count=favorite_count,
+								is_flagged=is_flagged )
 	db.session.add( new_object )
 
 def delete_note(timestamp, note_id):

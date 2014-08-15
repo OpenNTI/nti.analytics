@@ -13,6 +13,7 @@ from sqlalchemy import Integer
 from sqlalchemy import String
 from sqlalchemy import ForeignKey
 from sqlalchemy import DateTime
+from sqlalchemy import Boolean
 
 from sqlalchemy.schema import Index
 from sqlalchemy.ext.declarative import declared_attr
@@ -64,6 +65,14 @@ class ResourceMixin(CourseMixin):
 class ResourceViewMixin(ResourceMixin,BaseViewMixin):
 	# FIXME Needs to be defined
 	context_path = Column('context_path', String(1048), nullable=False)
+
+class FavoriteMixin(object):
+	favorite_count = Column('favorite_count', Integer, nullable=True)
+
+class RatingsMixin(FavoriteMixin):
+	is_flagged = Column('is_flagged', Boolean, nullable=True)
+
+	like_count = Column('like_count', Integer, nullable=True)
 
 # Time length in seconds
 class TimeLengthMixin(object):
