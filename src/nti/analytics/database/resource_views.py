@@ -34,6 +34,7 @@ from nti.analytics.database.meta_mixins import TimeLengthMixin
 
 from nti.analytics.database.users import get_or_create_user
 
+
 # For meta-views into synthetic course info, we can special type the resource_id:
 #	(about|instructors|tech_support)
 class CourseResourceViews(Base,ResourceViewMixin,TimeLengthMixin):
@@ -59,6 +60,10 @@ class VideoEvents(Base,ResourceViewMixin,TimeLengthMixin):
 
 	video_view_id = Column('video_view_id', Integer, Sequence( 'video_view_id_seq' ), primary_key=True )
 
+def _get_context_path( context_path ):
+	#'/' is illegal in ntiid strings
+	return '/'.join( context_path ) if context_path else ''
+
 def create_course_resource_view(user, nti_session, timestamp, course, context_path, resource, time_length):
 	db = get_analytics_db()
 	user = get_or_create_user(user )
@@ -67,6 +72,7 @@ def create_course_resource_view(user, nti_session, timestamp, course, context_pa
 	rid = _resourceid.get_id( resource )
 	course_id = _courseid.get_id( course )
 	timestamp = timestamp_type( timestamp )
+	context_path = _get_context_path( context_path )
 
 	new_object = CourseResourceViews( 	user_id=uid,
 										session_id=sid,
@@ -93,6 +99,7 @@ def create_video_event(	user,
 	vid = _resourceid.get_id( video_resource )
 	course_id = _courseid.get_id( course )
 	timestamp = timestamp_type( timestamp )
+	context_path = _get_context_path( context_path )
 
 	new_object = VideoEvents(	user_id=uid,
 								session_id=sid,

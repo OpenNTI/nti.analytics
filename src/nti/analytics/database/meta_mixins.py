@@ -63,7 +63,8 @@ class ResourceMixin(CourseMixin):
 	resource_id = Column('resource_id', NTIID_COLUMN_TYPE, nullable=False, index=True)
 
 class ResourceViewMixin(ResourceMixin,BaseViewMixin):
-	# FIXME Needs to be defined
+	# RHP/username/
+	# Dashboard/lesson_ntiid
 	context_path = Column('context_path', String(1048), nullable=False)
 
 class FavoriteMixin(object):
