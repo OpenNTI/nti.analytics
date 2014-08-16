@@ -32,9 +32,8 @@ from nti.analytics.database import get_analytics_db
 
 class Users(Base):
 	__tablename__ = 'Users'
-	# Sequence must be primary key, even though we'd like to not do so (for merge purposes).
 	user_id = Column('user_id', Integer, Sequence('user_id_seq'), index=True, nullable=False, primary_key=True )
-	user_ds_id = Column('user_ds_id', Integer, nullable=False, unique=True, index=True )
+	user_ds_id = Column('user_ds_id', Integer, nullable=True, index=True )
 	shareable = Column('shareable', Boolean, nullable=False, default=False )
 
 class Sessions(Base):
@@ -56,8 +55,6 @@ def create_user(user):
 	uid = _userid.get_id( user )
 
 	user = Users( user_ds_id=uid )
-	# We'd like to use 'merge' here, but we cannot (in sqlite) if our primary key
-	# is a sequence.
 	# For race conditions, let's just throw since we cannot really handle retrying
 	# gracefully at this level. A job-level retry should work though.
 	db.session.add( user )

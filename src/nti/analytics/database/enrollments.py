@@ -34,6 +34,7 @@ from nti.analytics.database.meta_mixins import CourseMixin
 from nti.analytics.database.meta_mixins import TimeLengthMixin
 
 from nti.analytics.database.users import get_or_create_user
+from nti.analytics.database.courses import get_course_id
 
 class CourseCatalogViews(Base,BaseViewMixin,CourseMixin,TimeLengthMixin):
 	__tablename__ = 'CourseCatalogViews'
@@ -71,7 +72,7 @@ def create_course_catalog_view( user, nti_session, timestamp, course, time_lengt
 	user = get_or_create_user(user )
 	uid = user.user_id
 	sid = _sessionid.get_id( nti_session )
-	course_id = _courseid.get_id( course )
+	course_id = get_course_id( db, course )
 	timestamp = timestamp_type( timestamp )
 
 	new_object = CourseCatalogViews( 	user_id=uid,
@@ -96,7 +97,7 @@ def create_course_enrollment(user, nti_session, timestamp, course, enrollment_ty
 	user = get_or_create_user(user )
 	uid = user.user_id
 	sid = _sessionid.get_id( nti_session )
-	course_id = _courseid.get_id( course )
+	course_id = get_course_id( db, course )
 	timestamp = timestamp_type( timestamp )
 
 	enrollment_type = _get_enrollment_type_id( db, enrollment_type_name )
@@ -114,7 +115,7 @@ def create_course_drop(user, nti_session, timestamp, course):
 	user = get_or_create_user(user )
 	uid = user.user_id
 	sid = _sessionid.get_id( nti_session )
-	course_id = _courseid.get_id( course )
+	course_id = get_course_id( db, course )
 	timestamp = timestamp_type( timestamp )
 
 	new_object = CourseDrops( 	user_id=uid,

@@ -38,14 +38,13 @@ from nti.analytics.common import timestamp_type
 from nti.analytics.common import get_creator
 
 from nti.analytics.database.users import get_or_create_user
+from nti.analytics.database.courses import get_course_id
 
 from nti.analytics.identifier import SessionId
-from nti.analytics.identifier import CourseId
 from nti.analytics.identifier import SubmissionId
 from nti.analytics.identifier import QuestionSetId
 from nti.analytics.identifier import FeedbackId
 _sessionid = SessionId()
-_courseid = CourseId()
 _submissionid = SubmissionId()
 _questionsetid = QuestionSetId()
 _feedbackid = FeedbackId()
@@ -68,14 +67,15 @@ class AssignmentMixin(BaseTableMixin,CourseMixin,TimeLengthMixin):
 
 class AssignmentsTaken(Base,AssignmentMixin):
 	__tablename__ = 'AssignmentsTaken'
-	submission_id = Column('submission_id', Integer, unique=True, index=True, autoincrement=False )
+	submission_id = Column('submission_id', Integer, nullable=True, index=True, autoincrement=False )
 
-	assignments_taken_id = Column('assignment_taken_id', Integer, Sequence( 'assignments_taken_seq' ), primary_key=True )
+	assignments_taken_id = Column('assignment_taken_id', Integer, Sequence( 'assignments_taken_seq' ),
+								index=True, nullable=False, primary_key=True )
 
 class AssignmentSubmissionMixin(BaseTableMixin):
 	@declared_attr
-	def submission_id(cls):
-		return Column('submission_id', Integer, ForeignKey("AssignmentsTaken.submission_id"), nullable=False, index=True)
+	def assignments_taken_id(cls):
+		return Column('assignments_taken_id', Integer, ForeignKey("AssignmentsTaken.assignment_taken_id"), nullable=False, index=True)
 
 
 class DetailMixin(TimeLengthMixin):
@@ -133,26 +133,30 @@ class AssignmentDetailGrades(Base,GradeDetailMixin,AssignmentSubmissionMixin):
 	question_id = Column('question_id', NTIID_COLUMN_TYPE, nullable=False)
 	question_part_id = Column('question_part_id', Integer, nullable=True, autoincrement=False)
 
-	assignment_detail_grades_id = Column('assignment_detail_grades_id', Integer, Sequence( 'assignment_detail_grades_seq' ), primary_key=True )
+	assignment_details_id = Column('assignment_details_id', Integer, ForeignKey("AssignmentDetails.assignment_details_id"), unique=True, primary_key=True )
 
 
 # Each feedback 'tree' should have an associated grade with it.
 class AssignmentFeedback(Base,AssignmentSubmissionMixin,DeletedMixin):
 	__tablename__ = 'AssignmentFeedback'
-	feedback_id = Column( 'feedback_id', Integer, nullable=False, unique=True, primary_key=True )
+	feedback_ds_id = Column( 'feedback_ds_id', Integer, nullable=True, unique=False )
+	feedback_id = Column('feedback_id', Integer, Sequence( 'feedback_id_seq' ), primary_key=True )
+
 	feedback_length = Column( 'feedback_length', Integer, nullable=True )
 	# Tie our feedback to our submission and grader.
 	grade_id = Column('grade_id', Integer, ForeignKey("AssignmentGrades.grade_id"), nullable=False )
 
 class SelfAssessmentsTaken(Base,AssignmentMixin):
 	__tablename__ = 'SelfAssessmentsTaken'
-	submission_id = Column('submission_id', Integer, unique=True, primary_key=True, index=True, autoincrement=False )
+	submission_id = Column('submission_id', Integer, nullable=True, index=True, autoincrement=False )
+	self_assessment_id = Column('self_assessment_id', Integer, Sequence( 'self_assessment_seq' ),
+								index=True, nullable=False, primary_key=True )
 
 
 # SelfAssessments will not have feedback or multiple graders
 class SelfAssessmentDetails(Base,BaseTableMixin,DetailMixin,GradeDetailMixin):
  	__tablename__ = 'SelfAssessmentDetails'
- 	submission_id = Column('submission_id', Integer, ForeignKey("SelfAssessmentsTaken.submission_id"), nullable=False, index=True)
+ 	self_assessment_id = Column('self_assessment_id', Integer, ForeignKey("SelfAssessmentsTaken.self_assessment_id"), nullable=False, index=True)
 
 	self_assessment_details_id = Column('self_assessment_details_id', Integer, Sequence( 'self_assessment_details_seq' ), primary_key=True )
 
@@ -194,12 +198,16 @@ def _get_grade( grade_value ):
 			pass
 	return result
 
+def _get_self_assessment_id( db, submission_id ):
+	self_assessment = db.session.query(SelfAssessmentsTaken).filter( SelfAssessmentsTaken.submission_id == submission_id ).first()
+	return self_assessment.self_assessment_id
+
 def create_self_assessment_taken(user, nti_session, timestamp, course, submission ):
 	db = get_analytics_db()
 	user = get_or_create_user(user )
 	uid = user.user_id
 	sid = _sessionid.get_id( nti_session )
-	course_id = _courseid.get_id( course )
+	course_id = get_course_id( db, course )
 	timestamp = timestamp_type( timestamp )
 	submission_id = _submissionid.get_id( submission )
 	self_assessment_id = _questionsetid.get_id( submission.questionSetId )
@@ -218,6 +226,8 @@ def create_self_assessment_taken(user, nti_session, timestamp, course, submissio
 										submission_id=submission_id,
 										time_length=time_length )
 	db.session.add( new_object )
+	db.session.flush()
+	self_assessment_id = new_object.self_assessment_id
 
 	for assessed_question in submission.questions:
 		question_id = assessed_question.questionId
@@ -229,7 +239,7 @@ def create_self_assessment_taken(user, nti_session, timestamp, course, submissio
 			grade_details = SelfAssessmentDetails( user_id=uid,
 													session_id=sid,
 													timestamp=timestamp,
-													submission_id=submission_id,
+													self_assessment_id=self_assessment_id,
 													question_id=question_id,
 													question_part_id=idx,
 													is_correct=is_correct,
@@ -255,12 +265,16 @@ def _get_grader_id( db, submission ):
 			grader = grader.user_id
 	return grader
 
+def _get_assignment_taken_id( db, submission_id ):
+	submission = db.session.query(AssignmentsTaken).filter( AssignmentsTaken.submission_id == submission_id ).first()
+	return submission.assignment_taken_id
+
 def create_assignment_taken(user, nti_session, timestamp, course, submission ):
 	db = get_analytics_db()
 	user = get_or_create_user(user )
 	uid = user.user_id
 	sid = _sessionid.get_id( nti_session )
-	course_id = _courseid.get_id( course )
+	course_id = get_course_id( db, course )
 	timestamp = timestamp_type( timestamp )
 	submission_id = _submissionid.get_id( submission )
 	assignment_id = submission.assignmentId
@@ -275,13 +289,18 @@ def create_assignment_taken(user, nti_session, timestamp, course, submission ):
 									submission_id=submission_id,
 									time_length=time_length )
 	db.session.add( new_object )
+	db.session.flush()
+	assignment_taken_id = new_object.assignments_taken_id
+
+	question_part_dict = dict()
 
 	# Submission Parts
 	for set_submission in submission_obj.parts:
 		for question_submission in set_submission.questions:
 			# Questions don't have ds_intids, just use ntiid.
 			question_id = question_submission.questionId
-			# We'd like this by part, but will accept by question for now.
+			# We'd like this by part, but will accept by question for now;
+			# it's only an estimate anyway.
 			time_length = _get_duration( question_submission )
 
 			for idx, part in enumerate( question_submission.parts ):
@@ -290,12 +309,16 @@ def create_assignment_taken(user, nti_session, timestamp, course, submission ):
 				parts = AssignmentDetails( 	user_id=uid,
 											session_id=sid,
 											timestamp=timestamp,
-											submission_id=submission_id,
+											assignment_taken_id=assignment_taken_id,
 											question_id=question_id,
 											question_part_id=idx,
 											submission=response,
 											time_length=time_length )
 				db.session.add( parts )
+				question_part_dict[ (question_id,idx) ] = parts
+
+	db.session.flush()
+
 
 	# Grade
 	graded_submission = IGrade( submission, None )
@@ -309,7 +332,7 @@ def create_assignment_taken(user, nti_session, timestamp, course, submission ):
 		graded = AssignmentGrades( 	user_id=uid,
 									session_id=sid,
 									timestamp=timestamp,
-									submission_id=submission_id,
+									assignment_taken_id=assignment_taken_id,
 									grade=grade,
 									grade_num=grade_num,
 									grader=grader )
@@ -326,10 +349,12 @@ def create_assignment_taken(user, nti_session, timestamp, course, submission ):
 				for idx, part in enumerate( assessed_question.parts ):
 					grade = part.assessedValue
 					is_correct = grade == 1
+					parts = question_part_dict[ (question_id,idx) ]
 					grade_details = AssignmentDetailGrades( user_id=uid,
 															session_id=sid,
 															timestamp=timestamp,
-															submission_id=submission_id,
+															assignment_details_id=parts.assignment_details_id,
+															assignment_taken_id=assignment_taken_id,
 															question_id=question_id,
 															question_part_id=idx,
 															is_correct=is_correct,
@@ -342,7 +367,8 @@ def grade_submission(user, nti_session, timestamp, grader, graded_val, submissio
 	grader = get_or_create_user(grader )
 	grader_id  = grader.user_id
 	submission_id = _submissionid.get_id( submission )
-	grade_entry = _get_grade_entry( db, submission_id )
+	assignment_taken_id = _get_assignment_taken_id( db, submission_id )
+	grade_entry = _get_grade_entry( db, assignment_taken_id )
 	timestamp = timestamp_type( timestamp )
 
 	grade_num = _get_grade( graded_val )
@@ -363,22 +389,22 @@ def grade_submission(user, nti_session, timestamp, grader, graded_val, submissio
 		new_object = AssignmentGrades( 	user_id=uid,
 										session_id=sid,
 										timestamp=timestamp,
-										submission_id=submission_id,
+										assignment_taken_id=assignment_taken_id,
 										grade=graded_val,
 										grade_num=grade_num,
 										grader=grader_id )
 
 		db.session.add( new_object )
 
-def _get_grade_entry( db, submission_id ):
+def _get_grade_entry( db, assignment_taken_id ):
 	# Currently, one assignment means one grade (and one grader).  If that changes, we'll
 	# need to change this (at least)
 	grade_entry = db.session.query(AssignmentGrades).filter(
-												AssignmentGrades.submission_id==submission_id ).first()
+												AssignmentGrades.assignment_taken_id==assignment_taken_id ).first()
 	return grade_entry
 
-def _get_grade_id( db, submission_id ):
-	grade_entry = _get_grade_entry( db, submission_id )
+def _get_grade_id( db, assignment_taken_id ):
+	grade_entry = _get_grade_entry( db, assignment_taken_id )
 	return grade_entry.grade_id
 
 def create_submission_feedback( user, nti_session, timestamp, submission, feedback ):
@@ -387,36 +413,38 @@ def create_submission_feedback( user, nti_session, timestamp, submission, feedba
 	uid = user.user_id
 	sid = _sessionid.get_id( nti_session )
 	timestamp = timestamp_type( timestamp )
-	feedback_id = _feedbackid.get_id( feedback )
+	feedback_ds_id = _feedbackid.get_id( feedback )
 	feedback_length = sum( len( x ) for x in feedback.body )
 
 	submission_id = _submissionid.get_id( submission )
+	assignment_taken_id = _get_assignment_taken_id( db, submission_id )
 	# TODO Do we need to handle any of these being None?
 	# That's an error condition, right?
-	grade_id = _get_grade_id( db, submission_id )
+	grade_id = _get_grade_id( db, assignment_taken_id )
 
 	new_object = AssignmentFeedback( user_id=uid,
 									session_id=sid,
 									timestamp=timestamp,
-									submission_id=submission_id,
-									feedback_id=feedback_id,
+									assignment_taken_id=assignment_taken_id,
+									feedback_ds_id=feedback_ds_id,
 									feedback_length=feedback_length,
 									grade_id=grade_id )
 	db.session.add( new_object )
 
-def delete_feedback( timestamp, feedback_id ):
+def delete_feedback( timestamp, feedback_ds_id ):
 	db = get_analytics_db()
 	timestamp = timestamp_type( timestamp )
 	feedback = db.session.query(AssignmentFeedback).filter(
-							AssignmentFeedback.feedback_id == feedback_id ).one()
+							AssignmentFeedback.feedback_ds_id == feedback_ds_id ).one()
 	feedback.deleted=timestamp
+	feedback.feedback_ds_id = None
 	db.session.flush()
 
 def get_self_assessments_for_user(user, course):
 	db = get_analytics_db()
 	user = get_or_create_user(user )
 	uid = user.user_id
-	course_id = _courseid.get_id( course )
+	course_id = get_course_id( db, course )
 	results = db.session.query(SelfAssessmentsTaken).filter( 	SelfAssessmentsTaken.user_id == uid,
 																SelfAssessmentsTaken.course_id == course_id ).all()
 
@@ -429,7 +457,7 @@ def get_assignments_for_user(user, course):
 	db = get_analytics_db()
 	user = get_or_create_user(user )
 	uid = user.user_id
-	course_id = _courseid.get_id( course )
+	course_id = get_course_id( db, course )
 	results = db.session.query(AssignmentsTaken).filter( 	AssignmentsTaken.user_id == uid,
 															AssignmentsTaken.course_id == course_id ).all()
 	for at in results:
@@ -439,7 +467,7 @@ def get_assignments_for_user(user, course):
 
 def get_self_assessments_for_course(course):
 	db = get_analytics_db()
-	course_id = _courseid.get_id( course )
+	course_id = get_course_id( db, course )
 	results = db.session.query(SelfAssessmentsTaken).filter( SelfAssessmentsTaken.course_id == course_id ).all()
 
 	for sat in results:
@@ -449,14 +477,14 @@ def get_self_assessments_for_course(course):
 
 def get_assignments_for_course(course):
 	db = get_analytics_db()
-	course_id = _courseid.get_id( course )
+	course_id = get_course_id( db, course )
 	results = db.session.query(AssignmentsTaken).filter( AssignmentsTaken.course_id == course_id ).all()
 	return results
 
 #AssignmentReport
 def get_assignment_details_for_course(course):
 	db = get_analytics_db()
-	course_id = _courseid.get_id( course )
+	course_id = get_course_id( db, course )
 	results = db.session.query(AssignmentDetails).\
 						join(AssignmentsTaken).\
 						filter( AssignmentsTaken.course_id == course_id ).all()

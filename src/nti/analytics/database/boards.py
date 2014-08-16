@@ -12,6 +12,7 @@ from sqlalchemy import Column
 from sqlalchemy import Integer
 from sqlalchemy import ForeignKey
 
+from sqlalchemy.schema import Sequence
 from sqlalchemy.schema import PrimaryKeyConstraint
 from sqlalchemy.ext.declarative import declared_attr
 
@@ -44,6 +45,7 @@ from nti.analytics.database.meta_mixins import TimeLengthMixin
 from nti.analytics.database.meta_mixins import RatingsMixin
 
 from nti.analytics.database.users import get_or_create_user
+from nti.analytics.database.courses import get_course_id
 
 class ForumMixin(CourseMixin):
 	@declared_attr
@@ -58,15 +60,14 @@ class TopicMixin(ForumMixin):
 
 class ForumsCreated(Base,BaseTableMixin,CourseMixin,DeletedMixin):
 	__tablename__ = 'ForumsCreated'
-	forum_id = Column('forum_id', Integer, primary_key=True, index=True, autoincrement=False)
+	forum_ds_id = Column('forum_ds_id', Integer, nullable=True, index=True, autoincrement=False)
+	forum_id = Column('forum_id', Integer, Sequence( 'forum_seq' ), index=True, nullable=False, primary_key=True )
 
-	__table_args__ = (
-        PrimaryKeyConstraint('forum_id'),
-    )
 
 class TopicsCreated(Base,BaseTableMixin,ForumMixin,DeletedMixin,RatingsMixin):
 	__tablename__ = 'TopicsCreated'
-	topic_id = Column('topic_id', Integer, primary_key=True, autoincrement=False, index=True )
+	topic_ds_id = Column('topic_ds_id', Integer, nullable=True, autoincrement=False, index=True )
+	topic_id = Column('topic_id', Integer, Sequence( 'topic_seq' ), index=True, nullable=False, primary_key=True )
 
 class ForumCommentsCreated(Base,CommentsMixin,TopicMixin,RatingsMixin):
 	__tablename__ = 'ForumCommentsCreated'
@@ -82,13 +83,37 @@ class TopicsViewed(Base,BaseViewMixin,TopicMixin,TimeLengthMixin):
         PrimaryKeyConstraint('user_id', 'topic_id', 'timestamp'),
     )
 
+def _get_forum( db, forum_ds_id ):
+	forum = db.session.query(ForumsCreated).filter( ForumsCreated.forum_ds_id == forum_ds_id ).first()
+	return forum
+
+def _get_forum_id( db, forum_ds_id ):
+	forum = _get_forum( db, forum_ds_id )
+	return forum.forum_id
+
+def _get_forum_id_from_forum( db, forum ):
+	forum_ds_id = _forumid.get_id( forum )
+	return _get_forum_id( db, forum_ds_id )
+
+def _get_topic( db, topic_ds_id ):
+	topic = db.session.query(TopicsCreated).filter( TopicsCreated.topic_ds_id == topic_ds_id ).first()
+	return topic
+
+def _get_topic_id( db, topic_ds_id ):
+	topic = _get_topic( db, topic_ds_id )
+	return topic.topic_id
+
+def _get_topic_id_from_topic( db, topic ):
+	topic_ds_id = _topicid.get_id( topic )
+	return _get_topic_id( db, topic_ds_id )
+
 def create_forum(user, nti_session, course, forum):
 	db = get_analytics_db()
-	user = get_or_create_user(user )
+	user = get_or_create_user( user )
 	uid = user.user_id
 	sid = _sessionid.get_id( nti_session )
-	fid = _forumid.get_id( forum )
-	course_id = _courseid.get_id( course )
+	forum_ds_id = _forumid.get_id( forum )
+	course_id = get_course_id( db, course )
 
 	timestamp = get_created_timestamp( forum )
 
@@ -96,18 +121,22 @@ def create_forum(user, nti_session, course, forum):
 								session_id=sid,
 								timestamp=timestamp,
 								course_id=course_id,
-								forum_id=fid )
+								forum_ds_id=forum_ds_id )
 	db.session.add( new_object )
 
-def delete_forum(timestamp, forum_id):
+def delete_forum(timestamp, forum_ds_id):
 	db = get_analytics_db()
 	timestamp = timestamp_type( timestamp )
-	db_forum = db.session.query(ForumsCreated).filter( ForumsCreated.forum_id==forum_id ).one()
+	db_forum = db.session.query(ForumsCreated).filter( ForumsCreated.forum_ds_id==forum_ds_id ).one()
 	db_forum.deleted=timestamp
+	db_forum.forum_ds_id = None
+	forum_id = db_forum.forum_id
 
 	# Get our topics and comments
 	db.session.query( TopicsCreated ).filter(
-						TopicsCreated.forum_id == forum_id ).update( { TopicsCreated.deleted : timestamp } )
+						TopicsCreated.forum_id == forum_id ).update(
+							{ TopicsCreated.deleted : timestamp,
+							 TopicsCreated.topic_ds_id : None } )
 	db.session.query( ForumCommentsCreated ).filter(
 						ForumCommentsCreated.forum_id == forum_id ).update(
 							{ ForumCommentsCreated.deleted : timestamp } )
@@ -118,9 +147,9 @@ def create_topic(user, nti_session, course, topic):
 	user = get_or_create_user(user )
 	uid = user.user_id
 	sid = _sessionid.get_id( nti_session )
-	fid = _forumid.get_id( topic.__parent__ )
-	did = _topicid.get_id( topic )
-	course_id = _courseid.get_id( course )
+	fid = _get_forum_id_from_forum( db, topic.__parent__ )
+	topic_ds_id = _topicid.get_id( topic )
+	course_id = get_course_id( db, course )
 
 	timestamp = get_created_timestamp( topic )
 	like_count, favorite_count, is_flagged = get_ratings( topic )
@@ -130,17 +159,19 @@ def create_topic(user, nti_session, course, topic):
 									timestamp=timestamp,
 									course_id=course_id,
 									forum_id=fid,
-									topic_id=did,
+									topic_ds_id=topic_ds_id,
 									like_count=like_count,
 									favorite_count=favorite_count,
 									is_flagged=is_flagged )
 	db.session.add( new_object )
 
-def delete_topic(timestamp, topic_id):
+def delete_topic(timestamp, topic_ds_id):
 	db = get_analytics_db()
 	timestamp = timestamp_type( timestamp )
-	db_topic = db.session.query(TopicsCreated).filter( TopicsCreated.topic_id == topic_id ).one()
+	db_topic = db.session.query(TopicsCreated).filter( TopicsCreated.topic_ds_id == topic_ds_id ).one()
 	db_topic.deleted = timestamp
+	db_topic.topic_ds_id = None
+	topic_id = db_topic.topic_id
 
 	db.session.query( ForumCommentsCreated ).filter(
 						ForumCommentsCreated.topic_id == topic_id ).update(
@@ -149,22 +180,22 @@ def delete_topic(timestamp, topic_id):
 
 def like_topic( topic, delta ):
 	db = get_analytics_db()
-	topic_id = _topicid.get_id( topic )
-	db_topic = db.session.query(TopicsCreated).filter( TopicsCreated.topic_id == topic_id ).one()
+	topic_ds_id = _topicid.get_id( topic )
+	db_topic = db.session.query(TopicsCreated).filter( TopicsCreated.topic_ds_id == topic_ds_id ).one()
 	db_topic.like_count += delta
 	db.session.flush()
 
 def favorite_topic( topic, delta ):
 	db = get_analytics_db()
-	topic_id = _topicid.get_id( topic )
-	db_topic = db.session.query(TopicsCreated).filter( TopicsCreated.topic_id == topic_id ).one()
+	topic_ds_id = _topicid.get_id( topic )
+	db_topic = db.session.query(TopicsCreated).filter( TopicsCreated.topic_ds_id == topic_ds_id ).one()
 	db_topic.favorite_count += delta
 	db.session.flush()
 
 def flag_topic( topic, state ):
 	db = get_analytics_db()
-	topic_id = _topicid.get_id( topic )
-	db_topic = db.session.query(TopicsCreated).filter( TopicsCreated.topic_id == topic_id ).one()
+	topic_ds_id = _topicid.get_id( topic )
+	db_topic = db.session.query(TopicsCreated).filter( TopicsCreated.topic_ds_id == topic_ds_id ).one()
 	db_topic.is_flagged = state
 	db.session.flush()
 
@@ -173,9 +204,9 @@ def create_topic_view(user, nti_session, timestamp, course, topic, time_length):
 	user = get_or_create_user(user )
 	uid = user.user_id
 	sid = _sessionid.get_id( nti_session )
-	fid = _forumid.get_id( topic.__parent__ )
-	did = _topicid.get_id( topic )
-	course_id = _courseid.get_id( course )
+	fid = _get_forum_id_from_forum( db, topic.__parent__ )
+	did = _get_topic_id_from_topic( db, topic )
+	course_id = get_course_id( db, course )
 	timestamp = timestamp_type( timestamp )
 
 	new_object = TopicsViewed( user_id=uid,
@@ -193,10 +224,10 @@ def create_forum_comment(user, nti_session, course, topic, comment):
 	uid = user.user_id
 	sid = _sessionid.get_id( nti_session )
 	forum = topic.__parent__
-	fid = _forumid.get_id(forum)
-	did = _topicid.get_id(topic)
+	fid = _get_forum_id_from_forum( db, forum )
+	topic_id = _get_topic_id_from_topic( db, topic )
 	cid = _commentid.get_id(comment)
-	course_id = _courseid.get_id( course )
+	course_id = get_course_id( db, course )
 	pid = None
 	timestamp = get_created_timestamp( comment )
 	like_count, favorite_count, is_flagged = get_ratings( comment )
@@ -212,7 +243,7 @@ def create_forum_comment(user, nti_session, course, topic, comment):
 										timestamp=timestamp,
 										course_id=course_id,
 										forum_id=fid,
-										topic_id=did,
+										topic_id=topic_id,
 										parent_id=pid,
 										comment_length=comment_length,
 										comment_id=cid,
@@ -254,7 +285,7 @@ def get_forum_comments_for_user(user, course):
 	db = get_analytics_db()
 	user = get_or_create_user(user )
 	uid = user.user_id
-	course_id = _courseid.get_id( course )
+	course_id = get_course_id( db, course )
 	results = db.session.query(ForumCommentsCreated).filter( 	ForumCommentsCreated.user_id == uid,
 															ForumCommentsCreated.course_id == course_id,
 															ForumCommentsCreated.deleted == None ).all()
@@ -269,7 +300,7 @@ def get_topics_created_for_user(user, course):
 	db = get_analytics_db()
 	user = get_or_create_user(user )
 	uid = user.user_id
-	course_id = _courseid.get_id( course )
+	course_id = get_course_id( db, course )
 	results = db.session.query(TopicsCreated).filter( TopicsCreated.user_id == uid,
 														TopicsCreated.course_id == course_id,
 														TopicsCreated.deleted == None  ).all()
@@ -282,7 +313,8 @@ def get_topics_created_for_user(user, course):
 #TopicReport
 def get_comments_for_topic(topic ):
 	db = get_analytics_db()
-	topic_id = _topicid.get_id( topic )
+	topic_id = _get_topic_id_from_topic( topic )
+	#FIXME null safety
 	results = db.session.query(ForumCommentsCreated).filter( ForumCommentsCreated.topic_id == topic_id ).all()
 	return results
 
@@ -290,14 +322,14 @@ def get_comments_for_topic(topic ):
 #ForumReport
 def get_forum_comments(forum):
 	db = get_analytics_db()
-	forum_id = _forumid.get_id( forum )
+	forum_id = _get_forum_id_from_forum( db, forum )
 	results = db.session.query(ForumCommentsCreated).filter( 	ForumCommentsCreated.forum_id == forum_id,
 																ForumCommentsCreated.deleted == None  ).all()
 	return results
 
 def get_topics_created_for_forum(forum):
 	db = get_analytics_db()
-	forum_id = _forumid.get_id( forum )
+	forum_id = _get_forum_id_from_forum( db, forum )
 	results = db.session.query(TopicsCreated).filter( TopicsCreated.forum_id == forum_id,
 													TopicsCreated.deleted == None  ).all()
 	return results
@@ -306,14 +338,14 @@ def get_topics_created_for_forum(forum):
 #CourseReport
 def get_forum_comments_for_course(course):
 	db = get_analytics_db()
-	course_id = _courseid.get_id( course )
+	course_id = get_course_id( db, course )
 	results = db.session.query(ForumCommentsCreated).filter( 	ForumCommentsCreated.course_id == course_id,
 																ForumCommentsCreated.deleted == None  ).all()
 	return results
 
 def get_topics_created_for_course(course):
 	db = get_analytics_db()
-	course_id = _courseid.get_id( course )
+	course_id = get_course_id( db, course )
 	results = db.session.query(TopicsCreated).filter( 	TopicsCreated.course_id == course_id,
 																TopicsCreated.deleted == None  ).all()
 	return results

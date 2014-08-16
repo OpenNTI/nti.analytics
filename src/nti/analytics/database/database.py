@@ -23,6 +23,31 @@ from nti.utils.property import Lazy
 from nti.analytics.database.interfaces import IAnalyticsDB
 from nti.analytics.database.metadata import AnalyticsMetadata
 
+
+def create_course(course):
+	db = get_analytics_db()
+	# We may have non-IUsers here, but let's keep them since we may need
+	# them (e.g. community owned forums).
+	username = getattr( user, 'username', None )
+	uid = _userid.get_id( user )
+
+	user = Users( user_ds_id=uid )
+	# We'd like to use 'merge' here, but we cannot (in sqlite) if our primary key
+	# is a sequence.
+	# For race conditions, let's just throw since we cannot really handle retrying
+	# gracefully at this level. A job-level retry should work though.
+	db.session.add( user )
+	db.session.flush()
+	logger.info( 'Created user (user=%s) (user_id=%s) (user_ds_id=%s)', username, user.user_id, uid )
+	return user
+
+def get_or_create_user(user):
+	db = get_analytics_db()
+	uid = _userid.get_id( user )
+	found_user = db.session.query(Users).filter( Users.user_ds_id == uid ).first()
+	return found_user or create_user( user )
+
+
 @interface.implementer(IAnalyticsDB)
 class AnalyticsDB(object):
 

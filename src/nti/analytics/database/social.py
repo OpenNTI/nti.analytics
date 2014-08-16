@@ -12,6 +12,7 @@ from sqlalchemy import Column
 from sqlalchemy import Integer
 from sqlalchemy import ForeignKey
 
+from sqlalchemy.schema import Sequence
 from sqlalchemy.schema import PrimaryKeyConstraint
 
 from sqlalchemy.ext.declarative import declared_attr
@@ -63,7 +64,9 @@ class FriendsListMixin(object):
 # This information needs to be obscured to protect privacy.
 class ChatsInitiated(Base,BaseTableMixin):
 	__tablename__ = 'ChatsInitiated'
-	chat_id = Column('chat_id', Integer, nullable=False, index=True, primary_key=True, autoincrement=False )
+	chat_ds_id = Column('chat_ds_id', Integer, index=True, nullable=True, autoincrement=False )
+	chat_id = Column('chat_id', Integer, Sequence( 'chat_seq' ), index=True, nullable=False, primary_key=True )
+
 
 # Note, we're not tracking when users leave chat rooms.
 class ChatsJoined(Base,BaseTableMixin):
@@ -76,7 +79,8 @@ class ChatsJoined(Base,BaseTableMixin):
 
 class DynamicFriendsListsCreated(Base,BaseTableMixin,DeletedMixin):
 	__tablename__ = 'DynamicFriendsListsCreated'
-	dfl_id = Column('dfl_id', Integer, nullable=False, index=True, primary_key=True, autoincrement=False )
+	dfl_ds_id = Column('dfl_ds_id', Integer, index=True, nullable=True, autoincrement=False )
+	dfl_id = Column('dfl_id', Integer, Sequence( 'dfl_seq' ), index=True, nullable=False, primary_key=True )
 
 class DynamicFriendsListsMemberAdded(Base,BaseTableMixin,DynamicFriendsListMixin,FriendMixin):
 	__tablename__ = 'DynamicFriendsListsMemberAdded'
@@ -95,7 +99,8 @@ class DynamicFriendsListsMemberRemoved(Base,BaseTableMixin,DynamicFriendsListMix
 
 class FriendsListsCreated(Base,BaseTableMixin,DeletedMixin):
 	__tablename__ = 'FriendsListsCreated'
-	friends_list_id = Column('friends_list_id', Integer, nullable=False, index=True, primary_key=True, autoincrement=False )
+	friends_list_ds_id = Column('friends_list_ds_id', Integer, index=True, nullable=True, autoincrement=False )
+	friends_list_id = Column('friends_list_id', Integer, Sequence( 'friends_list_seq' ), index=True, nullable=False, primary_key=True )
 
 
 class FriendsListsMemberAdded(Base,BaseTableMixin,FriendsListMixin,FriendMixin):
@@ -128,21 +133,23 @@ class ContactsRemoved(Base,BaseTableMixin,FriendMixin):
         PrimaryKeyConstraint('user_id', 'target_id', 'timestamp'),
     )
 
-
+def _get_chat_id( db, chat_ds_id ):
+	chat = db.session.query(ChatsInitiated).filter( ChatsInitiated.chat_ds_id == chat_ds_id ).first()
+	return chat.chat_id
 
 def create_chat_initiated(user, nti_session, chat):
 	db = get_analytics_db()
 	user = get_or_create_user(user )
 	uid = user.user_id
 	sid = _sessionid.get_id( nti_session )
-	cid = _chatid.get_id( chat )
+	chat_ds_id = _chatid.get_id( chat )
 
 	timestamp = get_created_timestamp( chat )
 
 	new_object = ChatsInitiated( 	user_id=uid,
 									session_id=sid,
 									timestamp=timestamp,
-									chat_id=cid )
+									chat_ds_id=chat_ds_id )
 	db.session.add( new_object )
 
 def chat_joined(user, nti_session, timestamp, chat):
@@ -150,13 +157,14 @@ def chat_joined(user, nti_session, timestamp, chat):
 	user = get_or_create_user(user )
 	uid = user.user_id
 	sid = _sessionid.get_id( nti_session )
-	cid = _chatid.get_id( chat )
+	chat_ds_id = _chatid.get_id( chat )
+	chat_id = _get_chat_id( db, chat_ds_id )
 	timestamp = timestamp_type( timestamp )
 
 	new_object = ChatsJoined( 	user_id=uid,
 								session_id=sid,
 								timestamp=timestamp,
-								chat_id=cid )
+								chat_id=chat_id )
 	db.session.add( new_object )
 	try:
 		db.session.flush()
@@ -164,28 +172,33 @@ def chat_joined(user, nti_session, timestamp, chat):
 		logger.debug( 'User (%s) already exists in chat (%s)', uid, chat )
 
 # DFLs
+def _get_dfl_id( db, dfl_ds_id ):
+	dfl = db.session.query(DynamicFriendsListsCreated).filter( DynamicFriendsListsCreated.dfl_ds_id == dfl_ds_id ).first()
+	return dfl.dfl_id
+
 def create_dynamic_friends_list(user, nti_session, dynamic_friends_list):
 	db = get_analytics_db()
 	user = get_or_create_user(user )
 	uid = user.user_id
 	sid = _sessionid.get_id( nti_session )
-	dfl_id = _dflid.get_id( dynamic_friends_list )
+	dfl_ds_id = _dflid.get_id( dynamic_friends_list )
 	timestamp = get_created_timestamp( dynamic_friends_list )
 
 	new_object = DynamicFriendsListsCreated( 	user_id=uid,
 												session_id=sid,
 												timestamp=timestamp,
-												dfl_id=dfl_id )
+												dfl_ds_id=dfl_ds_id )
 	db.session.add( new_object )
 
 # Note: with this and friends_list, we're leaving members in their
 # (now deleted) groups.  This could be useful (or we can remove
 # them at a later date).
-def remove_dynamic_friends_list(timestamp, dfl_id):
+def remove_dynamic_friends_list(timestamp, dfl_ds_id):
 	db = get_analytics_db()
 	timestamp = timestamp_type( timestamp )
-	db_dfl = db.session.query(DynamicFriendsListsCreated).filter( DynamicFriendsListsCreated.dfl_id==dfl_id ).one()
+	db_dfl = db.session.query(DynamicFriendsListsCreated).filter( DynamicFriendsListsCreated.dfl_ds_id==dfl_ds_id ).one()
 	db_dfl.deleted=timestamp
+	db_dfl.dfl_ds_id = None
 	db.session.flush()
 
 def create_dynamic_friends_member(user, nti_session, timestamp, dynamic_friends_list, new_friend ):
@@ -196,7 +209,8 @@ def create_dynamic_friends_member(user, nti_session, timestamp, dynamic_friends_
 		user = get_or_create_user(user )
 		uid = user.user_id
 	sid = _sessionid.get_id( nti_session )
-	dfl_id = _dflid.get_id( dynamic_friends_list )
+	dfl_ds_id = _dflid.get_id( dynamic_friends_list )
+	dfl_id = _get_dfl_id( db, dfl_ds_id )
 	target = get_or_create_user(new_friend )
 	target_id = target.user_id
 	timestamp = timestamp_type( timestamp )
@@ -219,7 +233,8 @@ def remove_dynamic_friends_member(user, nti_session, timestamp, dynamic_friends_
 	user = get_or_create_user(user )
 	uid = user.user_id
 	sid = _sessionid.get_id( nti_session )
-	dfl_id = _dflid.get_id( dynamic_friends_list )
+	dfl_ds_id = _dflid.get_id( dynamic_friends_list )
+	dfl_id = _get_dfl_id( db, dfl_ds_id )
 	target = get_or_create_user(target )
 	target_id = target.user_id
 	timestamp = timestamp_type( timestamp )
@@ -233,36 +248,41 @@ def remove_dynamic_friends_member(user, nti_session, timestamp, dynamic_friends_
 	_delete_dynamic_friend_list_member( db, dfl_id, target_id )
 
 # FLs
+def _get_friends_list_id( db, friends_list_ds_id ):
+	friends_list = db.session.query(FriendsListsCreated).filter( FriendsListsCreated.friends_list_ds_id == friends_list_ds_id ).first()
+	return friends_list.friends_list_id
+
 def create_friends_list(user, nti_session, timestamp, friends_list):
 	db = get_analytics_db()
 	user = get_or_create_user(user )
 	uid = user.user_id
 	sid = _sessionid.get_id( nti_session )
-	friends_list_id = _flid.get_id( friends_list )
+	friends_list_ds_id = _flid.get_id( friends_list )
 	timestamp = timestamp_type( timestamp )
 
 	new_object = FriendsListsCreated( 	user_id=uid,
 										session_id=sid,
 										timestamp=timestamp,
-										friends_list_id=friends_list_id )
+										friends_list_ds_id=friends_list_ds_id )
 	db.session.add( new_object )
 
-def remove_friends_list(timestamp, friends_list_id):
+def remove_friends_list(timestamp, friends_list_ds_id):
 	db = get_analytics_db()
 	timestamp = timestamp_type( timestamp )
-	db_friends_list = db.session.query(FriendsListsCreated).filter( FriendsListsCreated.friends_list_id==friends_list_id ).one()
+	db_friends_list = db.session.query(FriendsListsCreated).filter( FriendsListsCreated.friends_list_ds_id==friends_list_ds_id ).one()
 	db_friends_list.deleted=timestamp
+	db_friends_list.friends_list_ds_id = None
 	db.session.flush()
 
 def _delete_friend_list_member( db, friends_list_id, target_id ):
 	friend = db.session.query(FriendsListsMemberAdded).filter( 	FriendsListsMemberAdded.friends_list_id==friends_list_id,
-																	FriendsListsMemberAdded.target_id==target_id ).first()
+																FriendsListsMemberAdded.target_id==target_id ).first()
 	db.session.delete( friend )
 
 def _find_members( db, friends_list, members ):
 	""" For a friends_list, return a tuple of members to add/remove. """
 	members = set( [ x.target_id for x in members if x ] )
-	new_members = set( [ get_or_create_user(x ).user_id for x in friends_list if x] )
+	new_members = set( [ get_or_create_user( x ).user_id for x in friends_list if x] )
 
 	members_to_add = new_members - members
 	members_to_remove = members - new_members
@@ -317,7 +337,8 @@ def update_contacts( user, nti_session, timestamp, friends_list ):
 
 def update_friends_list( user, nti_session, timestamp, friends_list ):
 	db = get_analytics_db()
-	friends_list_id = _flid.get_id( friends_list )
+	friends_list_ds_id = _flid.get_id( friends_list )
+	friends_list_id = _get_friends_list_id( db, friends_list_ds_id )
 	members = _get_friends_list_members( db, friends_list_id )
 	members_to_add, members_to_remove \
 		= _find_members( db, friends_list, members )

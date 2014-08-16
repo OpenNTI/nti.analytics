@@ -14,6 +14,7 @@ from sqlalchemy import ForeignKey
 
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.schema import PrimaryKeyConstraint
+from sqlalchemy.schema import Sequence
 
 import zope.intid
 
@@ -50,8 +51,9 @@ class BlogMixin(object):
 
 class BlogsCreated(Base,BaseTableMixin,DeletedMixin,RatingsMixin):
 	__tablename__ = 'BlogsCreated'
-	blog_id = Column('blog_id', Integer, nullable=False, index=True, primary_key=True, autoincrement=False )
+	blog_ds_id = Column('blog_ds_id', Integer, nullable=True, autoincrement=False )
 	blog_length = Column('blog_length', Integer, nullable=True, autoincrement=False)
+	blog_id = Column('blog_id', Integer, Sequence( 'blog_seq' ), index=True, nullable=False, primary_key=True )
 
 class BlogsViewed(Base,BaseViewMixin,BlogMixin,TimeLengthMixin):
 	__tablename__ = 'BlogsViewed'
@@ -67,12 +69,16 @@ class BlogCommentsCreated(Base,CommentsMixin,BlogMixin,RatingsMixin):
         PrimaryKeyConstraint('comment_id'),
     )
 
+def _get_blog_id( db, blog_ds_id ):
+	blog = db.session.query(BlogsCreated).filter( BlogsCreated.blog_ds_id == blog_ds_id ).first()
+	return blog.blog_id
+
 def create_blog( user, nti_session, blog_entry ):
 	db = get_analytics_db()
 	user = get_or_create_user(user )
 	uid = user.user_id
 	sid = _sessionid.get_id( nti_session )
-	blog_id = _blogid.get_id( blog_entry )
+	blog_ds_id = _blogid.get_id( blog_entry )
 	like_count, favorite_count, is_flagged = get_ratings( blog_entry )
 
 	timestamp = get_created_timestamp( blog_entry )
@@ -89,17 +95,19 @@ def create_blog( user, nti_session, blog_entry ):
 								session_id=sid,
 								timestamp=timestamp,
 								blog_length=blog_length,
-								blog_id=blog_id,
+								blog_ds_id=blog_ds_id,
 								like_count=like_count,
 								favorite_count=favorite_count,
 								is_flagged=is_flagged )
 	db.session.add( new_object )
 
-def delete_blog( timestamp, blog_id ):
+def delete_blog( timestamp, blog_ds_id ):
 	db = get_analytics_db()
 	blog = db.session.query(BlogsCreated).filter(
-									BlogsCreated.blog_id == blog_id ).one()
+									BlogsCreated.blog_ds_id == blog_ds_id ).one()
 	blog.deleted = timestamp
+	blog.blog_ds_id = None
+	blog_id = blog.blog_id
 
 	db.session.query( BlogCommentsCreated ).filter(
 						BlogCommentsCreated.blog_id == blog_id ).update(
@@ -108,22 +116,22 @@ def delete_blog( timestamp, blog_id ):
 
 def like_blog( blog, delta ):
 	db = get_analytics_db()
-	blog_id = _blogid.get_id( blog )
-	db_blog = db.session.query(BlogsCreated).filter( BlogsCreated.blog_id == blog_id ).one()
+	blog_ds_id = _blogid.get_id( blog )
+	db_blog = db.session.query(BlogsCreated).filter( BlogsCreated.blog_ds_id == blog_ds_id ).one()
 	db_blog.like_count += delta
 	db.session.flush()
 
 def favorite_blog( blog, delta ):
 	db = get_analytics_db()
-	blog_id = _blogid.get_id( blog )
-	db_blog = db.session.query(BlogsCreated).filter( BlogsCreated.blog_id == blog_id ).one()
+	blog_ds_id = _blogid.get_id( blog )
+	db_blog = db.session.query(BlogsCreated).filter( BlogsCreated.blog_ds_id == blog_ds_id ).one()
 	db_blog.favorite_count += delta
 	db.session.flush()
 
 def flag_blog( blog, state ):
 	db = get_analytics_db()
-	blog_id = _blogid.get_id( blog )
-	db_blog = db.session.query(BlogsCreated).filter( BlogsCreated.blog_id == blog_id ).one()
+	blog_ds_id = _blogid.get_id( blog )
+	db_blog = db.session.query(BlogsCreated).filter( BlogsCreated.blog_ds_id == blog_ds_id ).one()
 	db_blog.is_flagged = state
 	db.session.flush()
 
@@ -132,7 +140,8 @@ def create_blog_view(user, nti_session, timestamp, blog_entry, time_length):
 	user = get_or_create_user(user )
 	uid = user.user_id
 	sid = _sessionid.get_id( nti_session )
-	blog_id = _blogid.get_id( blog_entry )
+	blog_ds_id = _blogid.get_id( blog_entry )
+	blog_id = _get_blog_id( db, blog_ds_id )
 	timestamp = timestamp_type( timestamp )
 
 	new_object = BlogsViewed( 	user_id=uid,
@@ -147,7 +156,8 @@ def create_blog_comment(user, nti_session, blog, comment ):
 	user = get_or_create_user(user )
 	uid = user.user_id
 	sid = _sessionid.get_id( nti_session )
-	bid = _blogid.get_id( blog )
+	blog_ds_id = _blogid.get_id( blog )
+	bid = _get_blog_id( db, blog_ds_id )
 	cid = _commentid.get_id( comment )
 	pid = None
 	like_count, favorite_count, is_flagged = get_ratings( comment )

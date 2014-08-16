@@ -93,7 +93,7 @@ class TestUsers(unittest.TestCase):
 		self.db = AnalyticsDB( dburi='sqlite://', testmode=True )
 		component.getGlobalSiteManager().registerUtility( self.db, IAnalyticsDB )
 		self.session = self.db.session
-		assert_that( self.db.engine.table_names(), has_length( 35 ) )
+		assert_that( self.db.engine.table_names(), has_length( 36 ) )
 
 	def tearDown(self):
 		component.getGlobalSiteManager().unregisterUtility( self.db )
@@ -138,10 +138,10 @@ class TestUsers(unittest.TestCase):
 		results = self.session.query(Users).all()
 		assert_that( results, has_length( 0 ) )
 
-		with self.assertRaises(IntegrityError):
-			new_user = Users( user_ds_id=None )
-			self.session.add( new_user )
-			self.session.flush()
+		# A None user_ds_id is now perfectly valid.
+		new_user = Users( user_ds_id=None )
+		self.session.add( new_user )
+		self.session.flush()
 
 	def test_sessions(self):
 		results = self.session.query(Sessions).all()
@@ -204,9 +204,10 @@ class TestSocial(AnalyticsTestBase):
 		results = self.session.query( ChatsJoined ).all()
 		assert_that( results, has_length( 0 ) )
 
-		test_chat_id = 999
+		test_chat_id = 1
+		test_chat_ds_id = 999
 
-		db_social.create_chat_initiated( test_user_ds_id, test_session_id, test_chat_id )
+		db_social.create_chat_initiated( test_user_ds_id, test_session_id, test_chat_ds_id )
 		results = self.session.query(ChatsInitiated).all()
 		assert_that( results, has_length( 1 ) )
 
@@ -217,7 +218,7 @@ class TestSocial(AnalyticsTestBase):
 		assert_that( new_chat.chat_id, is_( test_chat_id ) )
 
 		# Chat joined
-		db_social.chat_joined( test_user_ds_id, test_session_id, datetime.now(), test_chat_id )
+		db_social.chat_joined( test_user_ds_id, test_session_id, datetime.now(), test_chat_ds_id )
 		results = self.session.query(ChatsJoined).all()
 		assert_that( results, has_length( 1 ) )
 
@@ -236,9 +237,10 @@ class TestSocial(AnalyticsTestBase):
 		results = self.session.query( DynamicFriendsListsMemberRemoved ).all()
 		assert_that( results, has_length( 0 ) )
 
-		test_dfl_id = 999
+		test_dfl_ds_id = 999
+		test_dfl_id = 1
 		# Create DFL
-		db_social.create_dynamic_friends_list( test_user_ds_id, test_session_id, test_dfl_id )
+		db_social.create_dynamic_friends_list( test_user_ds_id, test_session_id, test_dfl_ds_id )
 		results = self.session.query(DynamicFriendsListsCreated).all()
 		assert_that( results, has_length( 1 ) )
 
@@ -250,7 +252,7 @@ class TestSocial(AnalyticsTestBase):
 		assert_that( dfl.deleted, none() )
 
 		# Join DFL
-		db_social.create_dynamic_friends_member( test_user_ds_id, test_session_id, datetime.now(), test_dfl_id, test_user_ds_id )
+		db_social.create_dynamic_friends_member( test_user_ds_id, test_session_id, datetime.now(), test_dfl_ds_id, test_user_ds_id )
 		results = self.session.query(DynamicFriendsListsMemberAdded).all()
 		assert_that( results, has_length( 1 ) )
 
@@ -262,7 +264,7 @@ class TestSocial(AnalyticsTestBase):
 		assert_that( dfl.dfl_id, is_( test_dfl_id ) )
 
 		# Leave DFL
-		db_social.remove_dynamic_friends_member( test_user_ds_id, test_session_id, datetime.now(), test_dfl_id, test_user_ds_id )
+		db_social.remove_dynamic_friends_member( test_user_ds_id, test_session_id, datetime.now(), test_dfl_ds_id, test_user_ds_id )
 		results = self.session.query(DynamicFriendsListsMemberAdded).all()
 		assert_that( results, has_length( 0 ) )
 		results = self.session.query(DynamicFriendsListsMemberRemoved).all()
@@ -276,7 +278,7 @@ class TestSocial(AnalyticsTestBase):
 		assert_that( dfl.dfl_id, is_( test_dfl_id ) )
 
 		# Delete DFL
-		db_social.remove_dynamic_friends_list( datetime.now(), test_dfl_id )
+		db_social.remove_dynamic_friends_list( datetime.now(), test_dfl_ds_id )
 
 		results = self.session.query(DynamicFriendsListsMemberAdded).all()
 		assert_that( results, has_length( 0 ) )
@@ -286,6 +288,7 @@ class TestSocial(AnalyticsTestBase):
 		assert_that( dfl.session_id, is_( test_session_id ) )
 		assert_that( dfl.timestamp, not_none() )
 		assert_that( dfl.dfl_id, is_( test_dfl_id ) )
+		assert_that( dfl.dfl_ds_id, none() )
 		assert_that( dfl.deleted, not_none() )
 
 	def test_dfl_multiple_members(self):
@@ -296,29 +299,24 @@ class TestSocial(AnalyticsTestBase):
 		results = self.session.query( DynamicFriendsListsMemberRemoved ).all()
 		assert_that( results, has_length( 0 ) )
 
-		test_dfl_id = 999
-		test_dfl_id2 = 1000
+		test_dfl_ds_id = 999
+		test_dfl_ds_id2 = 1000
 		# Create DFL
-		db_social.create_dynamic_friends_list( test_user_ds_id, test_session_id, test_dfl_id )
-		db_social.create_dynamic_friends_list( test_user_ds_id, test_session_id, test_dfl_id2 )
-		results = self.session.query(DynamicFriendsListsCreated).all()
-		assert_that( results, has_length( 2 ) )
-
-		# Delete empty DFL
-		db_social.remove_dynamic_friends_list( datetime.now(), test_dfl_id )
+		db_social.create_dynamic_friends_list( test_user_ds_id, test_session_id, test_dfl_ds_id )
+		db_social.create_dynamic_friends_list( test_user_ds_id, test_session_id, test_dfl_ds_id2 )
 		results = self.session.query(DynamicFriendsListsCreated).all()
 		assert_that( results, has_length( 2 ) )
 
 		# Join DFLs; 3 dfl1, 1 dfl2
-		db_social.create_dynamic_friends_member( test_user_ds_id, test_session_id, datetime.now(), test_dfl_id, test_user_ds_id )
-		db_social.create_dynamic_friends_member( test_user_ds_id, test_session_id, datetime.now(), test_dfl_id, test_user_ds_id + 1 )
-		db_social.create_dynamic_friends_member( test_user_ds_id, test_session_id, datetime.now(), test_dfl_id, test_user_ds_id + 2)
-		db_social.create_dynamic_friends_member( test_user_ds_id, test_session_id, datetime.now(), test_dfl_id2, test_user_ds_id )
+		db_social.create_dynamic_friends_member( test_user_ds_id, test_session_id, datetime.now(), test_dfl_ds_id, test_user_ds_id )
+		db_social.create_dynamic_friends_member( test_user_ds_id, test_session_id, datetime.now(), test_dfl_ds_id, test_user_ds_id + 1 )
+		db_social.create_dynamic_friends_member( test_user_ds_id, test_session_id, datetime.now(), test_dfl_ds_id, test_user_ds_id + 2)
+		db_social.create_dynamic_friends_member( test_user_ds_id, test_session_id, datetime.now(), test_dfl_ds_id2, test_user_ds_id )
 		results = self.session.query(DynamicFriendsListsMemberAdded).all()
 		assert_that( results, has_length( 4 ) )
 
 		# Delete DFL1
-		db_social.remove_dynamic_friends_list( datetime.now(), test_dfl_id )
+		db_social.remove_dynamic_friends_list( datetime.now(), test_dfl_ds_id )
 		results = self.session.query(DynamicFriendsListsCreated).all()
 		assert_that( results, has_length( 2 ) )
 
@@ -333,9 +331,10 @@ class TestSocial(AnalyticsTestBase):
 		results = self.session.query( FriendsListsMemberRemoved ).all()
 		assert_that( results, has_length( 0 ) )
 
-		test_fl_id = 999
+		test_fl_id = 1
+		test_fl_ds_id = 999
 		# Create FL
-		db_social.create_friends_list( test_user_ds_id, test_session_id, datetime.now(), test_fl_id )
+		db_social.create_friends_list( test_user_ds_id, test_session_id, datetime.now(), test_fl_ds_id )
 		results = self.session.query(FriendsListsCreated).all()
 		assert_that( results, has_length( 1 ) )
 
@@ -351,7 +350,7 @@ class TestSocial(AnalyticsTestBase):
 		friend2 = 1000
 		friend3 = 1001
 		friends = [ friend1, friend2 ]
-		fl = MockFL( None, intid=test_fl_id, vals=friends )
+		fl = MockFL( None, intid=test_fl_ds_id, vals=friends )
 		db_social.update_friends_list( test_user_ds_id, test_session_id, datetime.now(), fl )
 
 		friend1_id = get_or_create_user( friend1 ).user_id
@@ -406,7 +405,7 @@ class TestSocial(AnalyticsTestBase):
 		assert_that( results, has_length( 3 ) )
 
 		# Delete FL
-		db_social.remove_friends_list( datetime.now(), test_fl_id )
+		db_social.remove_friends_list( datetime.now(), test_fl_ds_id )
 
 		fl = self.session.query(FriendsListsCreated).one()
 		assert_that( fl.user_id, is_( 1 ) )
@@ -471,8 +470,9 @@ class TestSocial(AnalyticsTestBase):
 		assert_that( results, has_length( 0 ) )
 
 		# Add blog
-		new_blog_id = 999
-		new_blog = MockParent( None, intid=new_blog_id )
+		new_blog_id = 1
+		new_blog_ds_id = 999
+		new_blog = MockParent( None, intid=new_blog_ds_id )
 		db_blogs.create_blog( test_user_ds_id, test_session_id, new_blog )
 		results = self.session.query( BlogsCreated ).all()
 		assert_that( results, has_length( 1 ) )
@@ -484,32 +484,35 @@ class TestSocial(AnalyticsTestBase):
 		assert_that( blog.timestamp, not_none() )
 		assert_that( blog.deleted, none() )
 
-		# Delete
-		db_blogs.delete_blog( datetime.now(), new_blog_id )
-		assert_that( blog.blog_id, is_( new_blog_id ) )
-		assert_that( blog.deleted, not_none() )
-
 		# Create blog view
 		results = self.session.query( BlogsViewed ).all()
 		assert_that( results, has_length( 0 ) )
 
-		db_blogs.create_blog_view( test_user_ds_id, test_session_id, datetime.now(), new_blog_id, 18 )
+		db_blogs.create_blog_view( test_user_ds_id, test_session_id, datetime.now(), new_blog, 18 )
 		results = self.session.query( BlogsViewed ).all()
 		assert_that( results, has_length( 1 ) )
 
 		blog = self.session.query( BlogsViewed ).one()
 		assert_that( blog.user_id, is_( 1 ) )
-		assert_that( blog.blog_id, is_( 999 ) )
+		assert_that( blog.blog_id, is_( new_blog_id ) )
 		assert_that( blog.session_id, is_( test_session_id ) )
 		assert_that( blog.timestamp, not_none() )
 		assert_that( blog.time_length, is_( 18 ) )
+
+		# Delete
+		db_blogs.delete_blog( datetime.now(), new_blog_ds_id )
+		blog = self.session.query( BlogsCreated ).one()
+		assert_that( blog.blog_id, is_( new_blog_id ) )
+		assert_that( blog.deleted, not_none() )
 
 class TestCourseResources(AnalyticsTestBase):
 
 	def setUp(self):
 		super( TestCourseResources, self ).setUp()
 		self.course_name='course1'
-		self.context_path='overview'
+		self.course_id = 1 #seq insert
+		self.context_path_flat = 'dashboard'
+		self.context_path= [ 'dashboard' ]
 
 	def test_resource_view(self):
 		results = self.session.query( CourseResourceViews ).all()
@@ -528,8 +531,8 @@ class TestCourseResources(AnalyticsTestBase):
 		assert_that( resource_view.user_id, is_( 1 ) )
 		assert_that( resource_view.session_id, is_( test_session_id ) )
 		assert_that( resource_view.timestamp, not_none() )
-		assert_that( resource_view.course_id, is_( self.course_name ) )
-		assert_that( resource_view.context_path, is_( self.context_path ) )
+		assert_that( resource_view.course_id, is_( self.course_id ) )
+		assert_that( resource_view.context_path, is_( self.context_path_flat ) )
 		assert_that( resource_view.resource_id, is_( resource_id ) )
 		assert_that( resource_view.time_length, is_( time_length ) )
 
@@ -556,8 +559,8 @@ class TestCourseResources(AnalyticsTestBase):
 		assert_that( resource_view.user_id, is_( 1 ) )
 		assert_that( resource_view.session_id, is_( test_session_id ) )
 		assert_that( resource_view.timestamp, not_none() )
-		assert_that( resource_view.course_id, is_( self.course_name ) )
-		assert_that( resource_view.context_path, is_( self.context_path ) )
+		assert_that( resource_view.course_id, is_( self.course_id ) )
+		assert_that( resource_view.context_path, is_( self.context_path_flat ) )
 		assert_that( resource_view.resource_id, is_( resource_id ) )
 		assert_that( resource_view.video_event_type, is_( video_event_type ) )
 		assert_that( resource_view.video_start_time, is_( video_start_time ) )
@@ -575,8 +578,9 @@ class TestCourseResources(AnalyticsTestBase):
 		assert_that( results, has_length( 0 ) )
 
 		resource_id = 'ntiid:course_resource'
-		note_id = DEFAULT_INTID
-		my_note = MockNote( resource_id, containerId=resource_id, intid=note_id )
+		note_ds_id = DEFAULT_INTID
+		note_id = 1
+		my_note = MockNote( resource_id, containerId=resource_id, intid=note_ds_id )
 
 		# Create note
 		db_tags.create_note( 	test_user_ds_id,
@@ -588,7 +592,7 @@ class TestCourseResources(AnalyticsTestBase):
 		note = self.session.query(NotesCreated).one()
 		assert_that( note.user_id, is_( 1 ) )
 		assert_that( note.session_id, is_( test_session_id ) )
-		assert_that( note.course_id, is_( self.course_name ) )
+		assert_that( note.course_id, is_( self.course_id ) )
 		assert_that( note.note_id, is_( note_id ) )
 		assert_that( note.resource_id, is_( resource_id ) )
 		# 'UNKNOWN' since we cannot access course and it's scopes.
@@ -606,13 +610,13 @@ class TestCourseResources(AnalyticsTestBase):
 		note = self.session.query(NotesViewed).one()
 		assert_that( note.user_id, is_( 1 ) )
 		assert_that( note.session_id, is_( test_session_id ) )
-		assert_that( note.course_id, is_( self.course_name ) )
+		assert_that( note.course_id, is_( self.course_id ) )
 		assert_that( note.note_id, is_( note_id ) )
 		assert_that( note.resource_id, is_( resource_id ) )
 		assert_that( note.timestamp, not_none() )
 
 		# Delete note
-		db_tags.delete_note( datetime.now(), note_id )
+		db_tags.delete_note( datetime.now(), note_ds_id )
 
 		results = self.session.query(NotesCreated).all()
 		assert_that( results, has_length( 1 ) )
@@ -629,8 +633,9 @@ class TestCourseResources(AnalyticsTestBase):
 		assert_that( results, has_length( 0 ) )
 
 		resource_id = 'ntiid:course_resource'
-		highlight_id = DEFAULT_INTID
-		my_highlight = MockHighlight( resource_id, intid=highlight_id, containerId=resource_id )
+		highlight_ds_id = DEFAULT_INTID
+		highlight_id = 1
+		my_highlight = MockHighlight( resource_id, intid=highlight_ds_id, containerId=resource_id )
 
 		# Create highlight
 		db_tags.create_highlight( 	test_user_ds_id,
@@ -642,14 +647,14 @@ class TestCourseResources(AnalyticsTestBase):
 		highlight = self.session.query(HighlightsCreated).one()
 		assert_that( highlight.user_id, is_( 1 ) )
 		assert_that( highlight.session_id, is_( test_session_id ) )
-		assert_that( highlight.course_id, is_( self.course_name ) )
+		assert_that( highlight.course_id, is_( self.course_id ) )
 		assert_that( highlight.highlight_id, is_( highlight_id ) )
 		assert_that( highlight.resource_id, is_( resource_id ) )
 		assert_that( highlight.deleted, none() )
 		assert_that( highlight.timestamp, not_none() )
 
 		# Delete highlight
-		db_tags.delete_highlight( datetime.now(), highlight_id )
+		db_tags.delete_highlight( datetime.now(), highlight_ds_id )
 
 		results = self.session.query(HighlightsCreated).all()
 		assert_that( results, has_length( 1 ) )
@@ -666,12 +671,14 @@ class TestForums(AnalyticsTestBase):
 	def setUp(self):
 		super( TestForums, self ).setUp()
 		self.course_name='course1'
-		self.forum_id = 999
+		self.course_id = 1
+		self.forum_id = 1
+		self.forum_ds_id = 999
 
 	def test_forums(self):
 		results = self.session.query( ForumsCreated ).all()
 		assert_that( results, has_length( 0 ) )
-		my_forum = MockForum( None, intid=self.forum_id )
+		my_forum = MockForum( None, intid=self.forum_ds_id )
 		# Create forum
 		db_boards.create_forum( 	test_user_ds_id,
 								test_session_id, self.course_name, my_forum )
@@ -682,28 +689,29 @@ class TestForums(AnalyticsTestBase):
 		forum = self.session.query(ForumsCreated).one()
 		assert_that( forum.user_id, is_( 1 ) )
 		assert_that( forum.session_id, is_( test_session_id ) )
-		assert_that( forum.course_id, is_( self.course_name ) )
+		assert_that( forum.course_id, is_( self.course_id ) )
 		assert_that( forum.forum_id, is_( self.forum_id ) )
 		assert_that( forum.timestamp, not_none() )
 		assert_that( forum.deleted, none() )
 
 		# Delete forum
-		db_boards.delete_forum( datetime.now(), self.forum_id )
+		db_boards.delete_forum( datetime.now(), self.forum_ds_id )
 
 		results = self.session.query(ForumsCreated).all()
 		assert_that( results, has_length( 1 ) )
 
 		forum = self.session.query(ForumsCreated).one()
 		assert_that( forum.forum_id, is_( self.forum_id ) )
+		assert_that( forum.forum_ds_id, none() )
 		assert_that( forum.deleted, not_none() )
 
 	def test_chain_delete(self):
-		forum = MockForum( None, intid=self.forum_id )
+		forum = MockForum( None, intid=self.forum_ds_id )
 		topic = MockTopic( forum, intid=DEFAULT_INTID )
 		db_boards.create_forum( 	test_user_ds_id,
-								test_session_id, self.course_name, self.forum_id )
+								test_session_id, self.course_name, self.forum_ds_id )
 		db_boards.create_topic( 	test_user_ds_id,
-									test_session_id, self.course_name, MockTopic( self.forum_id ) )
+									test_session_id, self.course_name, topic )
 
 		new_comment1 = MockComment( topic, intid=21 )
 		new_comment2 = MockComment( topic, intid=22 )
@@ -736,7 +744,7 @@ class TestForums(AnalyticsTestBase):
 		assert_that( results[1].deleted, none() )
 
 		# Delete forum and everything goes with it
-		db_boards.delete_forum( datetime.now(), self.forum_id )
+		db_boards.delete_forum( datetime.now(), self.forum_ds_id )
 
 		results = self.session.query( ForumsCreated ).all()
 		assert_that( results, has_length( 1 ) )
@@ -756,8 +764,10 @@ class TestTopics(AnalyticsTestBase):
 	def setUp(self):
 		super( TestTopics, self ).setUp()
 		self.course_name = 'course1'
-		self.forum_id = 999
-		self.forum = MockForum( None, intid=self.forum_id )
+		self.course_id = 1
+		self.forum_id = 1
+		self.forum_ds_id = 999
+		self.forum = MockForum( None, intid=self.forum_ds_id )
 		db_boards.create_forum( 	test_user_ds_id,
 								test_session_id, self.course_name, self.forum )
 
@@ -767,8 +777,9 @@ class TestTopics(AnalyticsTestBase):
 		results = self.session.query( TopicsViewed ).all()
 		assert_that( results, has_length( 0 ) )
 
-		topic_id = DEFAULT_INTID
-		my_topic = MockTopic( self.forum, intid=topic_id )
+		topic_id = 1
+		topic_ds_id = DEFAULT_INTID
+		my_topic = MockTopic( self.forum, intid=topic_ds_id )
 		# Create topic
 		db_boards.create_topic( 	test_user_ds_id,
 									test_session_id, self.course_name, my_topic )
@@ -779,7 +790,7 @@ class TestTopics(AnalyticsTestBase):
 		topic = self.session.query( TopicsCreated ).one()
 		assert_that( topic.user_id, is_( 1 ) )
 		assert_that( topic.session_id, is_( test_session_id ) )
-		assert_that( topic.course_id, is_( self.course_name ) )
+		assert_that( topic.course_id, is_( self.course_id ) )
 		assert_that( topic.forum_id, is_( self.forum_id ) )
 		assert_that( topic.topic_id, is_( topic_id ) )
 		assert_that( topic.timestamp, not_none() )
@@ -798,14 +809,14 @@ class TestTopics(AnalyticsTestBase):
 		topic = self.session.query( TopicsViewed ).one()
 		assert_that( topic.user_id, is_( 1 ) )
 		assert_that( topic.session_id, is_( test_session_id ) )
-		assert_that( topic.course_id, is_( self.course_name ) )
+		assert_that( topic.course_id, is_( self.course_id ) )
 		assert_that( topic.forum_id, is_( self.forum_id ) )
 		assert_that( topic.topic_id, is_( topic_id ) )
 		assert_that( topic.timestamp, not_none() )
 		assert_that( topic.time_length, is_( 30 ) )
 
 		# Delete topic
-		db_boards.delete_topic( datetime.now(), topic_id )
+		db_boards.delete_topic( datetime.now(), topic_ds_id )
 
 		results = self.session.query(TopicsCreated).all()
 		assert_that( results, has_length( 1 ) )
@@ -819,14 +830,17 @@ class TestForumComments(AnalyticsTestBase):
 	def setUp(self):
 		super( TestForumComments, self ).setUp()
 		self.course_name='course1'
-		self.forum_id = 999
-		self.topic_id = DEFAULT_INTID
-		forum = MockForum( None, intid=self.forum_id )
-		self.topic = MockTopic( forum, intid=self.topic_id  )
+		self.course_id = 1
+		self.forum_id = 1
+		self.forum_ds_id = 999
+		self.topic_id = 1
+		self.topic_ds_id = DEFAULT_INTID
+		self.forum = MockForum( None, intid=self.forum_ds_id )
+		self.topic = MockTopic( self.forum, intid=self.topic_ds_id  )
 		db_boards.create_forum( 	test_user_ds_id,
-								test_session_id, self.course_name, self.forum_id )
+								test_session_id, self.course_name, self.forum )
 		db_boards.create_topic( 	test_user_ds_id,
-									test_session_id, self.course_name, MockTopic( self.forum_id ) )
+									test_session_id, self.course_name, self.topic )
 
 	def test_comments(self):
 		results = db_boards.get_forum_comments_for_user( test_user_ds_id, self.course_name )
@@ -836,7 +850,7 @@ class TestForumComments(AnalyticsTestBase):
 		comment_id = DEFAULT_INTID
 		my_comment = MockComment( self.topic, intid=comment_id )
 
-		db_boards.create_forum_comment( 	test_user_ds_id, test_session_id, self.course_name,
+		db_boards.create_forum_comment( test_user_ds_id, test_session_id, self.course_name,
 										self.topic, my_comment )
 
 		results = self.session.query( ForumCommentsCreated ).all()
@@ -854,7 +868,7 @@ class TestForumComments(AnalyticsTestBase):
 		assert_that( result.comment_id, is_( comment_id ) )
 		assert_that( result.session_id, is_( test_session_id ) )
 		assert_that( result.user_id, is_( 1 ) )
-		assert_that( result.course_id, is_( self.course_name ) )
+		assert_that( result.course_id, is_( self.course_id ) )
 		assert_that( result.parent_id, none() )
 		assert_that( result.deleted, none() )
 
@@ -887,7 +901,7 @@ class TestForumComments(AnalyticsTestBase):
 		assert_that( result.comment_id, is_( comment_id ) )
 		assert_that( result.session_id, is_( test_session_id ) )
 		assert_that( result.user_id, is_( 1 ) )
-		assert_that( result.course_id, is_( self.course_name ) )
+		assert_that( result.course_id, is_( self.course_id ) )
 		assert_that( result.parent_id, is_( post_id ) )
 		assert_that( result.deleted, none() )
 
@@ -973,8 +987,9 @@ class TestBlogComments(AnalyticsTestBase):
 
 	def setUp(self):
 		super( TestBlogComments, self ).setUp()
-		self.blog_id = 999
-		new_blog = MockParent( None, intid=self.blog_id )
+		self.blog_ds_id = 999
+		self.blog_id = 1
+		new_blog = MockParent( None, intid=self.blog_ds_id )
 		db_blogs.create_blog( test_user_ds_id, test_session_id, new_blog )
 
 	def tearDown(self):
@@ -988,7 +1003,7 @@ class TestBlogComments(AnalyticsTestBase):
 		comment_id = DEFAULT_INTID
 		my_comment = MockComment( MockThought( None ), intid=comment_id )
 
-		db_blogs.create_blog_comment( test_user_ds_id, test_session_id, self.blog_id, my_comment )
+		db_blogs.create_blog_comment( test_user_ds_id, test_session_id, self.blog_ds_id, my_comment )
 
 		results = self.session.query( BlogCommentsCreated ).all()
 		assert_that( results, has_length( 1 ) )
@@ -1014,9 +1029,9 @@ class TestBlogComments(AnalyticsTestBase):
 		# Empty parent
 		my_comment = MockComment( MockThought( None ) )
 
-		db_blogs.create_blog_comment( test_user_ds_id, test_session_id, self.blog_id, my_comment )
+		db_blogs.create_blog_comment( test_user_ds_id, test_session_id, self.blog_ds_id, my_comment )
 
-		db_blogs.delete_blog( datetime.now(), self.blog_id )
+		db_blogs.delete_blog( datetime.now(), self.blog_ds_id )
 
 		blog = self.session.query( BlogsCreated ).one()
 		assert_that( blog.deleted, not_none() )
@@ -1032,7 +1047,7 @@ class TestBlogComments(AnalyticsTestBase):
 		comment_id = DEFAULT_INTID
 		my_comment = MockComment( CommentPost(), inReplyTo=CommentPost(), intid=comment_id )
 
-		db_blogs.create_blog_comment( test_user_ds_id, test_session_id, self.blog_id, my_comment )
+		db_blogs.create_blog_comment( test_user_ds_id, test_session_id, self.blog_ds_id, my_comment )
 
 		results = self.session.query( BlogCommentsCreated ).all()
 		assert_that( results, has_length( 1 ) )
@@ -1056,6 +1071,7 @@ class TestCourseViews(AnalyticsTestBase):
 	def setUp(self):
 		super( TestCourseViews, self ).setUp()
 		self.course_name='course1'
+		self.course_id = 1
 
 	def test_course_catalog_views(self):
 		results = self.session.query( CourseCatalogViews ).all()
@@ -1070,7 +1086,7 @@ class TestCourseViews(AnalyticsTestBase):
 		catalog_view = self.session.query( CourseCatalogViews ).one()
 		assert_that( catalog_view.session_id, is_( test_session_id ) )
 		assert_that( catalog_view.user_id, is_( 1 ) )
-		assert_that( catalog_view.course_id, is_( self.course_name ) )
+		assert_that( catalog_view.course_id, is_( self.course_id ) )
 		assert_that( catalog_view.time_length, is_( time_length ) )
 		assert_that( catalog_view.timestamp, not_none() )
 
@@ -1091,7 +1107,7 @@ class TestCourseViews(AnalyticsTestBase):
 		enrollment = self.session.query( CourseEnrollments ).one()
 		assert_that( enrollment.session_id, is_( test_session_id ) )
 		assert_that( enrollment.user_id, is_( 1 ) )
-		assert_that( enrollment.course_id, is_( self.course_name ) )
+		assert_that( enrollment.course_id, is_( self.course_id ) )
 		assert_that( enrollment.timestamp, not_none() )
 		assert_that( enrollment.type_id, is_( 1 ) )
 
@@ -1122,5 +1138,5 @@ class TestCourseViews(AnalyticsTestBase):
 		drop = self.session.query( CourseDrops ).one()
 		assert_that( drop.session_id, is_( test_session_id ) )
 		assert_that( drop.user_id, is_( 1 ) )
-		assert_that( drop.course_id, is_( self.course_name ) )
+		assert_that( drop.course_id, is_( self.course_id ) )
 		assert_that( drop.timestamp, not_none() )

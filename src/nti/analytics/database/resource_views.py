@@ -33,6 +33,7 @@ from nti.analytics.database.meta_mixins import ResourceViewMixin
 from nti.analytics.database.meta_mixins import TimeLengthMixin
 
 from nti.analytics.database.users import get_or_create_user
+from nti.analytics.database.courses import get_course_id
 
 
 # For meta-views into synthetic course info, we can special type the resource_id:
@@ -47,9 +48,6 @@ class CourseResourceViews(Base,ResourceViewMixin,TimeLengthMixin):
 	resource_view_id = Column('resource_view_id', Integer, Sequence( 'resource_view_id_seq' ), primary_key=True )
 
 
-# Would we query on these separate event types? Probably not.
-# If so, we may break them out into separate tables.
-# TODO Rewatch events? (kaltura player doesn't really have this right now; we could infer...)
 class VideoEvents(Base,ResourceViewMixin,TimeLengthMixin):
 	__tablename__ = 'VideoEvents'
 	video_event_type = Column('video_event_type', Enum( 'WATCH', 'SKIP' ), nullable=False )
@@ -70,7 +68,7 @@ def create_course_resource_view(user, nti_session, timestamp, course, context_pa
 	uid = user.user_id
 	sid = _sessionid.get_id( nti_session )
 	rid = _resourceid.get_id( resource )
-	course_id = _courseid.get_id( course )
+	course_id = get_course_id( db, course )
 	timestamp = timestamp_type( timestamp )
 	context_path = _get_context_path( context_path )
 
@@ -97,7 +95,7 @@ def create_video_event(	user,
 	uid = user.user_id
 	sid = _sessionid.get_id( nti_session )
 	vid = _resourceid.get_id( video_resource )
-	course_id = _courseid.get_id( course )
+	course_id = get_course_id( db, course )
 	timestamp = timestamp_type( timestamp )
 	context_path = _get_context_path( context_path )
 
