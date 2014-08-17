@@ -10,6 +10,8 @@ logger = __import__('logging').getLogger(__name__)
 
 from nti.ntiids import ntiids
 
+from nti.contenttypes.courses.interfaces import ICourseInstance
+
 from nti.analytics.interfaces import IVideoEvent
 from nti.analytics.interfaces import IBlogViewEvent
 from nti.analytics.interfaces import INoteViewEvent
@@ -31,7 +33,9 @@ def _get_object( ntiid ):
 	return ntiids.find_object_with_ntiid( ntiid )
 
 def _get_course( event ):
-	return _get_object( event.course )
+	result = _get_object( event.course )
+	# Course catalog views may resolve to catalog entries
+	return ICourseInstance( result )
 
 def _validate_analytics_event( event ):
 	""" Validate our events, sanitizing as we go. """

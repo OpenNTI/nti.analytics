@@ -46,3 +46,8 @@ def get_course_id( db, course ):
 	course = _get_or_create_course( db, course_ds_id )
 	return course.course_id
 
+def delete_course( course_ds_id ):
+	db = get_analytics_db()
+	found_course = db.session.query(Courses).filter( Courses.course_ds_id == course_ds_id ).first()
+	if found_course is not None:
+		found_course.course_ds_id = None

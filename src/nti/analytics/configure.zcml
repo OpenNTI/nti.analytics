@@ -27,6 +27,9 @@
 	<include package=".database" file="configure.zcml" />
 
 	<!-- subscribers -->
+	<subscriber handler=".users._entity_removed" />
+	<subscriber handler=".courses._course_removed" />
+
 	<subscriber handler=".boards._topic_added" />
 	<subscriber handler=".boards._topic_removed" />
 	<subscriber handler=".boards._topic_flagged" />

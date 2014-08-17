@@ -159,8 +159,8 @@ def _blog_rated( event ):
 def _blog_added( blog, event ):
 	_do_blog_added( blog, event )
 
-def _delete_blog( db, blog_id, timestamp ):
-	db.delete_blog( timestamp, blog_id )
+def _delete_blog( blog_id, timestamp ):
+	db_blogs.delete_blog( timestamp, blog_id )
 	logger.debug( 'Blog deleted (blog_id=%s)', blog_id )
 
 @component.adapter(	frm_interfaces.IPersonalBlogEntry,

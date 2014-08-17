@@ -24,7 +24,7 @@ from nti.analytics.interfaces import IAnalyticsQueueFactory
 QUEUE_NAME = '++etc++analytics++queue'
 
 def _execute_job( *args, **kwargs ):
-	""" Execute our job, pass it a kwarg analytics db. """
+	""" Execute our job. """
 	args = BList( args )
 	func = args.pop( 0 )
 
