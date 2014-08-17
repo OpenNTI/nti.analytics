@@ -13,6 +13,7 @@ import json
 import zope.intid
 
 from six import string_types
+from six import integer_types
 
 from sqlalchemy import Column
 from sqlalchemy import Integer
@@ -69,13 +70,13 @@ class AssignmentsTaken(Base,AssignmentMixin):
 	__tablename__ = 'AssignmentsTaken'
 	submission_id = Column('submission_id', Integer, nullable=True, index=True, autoincrement=False )
 
-	assignments_taken_id = Column('assignment_taken_id', Integer, Sequence( 'assignments_taken_seq' ),
+	assignment_taken_id = Column('assignment_taken_id', Integer, Sequence( 'assignments_taken_seq' ),
 								index=True, nullable=False, primary_key=True )
 
 class AssignmentSubmissionMixin(BaseTableMixin):
 	@declared_attr
-	def assignments_taken_id(cls):
-		return Column('assignments_taken_id', Integer, ForeignKey("AssignmentsTaken.assignment_taken_id"), nullable=False, index=True)
+	def assignment_taken_id(cls):
+		return Column('assignment_taken_id', Integer, ForeignKey("AssignmentsTaken.assignment_taken_id"), nullable=False, index=True)
 
 
 class DetailMixin(TimeLengthMixin):
@@ -196,6 +197,8 @@ def _get_grade( grade_value ):
 			result = float(grade_value.split()[0])
 		except ValueError:
 			pass
+	elif grade_value and isinstance( grade_value, ( integer_types, float ) ):
+		result = grade_value
 	return result
 
 def _get_self_assessment_id( db, submission_id ):
@@ -212,7 +215,7 @@ def create_self_assessment_taken(user, nti_session, timestamp, course, submissio
 	submission_id = _submissionid.get_id( submission )
 	self_assessment_id = _questionsetid.get_id( submission.questionSetId )
 	# We likely will not have a grader.
-	grader = _get_grader_id( db, submission )
+	grader = _get_grader_id( submission )
 	# TODO As a QAssessedQuestionSet. we will not have a duration.
 	# I don't believe the submission was saved; so we cannot get it back.
 	# We'd have to transfer it during adaptation perhaps.
@@ -249,7 +252,7 @@ def create_self_assessment_taken(user, nti_session, timestamp, course, submissio
 													time_length=time_length )
 			db.session.add( grade_details )
 
-def _get_grader_id( db, submission ):
+def _get_grader_id( submission ):
 	"""
 	Returns a grader id for the submission if one exists (otherwise None).
 	Currently, we have a one-to-one mapping between submission and grader.  That
@@ -290,7 +293,7 @@ def create_assignment_taken(user, nti_session, timestamp, course, submission ):
 									time_length=time_length )
 	db.session.add( new_object )
 	db.session.flush()
-	assignment_taken_id = new_object.assignments_taken_id
+	assignment_taken_id = new_object.assignment_taken_id
 
 	question_part_dict = dict()
 
@@ -327,7 +330,7 @@ def create_assignment_taken(user, nti_session, timestamp, course, submission ):
 		grade = graded_submission.grade
 		grade_num = _get_grade( grade )
 
-		grader = _get_grader_id( db, submission )
+		grader = _get_grader_id( submission )
 
 		graded = AssignmentGrades( 	user_id=uid,
 									session_id=sid,

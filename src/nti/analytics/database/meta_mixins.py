@@ -77,7 +77,7 @@ class RatingsMixin(FavoriteMixin):
 
 # Time length in seconds
 class TimeLengthMixin(object):
-	time_length = Column('time_length', Integer)
+	time_length = Column('time_length', Integer, nullable=True )
 
 class CommentsMixin(BaseTableMixin,DeletedMixin):
 	# comment_id should be the DS intid
