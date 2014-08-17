@@ -413,6 +413,7 @@ class TestSocial(AnalyticsTestBase):
 		assert_that( fl.timestamp, not_none() )
 		assert_that( fl.friends_list_id, is_( test_fl_id ) )
 		assert_that( fl.deleted, not_none() )
+		assert_that( fl.friends_list_ds_id, none() )
 
 	def test_contacts(self):
 		results = self.session.query( ContactsAdded ).all()
@@ -504,6 +505,7 @@ class TestSocial(AnalyticsTestBase):
 		blog = self.session.query( BlogsCreated ).one()
 		assert_that( blog.blog_id, is_( new_blog_id ) )
 		assert_that( blog.deleted, not_none() )
+		assert_that( blog.blog_ds_id, none() )
 
 class TestCourseResources(AnalyticsTestBase):
 
@@ -665,6 +667,7 @@ class TestCourseResources(AnalyticsTestBase):
 		highlight = self.session.query(HighlightsCreated).one()
 		assert_that( highlight.highlight_id, is_( highlight_id ) )
 		assert_that( highlight.deleted, not_none() )
+		assert_that( highlight.highlight_ds_id, none() )
 
 class TestForums(AnalyticsTestBase):
 
@@ -704,6 +707,7 @@ class TestForums(AnalyticsTestBase):
 		assert_that( forum.forum_id, is_( self.forum_id ) )
 		assert_that( forum.forum_ds_id, none() )
 		assert_that( forum.deleted, not_none() )
+		assert_that( forum.forum_ds_id, none() )
 
 	def test_chain_delete(self):
 		forum = MockForum( None, intid=self.forum_ds_id )
@@ -753,6 +757,7 @@ class TestForums(AnalyticsTestBase):
 		results = self.session.query( TopicsCreated ).all()
 		assert_that( results, has_length( 1 ) )
 		assert_that( results[0].deleted, not_none() )
+		assert_that( results[0].topic_ds_id, none() )
 
 		results = self.session.query( ForumCommentsCreated ).all()
 		assert_that( results, has_length( 2 ) )
@@ -824,6 +829,7 @@ class TestTopics(AnalyticsTestBase):
 		topic = self.session.query(TopicsCreated).one()
 		assert_that( topic.topic_id, is_( topic_id ) )
 		assert_that( topic.deleted, not_none() )
+		assert_that( topic.topic_ds_id, none() )
 
 class TestForumComments(AnalyticsTestBase):
 
