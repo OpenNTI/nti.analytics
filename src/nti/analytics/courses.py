@@ -26,5 +26,5 @@ def _delete_course( course_id ):
 
 @component.adapter( ICourseInstance, IIntIdRemovedEvent )
 def _course_removed( entity, event ):
-	course_ds_id = _courseid.get_id( entity )
+	course_id = _courseid.get_id( entity )
 	process_event( _delete_course, course_id=course_id )
