@@ -33,9 +33,7 @@ from pyramid.location import lineage
 import zope.intid
 from zope import component
 
-from . import create_job
-from . import get_job_queue
-
+from nti.async import create_job
 from six import integer_types
 
 from nti.analytics.identifier import SessionId
@@ -83,7 +81,7 @@ def get_creator(obj):
         return None
 
 # Disable due to db thrashing.  We need a read-only glimpse into sessions.  Since we have
-# events, maybe we just grab from db.
+# the events, maybe we just grab from db.
 
 # def get_nti_session( user ):
 # 	""" Attempt to get the current session for the user, returning None if none found. """
@@ -188,7 +186,7 @@ def get_course_by_ntiid(name):
 				return course
 	raise TypeError( "No course found for path (%s)" % path )
 
-def process_event( object_op, obj=None, **kwargs ):
+def process_event( get_job, object_op, obj=None, **kwargs ):
 	effective_kwargs = kwargs
 	if obj is not None:
 		# If we have an object, grab its ID by default.
@@ -196,7 +194,7 @@ def process_event( object_op, obj=None, **kwargs ):
 		effective_kwargs = dict( kwargs )
 		effective_kwargs['oid'] = oid
 
-	queue = get_job_queue()
+	queue = get_job()
 	job = create_job( object_op, **effective_kwargs )
 	queue.put( job )
 

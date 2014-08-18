@@ -15,7 +15,7 @@ from zope import component
 
 from nti.async.utils.processor import Processor
 
-from nti.analytics import QUEUE_NAME
+from nti.analytics import QUEUE_NAMES
 from nti.analytics import interfaces as analytic_interfaces
 
 
@@ -33,7 +33,7 @@ class Constructor(Processor):
 
 	def process_args(self, args):
 		setattr(args, 'library', True)  # load library
-		setattr(args, 'name', QUEUE_NAME)  # set queue name
+		setattr(args, 'queue_names', QUEUE_NAMES)
 		super(Constructor, self).process_args(args)
 
 def main():

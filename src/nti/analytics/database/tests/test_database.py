@@ -228,6 +228,13 @@ class TestSocial(AnalyticsTestBase):
 		assert_that( new_chat.timestamp, not_none() )
 		assert_that( new_chat.chat_id, is_( test_chat_id ) )
 
+		# Update chat
+		new_chat = MockParent( None, intid=test_chat_ds_id )
+		new_occupants = ( 'quinton', 'elliot', 'alice', test_user_ds_id )
+		db_social.update_chat( datetime.now(), new_chat, new_occupants )
+		members = self.session.query(ChatsJoined).all()
+		assert_that( members, has_length( 4 ) )
+
 
 	def test_dfl(self):
 		results = self.session.query( DynamicFriendsListsCreated ).all()

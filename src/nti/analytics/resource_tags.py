@@ -36,6 +36,14 @@ from nti.analytics.identifier import HighlightId
 _noteid = NoteId()
 _highlightid = HighlightId()
 
+from nti.analytics import get_factory
+from nti.analytics import TAGS_ANALYTICS
+
+def _get_job_queue():
+	factory = get_factory()
+	return factory.get_queue( TAGS_ANALYTICS )
+
+
 def _get_course( obj ):
 	__traceback_info__ = obj.containerId
 	result = get_course_by_ntiid( obj.containerId )
@@ -80,7 +88,7 @@ def _note_flagged( event ):
 	obj = event.object
 	state = True if nti_interfaces.IObjectFlaggedEvent.providedBy( event ) else False
 	if _is_note( obj ):
-		process_event( _flag_note, obj, state=state )
+		process_event( _get_job_queue, _flag_note, obj, state=state )
 
 @component.adapter( IObjectRatedEvent )
 def _note_rated( event ):
@@ -88,7 +96,7 @@ def _note_rated( event ):
 	if _is_note( obj ):
 		is_favorite, delta = get_rating_from_event( event )
 		to_call = _favorite_note if is_favorite else _like_note
-		process_event( to_call, obj, delta=delta )
+		process_event( _get_job_queue, to_call, obj, delta=delta )
 
 @component.adapter(	nti_interfaces.INote,
 					intid_interfaces.IIntIdAddedEvent )
@@ -96,7 +104,7 @@ def _note_added( obj, event ):
 	if _is_note( obj ):
 		user = get_creator( obj )
 		nti_session = get_nti_session_id( user )
-		process_event( _add_note, obj, nti_session=nti_session )
+		process_event( _get_job_queue, _add_note, obj, nti_session=nti_session )
 
 @component.adapter(	nti_interfaces.INote,
 					intid_interfaces.IIntIdRemovedEvent )
@@ -104,7 +112,7 @@ def _note_removed( obj, event ):
 	if _is_note( obj ):
 		timestamp = datetime.utcnow()
 		note_id = _noteid.get_id( obj )
-		process_event( _remove_note, note_id=note_id, timestamp=timestamp )
+		process_event( _get_job_queue, _remove_note, note_id=note_id, timestamp=timestamp )
 
 
 
@@ -130,7 +138,7 @@ def _highlight_added( obj, event ):
 	if _is_highlight( obj ):
 		user = get_creator( obj )
 		nti_session = get_nti_session_id( user )
-		process_event( _add_highlight, obj, nti_session=nti_session )
+		process_event( _get_job_queue, _add_highlight, obj, nti_session=nti_session )
 
 @component.adapter(	nti_interfaces.IHighlight,
 					intid_interfaces.IIntIdRemovedEvent )
@@ -138,7 +146,7 @@ def _highlight_removed( obj, event ):
 	if _is_highlight( obj ):
 		timestamp = datetime.utcnow()
 		highlight_id = _highlightid.get_id( obj )
-		process_event( _remove_highlight, highlight_id=highlight_id, timestamp=timestamp )
+		process_event( _get_job_queue, _remove_highlight, highlight_id=highlight_id, timestamp=timestamp )
 
 component.moduleProvides(analytic_interfaces.IObjectProcessor)
 
@@ -156,9 +164,9 @@ def _is_highlight( obj ):
 def init( obj ):
 	result = True
 	if 	_is_note( obj ):
-		process_event( _add_note, obj )
+		process_event( _get_job_queue, _add_note, obj )
 	elif _is_highlight( obj ):
-		process_event( _add_highlight, obj )
+		process_event( _get_job_queue, _add_highlight, obj )
 	else:
 		result = False
 	return result

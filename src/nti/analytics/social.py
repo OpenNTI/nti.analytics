@@ -35,6 +35,13 @@ from nti.analytics.identifier import DFLId
 _dflid = DFLId()
 _flid = FriendsListId()
 
+from nti.analytics import get_factory
+from nti.analytics import SOCIAL_ANALYTICS
+
+def _get_job_queue():
+	factory = get_factory()
+	return factory.get_queue( SOCIAL_ANALYTICS )
+
 def _is_friends_list( obj ):
 	return 	nti_interfaces.IFriendsList.providedBy( obj ) \
 		and not nti_interfaces.IDynamicSharingTargetFriendsList.providedBy( obj ) \
@@ -55,6 +62,7 @@ def _add_meeting( oid, nti_session=None ):
 
 		timestamp = get_created_timestamp( new_chat )
 		users_joined = getattr( new_chat, 'historical_occupant_names', ())
+		from IPython.core.debugger import Tracer;Tracer()()
 		count = 0
 		for user_joined in users_joined:
 			count += 1
@@ -63,17 +71,24 @@ def _add_meeting( oid, nti_session=None ):
 				db_social.chat_joined( user_joined, nti_session, timestamp, new_chat )
 		logger.debug( "Meeting joined by users (count=%s)", count )
 
+def _update_meeting( oid, timestamp=None ):
+	chat = ntiids.find_object_with_ntiid(oid)
+	if chat is not None:
+		current_members = getattr( chat, 'historical_occupant_names', ())
+		new_members = (get_entity(x) for x in current_members)
+		count = db_social.update_chat( timestamp, chat, new_members )
+		logger.debug( "Meeting joined by new users (count=%s)", count )
+
 @component.adapter(chat_interfaces.IMeeting, intid_interfaces.IIntIdAddedEvent)
 def _meeting_created(meeting, event):
 	creator = get_creator( meeting )
 	nti_session = get_nti_session_id( creator )
-	process_event( _add_meeting, meeting, nti_session=nti_session )
+	process_event( _get_job_queue, _add_meeting, meeting, nti_session=nti_session )
 
 @component.adapter( chat_interfaces.IMeeting, lce_interfaces.IObjectModifiedEvent )
 def _meeting_joined( meeting, event ):
-	# I think the only chat participants occur on meeting creation time.
-	# This will remain unimplemented until that changes.
-	pass
+	timestamp = datetime.utcnow()
+	process_event( _get_job_queue, _update_meeting, meeting, timestamp=timestamp )
 
 # Contacts
 def _add_contacts( oid, timestamp=None, nti_session=None ):
@@ -124,7 +139,7 @@ def _friendslist_added(obj, event):
 	if _is_friends_list( obj ):
 		user = get_creator( obj )
 		nti_session = get_nti_session_id( user )
-		process_event( _add_friends_list, obj, nti_session=nti_session )
+		process_event( _get_job_queue, _add_friends_list, obj, nti_session=nti_session )
 
 @component.adapter(nti_interfaces.IFriendsList, lce_interfaces.IObjectModifiedEvent)
 def _friendslist_modified(obj, event):
@@ -132,14 +147,14 @@ def _friendslist_modified(obj, event):
 		timestamp = datetime.utcnow()
 		user = get_creator( obj )
 		nti_session = get_nti_session_id( user )
-		process_event( _update_friends_list, obj, nti_session=nti_session, timestamp=timestamp )
+		process_event( _get_job_queue, _update_friends_list, obj, nti_session=nti_session, timestamp=timestamp )
 
 @component.adapter(nti_interfaces.IFriendsList, intid_interfaces.IIntIdRemovedEvent)
 def _friendslist_deleted(obj, event):
 	if _is_friends_list( obj ):
 		id = _flid.get_id( obj )
 		timestamp = datetime.utcnow()
-		process_event( _remove_friends_list, friends_list_id=id, timestamp=timestamp )
+		process_event( _get_job_queue, _remove_friends_list, friends_list_id=id, timestamp=timestamp )
 
 
 # DFL
@@ -183,14 +198,14 @@ def _remove_dfl_member( source, target, username=None, timestamp=None, nti_sessi
 def _dfl_added(obj, event):
 	user = get_creator( obj )
 	nti_session = get_nti_session_id( user )
-	process_event( _add_dfl, obj, nti_session=nti_session )
+	process_event( _get_job_queue, _add_dfl, obj, nti_session=nti_session )
 
 @component.adapter(nti_interfaces.IDynamicSharingTargetFriendsList,
 				  intid_interfaces.IIntIdRemovedEvent)
 def _dfl_deleted(obj, event):
 	timestamp = datetime.utcnow()
 	id = _dflid.get_id( obj )
-	process_event( _remove_dfl, dfl_id=id, timestamp=timestamp )
+	process_event( _get_job_queue, _remove_dfl, dfl_id=id, timestamp=timestamp )
 
 def _handle_dfl_membership_event( event, to_call ):
 	timestamp = datetime.utcnow()
@@ -203,7 +218,8 @@ def _handle_dfl_membership_event( event, to_call ):
 	target = getattr(target, 'username', target)
 
 	nti_session = get_nti_session_id( get_entity( source ) )
-	process_event( 	to_call,
+	process_event( _get_job_queue,
+					to_call,
 					source=source,
 					target=target,
 					timestamp=timestamp,
@@ -222,13 +238,13 @@ component.moduleProvides(analytic_interfaces.IObjectProcessor)
 def init( obj ):
 	result = True
 	if chat_interfaces.IMeeting.providedBy(obj):
-		process_event( _add_meeting, obj )
+		process_event( _get_job_queue, _add_meeting, obj )
 	elif nti_interfaces.IDynamicSharingTargetFriendsList.providedBy( obj ):
-		process_event( _add_dfl, obj )
+		process_event( _get_job_queue, _add_dfl, obj )
 	elif _is_friends_list( obj ):
-		process_event( _add_friends_list, obj )
+		process_event( _get_job_queue, _add_friends_list, obj )
 	elif nti_interfaces.IUser.providedBy(obj):
-		process_event( _add_contacts, obj )
+		process_event( _get_job_queue, _add_contacts, obj )
 	else:
 		result = False
 	return result

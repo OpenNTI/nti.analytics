@@ -17,24 +17,41 @@ from zc.blist import BList
 
 from nti.dataserver import interfaces as nti_interfaces
 
-from nti.async import create_job as create_job_async
-
 from nti.analytics.interfaces import IAnalyticsQueueFactory
 
 QUEUE_NAME = '++etc++analytics++queue'
 
-def _execute_job( *args, **kwargs ):
-	""" Execute our job. """
-	args = BList( args )
-	func = args.pop( 0 )
+SOCIAL_ANALYTICS = QUEUE_NAME + '++social'
+BLOGS_ANALYTICS = QUEUE_NAME + '++blog'
+BOARDS_ANALYTICS = QUEUE_NAME + '++boards'
+ASSESSMENTS_ANALYTICS = QUEUE_NAME + '++assessments'
+ENROLL_ANALYTICS = QUEUE_NAME + '++enroll'
+TAGS_ANALYTICS = QUEUE_NAME + '++tags'
+# This one needs more buckets
+RESOURCE_VIEW_ANALYTICS = QUEUE_NAME + '++resource++views'
+VIDEO_VIEW_ANALYTICS = QUEUE_NAME + '++video++views'
+CATALOG_VIEW_ANALYTICS = QUEUE_NAME + '++catalog++views'
+TOPIC_VIEW_ANALYTICS = QUEUE_NAME + '++topic++views'
+BLOG_VIEW_ANALYTICS = QUEUE_NAME + '++blog++views'
+NOTE_VIEW_ANALYTICS = QUEUE_NAME + '++note++views'
 
-	func( *args, **kwargs )
+SESSIONS_ANALYTICS = QUEUE_NAME + '++sessions'
+DELETE_ANALYTICS = QUEUE_NAME + '++delete'
 
-def create_job(func, *args, **kwargs):
-	args = [func] + list(args)
-	return create_job_async( _execute_job, *args, **kwargs )
+QUEUE_NAMES = [ SOCIAL_ANALYTICS,
+				BLOGS_ANALYTICS,
+				BOARDS_ANALYTICS,
+				ASSESSMENTS_ANALYTICS,
+				ENROLL_ANALYTICS,
+				TAGS_ANALYTICS,
+				RESOURCE_VIEW_ANALYTICS,
+				VIDEO_VIEW_ANALYTICS,
+				CATALOG_VIEW_ANALYTICS,
+				TOPIC_VIEW_ANALYTICS,
+				NOTE_VIEW_ANALYTICS,
+				BLOG_VIEW_ANALYTICS,
+				SESSIONS_ANALYTICS,
+				DELETE_ANALYTICS ]
 
-def get_job_queue():
-	factory = component.getUtility( IAnalyticsQueueFactory )
-	return factory.get_queue()
-
+def get_factory():
+	return component.getUtility( IAnalyticsQueueFactory )

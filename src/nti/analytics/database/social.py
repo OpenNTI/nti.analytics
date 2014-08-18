@@ -171,6 +171,31 @@ def chat_joined(user, nti_session, timestamp, chat):
 	except IntegrityError:
 		logger.debug( 'User (%s) already exists in chat (%s)', uid, chat )
 
+def _get_chat_members( db, chat_id ):
+	results = db.session.query(ChatsJoined).filter(
+								ChatsJoined.chat_id == chat_id ).all()
+	return results
+
+def update_chat( timestamp, chat, new_members ):
+	db = get_analytics_db()
+	timestamp = timestamp_type( timestamp )
+	chat_ds_id = _chatid.get_id( chat )
+	chat_id = _get_chat_id( db, chat_ds_id )
+
+	old_members = _get_chat_members( db, chat_id )
+	old_members = set( [x.user_id for x in old_members] )
+	members_to_add, _ = _find_members( db, new_members, old_members )
+
+	for new_member in members_to_add:
+		new_object = ChatsJoined( user_id=new_member,
+								session_id=None,
+								timestamp=timestamp,
+								chat_id=chat_id )
+
+		db.session.add( new_object )
+
+	return len( members_to_add )
+
 # DFLs
 def _get_dfl_id( db, dfl_ds_id ):
 	dfl = db.session.query(DynamicFriendsListsCreated).filter( DynamicFriendsListsCreated.dfl_ds_id == dfl_ds_id ).first()
@@ -279,10 +304,15 @@ def _delete_friend_list_member( db, friends_list_id, target_id ):
 																FriendsListsMemberAdded.target_id==target_id ).first()
 	db.session.delete( friend )
 
-def _find_members( db, friends_list, members ):
-	""" For a friends_list, return a tuple of members to add/remove. """
+def _find_friends_list_members( db, user_list, members ):
+	""" For a user_list, return a tuple of members to add/remove. """
 	members = set( [ x.target_id for x in members if x ] )
-	new_members = set( [ get_or_create_user( x ).user_id for x in friends_list if x] )
+	return _find_members( db, user_list, members )
+
+def _find_members( db, user_list, members ):
+	""" For a user_list, return a tuple of members to add/remove. """
+	members = set( members )
+	new_members = set( [ get_or_create_user( x ).user_id for x in user_list if x] )
 
 	members_to_add = new_members - members
 	members_to_remove = members - new_members
@@ -313,10 +343,8 @@ def update_contacts( user, nti_session, timestamp, friends_list ):
 	timestamp = timestamp_type( timestamp )
 
 	members = _get_contacts( db, uid )
-	# This works because contacts are friends_list, and both
-	# 'member' sets have 'target_id' columns we key off of.
 	members_to_add, members_to_remove \
-		= _find_members( db, friends_list, members )
+		= _find_friends_list_members( db, friends_list, members )
 
 	for new_member in members_to_add:
 		new_object = ContactsAdded( user_id=uid,
@@ -341,7 +369,7 @@ def update_friends_list( user, nti_session, timestamp, friends_list ):
 	friends_list_id = _get_friends_list_id( db, friends_list_ds_id )
 	members = _get_friends_list_members( db, friends_list_id )
 	members_to_add, members_to_remove \
-		= _find_members( db, friends_list, members )
+		= _find_friends_list_members( db, friends_list, members )
 
 	user = get_or_create_user(user )
 	uid = user.user_id

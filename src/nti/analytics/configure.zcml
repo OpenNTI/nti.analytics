@@ -58,6 +58,7 @@
 	<subscriber handler=".social._stop_dynamic_membership_event" />
 
 	<subscriber handler=".social._meeting_created" />
+	<subscriber handler=".social._meeting_joined" />
 
 	<subscriber handler=".resource_tags._note_added" />
 	<subscriber handler=".resource_tags._note_removed" />
@@ -65,9 +66,6 @@
 	<subscriber handler=".resource_tags._highlight_removed" />
 	<subscriber handler=".resource_tags._note_flagged" />
 	<subscriber handler=".resource_tags._note_rated" />
-
-	<subscriber handler=".sessions._session_created" />
-	<subscriber handler=".sessions._session_destroyed" />
 
 	<subscriber handler=".assessments._grade_added" />
 	<subscriber handler=".assessments._grade_modified" />
@@ -81,13 +79,18 @@
 	<subscriber handler=".enrollments._enrolled" />
 	<subscriber handler=".enrollments._dropped" />
 
+<!-- TODO disable until we have this figured out
+	<subscriber handler=".sessions._session_created" />
+	<subscriber handler=".sessions._session_destroyed" />
+	<utility component=".sessions" provides=".interfaces.IObjectProcessor" name="sessions"/>
+-->
+
 	<!-- utils -->
 
 	<utility component=".blogs" provides=".interfaces.IObjectProcessor" name="blogs"/>
 	<utility component=".boards" provides=".interfaces.IObjectProcessor" name="boards"/>
 	<utility component=".social" provides=".interfaces.IObjectProcessor" name="social"/>
 	<utility component=".resource_tags" provides=".interfaces.IObjectProcessor" name="resource_tags"/>
-	<utility component=".sessions" provides=".interfaces.IObjectProcessor" name="sessions"/>
 	<utility component=".assessments" provides=".interfaces.IObjectProcessor" name="assessments"/>
 	<utility component=".enrollments" provides=".interfaces.IObjectProcessor" name="enrollments"/>
 
@@ -131,7 +134,8 @@
 
 	<!-- Inline jobs for dev -->
 	<configure zcml:condition="have devmode">
-		<ana:registerImmediateProcessingQueue />
+		<!-- FIXME JZ LOCAL -->
+		<ana:registerProcessingQueue />
 	</configure>
 
 	<configure zcml:condition="not-have devmode">

@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*
 """
 $Id$
@@ -28,6 +27,13 @@ from nti.analytics import interfaces as analytic_interfaces
 # 2. Multiple created per *actual* session (though this may change)
 # 3. Tied to #2, picking one of the open sessions for a user is arbitrary.
 
+from nti.analytics import get_factory
+from nti.analytics import SESSIONS_ANALYTICS
+
+def _get_job_queue():
+	factory = get_factory()
+	return factory.get_queue( SESSIONS_ANALYTICS )
+
 def _add_session( user, nti_session, timestamp, ip_addr=None, platform=None, version=None ):
 	if nti_session:
 		user = get_entity( user )
@@ -43,7 +49,7 @@ def _process_session_created( nti_session ):
 	request = get_current_request()
 	ip_addr = getattr( request, 'remote_addr', None )
 	# TODO we don't have some of these attributes available to us (platform, version).
-	process_event( _add_session, nti_session=session_id, user=user, timestamp=timestamp, ip_addr=ip_addr )
+	process_event( _get_job_queue, _add_session, nti_session=session_id, user=user, timestamp=timestamp, ip_addr=ip_addr )
 
 @component.adapter( sio_interfaces.ISocketSession, sio_interfaces.ISocketSessionConnectedEvent )
 def _session_created( nti_session, event ):
@@ -60,7 +66,7 @@ def _session_destroyed( nti_session, event ):
 	session_id = get_id_for_session( nti_session )
 	user = getattr( nti_session, 'owner', None )
 	timestamp = datetime.utcnow()
-	process_event( _remove_session, nti_session=session_id, user=user, timestamp=timestamp )
+	process_event( _get_job_queue, _remove_session, nti_session=session_id, user=user, timestamp=timestamp )
 
 component.moduleProvides(analytic_interfaces.IObjectProcessor)
 

@@ -28,7 +28,13 @@ from nti.analytics.database import enrollments as db_enrollments
 from .common import get_nti_session_id
 from .common import process_event
 from .common import get_entity
-from .common import process_event
+
+from nti.analytics import get_factory
+from nti.analytics import ENROLL_ANALYTICS
+
+def _get_job_queue():
+	factory = get_factory()
+	return factory.get_queue( ENROLL_ANALYTICS )
 
 def _add_drop( oid, username, scope, nti_session=None, timestamp=None ):
 	course = ntiids.find_object_with_ntiid( oid )
@@ -63,7 +69,8 @@ def _handle_event( record, to_call ):
 	scope = record.Scope
 
 	nti_session = get_nti_session_id( get_entity( user ) )
-	process_event( 	to_call,
+	process_event( _get_job_queue,
+					to_call,
 					course,
 					username=username,
 					scope=scope,
@@ -85,7 +92,7 @@ def _user_enrollments( user ):
 		course = enrollment.CourseInstance
 		username = user.username
 		scope = enrollment.Scope
-		process_event( _add_enrollment, course, username=username, scope=scope )
+		process_event( _get_job_queue, _add_enrollment, course, username=username, scope=scope )
 
 component.moduleProvides(analytics_interfaces.IObjectProcessor)
 def init( obj ):

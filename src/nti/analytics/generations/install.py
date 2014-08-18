@@ -9,16 +9,16 @@ __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
-generation = 1
+generation = 2
 
 from zope.generations.generations import SchemaManager
 
 import zope.intid
 
 from nti.async import queue
-from nti.async import interfaces as asyc_interfaces
+from nti.async.interfaces import IQueue
 
-from .. import QUEUE_NAME
+from nti.analytics import QUEUE_NAMES
 
 class _AnalyticsSchemaManager(SchemaManager):
 	"""
@@ -36,14 +36,14 @@ def install_queue(context):
 	conn = context.connection
 	root = conn.root()
 
-	dataserver_folder = root['nti.dataserver']
-	lsm = dataserver_folder.getSiteManager()
+	ds_folder = root['nti.dataserver']
+	lsm = ds_folder.getSiteManager()
 	intids = lsm.getUtility(zope.intid.IIntIds)
 
-	result = queue.Queue()
-	result.__parent__ = dataserver_folder
-	result.__name__ = QUEUE_NAME
-	intids.register( result )
-	lsm.registerUtility( result, provided=asyc_interfaces.IQueue, name=QUEUE_NAME )
-	return result
+	for new_queue_name in QUEUE_NAMES:
+		result = queue.Queue()
+		result.__parent__ = ds_folder
+		result.__name__ = new_queue_name
+		intids.register( result )
+		lsm.registerUtility( result, provided=IQueue, name=new_queue_name )
 

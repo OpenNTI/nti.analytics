@@ -29,6 +29,14 @@ from nti.analytics.database import enrollments as db_enrollments
 from nti.analytics.database import boards as db_boards
 from nti.analytics.database import blogs as db_blogs
 
+from nti.analytics import get_factory
+from nti.analytics import RESOURCE_VIEW_ANALYTICS
+from nti.analytics import VIDEO_VIEW_ANALYTICS
+from nti.analytics import CATALOG_VIEW_ANALYTICS
+from nti.analytics import TOPIC_VIEW_ANALYTICS
+from nti.analytics import BLOG_VIEW_ANALYTICS
+from nti.analytics import NOTE_VIEW_ANALYTICS
+
 def _get_object( ntiid ):
 	return ntiids.find_object_with_ntiid( ntiid )
 
@@ -201,6 +209,30 @@ def _add_video_event( event, nti_session=None ):
 					event.video_end_time, event.time_length )
 
 
+def _get_resource_queue():
+	factory = get_factory()
+	return factory.get_queue( RESOURCE_VIEW_ANALYTICS )
+
+def _get_video_queue():
+	factory = get_factory()
+	return factory.get_queue( VIDEO_VIEW_ANALYTICS )
+
+def _get_catalog_queue():
+	factory = get_factory()
+	return factory.get_queue( CATALOG_VIEW_ANALYTICS )
+
+def _get_topic_queue():
+	factory = get_factory()
+	return factory.get_queue( TOPIC_VIEW_ANALYTICS )
+
+def _get_blog_queue():
+	factory = get_factory()
+	return factory.get_queue( BLOG_VIEW_ANALYTICS )
+
+def _get_note_queue():
+	factory = get_factory()
+	return factory.get_queue( NOTE_VIEW_ANALYTICS )
+
 def handle_events( batch_events ):
 
 	for event in batch_events:
@@ -213,17 +245,17 @@ def handle_events( batch_events ):
 		nti_session = get_nti_session_id( user )
 
 		if INoteViewEvent.providedBy( event ):
-			process_event( _add_note_event, event=event, nti_session=nti_session )
+			process_event( _get_note_queue, _add_note_event, event=event, nti_session=nti_session )
 		elif IBlogViewEvent.providedBy( event ):
-			process_event( _add_blog_event, event=event, nti_session=nti_session )
+			process_event( _get_blog_queue, _add_blog_event, event=event, nti_session=nti_session )
 		elif ITopicViewEvent.providedBy( event ):
-			process_event( _add_topic_event, event=event, nti_session=nti_session )
+			process_event( _get_topic_queue, _add_topic_event, event=event, nti_session=nti_session )
 		elif IVideoEvent.providedBy( event ):
-			process_event( _add_video_event, event=event, nti_session=nti_session )
+			process_event( _get_video_queue, _add_video_event, event=event, nti_session=nti_session )
 		elif IResourceEvent.providedBy( event ):
-			process_event( _add_resource_event, event=event, nti_session=nti_session )
+			process_event( _get_resource_queue, _add_resource_event, event=event, nti_session=nti_session )
 		elif ICourseCatalogViewEvent.providedBy( event ):
-			process_event( _add_catalog_event, event=event, nti_session=nti_session )
+			process_event( _get_catalog_queue, _add_catalog_event, event=event, nti_session=nti_session )
 	# If we validated early, we could return something meaningful.
 	# But we'd have to handle all validation exceptions as to not lose the valid
 	# events. The nti.async.processor does this and at least drops the bad

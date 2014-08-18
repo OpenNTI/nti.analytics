@@ -41,6 +41,13 @@ _commentid = CommentId()
 _topicid = TopicId()
 _forumid = ForumId()
 
+from nti.analytics import get_factory
+from nti.analytics import BOARDS_ANALYTICS
+
+def _get_job_queue():
+	factory = get_factory()
+	return factory.get_queue( BOARDS_ANALYTICS )
+
 def get_topics_created_for_user( *args, **kwargs ):
 	return db_boards.get_topics_created_for_user( *args, **kwargs  )
 
@@ -103,7 +110,7 @@ def _add_general_forum_comment(comment, event):
 	if _is_forum_comment( comment ):
 		user = get_creator( comment )
 		nti_session = get_nti_session_id( user )
-		process_event( _add_comment, comment, nti_session=nti_session )
+		process_event( _get_job_queue, _add_comment, comment, nti_session=nti_session )
 
 @component.adapter(frm_interfaces.IGeneralForumComment,
 				   lce_interfaces.IObjectModifiedEvent)
@@ -112,7 +119,7 @@ def _modify_general_forum_comment(comment, event):
 		and nti_interfaces.IDeletedObjectPlaceholder.providedBy( comment ):
 			timestamp = datetime.utcnow()
 			comment_id = _commentid.get_id( comment )
-			process_event( _remove_comment, comment_id=comment_id, timestamp=timestamp )
+			process_event( _get_job_queue, _remove_comment, comment_id=comment_id, timestamp=timestamp )
 
 
 
@@ -155,9 +162,9 @@ def _topic_flagged( event ):
 	obj = event.object
 	state = True if nti_interfaces.IObjectFlaggedEvent.providedBy( event ) else False
 	if _is_topic( obj ):
-		process_event( _flag_topic, obj, state=state )
+		process_event( _get_job_queue, _flag_topic, obj, state=state )
 	elif _is_forum_comment( obj ):
-		process_event( _flag_comment, obj, state=state )
+		process_event( _get_job_queue, _flag_comment, obj, state=state )
 
 @component.adapter( IObjectRatedEvent )
 def _topic_rated( event ):
@@ -165,25 +172,25 @@ def _topic_rated( event ):
 	if _is_topic( obj ):
 		is_favorite, delta = get_rating_from_event( event )
 		to_call = _favorite_topic if is_favorite else _like_topic
-		process_event( to_call, obj, delta=delta )
+		process_event( _get_job_queue, to_call, obj, delta=delta )
 	elif _is_forum_comment( obj ):
 		is_favorite, delta = get_rating_from_event( event )
 		to_call = _favorite_comment if is_favorite else _like_comment
-		process_event( to_call, obj, delta=delta )
+		process_event( _get_job_queue, to_call, obj, delta=delta )
 
 @component.adapter( frm_interfaces.ITopic, intid_interfaces.IIntIdAddedEvent )
 def _topic_added( topic, event ):
 	if _is_topic( topic ):
 		user = get_creator( topic )
 		nti_session = get_nti_session_id( user )
-		process_event( _add_topic, topic, nti_session=nti_session )
+		process_event( _get_job_queue, _add_topic, topic, nti_session=nti_session )
 
 @component.adapter( frm_interfaces.ITopic, intid_interfaces.IIntIdRemovedEvent )
 def _topic_removed( topic, event ):
 	if _is_topic( topic ):
 		timestamp = datetime.utcnow()
 		topic_id = _topicid.get_id( topic )
-		process_event( _remove_topic, topic_id=topic_id, timestamp=timestamp )
+		process_event( _get_job_queue, _remove_topic, topic_id=topic_id, timestamp=timestamp )
 
 
 
@@ -208,25 +215,25 @@ def _add_forum( oid, nti_session=None ):
 def _forum_added( forum, event ):
 	user = get_creator( forum )
 	nti_session = get_nti_session_id( user )
-	process_event( _add_forum, forum, nti_session=nti_session )
+	process_event( _get_job_queue, _add_forum, forum, nti_session=nti_session )
 
 @component.adapter( frm_interfaces.IForum, intid_interfaces.IIntIdRemovedEvent )
 def _forum_removed( forum, event ):
 	timestamp = datetime.utcnow()
 	timestamp = get_deleted_time( forum )
 	forum_id = _forumid.get_id( forum )
-	process_event( _remove_forum, forum_id=forum_id, timestamp=timestamp )
+	process_event( _get_job_queue, _remove_forum, forum_id=forum_id, timestamp=timestamp )
 
 component.moduleProvides(analytic_interfaces.IObjectProcessor)
 
 def init( obj ):
 	result = True
 	if frm_interfaces.IForum.providedBy(obj):
-		process_event( _add_forum, obj )
+		process_event( _get_job_queue, _add_forum, obj )
 	elif _is_topic( obj ):
-		process_event( _add_topic, obj )
+		process_event( _get_job_queue, _add_topic, obj )
 	elif _is_forum_comment( obj ):
-		process_event( _add_comment, obj )
+		process_event( _get_job_queue, _add_comment, obj )
 	else:
 		result = False
 

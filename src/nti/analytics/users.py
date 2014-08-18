@@ -20,6 +20,13 @@ from nti.analytics.database import users as db_users
 from nti.analytics.identifier import UserId
 _userid = UserId()
 
+from nti.analytics import get_factory
+from nti.analytics import DELETE_ANALYTICS
+
+def _get_job_queue():
+	factory = get_factory()
+	return factory.get_queue( DELETE_ANALYTICS )
+
 def _delete_entity( entity_id ):
 	db_users.delete_entity( entity_id )
 	logger.info( 'Deleted entity (id=%s)', entity_id )
@@ -27,4 +34,4 @@ def _delete_entity( entity_id ):
 @component.adapter( IEntity, IIntIdRemovedEvent )
 def _entity_removed( entity, event ):
 	entity_id = _userid.get_id( entity )
-	process_event( _delete_entity, entity_id=entity_id )
+	process_event( _get_job_queue, _delete_entity, entity_id=entity_id )

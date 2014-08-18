@@ -38,6 +38,13 @@ from .common import get_entity
 from nti.analytics.identifier import FeedbackId
 _feedbackid = FeedbackId()
 
+from nti.analytics import get_factory
+from nti.analytics import ASSESSMENTS_ANALYTICS
+
+def _get_job_queue():
+	factory = get_factory()
+	return factory.get_queue( ASSESSMENTS_ANALYTICS )
+
 def get_self_assessments_for_user( *args, **kwargs ):
 	return db_assessments.get_self_assessments_for_user( *args, **kwargs  )
 
@@ -63,7 +70,7 @@ def _process_question_set( question_set, nti_session=None ):
 									app_assessment_interfaces.IUsersCourseAssignmentHistoryItem )
  	if assignment is None:
   		# Ok, we should be a self-assessment.
-	  	process_event( _self_assessment_taken, question_set, nti_session=nti_session )
+	  	process_event( _get_job_queue, _self_assessment_taken, question_set, nti_session=nti_session )
 	else:
 		# Like individually assessed questions, there are not current cases
 		# in the wild where QuestionSets are assessed for an assignment.  Once
@@ -110,7 +117,7 @@ def _assignment_taken( oid, nti_session=None ):
 def _assignment_history_item_added( item, event ):
 	user = get_creator( item )
 	nti_session = get_nti_session_id( user )
-	process_event( _assignment_taken, item, nti_session=nti_session )
+	process_event( _get_job_queue, _assignment_taken, item, nti_session=nti_session )
 
 def _set_grade( oid, username, graded_val, nti_session=None, timestamp=None ):
 	submission = ntiids.find_object_with_ntiid(oid)
@@ -130,7 +137,8 @@ def _grade_submission( grade, submission ):
 	nti_session = get_nti_session_id( user )
 	timestamp = datetime.utcnow()
 	graded_val = grade.grade
-	process_event( 	_set_grade,
+	process_event( _get_job_queue,
+					_set_grade,
 					submission,
 					username=user.username,
 					graded_val=graded_val,
@@ -179,14 +187,14 @@ def _remove_feedback( feedback_id, timestamp=None ):
 def _feedback_added(feedback, event):
 	user = get_creator( feedback )
 	nti_session = get_nti_session_id( user )
-	process_event( _add_feedback, feedback, nti_session=nti_session )
+	process_event( _get_job_queue, _add_feedback, feedback, nti_session=nti_session )
 
 @component.adapter(app_assessment_interfaces.IUsersCourseAssignmentHistoryItemFeedback,
 				   intid_interfaces.IIntIdRemovedEvent)
 def _feedback_removed(feedback, event):
 	timestamp = datetime.utcnow()
 	feedback_id = _feedbackid.get_id( feedback )
-	process_event( _remove_feedback, feedback_id=feedback_id, timestamp=timestamp )
+	process_event( _get_job_queue, _remove_feedback, feedback_id=feedback_id, timestamp=timestamp )
 
 component.moduleProvides(analytic_interfaces.IObjectProcessor)
 
@@ -195,7 +203,7 @@ def init( obj ):
 	if assessment_interfaces.IQAssessedQuestionSet.providedBy(obj):
 		_process_question_set( obj )
 	elif app_assessment_interfaces.IUsersCourseAssignmentHistoryItem.providedBy(obj):
-		process_event( _assignment_taken, obj )
+		process_event( _get_job_queue, _assignment_taken, obj )
 	else:
 		result = False
 	return result
