@@ -62,7 +62,6 @@ def _add_meeting( oid, nti_session=None ):
 
 		timestamp = get_created_timestamp( new_chat )
 		users_joined = getattr( new_chat, 'historical_occupant_names', ())
-		from IPython.core.debugger import Tracer;Tracer()()
 		count = 0
 		for user_joined in users_joined:
 			count += 1

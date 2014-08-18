@@ -41,6 +41,7 @@ def _get_object( ntiid ):
 	return ntiids.find_object_with_ntiid( ntiid )
 
 def _get_course( event ):
+	__traceback_info__ = event.course
 	result = _get_object( event.course )
 	# Course catalog views may resolve to catalog entries
 	return ICourseInstance( result )
