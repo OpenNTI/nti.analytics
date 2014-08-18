@@ -134,8 +134,7 @@
 
 	<!-- Inline jobs for dev -->
 	<configure zcml:condition="have devmode">
-		<!-- FIXME JZ LOCAL -->
-		<ana:registerProcessingQueue />
+		<ana:registerImmediateProcessingQueue />
 	</configure>
 
 	<configure zcml:condition="not-have devmode">
