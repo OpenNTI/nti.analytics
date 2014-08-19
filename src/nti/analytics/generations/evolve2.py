@@ -59,12 +59,14 @@ def do_evolve(context):
 
 	with site(ds_folder):
 		lsm = ds_folder.getSiteManager()
-		old_queue = component.getUtility( IQueue, name=LEGACY_QUEUE_NAME )
+		old_queue = component.queryUtility( IQueue, name=LEGACY_QUEUE_NAME )
 		intids = lsm.getUtility(zope.intid.IIntIds)
 
 		# Out with the old
-		lsm.unregisterUtility( old_queue, provided=IQueue )
-		intids.unregister( old_queue )
+		# <Manually removed in alpha>
+		if old_queue is not None:
+			lsm.unregisterUtility( old_queue, provided=IQueue )
+			intids.unregister( old_queue )
 
 		for new_queue_name in QUEUE_NAMES:
 			result = queue.Queue()
