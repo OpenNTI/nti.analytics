@@ -20,10 +20,10 @@ from nti.async import queue
 from nti.async.interfaces import IQueue
 
 from nti.analytics import FAIL_QUEUE
-from nti.analytics import TOPICS_QUEUE
-from nti.analytics import COMMENTS_QUEUE
+from nti.analytics import TOPICS_ANALYTICS
+from nti.analytics import COMMENTS_ANALYTICS
 
-QUEUE_NAMES = [ FAIL_QUEUE, TOPICS_QUEUE, COMMENTS_QUEUE ]
+QUEUE_NAMES = [ FAIL_QUEUE, TOPICS_ANALYTICS, COMMENTS_ANALYTICS ]
 
 def do_evolve(context):
 	setHooks()
