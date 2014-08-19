@@ -9,7 +9,7 @@ __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
-generation = 2
+generation = 3
 
 from zope.generations.generations import SchemaManager
 
@@ -19,6 +19,7 @@ from nti.async import queue
 from nti.async.interfaces import IQueue
 
 from nti.analytics import QUEUE_NAMES
+from nti.analytics import FAIL_QUEUE
 
 class _AnalyticsSchemaManager(SchemaManager):
 	"""
@@ -40,7 +41,9 @@ def install_queue(context):
 	lsm = ds_folder.getSiteManager()
 	intids = lsm.getUtility(zope.intid.IIntIds)
 
-	for new_queue_name in QUEUE_NAMES:
+	queue_names = QUEUE_NAMES + [FAIL_QUEUE]
+
+	for new_queue_name in queue_names:
 		result = queue.Queue()
 		result.__parent__ = ds_folder
 		result.__name__ = new_queue_name

@@ -16,38 +16,23 @@ import zope.exceptions.log
 
 from nti.async.utils.processor import Processor
 
-from nti.analytics import QUEUE_NAMES
 from nti.analytics import FAIL_QUEUE
-from nti.analytics import interfaces as analytic_interfaces
-
-# Runtime: bin/nti_analytics_constructor -v --site platform.ou.edu
+from nti.analytics.interfaces import IObjectProcessor
 
 class Constructor(Processor):
 
 	def set_log_formatter(self, args):
 		super(Constructor, self).set_log_formatter(args)
 		if args.verbose:
-			for _, module in component.getUtilitiesFor(analytic_interfaces.IObjectProcessor):
+			for _, module in component.getUtilitiesFor(IObjectProcessor):
 				module.logger.setLevel(logging.DEBUG)
 
 	def process_args(self, args):
 		setattr(args, 'library', True)  # load library
-		setattr(args, 'queue_names', QUEUE_NAMES)
-		setattr(args, 'fail_queue', FAIL_QUEUE)
+		setattr(args, 'queue_names', [FAIL_QUEUE])
 		super(Constructor, self).process_args(args)
 
 def main():
-# 	import cProfile, pstats
-# 	pr = cProfile.Profile()
-# 	pr.enable()
-# 	result = None
-# 	try:
-# 		result = Constructor()()
-# 	finally:
-# 		pr.disable()
-# 		with open( '/Users/jzuech/analytics_profiling_orm.txt', 'w+' ) as f:
-# 			pstats.Stats( pr, stream=f ).print_stats()
-# 	return result
  	return Constructor()()
 
 if __name__ == '__main__':

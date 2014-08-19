@@ -19,10 +19,39 @@ from zope.component.hooks import site, setHooks
 from nti.async import queue
 from nti.async.interfaces import IQueue
 
-from nti.analytics import QUEUE_NAMES
+from nti.analytics import SOCIAL_ANALYTICS
+from nti.analytics import BLOGS_ANALYTICS
+from nti.analytics import BOARDS_ANALYTICS
+from nti.analytics import ASSESSMENTS_ANALYTICS
+from nti.analytics import ENROLL_ANALYTICS
+from nti.analytics import TAGS_ANALYTICS
+from nti.analytics import RESOURCE_VIEW_ANALYTICS
+from nti.analytics import VIDEO_VIEW_ANALYTICS
+from nti.analytics import CATALOG_VIEW_ANALYTICS
+from nti.analytics import TOPIC_VIEW_ANALYTICS
+from nti.analytics import NOTE_VIEW_ANALYTICS
+from nti.analytics import BLOG_VIEW_ANALYTICS
+from nti.analytics import SESSIONS_ANALYTICS
+from nti.analytics import DELETE_ANALYTICS
+
 from nti.analytics import QUEUE_NAME as LEGACY_QUEUE_NAME
 
-def do_evolve(context, reg_intid=True):
+QUEUE_NAMES = [ SOCIAL_ANALYTICS,
+				BLOGS_ANALYTICS,
+				BOARDS_ANALYTICS,
+				ASSESSMENTS_ANALYTICS,
+				ENROLL_ANALYTICS,
+				TAGS_ANALYTICS,
+				RESOURCE_VIEW_ANALYTICS,
+				VIDEO_VIEW_ANALYTICS,
+				CATALOG_VIEW_ANALYTICS,
+				TOPIC_VIEW_ANALYTICS,
+				NOTE_VIEW_ANALYTICS,
+				BLOG_VIEW_ANALYTICS,
+				SESSIONS_ANALYTICS,
+				DELETE_ANALYTICS ]
+
+def do_evolve(context):
 	setHooks()
 	conn = context.connection
 	root = conn.root()
@@ -48,6 +77,6 @@ def do_evolve(context, reg_intid=True):
 
 def evolve(context):
 	"""
-	Evolve to generation 2 by adding all objects to index queue
+	Evolve to generation 2
 	"""
 	do_evolve(context)

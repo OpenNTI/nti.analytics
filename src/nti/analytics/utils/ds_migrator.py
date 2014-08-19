@@ -200,7 +200,7 @@ class Processor(object):
 		if not env_dir or not os.path.exists(env_dir) and not os.path.isdir(env_dir):
 			raise ValueError( "Invalid dataserver environment root directory", env_dir )
 
-		last_oid_file = env_dir + '/.analytics_ds_migrator'
+		last_oid_file = env_dir + '/data/.analytics_ds_migrator'
 		last_oid = 0
 		if os.path.exists( last_oid_file ):
 			with open( last_oid_file, 'r' ) as f:

@@ -147,7 +147,7 @@ def create_topic(user, nti_session, course, topic):
 	user = get_or_create_user(user )
 	uid = user.user_id
 	sid = _sessionid.get_id( nti_session )
-	__traceback_info__ = topic.__parent__
+	__traceback_info__ = topic, topic.__parent__
 	fid = _get_forum_id_from_forum( db, topic.__parent__ )
 	topic_ds_id = _topicid.get_id( topic )
 	course_id = get_course_id( db, course )
@@ -205,7 +205,7 @@ def create_topic_view(user, nti_session, timestamp, course, topic, time_length):
 	user = get_or_create_user(user )
 	uid = user.user_id
 	sid = _sessionid.get_id( nti_session )
-	__traceback_info__ = topic.__parent__
+	__traceback_info__ = topic, topic.__parent__
 	fid = _get_forum_id_from_forum( db, topic.__parent__ )
 	did = _get_topic_id_from_topic( db, topic )
 	course_id = get_course_id( db, course )

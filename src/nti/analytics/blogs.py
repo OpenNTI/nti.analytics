@@ -39,10 +39,15 @@ _blogid = BlogId()
 
 from nti.analytics import get_factory
 from nti.analytics import BLOGS_ANALYTICS
+from nti.analytics import COMMENTS_ANALYTICS
 
-def _get_job_queue():
+def _get_blog_queue():
 	factory = get_factory()
 	return factory.get_queue( BLOGS_ANALYTICS )
+
+def _get_comment_queue():
+	factory = get_factory()
+	return factory.get_queue( COMMENTS_ANALYTICS )
 
 def _is_blog( obj ):
 	return 	frm_interfaces.IPersonalBlogEntry.providedBy( obj ) \
@@ -91,7 +96,7 @@ def _like_comment( oid, delta=0 ):
 def _add_personal_blog_comment(comment, event):
 	user = get_creator( comment )
 	nti_session = get_nti_session_id( user )
-	process_event( _get_job_queue, _add_comment, comment, nti_session=nti_session )
+	process_event( _get_comment_queue, _add_comment, comment, nti_session=nti_session )
 
 
 @component.adapter(frm_interfaces.IPersonalBlogComment,
@@ -102,7 +107,7 @@ def _modify_personal_blog_comment(comment, event):
 	if nti_interfaces.IDeletedObjectPlaceholder.providedBy( comment ):
 		timestamp = datetime.utcnow()
 		comment_id = _commentid.get_id( comment )
-		process_event( _get_job_queue, _remove_comment, comment_id=comment_id, timestamp=timestamp )
+		process_event( _get_comment_queue, _remove_comment, comment_id=comment_id, timestamp=timestamp )
 
 
 
@@ -118,7 +123,7 @@ def _add_blog( oid, nti_session=None ):
 def _do_blog_added( blog, event ):
 	user = get_creator( blog )
 	nti_session = get_nti_session_id( user )
-	process_event( _get_job_queue, _add_blog, blog, nti_session=nti_session )
+	process_event( _get_blog_queue, _add_blog, blog, nti_session=nti_session )
 
 def _flag_blog( oid, state=False ):
 	blog = ntiids.find_object_with_ntiid( oid )
@@ -144,10 +149,10 @@ def _blog_flagged( event ):
 	obj = event.object
 	state = True if nti_interfaces.IObjectFlaggedEvent.providedBy( event ) else False
 	if _is_blog( obj ):
-		process_event( _get_job_queue, _flag_blog, obj, state=state )
+		process_event( _get_blog_queue, _flag_blog, obj, state=state )
 
 	elif _is_blog_comment( obj ):
-		process_event( _get_job_queue, _flag_comment, obj, state=state )
+		process_event( _get_comment_queue, _flag_comment, obj, state=state )
 
 @component.adapter( IObjectRatedEvent )
 def _blog_rated( event ):
@@ -155,11 +160,11 @@ def _blog_rated( event ):
 	if _is_blog( obj ):
 		is_favorite, delta = get_rating_from_event( event )
 		to_call = _favorite_blog if is_favorite else _like_blog
-		process_event( _get_job_queue, to_call, obj, delta=delta )
+		process_event( _get_blog_queue, to_call, obj, delta=delta )
 	elif _is_blog_comment( obj ):
 		is_favorite, delta = get_rating_from_event( event )
 		to_call = _favorite_comment if is_favorite else _like_comment
-		process_event( _get_job_queue, to_call, obj, delta=delta )
+		process_event( _get_comment_queue, to_call, obj, delta=delta )
 
 @component.adapter(	frm_interfaces.IPersonalBlogEntry,
 					intid_interfaces.IIntIdAddedEvent )
@@ -175,16 +180,16 @@ def _delete_blog( blog_id, timestamp ):
 def _blog_removed( blog, event ):
 	timestamp = datetime.utcnow()
 	blog_id = _blogid.get_id( blog )
-	process_event( _get_job_queue, _delete_blog, blog_id=blog_id, timestamp=timestamp )
+	process_event( _get_blog_queue, _delete_blog, blog_id=blog_id, timestamp=timestamp )
 
 component.moduleProvides(analytic_interfaces.IObjectProcessor)
 
 def init( obj ):
 	result = True
 	if _is_blog( obj ):
-		process_event( _get_job_queue, _add_blog, obj )
+		process_event( _get_blog_queue, _add_blog, obj )
 	elif _is_blog_comment( obj ):
-		process_event( _get_job_queue, _add_comment, obj )
+		process_event( _get_comment_queue, _add_comment, obj )
 	else:
 		result = False
 	return result

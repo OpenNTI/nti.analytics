@@ -7,6 +7,7 @@ entry_points = {
     'console_scripts': [
         "nti_analytics_processor = nti.analytics.utils.constructor:main",
         "nti_analytics_migrator = nti.analytics.utils.ds_migrator:main",
+        "nti_analytics_fail_processor = nti.analytics.utils.failure_processor:main",
     ],
 }
 

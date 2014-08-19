@@ -89,7 +89,11 @@ def create_blog( user, nti_session, blog_entry ):
 		if blog_entry.description is not None:
 			blog_length = len( blog_entry.description )
 	except AttributeError:
-		blog_length = sum( len( x ) for x in blog_entry.body )
+		try:
+			blog_length = sum( len( x ) for x in blog_entry.body )
+		except TypeError:
+			# Embedded Video
+			pass
 
 	new_object = BlogsCreated( 	user_id=uid,
 								session_id=sid,
