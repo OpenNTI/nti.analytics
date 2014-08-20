@@ -13,6 +13,7 @@ import ConfigParser
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
+from sqlalchemy.pool import StaticPool
 
 import zope.intid
 from zope import interface
@@ -83,7 +84,16 @@ class AnalyticsDB(object):
 	@Lazy
 	def engine(self):
 		try:
-			result = create_engine(self.dburi,
+			if self.dburi == 'sqlite://':
+				# In-memory connections have a different db per connection, so let's make
+				# them share a db connection to avoid missing metadata issues.
+				# Only for devmode.
+				result = create_engine(	self.dburi,
+                   				connect_args={'check_same_thread':False},
+                   	    		poolclass=StaticPool )
+
+			else:
+				result = create_engine(self.dburi,
 							   	   pool_size=self.pool_size,
 							   	   max_overflow=self.max_overflow,
 							   	   pool_recycle=self.pool_recycle)
