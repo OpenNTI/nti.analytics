@@ -33,6 +33,7 @@ _chatid = ChatId()
 _dflid = DFLId()
 _flid = FriendsListId()
 
+from nti.analytics.database import INTID_COLUMN_TYPE
 from nti.analytics.database import Base
 from nti.analytics.database import get_analytics_db
 
@@ -64,7 +65,7 @@ class FriendsListMixin(object):
 # This information needs to be obscured to protect privacy.
 class ChatsInitiated(Base,BaseTableMixin):
 	__tablename__ = 'ChatsInitiated'
-	chat_ds_id = Column('chat_ds_id', Integer, index=True, nullable=True, autoincrement=False )
+	chat_ds_id = Column('chat_ds_id', INTID_COLUMN_TYPE, index=True, nullable=True, autoincrement=False )
 	chat_id = Column('chat_id', Integer, Sequence( 'chat_seq' ), index=True, nullable=False, primary_key=True )
 
 
@@ -79,7 +80,7 @@ class ChatsJoined(Base,BaseTableMixin):
 
 class DynamicFriendsListsCreated(Base,BaseTableMixin,DeletedMixin):
 	__tablename__ = 'DynamicFriendsListsCreated'
-	dfl_ds_id = Column('dfl_ds_id', Integer, index=True, nullable=True, autoincrement=False )
+	dfl_ds_id = Column('dfl_ds_id', INTID_COLUMN_TYPE, index=True, nullable=True, autoincrement=False )
 	dfl_id = Column('dfl_id', Integer, Sequence( 'dfl_seq' ), index=True, nullable=False, primary_key=True )
 
 class DynamicFriendsListsMemberAdded(Base,BaseTableMixin,DynamicFriendsListMixin,FriendMixin):
@@ -99,7 +100,7 @@ class DynamicFriendsListsMemberRemoved(Base,BaseTableMixin,DynamicFriendsListMix
 
 class FriendsListsCreated(Base,BaseTableMixin,DeletedMixin):
 	__tablename__ = 'FriendsListsCreated'
-	friends_list_ds_id = Column('friends_list_ds_id', Integer, index=True, nullable=True, autoincrement=False )
+	friends_list_ds_id = Column('friends_list_ds_id', INTID_COLUMN_TYPE, index=True, nullable=True, autoincrement=False )
 	friends_list_id = Column('friends_list_id', Integer, Sequence( 'friends_list_seq' ), index=True, nullable=False, primary_key=True )
 
 

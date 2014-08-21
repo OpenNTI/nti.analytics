@@ -33,6 +33,7 @@ _commentid = CommentId()
 _forumid = ForumId()
 _topicid = TopicId()
 
+from nti.analytics.database import INTID_COLUMN_TYPE
 from nti.analytics.database import Base
 from nti.analytics.database import get_analytics_db
 
@@ -60,13 +61,13 @@ class TopicMixin(ForumMixin):
 
 class ForumsCreated(Base,BaseTableMixin,CourseMixin,DeletedMixin):
 	__tablename__ = 'ForumsCreated'
-	forum_ds_id = Column('forum_ds_id', Integer, nullable=True, index=True, autoincrement=False)
+	forum_ds_id = Column('forum_ds_id', INTID_COLUMN_TYPE, nullable=True, index=True, autoincrement=False)
 	forum_id = Column('forum_id', Integer, Sequence( 'forum_seq' ), index=True, nullable=False, primary_key=True )
 
 
 class TopicsCreated(Base,BaseTableMixin,ForumMixin,DeletedMixin,RatingsMixin):
 	__tablename__ = 'TopicsCreated'
-	topic_ds_id = Column('topic_ds_id', Integer, nullable=True, autoincrement=False, index=True )
+	topic_ds_id = Column('topic_ds_id', INTID_COLUMN_TYPE, nullable=True, autoincrement=False, index=True )
 	topic_id = Column('topic_id', Integer, Sequence( 'topic_seq' ), index=True, nullable=False, primary_key=True )
 
 class ForumCommentsCreated(Base,CommentsMixin,TopicMixin,RatingsMixin):

@@ -39,6 +39,7 @@ _noteid = NoteId()
 _highlightid = HighlightId()
 _resourceid = ResourceId()
 
+from nti.analytics.database import INTID_COLUMN_TYPE
 from nti.analytics.database import Base
 from nti.analytics.database import get_analytics_db
 
@@ -61,7 +62,7 @@ class NoteMixin(ResourceMixin):
 
 class NotesCreated(Base,BaseTableMixin,ResourceMixin,DeletedMixin,RatingsMixin):
 	__tablename__ = 'NotesCreated'
-	note_ds_id = Column('note_ds_id', Integer, index=True, nullable=True, unique=False, autoincrement=False )
+	note_ds_id = Column('note_ds_id', INTID_COLUMN_TYPE, index=True, nullable=True, unique=False, autoincrement=False )
 	note_id = Column('note_id', Integer, Sequence( 'note_seq' ), index=True, nullable=False, primary_key=True )
 
 	# Parent-id should be other notes; top-level notes will have null parent_ids
@@ -78,7 +79,7 @@ class NotesViewed(Base,BaseViewMixin,NoteMixin):
 
 class HighlightsCreated(Base,BaseTableMixin,ResourceMixin,DeletedMixin):
 	__tablename__ = 'HighlightsCreated'
-	highlight_ds_id = Column('highlight_ds_id', Integer, index=True, nullable=True, autoincrement=False )
+	highlight_ds_id = Column('highlight_ds_id', INTID_COLUMN_TYPE, index=True, nullable=True, autoincrement=False )
 	highlight_id = Column('highlight_id', Integer, Sequence( 'highlight_seq' ), index=True, nullable=False, primary_key=True )
 
 

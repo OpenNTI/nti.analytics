@@ -52,6 +52,7 @@ _feedbackid = FeedbackId()
 
 from nti.analytics.database import SESSION_COLUMN_TYPE
 from nti.analytics.database import NTIID_COLUMN_TYPE
+from nti.analytics.database import INTID_COLUMN_TYPE
 from nti.analytics.database import Base
 from nti.analytics.database import get_analytics_db
 
@@ -68,7 +69,7 @@ class AssignmentMixin(BaseTableMixin,CourseMixin,TimeLengthMixin):
 
 class AssignmentsTaken(Base,AssignmentMixin):
 	__tablename__ = 'AssignmentsTaken'
-	submission_id = Column('submission_id', Integer, nullable=True, index=True, autoincrement=False )
+	submission_id = Column('submission_id', INTID_COLUMN_TYPE, nullable=True, index=True, autoincrement=False )
 
 	assignment_taken_id = Column('assignment_taken_id', Integer, Sequence( 'assignments_taken_seq' ),
 								index=True, nullable=False, primary_key=True )
@@ -88,7 +89,7 @@ class DetailMixin(TimeLengthMixin):
 
 	@declared_attr
 	def question_part_id(cls):
-		return Column('question_part_id', Integer, nullable=False, autoincrement=False, index=True )
+		return Column('question_part_id', INTID_COLUMN_TYPE, nullable=False, autoincrement=False, index=True )
 
 	# TODO separate submissions by question types?
 	@declared_attr
@@ -132,7 +133,7 @@ class AssignmentDetailGrades(Base,GradeDetailMixin,AssignmentSubmissionMixin):
 	# We cannot use foreign keys since the parent key must be unique, and
 	# we cannot have this as part of a primary key due to its size (mysql).
 	question_id = Column('question_id', NTIID_COLUMN_TYPE, nullable=False)
-	question_part_id = Column('question_part_id', Integer, nullable=True, autoincrement=False)
+	question_part_id = Column('question_part_id', INTID_COLUMN_TYPE, nullable=True, autoincrement=False)
 
 	assignment_details_id = Column('assignment_details_id', Integer, ForeignKey("AssignmentDetails.assignment_details_id"), unique=True, primary_key=True )
 
@@ -140,7 +141,7 @@ class AssignmentDetailGrades(Base,GradeDetailMixin,AssignmentSubmissionMixin):
 # Each feedback 'tree' should have an associated grade with it.
 class AssignmentFeedback(Base,AssignmentSubmissionMixin,DeletedMixin):
 	__tablename__ = 'AssignmentFeedback'
-	feedback_ds_id = Column( 'feedback_ds_id', Integer, nullable=True, unique=False )
+	feedback_ds_id = Column( 'feedback_ds_id', INTID_COLUMN_TYPE, nullable=True, unique=False )
 	feedback_id = Column('feedback_id', Integer, Sequence( 'feedback_id_seq' ), primary_key=True )
 
 	feedback_length = Column( 'feedback_length', Integer, nullable=True )
@@ -149,7 +150,7 @@ class AssignmentFeedback(Base,AssignmentSubmissionMixin,DeletedMixin):
 
 class SelfAssessmentsTaken(Base,AssignmentMixin):
 	__tablename__ = 'SelfAssessmentsTaken'
-	submission_id = Column('submission_id', Integer, nullable=True, index=True, autoincrement=False )
+	submission_id = Column('submission_id', INTID_COLUMN_TYPE, nullable=True, index=True, autoincrement=False )
 	self_assessment_id = Column('self_assessment_id', Integer, Sequence( 'self_assessment_seq' ),
 								index=True, nullable=False, primary_key=True )
 

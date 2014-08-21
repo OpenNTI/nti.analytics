@@ -31,6 +31,7 @@ _courseid = CourseId()
 _blogid = BlogId()
 _commentid = CommentId()
 
+from nti.analytics.database import INTID_COLUMN_TYPE
 from nti.analytics.database import Base
 from nti.analytics.database import get_analytics_db
 
@@ -51,7 +52,7 @@ class BlogMixin(object):
 
 class BlogsCreated(Base,BaseTableMixin,DeletedMixin,RatingsMixin):
 	__tablename__ = 'BlogsCreated'
-	blog_ds_id = Column('blog_ds_id', Integer, nullable=True, autoincrement=False )
+	blog_ds_id = Column('blog_ds_id', INTID_COLUMN_TYPE, nullable=True, autoincrement=False )
 	blog_length = Column('blog_length', Integer, nullable=True, autoincrement=False)
 	blog_id = Column('blog_id', Integer, Sequence( 'blog_seq' ), index=True, nullable=False, primary_key=True )
 

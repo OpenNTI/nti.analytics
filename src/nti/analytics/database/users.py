@@ -26,6 +26,7 @@ from nti.analytics.identifier import SessionId
 _userid = UserId()
 _sessionid = SessionId()
 
+from nti.analytics.database import INTID_COLUMN_TYPE
 from nti.analytics.database import SESSION_COLUMN_TYPE
 from nti.analytics.database import Base
 from nti.analytics.database import get_analytics_db
@@ -33,7 +34,7 @@ from nti.analytics.database import get_analytics_db
 class Users(Base):
 	__tablename__ = 'Users'
 	user_id = Column('user_id', Integer, Sequence('user_id_seq'), index=True, nullable=False, primary_key=True )
-	user_ds_id = Column('user_ds_id', Integer, nullable=True, index=True )
+	user_ds_id = Column('user_ds_id', INTID_COLUMN_TYPE, nullable=True, index=True )
 	shareable = Column('shareable', Boolean, nullable=False, default=False )
 
 class Sessions(Base):
