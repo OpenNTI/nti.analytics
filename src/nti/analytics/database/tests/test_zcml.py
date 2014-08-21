@@ -8,7 +8,6 @@ __docformat__ = "restructuredtext en"
 # pylint: disable=W0212,R0904
 
 import os
-import pickle
 import shutil
 import tempfile
 import ConfigParser

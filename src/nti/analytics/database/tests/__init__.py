@@ -10,6 +10,12 @@ __docformat__ = "restructuredtext en"
 import os
 import shutil
 import tempfile
+import unittest
+
+from datetime import datetime
+
+from zope import component
+import zope.testing.cleanup
 
 from nti.dataserver.tests.mock_dataserver import WithMockDS
 from nti.dataserver.tests.mock_dataserver import mock_db_trans
@@ -25,9 +31,10 @@ from nti.testing.layers import ConfiguringLayerMixin
 
 from nti.dataserver.tests.mock_dataserver import DSInjectorMixin
 
-import zope.testing.cleanup
-
 from nti.analytics import identifier
+from nti.analytics.database.interfaces import IAnalyticsDB
+from nti.analytics.database.database import AnalyticsDB
+from nti.analytics.database import users as db_users
 
 from nti.analytics.tests import DEFAULT_INTID
 
@@ -96,3 +103,20 @@ class MockParent(object):
 
 	def __iter__(self):
 		return iter(self.vals)
+
+test_user_ds_id = 78
+test_session_id = '56'
+
+class AnalyticsTestBase(unittest.TestCase):
+	""" A base class that simply creates a user and session"""
+
+	def setUp(self):
+		self.db = AnalyticsDB( dburi='sqlite://' )
+		component.getGlobalSiteManager().registerUtility( self.db, IAnalyticsDB )
+		self.session = self.db.session
+		db_users.create_user( test_user_ds_id )
+		db_users.create_session( test_user_ds_id, test_session_id, datetime.now(), '0.1.2.3.4', 'webapp', '0.9' )
+
+	def tearDown(self):
+		component.getGlobalSiteManager().unregisterUtility( self.db )
+		self.session.close()
