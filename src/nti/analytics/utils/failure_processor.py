@@ -9,10 +9,8 @@ __docformat__ = "restructuredtext en"
 logger = __import__('logging').getLogger(__name__)
 
 import logging
-import argparse
 
 from zope import component
-import zope.exceptions.log
 
 from nti.async.utils.processor import Processor
 
@@ -33,7 +31,7 @@ class Constructor(Processor):
 		super(Constructor, self).process_args(args)
 
 def main():
- 	return Constructor()()
+	return Constructor()()
 
 if __name__ == '__main__':
 	main()

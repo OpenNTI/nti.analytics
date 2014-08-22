@@ -9,16 +9,17 @@ __docformat__ = "restructuredtext en"
 logger = __import__('logging').getLogger(__name__)
 
 import os
-import argparse
-import time
-import transaction
 import sys
+import time
 import logging
+import argparse
+import transaction
 
 import zope.exceptions
 import zope.browserpage
 
 from zope import component
+from zope.component import hooks
 from zope.container.contained import Contained
 from zope.configuration import xmlconfig, config
 from zope.dottedname import resolve as dottedname
@@ -27,6 +28,8 @@ from z3c.autoinclude.zcml import includePluginsDirective
 
 from nti.dataserver.utils import run_with_dataserver
 from nti.dataserver.interfaces import IDataserverTransactionRunner
+
+from nti.site.site import get_site_for_site_names
 
 from nti.analytics.utils import all_objects_iids
 from nti.analytics.interfaces import IObjectProcessor
@@ -69,8 +72,9 @@ class _AnalyticsMigrator(object):
 		return count
 
 	def __call__( self ):
-		logger.info( 'Initializing analytics ds migrator (usernames=%s) (last_oid=%s) (batch_size=%s)',
-					len( self.usernames ), self.last_oid, self.batch_size )
+		logger.info('Initializing analytics ds migrator (usernames=%s) (last_oid=%s) '
+					'(batch_size=%s)', len( self.usernames ), self.last_oid,
+					 self.batch_size )
 		now = time.time()
 		total = 0
 
@@ -78,7 +82,7 @@ class _AnalyticsMigrator(object):
 		while True:
 			last_valid_id = self.last_oid
 			try:
-				count = transaction_runner( self.init_db, retries=2, sleep=1 )
+				count = transaction_runner(self.init_db, retries=2, sleep=1)
 				last_valid_id = self.last_oid
 				total += count
 				logger.info( 'Committed batch (%s) (last_oid=%s) (total=%s)',
@@ -104,12 +108,15 @@ class Processor(object):
 
 	def create_arg_parser(self):
 		arg_parser = argparse.ArgumentParser(description="Create a user-type object")
-		arg_parser.add_argument('--usernames', dest='usernames', help="The usernames to migrate")
-		arg_parser.add_argument('--env_dir', dest='env_dir', help="Dataserver environment root directory")
-		arg_parser.add_argument('--batch_size', dest='batch_size', help="Commit after each batch")
+		arg_parser.add_argument('--usernames', dest='usernames', 
+								help="The usernames to migrate")
+		arg_parser.add_argument('--env_dir', dest='env_dir', 
+								help="Dataserver environment root directory")
+		arg_parser.add_argument('--batch_size', dest='batch_size',
+								help="Commit after each batch")
 		arg_parser.add_argument('--site', dest='site', help="request SITE")
-		arg_parser.add_argument('-v', '--verbose', help="Be verbose", action='store_true',
-								dest='verbose')
+		arg_parser.add_argument('-v', '--verbose', help="Be verbose", 
+								action='store_true', dest='verbose')
 		return arg_parser
 
 	def create_context(self, env_dir):
@@ -151,19 +158,11 @@ class Processor(object):
 		site = getattr(args, 'site', None)
 		if site:
 			logger.info( 'Using site (%s)', site )
-			from pyramid.testing import DummyRequest
-			from pyramid.testing import setUp as psetUp
-
-			request = DummyRequest()
-			config = psetUp(registry=component.getGlobalSiteManager(),
-							request=request,
-							hook_zca=False)
-			config.setup_registry()
-			request.headers['origin'] = \
-							'http://' + site if not site.startswith('http') else site
-			# zope_site_tween tweaks some things on the request that we need to as well
-			request.possible_site_names = \
-					(site if not site.startswith('http') else site[7:],)
+			cur_site = hooks.getSite()
+			new_site = get_site_for_site_names( (site,), site=cur_site )
+			if new_site is cur_site:
+				raise ValueError("Unknown site name", site)
+			hooks.setSite(new_site)
 
 	def process_args(self, args,last_oid,last_oid_file):
 		self.setup_site(args)
@@ -183,10 +182,8 @@ class Processor(object):
 		if args.batch_size:
 			batch_size = args.batch_size
 
-		name = getattr(args, 'name', None) or u''
-		exit_on_error = getattr(args, 'exit_error', True)
-
-		analytics_migrator = _AnalyticsMigrator( usernames, last_oid, last_oid_file, batch_size )
+		analytics_migrator = _AnalyticsMigrator(usernames,  last_oid, 
+												last_oid_file, batch_size)
 		result = analytics_migrator()
 		sys.exit(result)
 
@@ -196,9 +193,9 @@ class Processor(object):
 
 		env_dir = args.env_dir
 		if not env_dir:
-			env_dir = os.getenv( 'DATASERVER_DIR' )
+			env_dir = os.getenv('DATASERVER_DIR' )
 		if not env_dir or not os.path.exists(env_dir) and not os.path.isdir(env_dir):
-			raise ValueError( "Invalid dataserver environment root directory", env_dir )
+			raise ValueError("Invalid dataserver environment root directory", env_dir)
 
 		last_oid_file = env_dir + '/data/.analytics_ds_migrator'
 		last_oid = 0
