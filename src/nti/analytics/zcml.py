@@ -10,14 +10,22 @@ __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
+from zope import component
 from zope import interface
 from zope.component.zcml import utility
 
 from nti.async.interfaces import IQueue
 from nti.async.interfaces import IRedisQueue
+from nti.async.redis_queue import RedisQueue
 from nti.async import get_job_queue as async_queue
 
-from nti.analytics.interfaces import IAnalyticsQueueFactory
+from nti.dataserver.interfaces import IRedisClient
+
+from . import FAIL_QUEUE
+from . import QUEUE_NAME
+from . import QUEUE_NAMES
+
+from .interfaces import IAnalyticsQueueFactory
 
 class ImmediateQueueRunner(object):
 	"""
@@ -48,9 +56,20 @@ class _AbstractProcessingQueueFactory(object):
 class _AnalyticsProcessingQueueFactory(_AbstractProcessingQueueFactory):
 	queue_interface = IQueue
 
-class _AnalyticsRedisQueueFactory(_AbstractProcessingQueueFactory):
+class _AnalyticsRedisProcessingQueueFactory(_AbstractProcessingQueueFactory):
 	queue_interface = IRedisQueue
-		
+	
+	def __init__(self, _context):
+		queues = list(QUEUE_NAMES)
+		queues.append(FAIL_QUEUE)
+		queues.append(QUEUE_NAME)
+		for name in queues:
+			queue = RedisQueue(self._redis, name)
+			utility(_context, provides=IRedisQueue, component=queue, name=name)
+
+	def _redis(self):
+		return component.getUtility(IRedisClient)
+
 def registerImmediateProcessingQueue(_context):
 	logger.info( "Registering immediate analytics processing queue" )
 	factory = _ImmediateQueueFactory()
@@ -63,5 +82,5 @@ def registerProcessingQueue(_context):
 
 def registerRedisProcessingQueue(_context):
 	logger.info( "Registering analytics redis processing queue" )
-	factory = _AnalyticsRedisQueueFactory()
-	utility( _context, provides=IAnalyticsQueueFactory, component=factory)
+	factory = _AnalyticsRedisProcessingQueueFactory(_context)
+	utility(_context, provides=IAnalyticsQueueFactory, component=factory)
