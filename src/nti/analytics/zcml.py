@@ -13,6 +13,8 @@ logger = __import__('logging').getLogger(__name__)
 from zope import interface
 from zope.component.zcml import utility
 
+from nti.async.interfaces import IQueue
+from nti.async.interfaces import IRedisQueue
 from nti.async import get_job_queue as async_queue
 
 from nti.analytics.interfaces import IAnalyticsQueueFactory
@@ -22,7 +24,7 @@ class ImmediateQueueRunner(object):
 	A queue that immediately runs the given job. This is generally
 	desired for test or dev mode.
 	"""
-	def put( self, job ):
+	def put(self, job):
 		job()
 
 @interface.implementer(IAnalyticsQueueFactory)
@@ -32,20 +34,34 @@ class _ImmediateQueueFactory(object):
 		return ImmediateQueueRunner()
 
 @interface.implementer(IAnalyticsQueueFactory)
-class _AnalyticsProcessingQueueFactory(object):
+class _AbstractProcessingQueueFactory(object):
 
+	queue_interface = None
+	
 	def get_queue( self, name ):
-		queue = async_queue( name )
+		queue = async_queue(name, self.queue_interface)
 		if queue is None:
-			raise ValueError( "No queue exists for analytics processing queue (%s). Evolve error?" % name )
+			raise ValueError("No queue exists for analytics processing queue (%s). "
+							 "Evolve error?" % name )
 		return queue
+	
+class _AnalyticsProcessingQueueFactory(_AbstractProcessingQueueFactory):
+	queue_interface = IQueue
 
+class _AnalyticsRedisQueueFactory(_AbstractProcessingQueueFactory):
+	queue_interface = IRedisQueue
+		
 def registerImmediateProcessingQueue(_context):
 	logger.info( "Registering immediate analytics processing queue" )
 	factory = _ImmediateQueueFactory()
-	utility( _context, provides=IAnalyticsQueueFactory, component=factory )
+	utility( _context, provides=IAnalyticsQueueFactory, component=factory)
 
 def registerProcessingQueue(_context):
 	logger.info( "Registering analytics processing queue" )
 	factory = _AnalyticsProcessingQueueFactory()
-	utility( _context, provides=IAnalyticsQueueFactory, component=factory )
+	utility( _context, provides=IAnalyticsQueueFactory, component=factory)
+
+def registerRedisProcessingQueue(_context):
+	logger.info( "Registering analytics redis processing queue" )
+	factory = _AnalyticsRedisQueueFactory()
+	utility( _context, provides=IAnalyticsQueueFactory, component=factory)

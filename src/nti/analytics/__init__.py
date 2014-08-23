@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*
 """
-analytics module
-
-$Id$
+.. $Id$
 """
 from __future__ import print_function, unicode_literals, absolute_import, division
 __docformat__ = "restructuredtext en"
@@ -15,9 +13,7 @@ import logging
 from zope import component
 from zc.blist import BList
 
-from nti.dataserver import interfaces as nti_interfaces
-
-from nti.analytics.interfaces import IAnalyticsQueueFactory
+from .interfaces import IAnalyticsQueueFactory
 
 QUEUE_NAME = '++etc++analytics++queue'
 
@@ -43,7 +39,6 @@ DELETE_ANALYTICS = QUEUE_NAME + '++delete'
 
 FAIL_QUEUE = QUEUE_NAME + '++failure'
 
-
 # Order is important here.  We happen to know that
 # nti.async processes these queues in order.  The boards (and blogs)
 # must come before the topics must come before the comments.
@@ -66,4 +61,4 @@ QUEUE_NAMES = [ SOCIAL_ANALYTICS,
 				DELETE_ANALYTICS ]
 
 def get_factory():
-	return component.getUtility( IAnalyticsQueueFactory )
+	return component.getUtility(IAnalyticsQueueFactory)

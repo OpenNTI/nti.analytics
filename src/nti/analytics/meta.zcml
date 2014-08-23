@@ -17,6 +17,10 @@
 		<meta:directive	name="registerProcessingQueue"
 						schema="nti.analytics.interfaces.IAnalyticsQueueFactory"
 						handler="nti.analytics.zcml.registerProcessingQueue" />
+						
+		<meta:directive	name="registerRedisProcessingQueue"
+						schema="nti.analytics.interfaces.IAnalyticsQueueFactory"
+						handler="nti.analytics.zcml.registerRedisProcessingQueue" />
 	</meta:directives>
 
 </configure>

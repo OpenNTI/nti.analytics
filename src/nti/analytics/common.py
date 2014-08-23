@@ -30,7 +30,6 @@ from datetime import datetime
 
 from pyramid.location import lineage
 
-import zope.intid
 from zope import component
 
 from nti.async import create_job
@@ -68,17 +67,17 @@ def get_ratings( obj ):
 	return like_count, favorite_count, is_flagged
 
 def get_entity(entity):
-    if not nti_interfaces.IEntity.providedBy(entity):
-        entity = Entity.get_entity(str(entity))
-    return entity
+	if not nti_interfaces.IEntity.providedBy(entity):
+		entity = Entity.get_entity(str(entity))
+	return entity
 
 def get_creator(obj):
-    try:
-        creator = getattr(obj, 'creator', None)
-        creator = get_entity(creator) if creator else None
-        return creator
-    except (TypeError, POSKeyError):
-        return None
+	try:
+		creator = getattr(obj, 'creator', None)
+		creator = get_entity(creator) if creator else None
+		return creator
+	except (TypeError, POSKeyError):
+		return None
 
 # Disable due to db thrashing.  We need a read-only glimpse into sessions.  Since we have
 # the events, maybe we just grab from db.
@@ -132,11 +131,11 @@ def get_deleted_time( obj ):
 	return deleted_time
 
 def to_external_ntiid_oid(obj):
-    ntiid = externalization.to_external_ntiid_oid(obj) if obj is not None else None
-    parts = ntiid.split(":") if ntiid else ()
-    if len(parts) > 4:  # check if intid is in the oid
-        ntiid = ':'.join(parts[:4])
-    return ntiid
+	ntiid = externalization.to_external_ntiid_oid(obj) if obj is not None else None
+	parts = ntiid.split(":") if ntiid else ()
+	if len(parts) > 4:  # check if intid is in the oid
+		ntiid = ':'.join(parts[:4])
+	return ntiid
 
 def get_course( obj ):
 	result = get_object_root( obj, ICourseInstance )
