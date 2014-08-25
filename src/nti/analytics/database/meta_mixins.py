@@ -20,6 +20,7 @@ from sqlalchemy.ext.declarative import declared_attr
 
 from nti.analytics.database import NTIID_COLUMN_TYPE
 from nti.analytics.database import SESSION_COLUMN_TYPE
+from nti.analytics.database import INTID_COLUMN_TYPE
 
 class BaseTableMixin(object):
 
@@ -83,7 +84,7 @@ class CommentsMixin(BaseTableMixin,DeletedMixin):
 	# comment_id should be the DS intid
 	@declared_attr
 	def comment_id(cls):
-		return Column('comment_id', Integer, nullable=False, autoincrement=False)
+		return Column('comment_id', INTID_COLUMN_TYPE, nullable=False, autoincrement=False)
 
 	@declared_attr
 	def comment_length(cls):
@@ -92,6 +93,6 @@ class CommentsMixin(BaseTableMixin,DeletedMixin):
 	# parent_id should point to a parent comment; top-level comments will have null parent_ids
 	@declared_attr
 	def parent_id(cls):
-		return Column('parent_id', Integer)
+		return Column('parent_id', INTID_COLUMN_TYPE)
 
 
