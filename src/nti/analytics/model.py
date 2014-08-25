@@ -11,7 +11,7 @@ logger = __import__('logging').getLogger(__name__)
 from zope import interface
 
 from nti.externalization.persistence import NoPickle
-from nti.externalization.externalization import WithRepr
+from nti.externalization.representation import WithRepr
 
 from nti.schema.field import SchemaConfigured
 from nti.schema.fieldproperty import createDirectFieldProperties
