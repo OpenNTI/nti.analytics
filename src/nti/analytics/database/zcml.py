@@ -48,5 +48,7 @@ def registerAnalyticsDB(_context, dburi=None, twophase=False, autocommit=False, 
 # Should only be called in testmode. Resets our in-memory database.
 @component.adapter( IDataserverClosedEvent )
 def _closed_dataserver( event ):
+	# TODO Some tests (nti.app.products.ou) still have issues with
+	# analytic events.
 	db = AnalyticsDB( dburi='sqlite://' )
 	component.getSiteManager().registerUtility( db, IAnalyticsDB )

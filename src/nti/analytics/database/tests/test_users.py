@@ -33,6 +33,7 @@ from nti.analytics.database import users as db_users
 from nti.analytics.database.users import Users
 from nti.analytics.database.users import Sessions
 from nti.analytics.database.users import get_or_create_user
+from nti.analytics.database.users import update_user_research
 
 class TestUsers(unittest.TestCase):
 
@@ -80,6 +81,13 @@ class TestUsers(unittest.TestCase):
 
 		# Save everything we have.
 		self.session.commit()
+
+		# Update research field
+		update_user_research( fooser, True )
+		result = self.session.query(Users).filter( Users.user_ds_id == fooser ).one()
+		assert_that( new_user.user_id, is_( 1 ) )
+		assert_that( new_user.user_ds_id, is_( fooser ) )
+		assert_that( new_user.shareable, is_( True ) )
 
 	def test_user_constraints(self):
 		results = self.session.query(Users).all()
