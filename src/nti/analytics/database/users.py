@@ -19,6 +19,8 @@ from sqlalchemy.schema import Sequence
 
 import zope.intid
 
+from nti.app.products.ou.interfaces import IUserResearchStatus
+
 from nti.analytics.common import timestamp_type
 
 from nti.analytics.identifier import UserId
@@ -55,7 +57,13 @@ def create_user(user):
 	username = getattr( user, 'username', None )
 	uid = _userid.get_id( user )
 
-	user = Users( user_ds_id=uid )
+	allow_research = False
+	# TODO OU specific
+	user_research = IUserResearchStatus( user, None )
+	if user_research is not None:
+		allow_research = user_research.allow_research
+
+	user = Users( user_ds_id=uid, shareable=allow_research )
 	# For race conditions, let's just throw since we cannot really handle retrying
 	# gracefully at this level. A job-level retry should work though.
 	db.session.add( user )
