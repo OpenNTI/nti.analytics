@@ -154,6 +154,7 @@ def _path_to_ugd_container(name):
 		return path
 
 	ifaces = (IAudioIndexedDataContainer,IVideoIndexedDataContainer)
+	# Pretty expensive
 	def _search(unit):
 		for iface in ifaces:
 			if iface(unit).contains_data_item_with_ntiid(name):

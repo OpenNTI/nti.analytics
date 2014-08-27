@@ -63,14 +63,13 @@ def _self_assessment_taken( oid, nti_session=None ):
 	if submission is not None:
 		user = get_creator( submission )
 		timestamp = get_created_timestamp( submission )
-		# TODO This doesn't work for some submissions, why 
-		# (see resource_tags.py)?
+		# TODO This doesn't work for some submissions, why
 		# Missing content/courses?
 		__traceback_info__ = submission.containerId
 		course = get_course_by_ntiid( submission.containerId )
-		db_assessments.create_self_assessment_taken(user, nti_session, 
+		db_assessments.create_self_assessment_taken(user, nti_session,
 													timestamp, course, submission)
-		logger.debug("Self-assessment submitted (user=%s) (assignment=%s)", 
+		logger.debug("Self-assessment submitted (user=%s) (assignment=%s)",
 					 user, submission.questionSetId )
 
 def _process_question_set( question_set, nti_session=None ):
@@ -79,7 +78,7 @@ def _process_question_set( question_set, nti_session=None ):
 								 IUsersCourseAssignmentHistoryItem )
 	if assignment is None:
 		# Ok, we should be a self-assessment.
-		process_event( _get_job_queue, _self_assessment_taken, 
+		process_event( _get_job_queue, _self_assessment_taken,
 					  question_set, nti_session=nti_session )
 	else:
 		# Like individually assessed questions, there are not current cases
@@ -129,10 +128,10 @@ def _set_grade( oid, username, graded_val, nti_session=None, timestamp=None ):
 	if submission is not None:
 		grader = get_entity( username )
 		user = get_creator( submission )
-		db_assessments.grade_submission(user, nti_session, timestamp, 
+		db_assessments.grade_submission(user, nti_session, timestamp,
 										grader, graded_val, submission )
 		assignment_id = getattr( submission, 'assignmentId', None )
-		
+
 		logger.debug("Setting grade for assignment "
 					 "(user=%s) (grade=%s) (grader=%s) (assignment=%s)",
 					 user,
@@ -172,7 +171,7 @@ def _grade_added(grade, event):
 def _do_add_feedback( nti_session, feedback, submission ):
 	user = get_creator( feedback )
 	timestamp = get_created_timestamp(feedback)
-	db_assessments.create_submission_feedback(user, nti_session, 
+	db_assessments.create_submission_feedback(user, nti_session,
 											  timestamp, submission, feedback )
 	logger.debug( "Assignment feedback added (user=%s) (%s)", user, feedback )
 

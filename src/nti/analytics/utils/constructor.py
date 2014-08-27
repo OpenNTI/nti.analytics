@@ -32,6 +32,7 @@ class Constructor(Processor):
 		setattr(args, 'library', True)  # load library
 		setattr(args, 'fail_queue', FAIL_QUEUE)
 		setattr(args, 'queue_names', QUEUE_NAMES)
+		setattr(args, 'redis', True)
 		super(Constructor, self).process_args(args)
 
 def main():

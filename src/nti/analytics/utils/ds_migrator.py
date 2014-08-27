@@ -108,14 +108,14 @@ class Processor(object):
 
 	def create_arg_parser(self):
 		arg_parser = argparse.ArgumentParser(description="Create a user-type object")
-		arg_parser.add_argument('--usernames', dest='usernames', 
+		arg_parser.add_argument('--usernames', dest='usernames',
 								help="The usernames to migrate")
-		arg_parser.add_argument('--env_dir', dest='env_dir', 
+		arg_parser.add_argument('--env_dir', dest='env_dir',
 								help="Dataserver environment root directory")
 		arg_parser.add_argument('--batch_size', dest='batch_size',
 								help="Commit after each batch")
 		arg_parser.add_argument('--site', dest='site', help="request SITE")
-		arg_parser.add_argument('-v', '--verbose', help="Be verbose", 
+		arg_parser.add_argument('-v', '--verbose', help="Be verbose",
 								action='store_true', dest='verbose')
 		return arg_parser
 
@@ -173,6 +173,7 @@ class Processor(object):
 				module.logger.setLevel(logging.DEBUG)
 
 		usernames = args.usernames
+		#usernames = 'student2,student3,student4,student5'
 		if usernames:
 			usernames = usernames.split(',')
 		else:
@@ -182,7 +183,7 @@ class Processor(object):
 		if args.batch_size:
 			batch_size = args.batch_size
 
-		analytics_migrator = _AnalyticsMigrator(usernames,  last_oid, 
+		analytics_migrator = _AnalyticsMigrator(usernames,  last_oid,
 												last_oid_file, batch_size)
 		result = analytics_migrator()
 		sys.exit(result)

@@ -139,7 +139,7 @@
 	</configure>
 
 	<configure zcml:condition="not-have devmode">
-		<ana:registerProcessingQueue />
+		<ana:registerRedisProcessingQueue />
 	</configure>
 
 </configure>
