@@ -9,7 +9,7 @@ __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
-generation = 3
+generation = 4
 
 from zope.generations.generations import SchemaManager
 
@@ -31,22 +31,5 @@ class _AnalyticsSchemaManager(SchemaManager):
 											minimum_generation=generation,
 											package_name='nti.analytics.generations')
 def evolve(context):
-	install_queue(context)
-
-def install_queue(context):
-	conn = context.connection
-	root = conn.root()
-
-	ds_folder = root['nti.dataserver']
-	lsm = ds_folder.getSiteManager()
-	intids = lsm.getUtility(zope.intid.IIntIds)
-
-	queue_names = QUEUE_NAMES + [FAIL_QUEUE]
-
-	for new_queue_name in queue_names:
-		result = queue.Queue()
-		result.__parent__ = ds_folder
-		result.__name__ = new_queue_name
-		intids.register( result )
-		lsm.registerUtility( result, provided=IQueue, name=new_queue_name )
+	pass
 
