@@ -18,6 +18,7 @@ from nti.dataserver.users import Entity
 
 from nti.dataserver.interfaces import IGlobalFlagStorage
 
+from nti.contenttypes.courses.interfaces import ICourseCatalogEntry
 from nti.contenttypes.courses.interfaces import ICourseInstance
 
 from nti.contentlibrary.interfaces import IContentPackageLibrary
@@ -208,3 +209,8 @@ def timestamp_type(timestamp):
 	if isinstance( timestamp, ( float, integer_types ) ):
 		result = datetime.utcfromtimestamp( timestamp )
 	return result
+
+def get_course_name(course):
+	cat_entry = ICourseCatalogEntry( course, None )
+	course_name = getattr( cat_entry, 'ProviderUniqueID', getattr( course, '__name__', None ) )
+	return course_name

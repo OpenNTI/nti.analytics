@@ -37,7 +37,8 @@ class Users(Base):
 	__tablename__ = 'Users'
 	user_id = Column('user_id', Integer, Sequence('user_id_seq'), index=True, nullable=False, primary_key=True )
 	user_ds_id = Column('user_ds_id', INTID_COLUMN_TYPE, nullable=True, index=True )
-	shareable = Column('shareable', Boolean, nullable=False, default=False )
+	allow_research = Column('allow_research', Boolean, nullable=False, default=False )
+	username = Column('username', String(64), nullable=True, unique=False, index=True)
 
 class Sessions(Base):
 	__tablename__ = 'Sessions'
@@ -63,7 +64,9 @@ def create_user(user):
 	if user_research is not None:
 		allow_research = user_research.allow_research
 
-	user = Users( user_ds_id=uid, shareable=allow_research )
+	user = Users( 	user_ds_id=uid,
+					allow_research=allow_research,
+					username=username )
 	# For race conditions, let's just throw since we cannot really handle retrying
 	# gracefully at this level. A job-level retry should work though.
 	db.session.add( user )
@@ -87,7 +90,7 @@ def update_user_research( user_ds_id, allow_research ):
 	db = get_analytics_db()
 	found_user = db.session.query(Users).filter( Users.user_ds_id == user_ds_id ).first()
 	if found_user is not None:
-		found_user.shareable = allow_research
+		found_user.allow_research = allow_research
 
 def create_session(user, session_id, timestamp, ip_address, platform, version):
 	db = get_analytics_db()

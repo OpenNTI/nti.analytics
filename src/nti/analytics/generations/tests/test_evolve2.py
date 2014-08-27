@@ -22,7 +22,7 @@ from nti.async.interfaces import IQueue
 from nti.analytics.tests import NTIAnalyticsTestCase
 from nti.analytics.generations import evolve2
 
-from nti.analytics import QUEUE_NAMES
+from nti.analytics.generations.evolve2 import QUEUE_NAMES
 from nti.analytics import QUEUE_NAME as LEGACY_QUEUE_NAME
 
 class TestEvolve2(NTIAnalyticsTestCase):

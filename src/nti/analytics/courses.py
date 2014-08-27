@@ -35,3 +35,4 @@ def _delete_course( course_id ):
 def _course_removed( entity, event ):
 	course_id = _courseid.get_id( entity )
 	process_event( _get_job_queue, _delete_course, course_id=course_id )
+

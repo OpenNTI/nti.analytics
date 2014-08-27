@@ -62,7 +62,7 @@ class TestUsers(unittest.TestCase):
 		# Sequence generated
 		assert_that( new_user.user_id, is_( 1 ) )
 		assert_that( new_user.user_ds_id, is_( fooser ) )
-		assert_that( new_user.shareable, is_( False ) )
+		assert_that( new_user.allow_research, is_( False ) )
 
 		# Dupe, but not inserted
 		get_or_create_user( fooser )
@@ -87,7 +87,7 @@ class TestUsers(unittest.TestCase):
 		result = self.session.query(Users).filter( Users.user_ds_id == fooser ).one()
 		assert_that( new_user.user_id, is_( 1 ) )
 		assert_that( new_user.user_ds_id, is_( fooser ) )
-		assert_that( new_user.shareable, is_( True ) )
+		assert_that( new_user.allow_research, is_( True ) )
 
 	def test_user_constraints(self):
 		results = self.session.query(Users).all()
