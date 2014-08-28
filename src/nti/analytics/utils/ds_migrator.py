@@ -11,6 +11,7 @@ logger = __import__('logging').getLogger(__name__)
 import os
 import sys
 import time
+import functools
 import logging
 import argparse
 import transaction
@@ -19,7 +20,6 @@ import zope.exceptions
 import zope.browserpage
 
 from zope import component
-from zope.component import hooks
 from zope.container.contained import Contained
 from zope.configuration import xmlconfig, config
 from zope.dottedname import resolve as dottedname
@@ -28,8 +28,6 @@ from z3c.autoinclude.zcml import includePluginsDirective
 
 from nti.dataserver.utils import run_with_dataserver
 from nti.dataserver.interfaces import IDataserverTransactionRunner
-
-from nti.site.site import get_site_for_site_names
 
 from nti.analytics.utils import all_objects_iids
 from nti.analytics.interfaces import IObjectProcessor
@@ -45,11 +43,12 @@ PP_APP_PRODUCTS = PluginPoint('nti.app.products')
 
 class _AnalyticsMigrator(object):
 
-	def __init__(self, usernames, last_oid, last_oid_file, batch_size):
+	def __init__(self, usernames, last_oid, last_oid_file, batch_size, site_names=()):
 		self.usernames = usernames
 		self.last_oid = last_oid
 		self.last_oid_file = last_oid_file
 		self.batch_size = batch_size
+		self.site_names = site_names
 
 	def init( self, obj ):
 		result = False
@@ -68,17 +67,20 @@ class _AnalyticsMigrator(object):
 					transaction.savepoint( optimistic=True )
 			if self.batch_size and count > self.batch_size:
 				break
-
 		return count
 
 	def __call__( self ):
 		logger.info('Initializing analytics ds migrator (usernames=%s) (last_oid=%s) '
-					'(batch_size=%s)', len( self.usernames ), self.last_oid,
-					 self.batch_size )
+					'(batch_size=%s) (site=%s)', len( self.usernames ), self.last_oid,
+					 self.batch_size, self.site_names )
 		now = time.time()
 		total = 0
 
 		transaction_runner = component.getUtility(IDataserverTransactionRunner)
+		if self.site_names:
+			transaction_runner = functools.partial(transaction_runner,
+												   site_names=self.site_names)
+
 		while True:
 			last_valid_id = self.last_oid
 			try:
@@ -154,23 +156,14 @@ class Processor(object):
 		ei = '%(asctime)s %(levelname)-5.5s [%(name)s][%(thread)d][%(threadName)s] %(message)s'
 		logging.root.handlers[0].setFormatter(zope.exceptions.log.Formatter(ei))
 
-	def setup_site(self, args):
-		site = getattr(args, 'site', None)
-		if site:
-			logger.info( 'Using site (%s)', site )
-			cur_site = hooks.getSite()
-			new_site = get_site_for_site_names( (site,), site=cur_site )
-			if new_site is cur_site:
-				raise ValueError("Unknown site name", site)
-			hooks.setSite(new_site)
-
 	def process_args(self, args,last_oid,last_oid_file):
-		self.setup_site(args)
 		self.set_log_formatter(args)
 
 		if args.verbose:
 			for _, module in component.getUtilitiesFor(IObjectProcessor):
 				module.logger.setLevel(logging.DEBUG)
+
+		site_names = getattr(args, 'site', None)
 
 		usernames = args.usernames
 		#usernames = 'student2,student3,student4,student5'
@@ -184,7 +177,8 @@ class Processor(object):
 			batch_size = args.batch_size
 
 		analytics_migrator = _AnalyticsMigrator(usernames,  last_oid,
-												last_oid_file, batch_size)
+												last_oid_file, batch_size,
+												site_names)
 		result = analytics_migrator()
 		sys.exit(result)
 
@@ -209,13 +203,11 @@ class Processor(object):
 		conf_packages = ('nti.analytics','nti.appserver', 'nti.dataserver',)
 		context = self.create_context(env_dir)
 
-		# TODO Nested transactions here; not really a problem since
-		# this top level transaction has nothing to commit, but it
-		# needs to be cleaned up.
 		run_with_dataserver(environment_dir=env_dir,
 							 xmlconfig_packages=conf_packages,
 							 verbose=args.verbose,
 							 context=context,
+							 use_transaction_runner=False,
 							 function=lambda: self.process_args(args,last_oid,last_oid_file) )
 
 def main():
