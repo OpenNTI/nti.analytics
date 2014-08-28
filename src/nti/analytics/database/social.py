@@ -15,6 +15,7 @@ from sqlalchemy import ForeignKey
 from sqlalchemy.schema import Sequence
 from sqlalchemy.schema import PrimaryKeyConstraint
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.declarative import declared_attr
 
 import zope.intid
