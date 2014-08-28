@@ -45,7 +45,7 @@ from nti.analytics.interfaces import IBatchResourceEvents
 timestamp = time.mktime( datetime.utcnow().timetuple() )
 user = 'jzuech@nextthought.com'
 course = 'CS1300'
-context_path = 'ntiid:lesson1'
+context_path = ['ntiid:lesson1']
 resource_id = 'ntiid:lesson1_chapter1'
 time_length = 30
 
@@ -237,7 +237,7 @@ class TestResourceEvents(NTIAnalyticsTestCase):
 			"with_transcript":"false",
 			"video_start_time":0,
 			"video_end_time":30,
-			"context_path":"a test",
+			"context_path": ["a test"],
 			"resource_id":"1500101:0_ey2kllmp",
 			"time_length":24791,
 			"MimeType":"application/vnd.nextthought.analytics.watchvideoevent",
@@ -253,7 +253,7 @@ class TestResourceEvents(NTIAnalyticsTestCase):
 		assert_that(new_io, has_property('with_transcript', is_( False )))
 		assert_that(new_io, has_property('user', is_( 'andrew.ligon' )))
 		assert_that(new_io, has_property('course', is_( "tag:nextthought.com,2011-10:system-OID-0x7e30:5573657273:YV7ubjAxx3S" )))
-		assert_that(new_io, has_property('context_path', is_( 'a test' )))
+		assert_that(new_io, has_property('context_path', is_( ['a test'] )))
 		assert_that(new_io, has_property('resource_id', is_( '1500101:0_ey2kllmp' )))
 		assert_that(new_io, has_property('time_length', is_( 24791 )))
 		assert_that(new_io, has_property('event_type', is_( WatchVideoEvent.event_type )))

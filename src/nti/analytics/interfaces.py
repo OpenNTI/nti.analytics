@@ -12,6 +12,7 @@ from nti.schema.field import Number
 from nti.schema.field import Float
 from nti.schema.field import Object
 from nti.schema.field import Bool
+from nti.schema.field import List
 from nti.schema.field import DecodingValidTextLine as ValidTextLine
 from nti.schema.field import IndexedIterable as TypedIterable
 
@@ -63,9 +64,10 @@ class IResourceEvent(ICourseEvent):
 	"""
 	Describes a resource viewing event.
 	"""
-	# TODO This is really undefined...
-	context_path = ValidTextLine(title='Context path',
-								description='Slash separated values describing where the event occurred.')
+	context_path = List(title='Context path',
+						description='List of ntiid locations describing where the event occurred.',
+						min_length=0,
+						value_type=ValidTextLine( title='The ntiid context segment'))
 
 	resource_id = ValidTextLine(title="The resource ntiid.")
 
@@ -73,7 +75,6 @@ class INoteViewEvent(ICourseEvent):
 	"""
 	A note viewing event.
 	"""
-	# TODO context_path?
 	note_id = ValidTextLine(title="The note ntiid.")
 
 class IVideoEvent(IResourceEvent):
