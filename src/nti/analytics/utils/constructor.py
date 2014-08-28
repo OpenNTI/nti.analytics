@@ -18,9 +18,6 @@ from nti.analytics import FAIL_QUEUE
 from nti.analytics import QUEUE_NAMES
 from nti.analytics.interfaces import IObjectProcessor
 
-from nti.zodb import activitylog
-# Runtime: bin/nti_analytics_constructor -v --site platform.ou.edu
-
 class Constructor(Processor):
 
 	def set_log_formatter(self, args):
@@ -28,7 +25,6 @@ class Constructor(Processor):
 		if args.verbose:
 			for _, module in component.getUtilitiesFor(IObjectProcessor):
 				module.logger.setLevel(logging.DEBUG)
-		activitylog.logger.setLevel( logging.DEBUG )
 
 	def process_args(self, args):
 		setattr(args, 'library', True)  # load library
