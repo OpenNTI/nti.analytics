@@ -37,7 +37,7 @@ class Users(Base):
 	__tablename__ = 'Users'
 	user_id = Column('user_id', Integer, Sequence('user_id_seq'), index=True, nullable=False, primary_key=True )
 	user_ds_id = Column('user_ds_id', INTID_COLUMN_TYPE, nullable=True, index=True )
-	allow_research = Column('allow_research', Boolean, nullable=False, default=None )
+	allow_research = Column('allow_research', Boolean, nullable=True, default=None )
 	username = Column('username', String(64), nullable=True, unique=False, index=True)
 
 class Sessions(Base):

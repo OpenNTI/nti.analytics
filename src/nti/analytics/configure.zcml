@@ -134,10 +134,16 @@
 			 for=".interfaces.ITopicViewEvent"
 			 provides="nti.externalization.interfaces.IInternalObjectUpdater" />
 
-	<!-- Inline jobs for dev -->
 	<configure zcml:condition="have devmode">
-	<!-- FIXME JZ ONLY -->
-		<ana:registerRedisProcessingQueue />
+
+		<configure zcml:condition="not-have testmode">
+			<ana:registerRedisProcessingQueue />
+		</configure>
+
+		<configure zcml:condition="have testmode">
+			<ana:registerImmediateProcessingQueue />
+		</configure>
+
 	</configure>
 
 	<configure zcml:condition="not-have devmode">
