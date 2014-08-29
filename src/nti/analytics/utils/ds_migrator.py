@@ -163,7 +163,7 @@ class Processor(object):
 			for _, module in component.getUtilitiesFor(IObjectProcessor):
 				module.logger.setLevel(logging.DEBUG)
 
-		site_names = getattr(args, 'site', None)
+		site_names = [getattr(args, 'site', None)]
 
 		usernames = args.usernames
 		#usernames = 'student2,student3,student4,student5'
