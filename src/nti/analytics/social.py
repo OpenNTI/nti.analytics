@@ -68,7 +68,8 @@ def _add_meeting( oid, nti_session=None ):
 			user_joined = get_entity( user_joined )
 			if user_joined is not None:
 				db_social.chat_joined( user_joined, nti_session, timestamp, new_chat )
-		logger.debug( "Meeting joined by users (count=%s)", count )
+		if count:
+			logger.debug( "Meeting joined by users (count=%s)", count )
 
 def _update_meeting( oid, timestamp=None ):
 	chat = ntiids.find_object_with_ntiid(oid)
@@ -102,7 +103,8 @@ def _add_contacts( oid, timestamp=None, nti_session=None ):
 							for x in entities_followed
 							if nti_interfaces.IUser.providedBy( x ) )
 		count = db_social.update_contacts( user, nti_session, timestamp, entities_followed )
-		logger.debug( "Contacts added (user=%s) (count=%s)", user, count )
+		if count:
+			logger.debug( "Contacts added (user=%s) (count=%s)", user, count )
 
 # Friends List
 def _add_friends_list( oid, nti_session=None ):

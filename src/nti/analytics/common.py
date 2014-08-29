@@ -195,7 +195,7 @@ def get_course_by_ntiid(name):
 	# package.  During migration, we'll need to (in most cases)
 	# check there first, before falling back to checking our current
 	# site.  Once the migration is complete, we should default to
-	# our current site in the fast line.
+	# our current site in the fast lane.
 	# This is expensive if we do not find our course.
 
 	# Is there a better way to do this?

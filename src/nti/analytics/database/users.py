@@ -58,7 +58,7 @@ def create_user(user):
 	username = getattr( user, 'username', None )
 	uid = _userid.get_id( user )
 
-	allow_research = False
+	allow_research = None
 	# TODO OU specific
 	user_research = IUserResearchStatus( user, None )
 	if user_research is not None:
