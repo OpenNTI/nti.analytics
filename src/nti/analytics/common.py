@@ -25,6 +25,8 @@ from nti.contentlibrary.interfaces import IContentPackageLibrary
 from nti.contentlibrary.indexed_data.interfaces import IAudioIndexedDataContainer
 from nti.contentlibrary.indexed_data.interfaces import IVideoIndexedDataContainer
 
+from nti.site import site
+
 from nti.externalization import externalization
 
 from datetime import datetime
@@ -32,6 +34,8 @@ from datetime import datetime
 from pyramid.location import lineage
 
 from zope import component
+from zope.component.hooks import site as current_site
+from zope.traversing.interfaces import IEtcNamespace
 
 from nti.async import create_job
 from six import integer_types
@@ -173,7 +177,7 @@ def _path_to_ugd_container(name):
 	if paths:
 		return paths[0]
 
-def get_course_by_ntiid(name):
+def _do_get_course_by_ntiid(name):
 	"Return an arbitrary course associated with the content ntiid"
 	path = _path_to_ugd_container(name)
 	__traceback_info__ = path
@@ -185,7 +189,35 @@ def get_course_by_ntiid(name):
 			course = ICourseInstance( unit, None )
 			if course is not None:
 				return course
-	raise TypeError( "No course found for path (%s)" % path )
+
+def get_course_by_ntiid(name):
+	# Some content is only accessible from the global content
+	# package.  During migration, we'll need to (in most cases)
+	# check there first, before falling back to checking our current
+	# site.  Once the migration is complete, we should default to
+	# our current site in the fast line.
+	# This is expensive if we do not find our course.
+
+	# Is there a better way to do this?
+	host_sites = component.getUtility(IEtcNamespace, name='hostsites')
+	ds_folder = host_sites.__parent__
+	ds_site_manager = ds_folder.getSiteManager()
+	my_site = site.getSite()
+
+	result = None
+
+	if my_site.getSiteManager() != ds_site_manager:
+		global_site = my_site.__parent__.__parent__
+		with current_site(global_site):
+			result = _do_get_course_by_ntiid(name)
+
+	if result is None:
+		# Try our current site
+		result = _do_get_course_by_ntiid(name)
+
+	if result is None:
+		raise TypeError( "No course found for containerId (%s)" % name )
+	return result
 
 def process_event( get_job, object_op, obj=None, **kwargs ):
 	effective_kwargs = kwargs
