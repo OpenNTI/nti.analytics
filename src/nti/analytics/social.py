@@ -10,6 +10,7 @@ logger = __import__('logging').getLogger(__name__)
 
 from zope import component
 from zope.lifecycleevent import interfaces as lce_interfaces
+from zope.lifecycleevent import IObjectAddedEvent
 
 from datetime import datetime
 
@@ -79,7 +80,7 @@ def _update_meeting( oid, timestamp=None ):
 		count = db_social.update_chat( timestamp, chat, new_members )
 		logger.debug( "Meeting joined by new users (count=%s)", count )
 
-@component.adapter(chat_interfaces.IMeeting, intid_interfaces.IIntIdAddedEvent)
+@component.adapter(chat_interfaces.IMeeting, IObjectAddedEvent)
 def _meeting_created(meeting, event):
 	creator = get_creator( meeting )
 	nti_session = get_nti_session_id( creator )
@@ -87,6 +88,8 @@ def _meeting_created(meeting, event):
 
 @component.adapter( chat_interfaces.IMeeting, lce_interfaces.IObjectModifiedEvent )
 def _meeting_joined( meeting, event ):
+	# Not sure if this event is needed, as all participants seem
+	# to be in meeting at meeting creation time.
 	timestamp = datetime.utcnow()
 	process_event( _get_job_queue, _update_meeting, meeting, timestamp=timestamp )
 
