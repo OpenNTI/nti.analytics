@@ -24,6 +24,7 @@ _userid = UserId()
 
 from nti.analytics import get_factory
 from nti.analytics import DELETE_ANALYTICS
+from nti.analytics import USERS_ANALYTICS
 
 def _get_delete_queue():
 	factory = get_factory()
@@ -31,8 +32,7 @@ def _get_delete_queue():
 
 def _get_user_queue():
 	factory = get_factory()
-	# Not really an informative queue...
-	return factory.get_queue( DELETE_ANALYTICS )
+	return factory.get_queue( USERS_ANALYTICS )
 
 def _delete_entity( entity_id ):
 	db_users.delete_entity( entity_id )

@@ -24,7 +24,7 @@
 
 		<!-- (temporarily?) in-memory -->
 		<configure zcml:condition="not-have testmode">
-			<adb:registerAnalyticsDB 	defaultSQLite="True" />
+			<adb:registerAnalyticsDB 	defaultSQLite="True"
 										dburi="sqlite://" />
 		</configure>
 	</configure>

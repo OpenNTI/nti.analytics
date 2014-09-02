@@ -36,6 +36,7 @@ NOTE_VIEW_ANALYTICS = QUEUE_NAME + '++note++views'
 
 SESSIONS_ANALYTICS = QUEUE_NAME + '++sessions'
 DELETE_ANALYTICS = QUEUE_NAME + '++delete'
+USERS_ANALYTICS = QUEUE_NAME + '++users'
 
 # Order is important here.  We happen to know that
 # nti.async processes these queues in order.  The boards (and blogs)
@@ -56,7 +57,8 @@ QUEUE_NAMES = [ SOCIAL_ANALYTICS,
 				NOTE_VIEW_ANALYTICS,
 				BLOG_VIEW_ANALYTICS,
 				SESSIONS_ANALYTICS,
-				DELETE_ANALYTICS ]
+				DELETE_ANALYTICS,
+				USERS_ANALYTICS ]
 
 def get_factory():
 	return component.getUtility(IAnalyticsQueueFactory)
