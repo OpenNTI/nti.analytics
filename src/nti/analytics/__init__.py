@@ -37,8 +37,6 @@ NOTE_VIEW_ANALYTICS = QUEUE_NAME + '++note++views'
 SESSIONS_ANALYTICS = QUEUE_NAME + '++sessions'
 DELETE_ANALYTICS = QUEUE_NAME + '++delete'
 
-FAIL_QUEUE = QUEUE_NAME + '++failure'
-
 # Order is important here.  We happen to know that
 # nti.async processes these queues in order.  The boards (and blogs)
 # must come before the topics must come before the comments.

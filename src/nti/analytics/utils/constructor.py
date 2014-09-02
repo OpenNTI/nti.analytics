@@ -14,7 +14,6 @@ from zope import component
 
 from nti.async.utils.processor import Processor
 
-from nti.analytics import FAIL_QUEUE
 from nti.analytics import QUEUE_NAMES
 from nti.analytics.interfaces import IObjectProcessor
 
@@ -31,7 +30,6 @@ class Constructor(Processor):
 
 	def process_args(self, args):
 		setattr(args, 'library', True)  # load library
-		setattr(args, 'fail_queue', FAIL_QUEUE)
 		setattr(args, 'queue_names', QUEUE_NAMES)
 		setattr(args, 'redis', True)
 		super(Constructor, self).process_args(args)

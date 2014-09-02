@@ -9,29 +9,16 @@ __docformat__ = "restructuredtext en"
 logger = __import__('logging').getLogger(__name__)
 
 import logging
+from nti.analytics.utils.constructor import Constructor
 
-from zope import component
-
-from nti.async.utils.processor import Processor
-
-from nti.analytics import FAIL_QUEUE
-from nti.analytics.interfaces import IObjectProcessor
-
-class Constructor(Processor):
-
-	def set_log_formatter(self, args):
-		super(Constructor, self).set_log_formatter(args)
-		if args.verbose:
-			for _, module in component.getUtilitiesFor(IObjectProcessor):
-				module.logger.setLevel(logging.DEBUG)
+class FailProcessor(Constructor):
 
 	def process_args(self, args):
-		setattr(args, 'library', True)  # load library
-		setattr(args, 'queue_names', [FAIL_QUEUE])
-		super(Constructor, self).process_args(args)
+		setattr(args, 'failed_jobs', True)
+		super(FailProcessor, self).process_args(args)
 
 def main():
-	return Constructor()()
+	return FailProcessor()()
 
 if __name__ == '__main__':
 	main()

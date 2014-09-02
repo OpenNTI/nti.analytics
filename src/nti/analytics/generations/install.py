@@ -9,17 +9,9 @@ __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
-generation = 4
+generation = 5
 
 from zope.generations.generations import SchemaManager
-
-import zope.intid
-
-from nti.async import queue
-from nti.async.interfaces import IQueue
-
-from nti.analytics import QUEUE_NAMES
-from nti.analytics import FAIL_QUEUE
 
 class _AnalyticsSchemaManager(SchemaManager):
 	"""
