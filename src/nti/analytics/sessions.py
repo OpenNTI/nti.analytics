@@ -7,6 +7,8 @@ __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
+import time
+
 from zope import component
 from pyramid.threadlocal import get_current_request
 
@@ -17,9 +19,10 @@ from datetime import datetime
 from .common import get_entity
 from .common import process_event
 
-from nti.analytics.database import sessions as db_sessions
+from nti.appserver.interfaces import IUserLogonEvent
+from nti.dataserver.interfaces import IUser
 
-from nti.analytics import interfaces as analytic_interfaces
+from nti.analytics.database import sessions as db_sessions
 
 from nti.analytics import get_factory
 from nti.analytics import SESSIONS_ANALYTICS
@@ -28,17 +31,25 @@ def _get_job_queue():
 	factory = get_factory()
 	return factory.get_queue( SESSIONS_ANALYTICS )
 
-def _add_session( nti_session ):
-	if nti_session:
-		user = nti_session.user
-		user = get_entity( user )
-		db_sessions.create_session( user, nti_session )
+def _add_session( username, platform, timestamp, ip_addr ):
+	if username:
+		user = get_entity( username )
+		db_sessions.create_session( user, platform, timestamp, ip_addr )
 		logger.debug( 'Session created (user=%s)', user )
 
-def new_session( nti_session ):
-	# We process this synchronously in order to have accurate
-	# session information as we need it.
-	_add_session( nti_session )
+@component.adapter(IUserLogonEvent)
+def _new_session( event ):
+	user = event.user
+	request = event.request
+	ip_addr = getattr( request, 'remote_addr' , None )
+	platform = getattr( request, 'user_agent', None )
+	timestamp = datetime.utcnow()
+
+	process_event( 	_get_job_queue, _add_session,
+					username=user.username,
+					platform=platform,
+					ip_addr=ip_addr,
+					timestamp=timestamp )
 
 def get_current_session_id( user ):
 	db_sessions.get_current_session_id( user )

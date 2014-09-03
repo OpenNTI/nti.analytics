@@ -33,7 +33,6 @@ from nti.testing.layers import ConfiguringLayerMixin
 from nti.dataserver.tests.mock_dataserver import DSInjectorMixin
 
 from nti.analytics import identifier
-from nti.analytics.model import AnalyticsSession
 
 from nti.analytics.database.interfaces import IAnalyticsDB
 from nti.analytics.database.database import AnalyticsDB
@@ -119,11 +118,9 @@ class AnalyticsTestBase(unittest.TestCase):
 		component.getGlobalSiteManager().registerUtility( self.db, IAnalyticsDB )
 		self.session = self.db.session
 		db_users.create_user( test_user_ds_id )
-		version = '1.9'
-		platform = 'webapp'
+		platform = 'webapp-1.9'
 		ip_addr = '0.1.2.3.4'
-		nti_session = AnalyticsSession( timestamp=time.time(), version=version, platform=platform, ip_addr=ip_addr )
-		db_sessions.create_session( test_user_ds_id, nti_session )
+		db_sessions.create_session( test_user_ds_id, platform, time.time(), ip_addr )
 
 	def tearDown(self):
 		component.getGlobalSiteManager().unregisterUtility( self.db )

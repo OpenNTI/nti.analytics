@@ -29,6 +29,9 @@
 	<!-- subscribers -->
 	<subscriber handler=".users._entity_removed" />
 	<subscriber handler=".users._user_research" />
+
+	<subscriber handler=".sessions._new_session" />
+
 	<subscriber handler=".courses._course_removed" />
 
 	<subscriber handler=".boards._topic_added" />
@@ -100,8 +103,7 @@
 						 .interfaces.IBlogViewEvent
 						 .interfaces.INoteViewEvent
 						 .interfaces.ITopicViewEvent
-						 .interfaces.IBatchResourceEvents
-						 .interfaces.IAnalyticsSession"
+						 .interfaces.IBatchResourceEvents"
 		modules=".model" />
 
 	<adapter factory=".internalization._ResourceEventUpdater"
@@ -126,10 +128,6 @@
 
 	<adapter factory=".internalization._TopicViewEventUpdater"
 			 for=".interfaces.ITopicViewEvent"
-			 provides="nti.externalization.interfaces.IInternalObjectUpdater" />
-
-	<adapter factory=".internalization._AnalyticsSessionUpdater"
-			 for=".interfaces.IAnalyticsSession"
 			 provides="nti.externalization.interfaces.IInternalObjectUpdater" />
 
 	<configure zcml:condition="have devmode">

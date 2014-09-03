@@ -21,8 +21,6 @@ from hamcrest import not_none
 from hamcrest import has_length
 from hamcrest import assert_that
 
-from nti.analytics.model import AnalyticsSession
-
 from nti.analytics.database.interfaces import IAnalyticsDB
 from nti.analytics.database.database import AnalyticsDB
 
@@ -54,11 +52,9 @@ class TestSessions(unittest.TestCase):
 		self.session.flush()
 
 		# Using new generated user_id
-		version = '1.9'
-		platform = 'webapp'
+		platform = 'webapp-1.9'
 		ip_addr = '0.1.2.3.4'
-		nti_session = AnalyticsSession( timestamp=time.time(), version=version, platform=platform, ip_addr=ip_addr )
-		db_sessions.create_session( test_user_ds_id, nti_session )
+		db_sessions.create_session( test_user_ds_id, platform, time.time(), ip_addr )
 		results = self.session.query(Sessions).all()
 		assert_that( results, has_length( 1 ) )
 
@@ -67,7 +63,6 @@ class TestSessions(unittest.TestCase):
 		assert_that( new_session.session_id, is_( 1 ) )
 		assert_that( new_session.ip_addr, is_( ip_addr ) )
 		assert_that( new_session.platform, is_( platform ) )
-		assert_that( new_session.version, is_( version ) )
 		assert_that( new_session.start_time, not_none() )
 		assert_that( new_session.end_time, none() )
 
@@ -82,8 +77,7 @@ class TestSessions(unittest.TestCase):
 		assert_that( new_session_id, is_( 1 ) )
 
 		# New session has our new session id
-		nti_session = AnalyticsSession( timestamp=time.time(), version=version, platform=platform, ip_addr=ip_addr )
-		db_sessions.create_session( test_user_ds_id, nti_session )
+		db_sessions.create_session( test_user_ds_id, platform, time.time(), ip_addr )
 		results = self.session.query(Sessions).all()
 		assert_that( results, has_length( 2 ) )
 

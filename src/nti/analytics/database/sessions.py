@@ -35,8 +35,7 @@ class Sessions(Base):
 	session_id = Column('session_id', SESSION_COLUMN_TYPE, Sequence('session_id_seq'), index=True, primary_key=True )
 	user_id = Column('user_id', Integer, ForeignKey("Users.user_id"), index=True, nullable=False )
 	ip_addr = Column('ip_addr', String(64))
-	platform = Column('platform', String(64))
-	version = Column('version', String(64))
+	platform = Column('platform', String(256))
 	start_time = Column('start_time', DateTime)
 	end_time = Column('end_time', DateTime)
 
@@ -51,17 +50,16 @@ def _update_current_session( db, new_session, uid ):
 	new_current_session = CurrentSessions( user_id=uid, session_id=new_session.session_id )
 	db.session.add( new_current_session )
 
-def create_session(user, nti_session):
+def create_session( user, platform, timestamp, ip_addr ):
 	db = get_analytics_db()
 	user = get_or_create_user( user )
 	uid = user.user_id
-	timestamp = timestamp_type( nti_session.timestamp )
+	timestamp = timestamp_type( timestamp )
 
 	new_session = Sessions( user_id=uid,
 							start_time=timestamp,
-							ip_addr=nti_session.ip_addr,
-							platform=nti_session.platform,
-							version=nti_session.version )
+							ip_addr=ip_addr,
+							platform=platform )
 	db.session.add( new_session )
 	db.session.flush()
 
