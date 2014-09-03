@@ -80,14 +80,7 @@
 	<subscriber handler=".enrollments._enrolled" />
 	<subscriber handler=".enrollments._dropped" />
 
-<!-- TODO disable until we have this figured out
-	<subscriber handler=".sessions._session_created" />
-	<subscriber handler=".sessions._session_destroyed" />
-	<utility component=".sessions" provides=".interfaces.IObjectProcessor" name="sessions"/>
--->
-
 	<!-- utils -->
-
 
 	<utility component=".blogs" provides=".interfaces.IObjectProcessor" name="blogs"/>
 	<utility component=".boards" provides=".interfaces.IObjectProcessor" name="boards"/>

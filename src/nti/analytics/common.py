@@ -84,30 +84,6 @@ def get_creator(obj):
 	except (TypeError, POSKeyError):
 		return None
 
-# Disable due to db thrashing.  We need a read-only glimpse into sessions.  Since we have
-# the events, maybe we just grab from db.
-
-# def get_nti_session( user ):
-# 	""" Attempt to get the current session for the user, returning None if none found. """
-# 	session_storage = component.getUtility( nti_interfaces.ISessionServiceStorage )
-# 	sessions = session_storage.get_sessions_by_owner( user )
-# 	# We may have multiple; grab the first.
-# 	# See note in session_storage on why this may no longer be necessary.
-# 	nti_session = next( sessions, None )
-# 	return nti_session
-#
-# def get_nti_session_id( user ):
-# 	""" Attempt to get the current session id for the user, returning None if none found. """
-# 	nti_session = None
-# 	try:
-# 		nti_session = get_nti_session( user )
-# 	except TypeError:
-# 		# Some cases (creating Forums as community) won't let us
-# 		# get a session.
-# 		logger.debug( 'Failed to get session for user (%s)', user )
-# 	return get_id_for_session( nti_session )
-#
-
 def get_id_for_session( nti_session ):
 	""" Given an nti_session, return the unique id """
 	return _sessionid.get_id( nti_session ) if nti_session else None

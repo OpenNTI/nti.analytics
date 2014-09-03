@@ -105,7 +105,7 @@ class MockParent(object):
 		return iter(self.vals)
 
 test_user_ds_id = 78
-test_session_id = '56'
+test_session_id = 1
 
 class AnalyticsTestBase(unittest.TestCase):
 	""" A base class that simply creates a user and session"""
@@ -115,7 +115,7 @@ class AnalyticsTestBase(unittest.TestCase):
 		component.getGlobalSiteManager().registerUtility( self.db, IAnalyticsDB )
 		self.session = self.db.session
 		db_users.create_user( test_user_ds_id )
-		db_users.create_session( test_user_ds_id, test_session_id, datetime.now(), '0.1.2.3.4', 'webapp', '0.9' )
+		db_users.create_session( test_user_ds_id, datetime.now(), '0.1.2.3.4', 'webapp', '0.9' )
 
 	def tearDown(self):
 		component.getGlobalSiteManager().unregisterUtility( self.db )

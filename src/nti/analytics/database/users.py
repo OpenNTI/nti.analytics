@@ -42,14 +42,18 @@ class Users(Base):
 
 class Sessions(Base):
 	__tablename__ = 'Sessions'
-	session_id = Column('session_id', SESSION_COLUMN_TYPE, primary_key=True )
-	user_id = Column('user_id', Integer, ForeignKey("Users.user_id"), nullable=False )
+	session_id = Column('session_id', SESSION_COLUMN_TYPE, Sequence('session_id_seq'), index=True, primary_key=True )
+	user_id = Column('user_id', Integer, ForeignKey("Users.user_id"), index=True, nullable=False )
 	ip_addr = Column('ip_addr', String(64))
 	platform = Column('platform', String(64))
 	version = Column('version', String(64))
 	start_time = Column('start_time', DateTime)
 	end_time = Column('end_time', DateTime)
 
+class CurrentSessions(Base):
+	__tablename__ = 'CurrentSessions'
+	session_id = Column('session_id', SESSION_COLUMN_TYPE, ForeignKey('Sessions.session_id'), index=True, primary_key=True )
+	user_id = Column('user_id', Integer, ForeignKey("Users.user_id"), index=True, nullable=False )
 
 def create_user(user):
 	db = get_analytics_db()
@@ -92,26 +96,25 @@ def update_user_research( user_ds_id, allow_research ):
 	if found_user is not None:
 		found_user.allow_research = allow_research
 
-def create_session(user, session_id, timestamp, ip_address, platform, version):
+def create_session(user, timestamp, ip_address, platform, version):
 	db = get_analytics_db()
 	user = get_or_create_user( user )
 	uid = user.user_id
 	timestamp = timestamp_type( timestamp )
 
 	new_session = Sessions( user_id=uid,
-							session_id=session_id,
 							start_time=timestamp,
 							ip_addr=ip_address,
 							platform=platform,
 							version=version )
 	db.session.add( new_session )
 
-def end_session(session_id, timestamp):
-	db = get_analytics_db()
-	timestamp = timestamp_type( timestamp )
-	nti_session = db.session.query(Sessions).filter( Sessions.session_id == session_id ).first()
-	if nti_session:
-		nti_session.end_time = timestamp
-	else:
-		# This could happen during the initial startup phase, be forgiving.
-		logger.debug( 'Session ending but no record found in Sessions table (sid=%s)', session_id )
+# def end_session(session_id, timestamp):
+# 	db = get_analytics_db()
+# 	timestamp = timestamp_type( timestamp )
+# 	nti_session = db.session.query(Sessions).filter( Sessions.session_id == session_id ).first()
+# 	if nti_session:
+# 		nti_session.end_time = timestamp
+# 	else:
+# 		# This could happen during the initial startup phase, be forgiving.
+# 		logger.debug( 'Session ending but no record found in Sessions table (sid=%s)', session_id )

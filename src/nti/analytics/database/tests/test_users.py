@@ -41,7 +41,7 @@ class TestUsers(unittest.TestCase):
 		self.db = AnalyticsDB( dburi='sqlite://', testmode=True )
 		component.getGlobalSiteManager().registerUtility( self.db, IAnalyticsDB )
 		self.session = self.db.session
-		assert_that( self.db.engine.table_names(), has_length( 36 ) )
+		assert_that( self.db.engine.table_names(), has_length( 37 ) )
 
 	def tearDown(self):
 		component.getGlobalSiteManager().unregisterUtility( self.db )
@@ -107,7 +107,7 @@ class TestUsers(unittest.TestCase):
 		self.session.flush()
 
 		# Using new generated user_id
-		db_users.create_session( test_user_ds_id, test_session_id, datetime.now(), '0.1.2.3.4', 'webapp', '0.9' )
+		db_users.create_session( test_user_ds_id, datetime.now(), '0.1.2.3.4', 'webapp', '0.9' )
 		results = self.session.query(Sessions).all()
 		assert_that( results, has_length( 1 ) )
 
@@ -119,18 +119,4 @@ class TestUsers(unittest.TestCase):
 		assert_that( new_session.version, is_( '0.9' ) )
 		assert_that( new_session.start_time, not_none() )
 		assert_that( new_session.end_time, none() )
-
-		# End session
-		db_users.end_session( test_session_id, datetime.now() )
-		results = self.session.query(Sessions).all()
-		assert_that( results, has_length( 1 ) )
-
-		new_session = self.session.query(Sessions).one()
-		assert_that( new_session.user_id, is_( user.user_id ) )
-		assert_that( new_session.session_id, is_( test_session_id ) )
-		assert_that( new_session.ip_addr, is_( '0.1.2.3.4' ) )
-		assert_that( new_session.platform, is_( 'webapp' ) )
-		assert_that( new_session.version, is_( '0.9' ) )
-		assert_that( new_session.start_time, not_none() )
-		assert_that( new_session.end_time, not_none() )
 
