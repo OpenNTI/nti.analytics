@@ -29,6 +29,7 @@ from nti.analytics.model import TopicViewEvent
 from nti.analytics.model import WatchVideoEvent
 from nti.analytics.model import SkipVideoEvent
 from nti.analytics.model import BatchResourceEvents
+from nti.analytics.model import AnalyticsSession
 
 from nti.testing.matchers import verifiably_provides
 
@@ -41,6 +42,7 @@ from nti.analytics.interfaces import IBlogViewEvent
 from nti.analytics.interfaces import INoteViewEvent
 from nti.analytics.interfaces import ITopicViewEvent
 from nti.analytics.interfaces import IBatchResourceEvents
+from nti.analytics.interfaces import IAnalyticsSession
 
 timestamp = time.mktime( datetime.utcnow().timetuple() )
 user = 'jzuech@nextthought.com'
@@ -290,3 +292,33 @@ class TestResourceEvents(NTIAnalyticsTestCase):
 		assert_that( events, not_none() )
 		assert_that( events, has_length( batch_count ))
 
+
+class TestAnalyticsSession(NTIAnalyticsTestCase):
+
+	def test_session(self):
+		user_id = 'keng.quinton'
+		ip_addr = '127.0.0.1'
+		platform = 'webapp-chrome'
+		version = '1.2.3'
+
+		nti_session = AnalyticsSession( user=user_id,
+										ip_addr=ip_addr,
+										platform=platform,
+										version=version )
+
+		assert_that(nti_session, verifiably_provides( IAnalyticsSession ) )
+
+		ext_obj = toExternalObject(nti_session)
+		assert_that(ext_obj, has_entry('Class', 'AnalyticsSession'))
+		assert_that(ext_obj, has_entry('MimeType', 'application/vnd.nextthought.analytics.analyticssession' ))
+
+		factory = internalization.find_factory_for(ext_obj)
+		assert_that(factory, is_(not_none()))
+
+		new_io = factory()
+		internalization.update_from_external_object(new_io, ext_obj)
+		assert_that(new_io, has_property('user', is_( user_id )))
+		assert_that(new_io, has_property('ip_addr', is_( ip_addr )))
+		assert_that(new_io, has_property('platform', is_( platform )))
+		assert_that(new_io, has_property('version', is_( version )))
+		assert_that( new_io, is_( AnalyticsSession ) )

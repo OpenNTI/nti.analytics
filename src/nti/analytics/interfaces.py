@@ -100,3 +100,20 @@ class IBatchResourceEvents( IIterable ):
 	events = TypedIterable(
 		title="The events in this batch",
 		value_type=Object( IAnalyticsViewEvent ) )
+
+class IAnalyticsSession(interface.Interface):
+
+	timestamp = Number(	title=u"The timestamp when the session started, in seconds since epoch.",
+						default=0.0,
+						required=True )
+
+	user = ValidTextLine(title='The user for the new session.', required=True )
+
+	platform = ValidTextLine(title="The platform of the NTI client (ex. webapp-firefox, ipad-air, etc)",
+							required=False)
+
+	# TODO Do we have this, or a compile date?
+	version = ValidTextLine(title="The version of the NTI client (ex. 18.1.0)", required=False)
+
+	# TODO Do we figure this out or does the app?
+	ip_addr = ValidTextLine(title="The ip address of the user.", required=False )

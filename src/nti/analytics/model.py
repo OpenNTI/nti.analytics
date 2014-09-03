@@ -99,3 +99,12 @@ class BatchResourceEvents(SchemaConfigured):
 	def __len__(self):
 		return len( self.events )
 
+@interface.implementer(interfaces.IAnalyticsSession)
+@WithRepr
+class AnalyticsSession(SchemaConfigured):
+	createDirectFieldProperties(interfaces.IAnalyticsSession)
+
+	__external_can_create__ = True
+	__external_class_name__ = "AnalyticsSession"
+	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticssession'
+
