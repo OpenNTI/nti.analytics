@@ -31,20 +31,20 @@ def _get_job_queue():
 	factory = get_factory()
 	return factory.get_queue( SESSIONS_ANALYTICS )
 
-def _add_session( username, platform, timestamp, ip_addr ):
+def _add_session( username, user_agent, timestamp, ip_addr ):
 	if username:
 		user = get_entity( username )
-		db_sessions.create_session( user, platform, timestamp, ip_addr )
+		db_sessions.create_session( user, user_agent, timestamp, ip_addr )
 		logger.debug( 'Session created (user=%s)', user )
 
 def _do_new_session( username, request ):
 	ip_addr = getattr( request, 'remote_addr' , None )
-	platform = getattr( request, 'user_agent', None )
+	user_agent = getattr( request, 'user_agent', None )
 	timestamp = datetime.utcnow()
 
 	process_event( 	_get_job_queue, _add_session,
 					username=username,
-					platform=platform,
+					user_agent=user_agent,
 					ip_addr=ip_addr,
 					timestamp=timestamp )
 

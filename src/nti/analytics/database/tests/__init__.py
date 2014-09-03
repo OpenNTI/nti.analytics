@@ -118,9 +118,9 @@ class AnalyticsTestBase(unittest.TestCase):
 		component.getGlobalSiteManager().registerUtility( self.db, IAnalyticsDB )
 		self.session = self.db.session
 		db_users.create_user( test_user_ds_id )
-		platform = 'webapp-1.9'
+		user_agent = 'webapp-1.9'
 		ip_addr = '0.1.2.3.4'
-		db_sessions.create_session( test_user_ds_id, platform, time.time(), ip_addr )
+		db_sessions.create_session( test_user_ds_id, user_agent, time.time(), ip_addr )
 
 	def tearDown(self):
 		component.getGlobalSiteManager().unregisterUtility( self.db )
