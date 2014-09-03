@@ -20,6 +20,8 @@ from hamcrest import none
 from hamcrest import not_none
 from hamcrest import has_length
 from hamcrest import assert_that
+from hamcrest import greater_than
+from hamcrest import less_than_or_equal_to
 
 from nti.analytics.database.interfaces import IAnalyticsDB
 from nti.analytics.database.database import AnalyticsDB
@@ -120,3 +122,39 @@ class TestSessions(unittest.TestCase):
 
 		results = self.session.query(UserAgents).all()
 		assert_that( results, has_length( 2 ) )
+
+	def test_large_user_agent(self):
+		results = self.session.query(Sessions).all()
+		assert_that( results, has_length( 0 ) )
+		results = self.session.query(CurrentSessions).all()
+		assert_that( results, has_length( 0 ) )
+		results = self.session.query(UserAgents).all()
+		assert_that( results, has_length( 0 ) )
+
+		user = Users( user_ds_id=test_user_ds_id )
+		self.session.add( user )
+		self.session.flush()
+
+		# Using new generated user_id
+		# Massive user_agent (over 512)
+		user_agent = 'webapp-1.9' * 100
+		assert_that( user_agent, has_length( greater_than( 512 )))
+		ip_addr = '0.1.2.3.4'
+		db_sessions.create_session( test_user_ds_id, user_agent, time.time(), ip_addr )
+		results = self.session.query(Sessions).all()
+		assert_that( results, has_length( 1 ) )
+
+		new_session = self.session.query(Sessions).one()
+		assert_that( new_session.user_id, is_( user.user_id ) )
+		assert_that( new_session.session_id, is_( 1 ) )
+		assert_that( new_session.ip_addr, is_( ip_addr ) )
+		assert_that( new_session.user_agent_id, is_( 1 ) )
+		assert_that( new_session.start_time, not_none() )
+		assert_that( new_session.end_time, none() )
+
+		results = self.session.query(UserAgents).all()
+		assert_that( results, has_length( 1 ) )
+
+		user_agent_record = results[0]
+		assert_that( user_agent_record.user_agent, has_length( less_than_or_equal_to( 512 )) )
+		assert_that( user_agent_record.user_agent_id, is_( 1 ) )

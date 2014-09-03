@@ -50,6 +50,7 @@ def _do_new_session( username, request ):
 
 @component.adapter(IUserLogonEvent)
 def _new_session( event ):
+	# FIXME Hmm, login events are GETs
 	user = event.user
 	request = event.request
 	_do_new_session( user.username, request )

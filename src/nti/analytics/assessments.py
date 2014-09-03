@@ -89,6 +89,8 @@ def _process_question_set( question_set, nti_session=None ):
 
 @component.adapter(IQAssessedQuestionSet, IIntIdAddedEvent)
 def _questionset_assessed( question_set, event ):
+	# We'll have creator for self-assessments, but not for assignments,
+	# which we throw away anyway.
 	user = get_creator( question_set )
 	nti_session = get_nti_session_id( user )
 	_process_question_set( question_set, nti_session=nti_session )

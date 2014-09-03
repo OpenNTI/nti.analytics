@@ -47,7 +47,7 @@ class CurrentSessions(Base):
 class UserAgents(Base):
 	__tablename__ = 'UserAgents'
 	user_agent_id = Column('user_agent_id', Integer, Sequence('user_agent_id_seq'), index=True, primary_key=True )
-	user_agent = Column('user_agent', String(256), unique=True, index=True, nullable=False )
+	user_agent = Column('user_agent', String(512), unique=True, index=True, nullable=False )
 
 def _create_user_agent( db, user_agent ):
 	new_agent = UserAgents( user_agent=user_agent )
@@ -67,11 +67,16 @@ def _update_current_session( db, new_session, uid ):
 	new_current_session = CurrentSessions( user_id=uid, session_id=new_session.session_id )
 	db.session.add( new_current_session )
 
+def _get_user_agent( user_agent ):
+	# We have a 512 limit on user agent, truncate if we have to
+	return user_agent[:512] if len( user_agent ) > 512 else user_agent
+
 def create_session( user, user_agent, timestamp, ip_addr ):
 	db = get_analytics_db()
 	user = get_or_create_user( user )
 	uid = user.user_id
 	timestamp = timestamp_type( timestamp )
+	user_agent = _get_user_agent( user_agent )
 	user_agent_id = _get_user_agent_id( db, user_agent )
 
 	new_session = Sessions( user_id=uid,
