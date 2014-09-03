@@ -58,7 +58,10 @@ def handle_new_session( username, request ):
 	_do_new_session( username, request )
 
 def get_current_session_id( user ):
-	return db_sessions.get_current_session_id( user )
+	result = None
+	if user is not None:
+		result = db_sessions.get_current_session_id( user )
+	return result
 
 get_nti_session_id = get_current_session_id
 
