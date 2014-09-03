@@ -37,21 +37,29 @@ def _add_session( username, platform, timestamp, ip_addr ):
 		db_sessions.create_session( user, platform, timestamp, ip_addr )
 		logger.debug( 'Session created (user=%s)', user )
 
-@component.adapter(IUserLogonEvent)
-def _new_session( event ):
-	user = event.user
-	request = event.request
+def _do_new_session( username, request ):
 	ip_addr = getattr( request, 'remote_addr' , None )
 	platform = getattr( request, 'user_agent', None )
 	timestamp = datetime.utcnow()
 
 	process_event( 	_get_job_queue, _add_session,
-					username=user.username,
+					username=username,
 					platform=platform,
 					ip_addr=ip_addr,
 					timestamp=timestamp )
 
+@component.adapter(IUserLogonEvent)
+def _new_session( event ):
+	user = event.user
+	request = event.request
+	_do_new_session( user.username, request )
+
+def handle_new_session( username, request ):
+	_do_new_session( username, request )
+
 def get_current_session_id( user ):
-	db_sessions.get_current_session_id( user )
+	return db_sessions.get_current_session_id( user )
 
 get_nti_session_id = get_current_session_id
+
+

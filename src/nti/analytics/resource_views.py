@@ -238,11 +238,10 @@ def _get_note_queue():
 def handle_events( batch_events ):
 
 	for event in batch_events:
-		# TODO
 		# Try to grab a session, careful not to raise so we don't
 		# lose our otherwise valid events.  Since the batch send
 		# time on the client side is currently 10s, we can reasonably
-		# expect a valid session to exist.  This is still a bit sketchy.
+		# expect a valid session to exist.
 		user = get_entity( event.user )
 		nti_session = get_nti_session_id( user )
 
