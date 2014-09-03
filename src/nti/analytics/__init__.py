@@ -42,7 +42,8 @@ USERS_ANALYTICS = QUEUE_NAME + '++users'
 # nti.async processes these queues in order.  The boards (and blogs)
 # must come before the topics must come before the comments.
 # This implementation detail is only relevant at migration time.
-QUEUE_NAMES = [ SOCIAL_ANALYTICS,
+QUEUE_NAMES = [ SESSIONS_ANALYTICS,
+				SOCIAL_ANALYTICS,
 				ASSESSMENTS_ANALYTICS,
 				BLOGS_ANALYTICS,
 				BOARDS_ANALYTICS,
@@ -50,15 +51,14 @@ QUEUE_NAMES = [ SOCIAL_ANALYTICS,
 				TAGS_ANALYTICS,
 				TOPICS_ANALYTICS,
 				COMMENTS_ANALYTICS,
+				USERS_ANALYTICS,
 				RESOURCE_VIEW_ANALYTICS,
 				VIDEO_VIEW_ANALYTICS,
 				CATALOG_VIEW_ANALYTICS,
 				TOPIC_VIEW_ANALYTICS,
 				NOTE_VIEW_ANALYTICS,
 				BLOG_VIEW_ANALYTICS,
-				SESSIONS_ANALYTICS,
-				DELETE_ANALYTICS,
-				USERS_ANALYTICS ]
+				DELETE_ANALYTICS ]
 
 def get_factory():
 	return component.getUtility(IAnalyticsQueueFactory)
