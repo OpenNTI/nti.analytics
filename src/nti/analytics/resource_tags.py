@@ -22,8 +22,9 @@ from nti.intid import interfaces as intid_interfaces
 
 from nti.analytics import interfaces as analytic_interfaces
 
+from nti.analytics.sessions import get_nti_session_id
+
 from .common import get_creator
-from .common import get_nti_session_id
 from .common import process_event
 from .common import get_course_by_ntiid
 from .common import get_course

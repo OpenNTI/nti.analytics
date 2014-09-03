@@ -20,8 +20,9 @@ from nti.analytics.interfaces import IResourceEvent
 from nti.analytics.interfaces import ICourseCatalogViewEvent
 
 from nti.analytics.common import get_entity
-from nti.analytics.common import get_nti_session_id
 from nti.analytics.common import process_event
+
+from nti.analytics.sessions import get_nti_session_id
 
 from nti.analytics.database import resource_tags as db_resource_tags
 from nti.analytics.database import resource_views as db_resource_views

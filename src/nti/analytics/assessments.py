@@ -26,6 +26,8 @@ from nti.intid.interfaces import IIntIdRemovedEvent
 
 from nti.ntiids.ntiids import find_object_with_ntiid
 
+from nti.analytics.sessions import get_nti_session_id
+
 from . import get_factory
 from . import ASSESSMENTS_ANALYTICS
 
@@ -34,7 +36,6 @@ from .common import get_course
 from .common import get_creator
 from .common import process_event
 from .common import get_object_root
-from .common import get_nti_session_id
 from .common import get_course_by_ntiid
 from .common import get_created_timestamp
 

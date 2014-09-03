@@ -42,3 +42,5 @@ def new_session( nti_session ):
 
 def get_current_session_id( user ):
 	db_sessions.get_current_session_id( user )
+
+get_nti_session_id = get_current_session_id

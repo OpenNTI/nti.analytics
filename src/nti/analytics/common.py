@@ -40,9 +40,6 @@ from zope.traversing.interfaces import IEtcNamespace
 from nti.async import create_job
 from six import integer_types
 
-from nti.analytics.identifier import SessionId
-_sessionid = SessionId()
-
 def get_rating_from_event( event ):
 	delta = -1 if IObjectUnratedEvent.providedBy( event ) else 1
 	is_favorite = None
@@ -83,18 +80,6 @@ def get_creator(obj):
 		return creator
 	except (TypeError, POSKeyError):
 		return None
-
-def get_id_for_session( nti_session ):
-	""" Given an nti_session, return the unique id """
-	return _sessionid.get_id( nti_session ) if nti_session else None
-
-def get_nti_session( user ):
-	""" Attempt to get the current session for the user, returning None if none found. """
-	return None
-
-def get_nti_session_id( user ):
-	""" Attempt to get the current session id for the user, returning None if none found. """
-	return None
 
 def get_object_root( obj, type_to_find ):
 	""" Work up the parent tree looking for 'type_to_find', returning None if not found. """

@@ -23,10 +23,12 @@ from nti.contenttypes.courses.enrollment import DefaultPrincipalEnrollments
 from datetime import datetime
 
 from nti.analytics import interfaces as analytics_interfaces
+
+from nti.analytics.sessions import get_nti_session_id
+
 from nti.analytics.database import enrollments as db_enrollments
 
 from .common import get_course_name
-from .common import get_nti_session_id
 from .common import process_event
 from .common import get_entity
 
