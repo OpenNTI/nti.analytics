@@ -11,6 +11,7 @@ import os
 import shutil
 import tempfile
 import unittest
+import time
 
 from datetime import datetime
 
@@ -32,9 +33,12 @@ from nti.testing.layers import ConfiguringLayerMixin
 from nti.dataserver.tests.mock_dataserver import DSInjectorMixin
 
 from nti.analytics import identifier
+from nti.analytics.model import AnalyticsSession
+
 from nti.analytics.database.interfaces import IAnalyticsDB
 from nti.analytics.database.database import AnalyticsDB
 from nti.analytics.database import users as db_users
+from nti.analytics.database import sessions as db_sessions
 
 from nti.analytics.tests import DEFAULT_INTID
 
@@ -115,7 +119,11 @@ class AnalyticsTestBase(unittest.TestCase):
 		component.getGlobalSiteManager().registerUtility( self.db, IAnalyticsDB )
 		self.session = self.db.session
 		db_users.create_user( test_user_ds_id )
-		db_users.create_session( test_user_ds_id, datetime.now(), '0.1.2.3.4', 'webapp', '0.9' )
+		version = '1.9'
+		platform = 'webapp'
+		ip_addr = '0.1.2.3.4'
+		nti_session = AnalyticsSession( timestamp=time.time(), version=version, platform=platform, ip_addr=ip_addr )
+		db_sessions.create_session( test_user_ds_id, nti_session )
 
 	def tearDown(self):
 		component.getGlobalSiteManager().unregisterUtility( self.db )

@@ -17,7 +17,7 @@ from datetime import datetime
 from .common import get_entity
 from .common import process_event
 
-from nti.analytics.database import users as db_users
+from nti.analytics.database import sessions as db_sessions
 
 from nti.analytics import interfaces as analytic_interfaces
 
@@ -28,9 +28,17 @@ def _get_job_queue():
 	factory = get_factory()
 	return factory.get_queue( SESSIONS_ANALYTICS )
 
-def _add_session( user, nti_session, timestamp, ip_addr=None, platform=None, version=None ):
+def _add_session( nti_session ):
 	if nti_session:
+		user = nti_session.user
 		user = get_entity( user )
-		db_users.create_session( user, nti_session, timestamp, ip_addr, platform, version )
+		db_sessions.create_session( user, nti_session )
 		logger.debug( 'Session created (user=%s)', user )
 
+def new_session( nti_session ):
+	# We process this synchronously in order to have accurate
+	# session information as we need it.
+	_add_session( nti_session )
+
+def get_current_session_id( user ):
+	db_sessions.get_current_session_id( user )
