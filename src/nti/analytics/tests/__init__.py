@@ -83,12 +83,12 @@ DEFAULT_INTID = 101
 class TestIdentifier(_Identifier):
 	""" Defines ids simply if they are ints, or looks for an 'intid' field. """
 
-	def __init__(self):
-		self.default_intid = DEFAULT_INTID
-		self.cache = dict()
-		self.id_map = dict()
+	default_intid = DEFAULT_INTID
+	cache = dict()
+	id_map = dict()
 
-	def get_id( self, obj ):
+	@classmethod
+	def get_id( cls, obj ):
 		# Opt for ds_intid if we're in a mock_ds
 		result = getattr( obj, '_ds_intid', None )
 		if result:
@@ -100,8 +100,8 @@ class TestIdentifier(_Identifier):
 			return result
 
 		# Otherwise, let's check cache
-		if obj in self.cache:
-			return self.cache.get( obj )
+		if obj in TestIdentifier.cache:
+			return TestIdentifier.cache.get( obj )
 
 		# Ok, make something up.
 		if isinstance( obj, ( integer_types, string_types ) ):
@@ -110,19 +110,13 @@ class TestIdentifier(_Identifier):
 			result = getattr( obj, 'intid', None )
 
 		if result is None:
-			result = self.default_intid
-			self.default_intid += 1
+			result = TestIdentifier.default_intid
+			TestIdentifier.default_intid += 1
 
-		self.cache[obj] = result
+		TestIdentifier.cache[obj] = result
 		return result
 
-	def get_object(self, id):
+	@classmethod
+	def get_object( cls, id ):
 		return object()
 
-from nti.analytics import identifier
-# FIXME
-identifier._DSIdentifier.get_id = identifier._NtiidIdentifier.get_id \
-= identifier.SessionId.get_id = TestIdentifier().get_id
-
-identifier._DSIdentifier.get_object = identifier._NtiidIdentifier.get_object \
-= identifier.SessionId.get_object = TestIdentifier().get_object

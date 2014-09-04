@@ -22,15 +22,9 @@ from nti.analytics.common import timestamp_type
 from nti.analytics.common import get_ratings
 
 from nti.analytics.identifier import SessionId
-from nti.analytics.identifier import CourseId
 from nti.analytics.identifier import NoteId
 from nti.analytics.identifier import HighlightId
 from nti.analytics.identifier import ResourceId
-_sessionid = SessionId()
-_courseid = CourseId()
-_noteid = NoteId()
-_highlightid = HighlightId()
-_resourceid = ResourceId()
 
 from nti.analytics.database import INTID_COLUMN_TYPE
 from nti.analytics.database import Base
@@ -40,7 +34,6 @@ from nti.analytics.database.meta_mixins import BaseTableMixin
 from nti.analytics.database.meta_mixins import BaseViewMixin
 from nti.analytics.database.meta_mixins import DeletedMixin
 from nti.analytics.database.meta_mixins import ResourceMixin
-from nti.analytics.database.meta_mixins import ResourceViewMixin
 from nti.analytics.database.meta_mixins import RatingsMixin
 
 from nti.analytics.database.users import get_or_create_user
@@ -103,9 +96,9 @@ def create_note(user, nti_session, course, note):
 	db = get_analytics_db()
 	user = get_or_create_user(user )
 	uid = user.user_id
-	sid = _sessionid.get_id( nti_session )
-	rid = _resourceid.get_id( note.containerId )
-	note_ds_id = _noteid.get_id( note )
+	sid = SessionId.get_id( nti_session )
+	rid = ResourceId.get_id( note.containerId )
+	note_ds_id = NoteId.get_id( note )
 	course_id = get_course_id( db, course )
 	timestamp = get_created_timestamp( note )
 	sharing = _get_sharing_enum( note, course )
@@ -116,7 +109,7 @@ def create_note(user, nti_session, course, note):
 	pid = None
 	parent_note = getattr( note, 'inReplyTo', None )
 	if parent_note is not None:
-		pid = _noteid.get_id( parent_note )
+		pid = NoteId.get_id( parent_note )
 		pid = _get_note_id( db, pid )
 
 	new_object = NotesCreated( 	user_id=uid,
@@ -144,21 +137,21 @@ def delete_note(timestamp, note_ds_id):
 
 def like_note( note, delta ):
 	db = get_analytics_db()
-	note_ds_id = _noteid.get_id( note )
+	note_ds_id = NoteId.get_id( note )
 	db_note = db.session.query(NotesCreated).filter( NotesCreated.note_ds_id == note_ds_id ).one()
 	db_note.like_count += delta
 	db.session.flush()
 
 def favorite_note( note, delta ):
 	db = get_analytics_db()
-	note_ds_id = _noteid.get_id( note )
+	note_ds_id = NoteId.get_id( note )
 	db_note = db.session.query(NotesCreated).filter( NotesCreated.note_ds_id == note_ds_id ).one()
 	db_note.favorite_count += delta
 	db.session.flush()
 
 def flag_note( note, state ):
 	db = get_analytics_db()
-	note_ds_id = _noteid.get_id( note )
+	note_ds_id = NoteId.get_id( note )
 	db_note = db.session.query(NotesCreated).filter( NotesCreated.note_ds_id == note_ds_id ).one()
 	db_note.is_flagged = state
 	db.session.flush()
@@ -167,9 +160,9 @@ def create_note_view(user, nti_session, timestamp, course, note):
 	db = get_analytics_db()
 	user = get_or_create_user(user )
 	uid = user.user_id
-	sid = _sessionid.get_id( nti_session )
-	rid = _resourceid.get_id( note.containerId )
-	note_ds_id = _noteid.get_id( note )
+	sid = SessionId.get_id( nti_session )
+	rid = ResourceId.get_id( note.containerId )
+	note_ds_id = NoteId.get_id( note )
 	note_id = _get_note_id( db, note_ds_id )
 	course_id = get_course_id( db, course )
 	timestamp = timestamp_type( timestamp )
@@ -186,9 +179,9 @@ def create_highlight(user, nti_session, course, highlight):
 	db = get_analytics_db()
 	user = get_or_create_user(user )
 	uid = user.user_id
-	sid = _sessionid.get_id( nti_session )
-	rid = _resourceid.get_id( highlight.containerId )
-	highlight_ds_id = _highlightid.get_id( highlight )
+	sid = SessionId.get_id( nti_session )
+	rid = ResourceId.get_id( highlight.containerId )
+	highlight_ds_id = HighlightId.get_id( highlight )
 	course_id = get_course_id( db, course )
 
 	timestamp = get_created_timestamp( highlight )

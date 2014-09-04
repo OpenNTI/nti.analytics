@@ -41,10 +41,6 @@ from nti.analytics.identifier import SessionId
 from nti.analytics.identifier import SubmissionId
 from nti.analytics.identifier import QuestionSetId
 from nti.analytics.identifier import FeedbackId
-_sessionid = SessionId()
-_submissionid = SubmissionId()
-_questionsetid = QuestionSetId()
-_feedbackid = FeedbackId()
 
 from nti.analytics.database import NTIID_COLUMN_TYPE
 from nti.analytics.database import INTID_COLUMN_TYPE
@@ -86,7 +82,6 @@ class DetailMixin(TimeLengthMixin):
 	def question_part_id(cls):
 		return Column('question_part_id', INTID_COLUMN_TYPE, nullable=False, autoincrement=False, index=True )
 
-	# TODO separate submissions by question types?
 	@declared_attr
 	def submission(cls):
 		# Null if left blank
@@ -205,11 +200,11 @@ def create_self_assessment_taken(user, nti_session, timestamp, course, submissio
 	db = get_analytics_db()
 	user = get_or_create_user(user )
 	uid = user.user_id
-	sid = _sessionid.get_id( nti_session )
+	sid = SessionId.get_id( nti_session )
 	course_id = get_course_id( db, course )
 	timestamp = timestamp_type( timestamp )
-	submission_id = _submissionid.get_id( submission )
-	self_assessment_id = _questionsetid.get_id( submission.questionSetId )
+	submission_id = SubmissionId.get_id( submission )
+	self_assessment_id = QuestionSetId.get_id( submission.questionSetId )
 	# We likely will not have a grader.
 	grader = _get_grader_id( submission )
 	# TODO As a QAssessedQuestionSet. we will not have a duration.
@@ -272,10 +267,10 @@ def create_assignment_taken(user, nti_session, timestamp, course, submission ):
 	db = get_analytics_db()
 	user = get_or_create_user(user )
 	uid = user.user_id
-	sid = _sessionid.get_id( nti_session )
+	sid = SessionId.get_id( nti_session )
 	course_id = get_course_id( db, course )
 	timestamp = timestamp_type( timestamp )
-	submission_id = _submissionid.get_id( submission )
+	submission_id = SubmissionId.get_id( submission )
 	assignment_id = submission.assignmentId
 	submission_obj = submission.Submission
 	time_length = _get_duration( submission_obj )
@@ -365,7 +360,7 @@ def grade_submission(user, nti_session, timestamp, grader, graded_val, submissio
 	db = get_analytics_db()
 	grader = get_or_create_user(grader )
 	grader_id  = grader.user_id
-	submission_id = _submissionid.get_id( submission )
+	submission_id = SubmissionId.get_id( submission )
 	assignment_taken_id = _get_assignment_taken_id( db, submission_id )
 	grade_entry = _get_grade_entry( db, assignment_taken_id )
 	timestamp = timestamp_type( timestamp )
@@ -383,7 +378,7 @@ def grade_submission(user, nti_session, timestamp, grader, graded_val, submissio
 		# New grade
 		user = get_or_create_user(user )
 		uid = user.user_id
-		sid = _sessionid.get_id( nti_session )
+		sid = SessionId.get_id( nti_session )
 
 		new_object = AssignmentGrades( 	user_id=uid,
 										session_id=sid,
@@ -410,12 +405,12 @@ def create_submission_feedback( user, nti_session, timestamp, submission, feedba
 	db = get_analytics_db()
 	user = get_or_create_user(user )
 	uid = user.user_id
-	sid = _sessionid.get_id( nti_session )
+	sid = SessionId.get_id( nti_session )
 	timestamp = timestamp_type( timestamp )
-	feedback_ds_id = _feedbackid.get_id( feedback )
+	feedback_ds_id = FeedbackId.get_id( feedback )
 	feedback_length = sum( len( x ) for x in feedback.body )
 
-	submission_id = _submissionid.get_id( submission )
+	submission_id = SubmissionId.get_id( submission )
 	assignment_taken_id = _get_assignment_taken_id( db, submission_id )
 	# TODO Do we need to handle any of these being None?
 	# That's an error condition, right?
@@ -448,7 +443,7 @@ def get_self_assessments_for_user(user, course):
 																SelfAssessmentsTaken.course_id == course_id ).all()
 
 	for sat in results:
-		submission = _submissionid.get_object( sat.submission_id )
+		submission = SubmissionId.get_object( sat.submission_id )
 		setattr( sat, 'submission', submission )
 	return results
 
@@ -460,7 +455,7 @@ def get_assignments_for_user(user, course):
 	results = db.session.query(AssignmentsTaken).filter( 	AssignmentsTaken.user_id == uid,
 															AssignmentsTaken.course_id == course_id ).all()
 	for at in results:
-		submission = _submissionid.get_object( at.submission_id )
+		submission = SubmissionId.get_object( at.submission_id )
 		setattr( at, 'submission', submission )
 	return results
 
@@ -470,7 +465,7 @@ def get_self_assessments_for_course(course):
 	results = db.session.query(SelfAssessmentsTaken).filter( SelfAssessmentsTaken.course_id == course_id ).all()
 
 	for sat in results:
-		submission = _submissionid.get_object( sat.submission_id )
+		submission = SubmissionId.get_object( sat.submission_id )
 		setattr( sat, 'submission', submission )
 	return results
 

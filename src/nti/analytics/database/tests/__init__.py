@@ -13,6 +13,8 @@ import tempfile
 import unittest
 import time
 
+from fudge import patch_object
+
 from datetime import datetime
 
 from zope import component
@@ -40,54 +42,49 @@ from nti.analytics.database import users as db_users
 from nti.analytics.database import sessions as db_sessions
 
 from nti.analytics.tests import DEFAULT_INTID
-
 from nti.analytics.tests import TestIdentifier
-identifier._DSIdentifier.get_id = identifier._NtiidIdentifier.get_id \
-= identifier.SessionId.get_id = TestIdentifier().get_id
 
 class SharedConfiguringTestLayer(ZopeComponentLayer,
                                  GCLayerMixin,
                                  ConfiguringLayerMixin,
                                  DSInjectorMixin):
 
-    set_up_packages = ('nti.dataserver', 'nti.analytics')
+	set_up_packages = ('nti.dataserver', 'nti.analytics')
 
-    @classmethod
-    def setUp(cls):
-        cls.setUpPackages()
-        cls.old_data_dir = os.getenv('DATASERVER_DATA_DIR')
-        cls.new_data_dir = tempfile.mkdtemp(dir="/tmp")
-        os.environ['DATASERVER_DATA_DIR'] = cls.new_data_dir
+	@classmethod
+	def setUp(cls):
+		cls.setUpPackages()
+		cls.old_data_dir = os.getenv('DATASERVER_DATA_DIR')
+		cls.new_data_dir = tempfile.mkdtemp(dir="/tmp")
+		os.environ['DATASERVER_DATA_DIR'] = cls.new_data_dir
 
-    @classmethod
-    def tearDown(cls):
-        cls.tearDownPackages()
-        zope.testing.cleanup.cleanUp()
+	@classmethod
+	def tearDown(cls):
+		cls.tearDownPackages()
+		zope.testing.cleanup.cleanUp()
 
-    @classmethod
-    def testSetUp(cls, test=None):
-        cls.setUpTestDS(test)
-        shutil.rmtree(cls.new_data_dir, True)
-        os.environ['DATASERVER_DATA_DIR'] = cls.old_data_dir or '/tmp'
+	@classmethod
+	def testSetUp(cls, test=None):
+		cls.setUpTestDS(test)
+		shutil.rmtree(cls.new_data_dir, True)
+		os.environ['DATASERVER_DATA_DIR'] = cls.old_data_dir or '/tmp'
 
-    @classmethod
-    def testTearDown(cls):
-        pass
-
-import unittest
+	@classmethod
+	def testTearDown(cls):
+		pass
 
 class NTIAnalyticsTestCase(unittest.TestCase):
-    layer = SharedConfiguringTestLayer
+	layer = SharedConfiguringTestLayer
 
 class NTIAnalyticsApplicationTestLayer(ApplicationTestLayer):
 
-    @classmethod
-    def setUp(cls):
-        pass
+	@classmethod
+	def setUp(cls):
+		pass
 
-    @classmethod
-    def tearDown(cls):
-        pass
+	@classmethod
+	def tearDown(cls):
+		pass
 
 class MockParent(object):
 
@@ -117,6 +114,14 @@ class AnalyticsTestBase(unittest.TestCase):
 		self.db = AnalyticsDB( dburi='sqlite://' )
 		component.getGlobalSiteManager().registerUtility( self.db, IAnalyticsDB )
 		self.session = self.db.session
+
+		self.patches = [
+				patch_object( identifier.SessionId, 'get_id', TestIdentifier.get_id ),
+				patch_object( identifier._DSIdentifier, 'get_id', TestIdentifier.get_id ),
+				patch_object( identifier._NtiidIdentifier, 'get_id', TestIdentifier.get_id ),
+				patch_object( identifier._DSIdentifier, 'get_object', TestIdentifier.get_object ),
+				patch_object( identifier._NtiidIdentifier, 'get_object', TestIdentifier.get_object ) ]
+
 		db_users.create_user( test_user_ds_id )
 		user_agent = 'webapp-1.9'
 		ip_addr = '0.1.2.3.4'
@@ -125,3 +130,5 @@ class AnalyticsTestBase(unittest.TestCase):
 	def tearDown(self):
 		component.getGlobalSiteManager().unregisterUtility( self.db )
 		self.session.close()
+		for patch in self.patches:
+			patch.restore()

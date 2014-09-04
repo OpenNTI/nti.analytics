@@ -13,18 +13,13 @@ from sqlalchemy import Integer
 from sqlalchemy import String
 from sqlalchemy import ForeignKey
 from sqlalchemy import DateTime
-
 from sqlalchemy.schema import Sequence
 
 from nti.analytics.common import timestamp_type
 
-from nti.analytics.identifier import SessionId
-_sessionid = SessionId()
-
 from nti.analytics.database import SESSION_COLUMN_TYPE
 from nti.analytics.database import Base
 from nti.analytics.database import get_analytics_db
-
 from nti.analytics.database.users import get_or_create_user
 
 class Sessions(Base):

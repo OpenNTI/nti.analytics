@@ -34,8 +34,6 @@ from nti.analytics.database import social as db_social
 
 from nti.analytics.identifier import FriendsListId
 from nti.analytics.identifier import DFLId
-_dflid = DFLId()
-_flid = FriendsListId()
 
 from nti.analytics import get_factory
 from nti.analytics import SOCIAL_ANALYTICS
@@ -157,7 +155,7 @@ def _friendslist_modified(obj, event):
 @component.adapter(nti_interfaces.IFriendsList, intid_interfaces.IIntIdRemovedEvent)
 def _friendslist_deleted(obj, event):
 	if _is_friends_list( obj ):
-		id = _flid.get_id( obj )
+		id = FriendsListId.get_id( obj )
 		timestamp = datetime.utcnow()
 		process_event( _get_job_queue, _remove_friends_list, friends_list_id=id, timestamp=timestamp )
 
@@ -209,7 +207,7 @@ def _dfl_added(obj, event):
 				  intid_interfaces.IIntIdRemovedEvent)
 def _dfl_deleted(obj, event):
 	timestamp = datetime.utcnow()
-	id = _dflid.get_id( obj )
+	id = DFLId.get_id( obj )
 	process_event( _get_job_queue, _remove_dfl, dfl_id=id, timestamp=timestamp )
 
 def _handle_dfl_membership_event( event, to_call ):

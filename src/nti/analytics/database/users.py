@@ -18,9 +18,6 @@ from sqlalchemy.schema import Sequence
 from nti.app.products.ou.interfaces import IUserResearchStatus
 
 from nti.analytics.identifier import UserId
-from nti.analytics.identifier import SessionId
-_userid = UserId()
-_sessionid = SessionId()
 
 from nti.analytics.database import INTID_COLUMN_TYPE
 from nti.analytics.database import Base
@@ -38,7 +35,7 @@ def create_user(user):
 	# We may have non-IUsers here, but let's keep them since we may need
 	# them (e.g. community owned forums).
 	username = getattr( user, 'username', None )
-	uid = _userid.get_id( user )
+	uid = UserId.get_id( user )
 
 	allow_research = None
 	# TODO OU specific
@@ -58,7 +55,7 @@ def create_user(user):
 
 def get_or_create_user(user):
 	db = get_analytics_db()
-	uid = _userid.get_id( user )
+	uid = UserId.get_id( user )
 	found_user = db.session.query(Users).filter( Users.user_ds_id == uid ).first()
 	return found_user or create_user( user )
 

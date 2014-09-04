@@ -33,8 +33,6 @@ from nti.analytics.database import resource_tags as db_resource_tags
 
 from nti.analytics.identifier import NoteId
 from nti.analytics.identifier import HighlightId
-_noteid = NoteId()
-_highlightid = HighlightId()
 
 from nti.analytics import get_factory
 from nti.analytics import TAGS_ANALYTICS
@@ -111,7 +109,7 @@ def _note_added( obj, event ):
 def _note_removed( obj, event ):
 	if _is_note( obj ):
 		timestamp = datetime.utcnow()
-		note_id = _noteid.get_id( obj )
+		note_id = NoteId.get_id( obj )
 		process_event( _get_job_queue, _remove_note, note_id=note_id, timestamp=timestamp )
 
 
@@ -145,7 +143,7 @@ def _highlight_added( obj, event ):
 def _highlight_removed( obj, event ):
 	if _is_highlight( obj ):
 		timestamp = datetime.utcnow()
-		highlight_id = _highlightid.get_id( obj )
+		highlight_id = HighlightId.get_id( obj )
 		process_event( _get_job_queue, _remove_highlight, highlight_id=highlight_id, timestamp=timestamp )
 
 component.moduleProvides(analytic_interfaces.IObjectProcessor)

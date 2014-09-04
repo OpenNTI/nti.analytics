@@ -19,9 +19,6 @@ from sqlalchemy.schema import PrimaryKeyConstraint
 from nti.analytics.common import timestamp_type
 
 from nti.analytics.identifier import SessionId
-from nti.analytics.identifier import CourseId
-_sessionid = SessionId()
-_courseid = CourseId()
 
 from nti.analytics.database import Base
 from nti.analytics.database import get_analytics_db
@@ -41,8 +38,6 @@ class CourseCatalogViews(Base,BaseViewMixin,CourseMixin,TimeLengthMixin):
         PrimaryKeyConstraint('user_id', 'course_id', 'timestamp'),
     )
 
-# TODO how will we populate this, at migration time based on client?
-# or perhaps statically at first.
 class EnrollmentTypes(Base):
 	__tablename__ = 'EnrollmentTypes'
 	type_id = Column( 'type_id', Integer, Sequence( 'enrollment_type_seq' ), nullable=False, primary_key=True )
@@ -69,7 +64,7 @@ def create_course_catalog_view( user, nti_session, timestamp, course, time_lengt
 	db = get_analytics_db()
 	user = get_or_create_user(user )
 	uid = user.user_id
-	sid = _sessionid.get_id( nti_session )
+	sid = SessionId.get_id( nti_session )
 	course_id = get_course_id( db, course )
 	timestamp = timestamp_type( timestamp )
 
@@ -94,7 +89,7 @@ def create_course_enrollment(user, nti_session, timestamp, course, enrollment_ty
 	db = get_analytics_db()
 	user = get_or_create_user(user )
 	uid = user.user_id
-	sid = _sessionid.get_id( nti_session )
+	sid = SessionId.get_id( nti_session )
 	course_id = get_course_id( db, course )
 	timestamp = timestamp_type( timestamp )
 
@@ -112,7 +107,7 @@ def create_course_drop(user, nti_session, timestamp, course):
 	db = get_analytics_db()
 	user = get_or_create_user(user )
 	uid = user.user_id
-	sid = _sessionid.get_id( nti_session )
+	sid = SessionId.get_id( nti_session )
 	course_id = get_course_id( db, course )
 	timestamp = timestamp_type( timestamp )
 

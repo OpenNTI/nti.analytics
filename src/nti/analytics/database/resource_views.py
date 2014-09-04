@@ -18,11 +18,7 @@ from sqlalchemy.schema import Sequence
 from nti.analytics.common import timestamp_type
 
 from nti.analytics.identifier import SessionId
-from nti.analytics.identifier import CourseId
 from nti.analytics.identifier import ResourceId
-_sessionid = SessionId()
-_courseid = CourseId()
-_resourceid = ResourceId()
 
 from nti.analytics.database import Base
 from nti.analytics.database import get_analytics_db
@@ -64,8 +60,8 @@ def create_course_resource_view(user, nti_session, timestamp, course, context_pa
 	db = get_analytics_db()
 	user = get_or_create_user(user )
 	uid = user.user_id
-	sid = _sessionid.get_id( nti_session )
-	rid = _resourceid.get_id( resource )
+	sid = SessionId.get_id( nti_session )
+	rid = ResourceId.get_id( resource )
 	course_id = get_course_id( db, course )
 	timestamp = timestamp_type( timestamp )
 	context_path = _get_context_path( context_path )
@@ -91,8 +87,8 @@ def create_video_event(	user,
 	db = get_analytics_db()
 	user = get_or_create_user(user )
 	uid = user.user_id
-	sid = _sessionid.get_id( nti_session )
-	vid = _resourceid.get_id( video_resource )
+	sid = SessionId.get_id( nti_session )
+	vid = ResourceId.get_id( video_resource )
 	course_id = get_course_id( db, course )
 	timestamp = timestamp_type( timestamp )
 	context_path = _get_context_path( context_path )

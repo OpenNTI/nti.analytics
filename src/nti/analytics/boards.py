@@ -37,9 +37,6 @@ from nti.analytics.database import boards as db_boards
 from nti.analytics.identifier import ForumId
 from nti.analytics.identifier import TopicId
 from nti.analytics.identifier import CommentId
-_commentid = CommentId()
-_topicid = TopicId()
-_forumid = ForumId()
 
 from nti.analytics import get_factory
 from nti.analytics import BOARDS_ANALYTICS
@@ -128,7 +125,7 @@ def _modify_general_forum_comment(comment, event):
 	if		_is_forum_comment( comment ) \
 		and nti_interfaces.IDeletedObjectPlaceholder.providedBy( comment ):
 			timestamp = datetime.utcnow()
-			comment_id = _commentid.get_id( comment )
+			comment_id = CommentId.get_id( comment )
 			process_event( _get_comments_queue, _remove_comment, comment_id=comment_id, timestamp=timestamp )
 
 
@@ -199,7 +196,7 @@ def _topic_added( topic, event ):
 def _topic_removed( topic, event ):
 	if _is_topic( topic ):
 		timestamp = datetime.utcnow()
-		topic_id = _topicid.get_id( topic )
+		topic_id = TopicId.get_id( topic )
 		process_event( _get_topic_queue, _remove_topic, topic_id=topic_id, timestamp=timestamp )
 
 
@@ -230,7 +227,7 @@ def _forum_added( forum, event ):
 @component.adapter( frm_interfaces.IForum, intid_interfaces.IIntIdRemovedEvent )
 def _forum_removed( forum, event ):
 	timestamp = get_deleted_time( forum )
-	forum_id = _forumid.get_id( forum )
+	forum_id = ForumId.get_id( forum )
 	process_event( _get_board_queue, _remove_forum, forum_id=forum_id, timestamp=timestamp )
 
 component.moduleProvides(analytic_interfaces.IObjectProcessor)

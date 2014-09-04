@@ -18,7 +18,6 @@ from nti.analytics.common import process_event
 from nti.analytics.database import courses as db_courses
 
 from nti.analytics.identifier import CourseId
-_courseid = CourseId()
 
 from nti.analytics import get_factory
 from nti.analytics import DELETE_ANALYTICS
@@ -33,6 +32,6 @@ def _delete_course( course_id ):
 
 @component.adapter( ICourseInstance, IIntIdRemovedEvent )
 def _course_removed( entity, event ):
-	course_id = _courseid.get_id( entity )
+	course_id = CourseId.get_id( entity )
 	process_event( _get_job_queue, _delete_course, course_id=course_id )
 

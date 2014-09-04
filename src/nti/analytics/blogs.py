@@ -34,8 +34,6 @@ from nti.analytics.database import blogs as db_blogs
 
 from nti.analytics.identifier import BlogId
 from nti.analytics.identifier import CommentId
-_commentid = CommentId()
-_blogid = BlogId()
 
 from nti.analytics import get_factory
 from nti.analytics import BLOGS_ANALYTICS
@@ -106,7 +104,7 @@ def _modify_personal_blog_comment(comment, event):
 	# IObjectSharingModifiedEvent
 	if nti_interfaces.IDeletedObjectPlaceholder.providedBy( comment ):
 		timestamp = datetime.utcnow()
-		comment_id = _commentid.get_id( comment )
+		comment_id = CommentId.get_id( comment )
 		process_event( _get_comment_queue, _remove_comment, comment_id=comment_id, timestamp=timestamp )
 
 
@@ -179,7 +177,7 @@ def _delete_blog( blog_id, timestamp ):
 					intid_interfaces.IIntIdRemovedEvent )
 def _blog_removed( blog, event ):
 	timestamp = datetime.utcnow()
-	blog_id = _blogid.get_id( blog )
+	blog_id = BlogId.get_id( blog )
 	process_event( _get_blog_queue, _delete_blog, blog_id=blog_id, timestamp=timestamp )
 
 component.moduleProvides(analytic_interfaces.IObjectProcessor)

@@ -42,7 +42,6 @@ from .common import get_created_timestamp
 from .database import assessments as db_assessments
 
 from .identifier import FeedbackId
-_feedbackid = FeedbackId()
 
 from .interfaces import IObjectProcessor
 
@@ -197,7 +196,7 @@ def _feedback_added(feedback, event):
 @component.adapter(IUsersCourseAssignmentHistoryItemFeedback, IIntIdRemovedEvent)
 def _feedback_removed(feedback, event):
 	timestamp = datetime.utcnow()
-	feedback_id = _feedbackid.get_id( feedback )
+	feedback_id = FeedbackId.get_id( feedback )
 	process_event( _get_job_queue, _remove_feedback, feedback_id=feedback_id, timestamp=timestamp )
 
 def init( obj ):

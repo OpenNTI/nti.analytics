@@ -17,7 +17,6 @@ from sqlalchemy.schema import Sequence
 from nti.analytics.common import get_course_name
 
 from nti.analytics.identifier import CourseId
-_courseid = CourseId()
 
 from nti.analytics.database import INTID_COLUMN_TYPE
 from nti.analytics.database import Base
@@ -45,7 +44,7 @@ def _get_or_create_course( db, course, course_ds_id ):
 	return found_course or _create_course( db, course, course_ds_id )
 
 def get_course_id( db, course ):
-	course_ds_id = _courseid.get_id( course )
+	course_ds_id = CourseId.get_id( course )
 	course = _get_or_create_course( db, course, course_ds_id )
 	return course.course_id
 

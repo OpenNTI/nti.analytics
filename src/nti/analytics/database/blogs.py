@@ -21,13 +21,8 @@ from nti.analytics.common import timestamp_type
 from nti.analytics.common import get_ratings
 
 from nti.analytics.identifier import SessionId
-from nti.analytics.identifier import CourseId
 from nti.analytics.identifier import BlogId
 from nti.analytics.identifier import CommentId
-_sessionid = SessionId()
-_courseid = CourseId()
-_blogid = BlogId()
-_commentid = CommentId()
 
 from nti.analytics.database import INTID_COLUMN_TYPE
 from nti.analytics.database import Base
@@ -76,8 +71,8 @@ def create_blog( user, nti_session, blog_entry ):
 	db = get_analytics_db()
 	user = get_or_create_user(user )
 	uid = user.user_id
-	sid = _sessionid.get_id( nti_session )
-	blog_ds_id = _blogid.get_id( blog_entry )
+	sid = SessionId.get_id( nti_session )
+	blog_ds_id = BlogId.get_id( blog_entry )
 	like_count, favorite_count, is_flagged = get_ratings( blog_entry )
 
 	timestamp = get_created_timestamp( blog_entry )
@@ -119,21 +114,21 @@ def delete_blog( timestamp, blog_ds_id ):
 
 def like_blog( blog, delta ):
 	db = get_analytics_db()
-	blog_ds_id = _blogid.get_id( blog )
+	blog_ds_id = BlogId.get_id( blog )
 	db_blog = db.session.query(BlogsCreated).filter( BlogsCreated.blog_ds_id == blog_ds_id ).one()
 	db_blog.like_count += delta
 	db.session.flush()
 
 def favorite_blog( blog, delta ):
 	db = get_analytics_db()
-	blog_ds_id = _blogid.get_id( blog )
+	blog_ds_id = BlogId.get_id( blog )
 	db_blog = db.session.query(BlogsCreated).filter( BlogsCreated.blog_ds_id == blog_ds_id ).one()
 	db_blog.favorite_count += delta
 	db.session.flush()
 
 def flag_blog( blog, state ):
 	db = get_analytics_db()
-	blog_ds_id = _blogid.get_id( blog )
+	blog_ds_id = BlogId.get_id( blog )
 	db_blog = db.session.query(BlogsCreated).filter( BlogsCreated.blog_ds_id == blog_ds_id ).one()
 	db_blog.is_flagged = state
 	db.session.flush()
@@ -142,8 +137,8 @@ def create_blog_view(user, nti_session, timestamp, blog_entry, time_length):
 	db = get_analytics_db()
 	user = get_or_create_user(user )
 	uid = user.user_id
-	sid = _sessionid.get_id( nti_session )
-	blog_ds_id = _blogid.get_id( blog_entry )
+	sid = SessionId.get_id( nti_session )
+	blog_ds_id = BlogId.get_id( blog_entry )
 	blog_id = _get_blog_id( db, blog_ds_id )
 	timestamp = timestamp_type( timestamp )
 
@@ -158,17 +153,17 @@ def create_blog_comment(user, nti_session, blog, comment ):
 	db = get_analytics_db()
 	user = get_or_create_user(user )
 	uid = user.user_id
-	sid = _sessionid.get_id( nti_session )
-	blog_ds_id = _blogid.get_id( blog )
+	sid = SessionId.get_id( nti_session )
+	blog_ds_id = BlogId.get_id( blog )
 	bid = _get_blog_id( db, blog_ds_id )
-	cid = _commentid.get_id( comment )
+	cid = CommentId.get_id( comment )
 	pid = None
 	like_count, favorite_count, is_flagged = get_ratings( comment )
 
 	timestamp = get_created_timestamp( comment )
 	parent_comment = getattr( comment, 'inReplyTo', None )
 	if parent_comment is not None:
-		pid = _commentid.get_id( parent_comment )
+		pid = CommentId.get_id( parent_comment )
 
 	comment_length = sum( len( x ) for x in comment.body )
 
@@ -194,21 +189,21 @@ def delete_blog_comment(timestamp, comment_id):
 
 def like_comment( comment, delta ):
 	db = get_analytics_db()
-	comment_id = _commentid.get_id( comment )
+	comment_id = CommentId.get_id( comment )
 	db_comment = db.session.query(BlogCommentsCreated).filter( BlogCommentsCreated.comment_id == comment_id ).one()
 	db_comment.like_count += delta
 	db.session.flush()
 
 def favorite_comment( comment, delta ):
 	db = get_analytics_db()
-	comment_id = _commentid.get_id( comment )
+	comment_id = CommentId.get_id( comment )
 	db_comment = db.session.query(BlogCommentsCreated).filter( BlogCommentsCreated.comment_id == comment_id ).one()
 	db_comment.favorite_count += delta
 	db.session.flush()
 
 def flag_comment( comment, state ):
 	db = get_analytics_db()
-	comment_id = _commentid.get_id( comment )
+	comment_id = CommentId.get_id( comment )
 	db_comment = db.session.query(BlogCommentsCreated).filter( BlogCommentsCreated.comment_id == comment_id ).one()
 	db_comment.is_flagged = state
 	db.session.flush()

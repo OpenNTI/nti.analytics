@@ -25,10 +25,6 @@ from nti.analytics.identifier import SessionId
 from nti.analytics.identifier import ChatId
 from nti.analytics.identifier import DFLId
 from nti.analytics.identifier import FriendsListId
-_sessionid = SessionId()
-_chatid = ChatId()
-_dflid = DFLId()
-_flid = FriendsListId()
 
 from nti.analytics.database import INTID_COLUMN_TYPE
 from nti.analytics.database import Base
@@ -134,8 +130,8 @@ def create_chat_initiated(user, nti_session, chat):
 	db = get_analytics_db()
 	user = get_or_create_user(user )
 	uid = user.user_id
-	sid = _sessionid.get_id( nti_session )
-	chat_ds_id = _chatid.get_id( chat )
+	sid = SessionId.get_id( nti_session )
+	chat_ds_id = ChatId.get_id( chat )
 
 	timestamp = get_created_timestamp( chat )
 
@@ -149,8 +145,8 @@ def chat_joined(user, nti_session, timestamp, chat):
 	db = get_analytics_db()
 	user = get_or_create_user(user )
 	uid = user.user_id
-	sid = _sessionid.get_id( nti_session )
-	chat_ds_id = _chatid.get_id( chat )
+	sid = SessionId.get_id( nti_session )
+	chat_ds_id = ChatId.get_id( chat )
 	chat_id = _get_chat_id( db, chat_ds_id )
 	timestamp = timestamp_type( timestamp )
 
@@ -172,7 +168,7 @@ def _get_chat_members( db, chat_id ):
 def update_chat( timestamp, chat, new_members ):
 	db = get_analytics_db()
 	timestamp = timestamp_type( timestamp )
-	chat_ds_id = _chatid.get_id( chat )
+	chat_ds_id = ChatId.get_id( chat )
 	chat_id = _get_chat_id( db, chat_ds_id )
 
 	old_members = _get_chat_members( db, chat_id )
@@ -198,8 +194,8 @@ def create_dynamic_friends_list(user, nti_session, dynamic_friends_list):
 	db = get_analytics_db()
 	user = get_or_create_user(user )
 	uid = user.user_id
-	sid = _sessionid.get_id( nti_session )
-	dfl_ds_id = _dflid.get_id( dynamic_friends_list )
+	sid = SessionId.get_id( nti_session )
+	dfl_ds_id = DFLId.get_id( dynamic_friends_list )
 	timestamp = get_created_timestamp( dynamic_friends_list )
 
 	new_object = DynamicFriendsListsCreated( 	user_id=uid,
@@ -226,8 +222,8 @@ def create_dynamic_friends_member(user, nti_session, timestamp, dynamic_friends_
 	else:
 		user = get_or_create_user(user )
 		uid = user.user_id
-	sid = _sessionid.get_id( nti_session )
-	dfl_ds_id = _dflid.get_id( dynamic_friends_list )
+	sid = SessionId.get_id( nti_session )
+	dfl_ds_id = DFLId.get_id( dynamic_friends_list )
 	dfl_id = _get_dfl_id( db, dfl_ds_id )
 	target = get_or_create_user(new_friend )
 	target_id = target.user_id
@@ -250,8 +246,8 @@ def remove_dynamic_friends_member(user, nti_session, timestamp, dynamic_friends_
 	db = get_analytics_db()
 	user = get_or_create_user(user )
 	uid = user.user_id
-	sid = _sessionid.get_id( nti_session )
-	dfl_ds_id = _dflid.get_id( dynamic_friends_list )
+	sid = SessionId.get_id( nti_session )
+	dfl_ds_id = DFLId.get_id( dynamic_friends_list )
 	dfl_id = _get_dfl_id( db, dfl_ds_id )
 	target = get_or_create_user(target )
 	target_id = target.user_id
@@ -274,8 +270,8 @@ def create_friends_list(user, nti_session, timestamp, friends_list):
 	db = get_analytics_db()
 	user = get_or_create_user(user )
 	uid = user.user_id
-	sid = _sessionid.get_id( nti_session )
-	friends_list_ds_id = _flid.get_id( friends_list )
+	sid = SessionId.get_id( nti_session )
+	friends_list_ds_id = FriendsListId.get_id( friends_list )
 	timestamp = timestamp_type( timestamp )
 
 	new_object = FriendsListsCreated( 	user_id=uid,
@@ -332,7 +328,7 @@ def update_contacts( user, nti_session, timestamp, friends_list ):
 	db = get_analytics_db()
 	user = get_or_create_user(user )
 	uid = user.user_id
-	sid = _sessionid.get_id( nti_session )
+	sid = SessionId.get_id( nti_session )
 	timestamp = timestamp_type( timestamp )
 
 	members = _get_contacts( db, uid )
@@ -358,7 +354,7 @@ def update_contacts( user, nti_session, timestamp, friends_list ):
 
 def update_friends_list( user, nti_session, timestamp, friends_list ):
 	db = get_analytics_db()
-	friends_list_ds_id = _flid.get_id( friends_list )
+	friends_list_ds_id = FriendsListId.get_id( friends_list )
 	friends_list_id = _get_friends_list_id( db, friends_list_ds_id )
 	members = _get_friends_list_members( db, friends_list_id )
 	members_to_add, members_to_remove \
@@ -366,7 +362,7 @@ def update_friends_list( user, nti_session, timestamp, friends_list ):
 
 	user = get_or_create_user(user )
 	uid = user.user_id
-	sid = _sessionid.get_id( nti_session )
+	sid = SessionId.get_id( nti_session )
 	timestamp = timestamp_type( timestamp )
 
 	for new_member in members_to_add:
