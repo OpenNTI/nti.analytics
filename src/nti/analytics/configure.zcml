@@ -30,8 +30,6 @@
 	<subscriber handler=".users._entity_removed" />
 	<subscriber handler=".users._user_research" />
 
-	<subscriber handler=".sessions._new_session" />
-
 	<subscriber handler=".courses._course_removed" />
 
 	<subscriber handler=".boards._topic_added" />

@@ -54,11 +54,6 @@ class FriendsListMixin(object):
 	def friends_list_id(cls):
 		return Column('friends_list_id', Integer, ForeignKey("FriendsListsCreated.friends_list_id"), nullable=False, index=True )
 
-
-# TODO Some of these objects do not exist in the ds, thus we'll need a sequence.  Hopefully
-# we don't need any data from the ds when retrieving this data.  If so, we need it here or another
-# way to look it up.
-
 # This information needs to be obscured to protect privacy.
 class ChatsInitiated(Base,BaseTableMixin):
 	__tablename__ = 'ChatsInitiated'
@@ -182,7 +177,7 @@ def update_chat( timestamp, chat, new_members ):
 
 	old_members = _get_chat_members( db, chat_id )
 	old_members = set( [x.user_id for x in old_members] )
-	members_to_add, _ = _find_members( db, new_members, old_members )
+	members_to_add, _ = _find_members( new_members, old_members )
 
 	for new_member in members_to_add:
 		new_object = ChatsJoined( user_id=new_member,
@@ -302,12 +297,12 @@ def _delete_friend_list_member( db, friends_list_id, target_id ):
 																FriendsListsMemberAdded.target_id==target_id ).first()
 	db.session.delete( friend )
 
-def _find_friends_list_members( db, user_list, members ):
+def _find_friends_list_members( user_list, members ):
 	""" For a user_list, return a tuple of members to add/remove. """
 	members = set( [ x.target_id for x in members if x ] )
-	return _find_members( db, user_list, members )
+	return _find_members( user_list, members )
 
-def _find_members( db, user_list, members ):
+def _find_members( user_list, members ):
 	""" For a user_list, return a tuple of members to add/remove. """
 	members = set( members )
 	new_members = set( [ get_or_create_user( x ).user_id for x in user_list if x] )
@@ -342,7 +337,7 @@ def update_contacts( user, nti_session, timestamp, friends_list ):
 
 	members = _get_contacts( db, uid )
 	members_to_add, members_to_remove \
-		= _find_friends_list_members( db, friends_list, members )
+		= _find_friends_list_members( friends_list, members )
 
 	for new_member in members_to_add:
 		new_object = ContactsAdded( user_id=uid,
@@ -367,7 +362,7 @@ def update_friends_list( user, nti_session, timestamp, friends_list ):
 	friends_list_id = _get_friends_list_id( db, friends_list_ds_id )
 	members = _get_friends_list_members( db, friends_list_id )
 	members_to_add, members_to_remove \
-		= _find_friends_list_members( db, friends_list, members )
+		= _find_friends_list_members( friends_list, members )
 
 	user = get_or_create_user(user )
 	uid = user.user_id

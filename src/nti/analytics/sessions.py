@@ -7,14 +7,10 @@ __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
-from zope import component
-
 from datetime import datetime
 
 from .common import get_entity
 from .common import process_event
-
-from nti.appserver.interfaces import IUserLogonEvent
 
 from nti.analytics.database import sessions as db_sessions
 
@@ -41,13 +37,6 @@ def _do_new_session( username, request ):
 					user_agent=user_agent,
 					ip_addr=ip_addr,
 					timestamp=timestamp )
-
-@component.adapter(IUserLogonEvent)
-def _new_session( event ):
-	# FIXME Hmm, login events are GETs
-	user = event.user
-	request = event.request
-	_do_new_session( user.username, request )
 
 def handle_new_session( username, request ):
 	_do_new_session( username, request )
