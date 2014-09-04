@@ -18,6 +18,8 @@ from nti.analytics import QUEUE_NAMES
 from nti.analytics.interfaces import IObjectProcessor
 
 from nti.analytics.resource_views import logger as resource_view_logger
+from nti.analytics.users import logger as users_logger
+from nti.analytics.sessions import logger as sessions_logger
 
 class Constructor(Processor):
 
@@ -27,6 +29,8 @@ class Constructor(Processor):
 			for _, module in component.getUtilitiesFor(IObjectProcessor):
 				module.logger.setLevel(logging.DEBUG)
 			resource_view_logger.setLevel( logging.DEBUG )
+			users_logger.setLevel( logging.DEBUG )
+			sessions_logger.setLevel( logging.DEBUG )
 
 	def process_args(self, args):
 		setattr(args, 'library', True)  # load library

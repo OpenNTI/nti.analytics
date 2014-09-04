@@ -39,6 +39,10 @@ class CurrentSessions(Base):
 class UserAgents(Base):
 	__tablename__ = 'UserAgents'
 	user_agent_id = Column('user_agent_id', Integer, Sequence('user_agent_id_seq'), index=True, primary_key=True )
+	# TODO Indexing this large column could be fairly expensive.  Does it get us anything,
+	# or should we rely on a full column scan before inserting (perhaps also expensive)?
+	# Another alternative would be to hash this value in another column and just check that.
+	# If we do so, would we have to worry about collisions between unequal user-agents?
 	user_agent = Column('user_agent', String(512), unique=True, index=True, nullable=False )
 
 def _create_user_agent( db, user_agent ):
