@@ -15,8 +15,6 @@ from sqlalchemy import Enum
 
 from sqlalchemy.schema import Sequence
 
-import zope.intid
-
 from nti.analytics.common import timestamp_type
 
 from nti.analytics.identifier import SessionId

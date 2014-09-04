@@ -38,44 +38,44 @@ class SharedConfiguringTestLayer(ZopeComponentLayer,
                                  ConfiguringLayerMixin,
                                  DSInjectorMixin):
 
-    set_up_packages = ('nti.dataserver', 'nti.analytics')
+	set_up_packages = ('nti.dataserver', 'nti.analytics')
 
-    @classmethod
-    def setUp(cls):
-        cls.setUpPackages()
-        cls.old_data_dir = os.getenv('DATASERVER_DATA_DIR')
-        cls.new_data_dir = tempfile.mkdtemp(dir="/tmp")
-        os.environ['DATASERVER_DATA_DIR'] = cls.new_data_dir
+	@classmethod
+	def setUp(cls):
+		cls.setUpPackages()
+		cls.old_data_dir = os.getenv('DATASERVER_DATA_DIR')
+		cls.new_data_dir = tempfile.mkdtemp(dir="/tmp")
+		os.environ['DATASERVER_DATA_DIR'] = cls.new_data_dir
 
-    @classmethod
-    def tearDown(cls):
-        cls.tearDownPackages()
-        zope.testing.cleanup.cleanUp()
+	@classmethod
+	def tearDown(cls):
+		cls.tearDownPackages()
+		zope.testing.cleanup.cleanUp()
 
-    @classmethod
-    def testSetUp(cls, test=None):
-        cls.setUpTestDS(test)
-        shutil.rmtree(cls.new_data_dir, True)
-        os.environ['DATASERVER_DATA_DIR'] = cls.old_data_dir or '/tmp'
+	@classmethod
+	def testSetUp(cls, test=None):
+		cls.setUpTestDS(test)
+		shutil.rmtree(cls.new_data_dir, True)
+		os.environ['DATASERVER_DATA_DIR'] = cls.old_data_dir or '/tmp'
 
-    @classmethod
-    def testTearDown(cls):
-        pass
+	@classmethod
+	def testTearDown(cls):
+		pass
 
 import unittest
 
 class NTIAnalyticsTestCase(unittest.TestCase):
-    layer = SharedConfiguringTestLayer
+	layer = SharedConfiguringTestLayer
 
 class NTIAnalyticsApplicationTestLayer(ApplicationTestLayer):
 
-    @classmethod
-    def setUp(cls):
-        pass
+	@classmethod
+	def setUp(cls):
+		pass
 
-    @classmethod
-    def tearDown(cls):
-        pass
+	@classmethod
+	def tearDown(cls):
+		pass
 
 
 DEFAULT_INTID = 101

@@ -9,11 +9,9 @@ __docformat__ = "restructuredtext en"
 from zope import interface
 
 from nti.schema.field import Number
-from nti.schema.field import Float
 from nti.schema.field import Object
 from nti.schema.field import Bool
 from nti.schema.field import List
-from nti.schema.field import ValidDatetime
 from nti.schema.field import DecodingValidTextLine as ValidTextLine
 from nti.schema.field import IndexedIterable as TypedIterable
 

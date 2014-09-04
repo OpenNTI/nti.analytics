@@ -8,23 +8,16 @@ __docformat__ = "restructuredtext en"
 # pylint: disable=W0212,R0904
 
 import unittest
-import fudge
-import time
 
 from zope import component
 
-from datetime import datetime
-
 from hamcrest import is_
 from hamcrest import none
-from hamcrest import not_none
 from hamcrest import has_length
 from hamcrest import assert_that
 
 from nti.analytics.database.interfaces import IAnalyticsDB
 from nti.analytics.database.database import AnalyticsDB
-
-from nti.analytics.database.tests import test_user_ds_id
 
 from nti.analytics.database import users as db_users
 

@@ -229,7 +229,6 @@ def _forum_added( forum, event ):
 
 @component.adapter( frm_interfaces.IForum, intid_interfaces.IIntIdRemovedEvent )
 def _forum_removed( forum, event ):
-	timestamp = datetime.utcnow()
 	timestamp = get_deleted_time( forum )
 	forum_id = _forumid.get_id( forum )
 	process_event( _get_board_queue, _remove_forum, forum_id=forum_id, timestamp=timestamp )

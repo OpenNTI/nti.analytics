@@ -16,8 +16,6 @@ from sqlalchemy import ForeignKey
 from sqlalchemy.schema import Sequence
 from sqlalchemy.schema import PrimaryKeyConstraint
 
-import zope.intid
-
 from nti.analytics.common import timestamp_type
 
 from nti.analytics.identifier import SessionId

@@ -10,8 +10,6 @@ logger = __import__('logging').getLogger(__name__)
 
 import json
 
-import zope.intid
-
 from six import string_types
 from six import integer_types
 
@@ -22,10 +20,8 @@ from sqlalchemy import String
 from sqlalchemy import ForeignKey
 from sqlalchemy import Boolean
 from sqlalchemy import Text
-from sqlalchemy import DateTime
 
 from sqlalchemy.schema import Sequence
-from sqlalchemy.schema import PrimaryKeyConstraint
 
 from sqlalchemy.ext.declarative import declared_attr
 
@@ -50,7 +46,6 @@ _submissionid = SubmissionId()
 _questionsetid = QuestionSetId()
 _feedbackid = FeedbackId()
 
-from nti.analytics.database import SESSION_COLUMN_TYPE
 from nti.analytics.database import NTIID_COLUMN_TYPE
 from nti.analytics.database import INTID_COLUMN_TYPE
 from nti.analytics.database import Base
@@ -157,8 +152,8 @@ class SelfAssessmentsTaken(Base,AssignmentMixin):
 
 # SelfAssessments will not have feedback or multiple graders
 class SelfAssessmentDetails(Base,BaseTableMixin,DetailMixin,GradeDetailMixin):
- 	__tablename__ = 'SelfAssessmentDetails'
- 	self_assessment_id = Column('self_assessment_id', Integer, ForeignKey("SelfAssessmentsTaken.self_assessment_id"), nullable=False, index=True)
+	__tablename__ = 'SelfAssessmentDetails'
+	self_assessment_id = Column('self_assessment_id', Integer, ForeignKey("SelfAssessmentsTaken.self_assessment_id"), nullable=False, index=True)
 
 	self_assessment_details_id = Column('self_assessment_details_id', Integer, Sequence( 'self_assessment_details_seq' ), primary_key=True )
 

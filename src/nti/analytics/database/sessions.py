@@ -16,14 +16,11 @@ from sqlalchemy import DateTime
 
 from sqlalchemy.schema import Sequence
 
-import zope.intid
-
 from nti.analytics.common import timestamp_type
 
 from nti.analytics.identifier import SessionId
 _sessionid = SessionId()
 
-from nti.analytics.database import INTID_COLUMN_TYPE
 from nti.analytics.database import SESSION_COLUMN_TYPE
 from nti.analytics.database import Base
 from nti.analytics.database import get_analytics_db

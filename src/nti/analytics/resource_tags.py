@@ -27,7 +27,6 @@ from nti.analytics.sessions import get_nti_session_id
 from .common import get_creator
 from .common import process_event
 from .common import get_course_by_ntiid
-from .common import get_course
 from .common import get_rating_from_event
 
 from nti.analytics.database import resource_tags as db_resource_tags

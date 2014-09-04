@@ -8,12 +8,9 @@ __docformat__ = "restructuredtext en"
 # pylint: disable=W0212,R0904
 
 import unittest
-import fudge
 import time
 
 from zope import component
-
-from datetime import datetime
 
 from hamcrest import is_
 from hamcrest import none

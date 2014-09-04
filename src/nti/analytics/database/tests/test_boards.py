@@ -6,9 +6,6 @@ __docformat__ = "restructuredtext en"
 
 # disable: accessing protected members, too many methods
 # pylint: disable=W0212,R0904
-
-import fudge
-
 from datetime import datetime
 
 from hamcrest import is_

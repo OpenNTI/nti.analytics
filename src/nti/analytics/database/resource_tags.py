@@ -8,9 +8,6 @@ __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
-from six import integer_types
-from six import string_types
-
 from sqlalchemy import Column
 from sqlalchemy import Integer
 from sqlalchemy import ForeignKey
@@ -19,10 +16,6 @@ from sqlalchemy import Enum
 from sqlalchemy.schema import Sequence
 from sqlalchemy.schema import PrimaryKeyConstraint
 from sqlalchemy.ext.declarative import declared_attr
-
-import zope.intid
-
-from nti.dataserver.users.entity import Entity
 
 from nti.analytics.common import get_created_timestamp
 from nti.analytics.common import timestamp_type

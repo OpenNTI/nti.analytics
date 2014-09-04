@@ -13,7 +13,6 @@ logger = __import__('logging').getLogger(__name__)
 generation = 3
 
 import zope.intid
-from zope import component
 from zope.component.hooks import site, setHooks
 
 from nti.async import queue

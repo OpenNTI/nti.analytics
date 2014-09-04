@@ -11,9 +11,6 @@ logger = __import__('logging').getLogger(__name__)
 from sqlalchemy import Column
 from sqlalchemy import Integer
 from sqlalchemy import String
-from sqlalchemy import ForeignKey
-from sqlalchemy import Boolean
-from sqlalchemy import DateTime
 
 from sqlalchemy.schema import Sequence
 

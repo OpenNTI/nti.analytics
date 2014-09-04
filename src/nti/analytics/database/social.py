@@ -18,10 +18,6 @@ from sqlalchemy.schema import PrimaryKeyConstraint
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.declarative import declared_attr
 
-import zope.intid
-
-from nti.dataserver.users.entity import Entity
-
 from nti.analytics.common import get_created_timestamp
 from nti.analytics.common import timestamp_type
 

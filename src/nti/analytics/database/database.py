@@ -15,7 +15,6 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.pool import StaticPool
 
-import zope.intid
 from zope import interface
 from zope.sqlalchemy import ZopeTransactionExtension
 

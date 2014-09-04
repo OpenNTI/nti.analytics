@@ -7,12 +7,7 @@ __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
-import time
-
 from zope import component
-from pyramid.threadlocal import get_current_request
-
-from nti.socketio import interfaces as sio_interfaces
 
 from datetime import datetime
 
@@ -20,7 +15,6 @@ from .common import get_entity
 from .common import process_event
 
 from nti.appserver.interfaces import IUserLogonEvent
-from nti.dataserver.interfaces import IUser
 
 from nti.analytics.database import sessions as db_sessions
 

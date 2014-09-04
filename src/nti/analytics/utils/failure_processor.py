@@ -8,7 +8,6 @@ __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
-import logging
 from nti.analytics.utils.constructor import Constructor
 
 class FailProcessor(Constructor):

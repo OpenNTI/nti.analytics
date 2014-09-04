@@ -42,10 +42,9 @@ from .common import get_created_timestamp
 from .database import assessments as db_assessments
 
 from .identifier import FeedbackId
+_feedbackid = FeedbackId()
 
 from .interfaces import IObjectProcessor
-
-_feedbackid = FeedbackId()
 
 component.moduleProvides(IObjectProcessor)
 

@@ -6,7 +6,6 @@ $Id$
 from __future__ import print_function, unicode_literals
 
 from hamcrest import assert_that
-from hamcrest import none
 
 from nti.testing.matchers import verifiably_provides
 

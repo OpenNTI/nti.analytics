@@ -16,8 +16,6 @@ from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.schema import PrimaryKeyConstraint
 from sqlalchemy.schema import Sequence
 
-import zope.intid
-
 from nti.analytics.common import get_created_timestamp
 from nti.analytics.common import timestamp_type
 from nti.analytics.common import get_ratings

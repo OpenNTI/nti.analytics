@@ -11,17 +11,11 @@ logger = __import__('logging').getLogger(__name__)
 from sqlalchemy import Column
 from sqlalchemy import Integer
 from sqlalchemy import String
-from sqlalchemy import ForeignKey
 from sqlalchemy import Boolean
-from sqlalchemy import DateTime
 
 from sqlalchemy.schema import Sequence
 
-import zope.intid
-
 from nti.app.products.ou.interfaces import IUserResearchStatus
-
-from nti.analytics.common import timestamp_type
 
 from nti.analytics.identifier import UserId
 from nti.analytics.identifier import SessionId
@@ -29,7 +23,6 @@ _userid = UserId()
 _sessionid = SessionId()
 
 from nti.analytics.database import INTID_COLUMN_TYPE
-from nti.analytics.database import SESSION_COLUMN_TYPE
 from nti.analytics.database import Base
 from nti.analytics.database import get_analytics_db
 
