@@ -52,7 +52,8 @@ class AnalyticsDB(object):
 			if parser.has_option('analytics', 'autocommit'):
 				self.autocommit = parser.getboolean('analytics', 'autocommit')
 
-		logger.info( "Connecting to database at '%s'", self.dburi )
+		logger.info( "Connecting to database at '%s' (twophase=%s)",
+					self.dburi, self.twophase )
 		self.metadata = AnalyticsMetadata( self.engine )
 
 	@Lazy
