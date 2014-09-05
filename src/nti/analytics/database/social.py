@@ -15,7 +15,6 @@ from sqlalchemy import ForeignKey
 from sqlalchemy.schema import Sequence
 from sqlalchemy.schema import PrimaryKeyConstraint
 
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.declarative import declared_attr
 
 from nti.analytics.common import get_created_timestamp
@@ -155,10 +154,6 @@ def chat_joined(user, nti_session, timestamp, chat):
 								timestamp=timestamp,
 								chat_id=chat_id )
 	db.session.add( new_object )
-	try:
-		db.session.flush()
-	except IntegrityError:
-		logger.debug( 'User (%s) already exists in chat (%s)', uid, chat )
 
 def _get_chat_members( db, chat_id ):
 	results = db.session.query(ChatsJoined).filter(

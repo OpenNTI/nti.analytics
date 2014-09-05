@@ -8,6 +8,8 @@ __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
+import transaction
+
 from ZODB.POSException import POSKeyError
 
 from nti.dataserver import interfaces as nti_interfaces
@@ -37,8 +39,13 @@ from zope import component
 from zope.component.hooks import site as current_site
 from zope.traversing.interfaces import IEtcNamespace
 
+from zc.blist import BList
+
 from nti.async import create_job
 from six import integer_types
+
+from sqlalchemy.exc import IntegrityError
+from nti.analytics.database import get_analytics_db
 
 def get_rating_from_event( event ):
 	delta = -1 if IObjectUnratedEvent.providedBy( event ) else 1
@@ -180,7 +187,31 @@ def get_course_by_ntiid(name):
 		raise TypeError( "No course found for containerId (%s)" % name )
 	return result
 
-def process_event( get_job, object_op, obj=None, **kwargs ):
+def _execute_job( *args, **kwargs ):
+	db = get_analytics_db()
+
+	args = BList( args )
+	func = args.pop( 0 )
+
+	sp = transaction.savepoint()
+	try:
+		func( *args, **kwargs )
+		# Must flush to verify integrity
+		db.session.flush()
+	except IntegrityError as e:
+		vals = e.orig.args
+		# MySQL only
+		if 'Duplicate entry' in vals[1]:
+			# Ok duplicate entry, lets ignore these since we likely
+			# already have this record stored.
+			logger.info( 	'Duplicate entry found, will ignore (%s) (%s)',
+							func, kwargs )
+			sp.rollback()
+		else:
+			raise e
+
+
+def process_event( get_job_queue, object_op, obj=None, **kwargs ):
 	effective_kwargs = kwargs
 	if obj is not None:
 		# If we have an object, grab its ID by default.
@@ -188,8 +219,8 @@ def process_event( get_job, object_op, obj=None, **kwargs ):
 		effective_kwargs = dict( kwargs )
 		effective_kwargs['oid'] = oid
 
-	queue = get_job()
-	job = create_job( object_op, **effective_kwargs )
+	queue = get_job_queue()
+	job = create_job( _execute_job, object_op, **effective_kwargs )
 	queue.put( job )
 
 def get_created_timestamp(obj):
