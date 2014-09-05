@@ -8,6 +8,8 @@ __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
+import transaction
+
 import os
 import ConfigParser
 
@@ -96,3 +98,7 @@ class AnalyticsDB(object):
 		# This property proxies into a thread-local session.
 		return scoped_session( self.sessionmaker )
 
+	def savepoint(self):
+		if not self.testmode:
+			return transaction.savepoint()
+		return None

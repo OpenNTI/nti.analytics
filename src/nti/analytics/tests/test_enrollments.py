@@ -28,13 +28,15 @@ from nti.analytics.database.interfaces import IAnalyticsDB
 from nti.analytics.database.enrollments import CourseEnrollments
 from nti.analytics.database.enrollments import CourseDrops
 
+#from nti.analytics.enrollments import _user_enrollments
+
 from nti.analytics.tests import NTIAnalyticsTestCase
 from nti.analytics.tests import TestIdentifier
 
 class TestEnrollments( NTIAnalyticsTestCase ):
 
 	def setUp(self):
-		self.db = AnalyticsDB( dburi='sqlite://' )
+		self.db = AnalyticsDB( dburi='sqlite://', testmode=True )
 		component.getGlobalSiteManager().registerUtility( self.db, IAnalyticsDB )
 		self.session = self.db.session
 		self.patches = [
@@ -58,7 +60,7 @@ class TestEnrollments( NTIAnalyticsTestCase ):
 		course = courses.CourseInstance()
 		admin['course'] = course
 		self.section = course.SubInstances['section1'] = courses.ContentCourseSubInstance()
-		self.principal  = principal
+		self.principal = principal
 		self.course = course
 
 		results = self.session.query( CourseEnrollments ).all()
@@ -74,6 +76,12 @@ class TestEnrollments( NTIAnalyticsTestCase ):
 		assert_that( results, has_length( 1 ) )
 		results = self.session.query( CourseDrops ).all()
 		assert_that( results, has_length( 0 ) )
+
+		# Currently cannot be idempotent on sqlite, perhaps with updated version.
+# 		self.session.flush()
+# 		# Migrate, idempotent
+# 		_user_enrollments( principal )
+# 		self.session.flush()
 
 		# Drop
 		manager = interfaces.ICourseEnrollmentManager(record.CourseInstance)
