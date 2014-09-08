@@ -206,6 +206,8 @@ def _execute_job( *args, **kwargs ):
 		func( *args, **kwargs )
 		# Must flush to verify integrity
 		db.session.flush()
+		if sp is not None:
+			sp.commit()
 	except IntegrityError as e:
 		vals = e.orig.args
 		# MySQL only
@@ -214,10 +216,11 @@ def _execute_job( *args, **kwargs ):
 			# already have this record stored.
 			logger.info( 	'Duplicate entry found, will ignore (%s) (%s)',
 							func, kwargs )
-			if sp is not None:
-				sp.rollback()
 		else:
 			raise e
+	finally:
+		if sp is not None:
+			sp.rollback()
 
 
 def process_event( get_job_queue, object_op, obj=None, **kwargs ):
