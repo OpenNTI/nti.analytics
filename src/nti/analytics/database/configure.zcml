@@ -17,7 +17,8 @@
 		<!-- In-memory sqlite for test mode -->
 		<configure zcml:condition="have testmode">
 			<adb:registerAnalyticsDB 	defaultSQLite="True"
-										dburi="sqlite://" />
+										dburi="sqlite://"
+										testmode="True" />
 
 			<subscriber handler="nti.analytics.database.zcml._closed_dataserver" />
 		</configure>
@@ -26,6 +27,7 @@
 		<configure zcml:condition="not-have testmode">
 			<adb:registerAnalyticsDB 	defaultSQLite="True"
 										dburi="sqlite://" />
+
 		</configure>
 	</configure>
 

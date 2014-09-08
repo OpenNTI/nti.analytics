@@ -37,6 +37,7 @@ class AnalyticsDB(object):
 		self.twophase = twophase
 		self.autocommit = autocommit
 		self.testmode = testmode
+		self.defaultSQLite = defaultSQLite
 
 		if defaultSQLite and not dburi:
 			data_dir = os.getenv( 'DATASERVER_DATA_DIR' ) or '/tmp'
@@ -54,8 +55,8 @@ class AnalyticsDB(object):
 			if parser.has_option('analytics', 'autocommit'):
 				self.autocommit = parser.getboolean('analytics', 'autocommit')
 
-		logger.info( "Connecting to database at '%s' (twophase=%s)",
-					self.dburi, self.twophase )
+		logger.info( "Connecting to database at '%s' (twophase=%s) (testmode=%s)",
+					self.dburi, self.twophase, self.testmode )
 		self.metadata = AnalyticsMetadata( self.engine )
 
 	@Lazy
@@ -99,6 +100,6 @@ class AnalyticsDB(object):
 		return scoped_session( self.sessionmaker )
 
 	def savepoint(self):
-		if not self.testmode:
+		if not self.testmode and not self.defaultSQLite:
 			return transaction.savepoint()
 		return None

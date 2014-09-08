@@ -31,9 +31,10 @@ class IRegisterAnalyticsDB(interface.Interface):
 	twophase = schema.Bool(title="twophase commit", required=False)
 	autocommit = fields.Bool(title="autocommit", required=False)
 	defaultSQLite = schema.Bool(title="default to SQLite", required=False)
+	testmode = schema.Bool(title="start the db in test mode", required=False)
 	config = fields.TextLine(title="path to config file", required=False)
 
-def registerAnalyticsDB(_context, dburi=None, twophase=False, autocommit=False, defaultSQLite=False, config=None):
+def registerAnalyticsDB(_context, dburi=None, twophase=False, autocommit=False, defaultSQLite=False, testmode=False, config=None):
 	"""
 	Register the db
 	"""
@@ -42,6 +43,7 @@ def registerAnalyticsDB(_context, dburi=None, twophase=False, autocommit=False, 
 									twophase=twophase,
 									autocommit=autocommit,
 									defaultSQLite=defaultSQLite,
+									testmode=testmode,
 									config=config )
 	utility(_context, provides=IAnalyticsDB, factory=factory)
 
@@ -50,5 +52,6 @@ def registerAnalyticsDB(_context, dburi=None, twophase=False, autocommit=False, 
 def _closed_dataserver( event ):
 	# TODO Some tests (nti.app.products.ou) still have issues with
 	# analytic events.
-	db = AnalyticsDB( dburi='sqlite://' )
+	# TODO This dupes what we have in config.zcml.
+	db = AnalyticsDB( dburi='sqlite://', testmode=True, defaultSQLite=True )
 	component.getSiteManager().registerUtility( db, IAnalyticsDB )

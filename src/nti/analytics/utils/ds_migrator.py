@@ -166,7 +166,6 @@ class Processor(object):
 		site_names = [getattr(args, 'site', None)]
 
 		usernames = args.usernames
-		#usernames = 'student2,student3,student4,student5'
 		if usernames:
 			usernames = usernames.split(',')
 		else:
