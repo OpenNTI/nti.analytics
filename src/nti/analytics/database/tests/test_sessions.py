@@ -120,6 +120,19 @@ class TestSessions(unittest.TestCase):
 		results = self.session.query(UserAgents).all()
 		assert_that( results, has_length( 2 ) )
 
+		# End session
+		db_sessions.end_session( test_user_ds_id, new_session_id, timestamp=time.time() )
+
+		current_session = self.session.query(Sessions).filter( Sessions.session_id == new_session_id ).first()
+		assert_that( current_session, not_none() )
+		assert_that( current_session.end_time, not_none() )
+
+		results = self.session.query(CurrentSessions).all()
+		assert_that( results, has_length( 0 ) )
+
+		new_session_id = db_sessions.get_current_session_id( test_user_ds_id )
+		assert_that( new_session_id, none() )
+
 	def test_large_user_agent(self):
 		results = self.session.query(Sessions).all()
 		assert_that( results, has_length( 0 ) )

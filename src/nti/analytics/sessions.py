@@ -21,6 +21,12 @@ def _get_job_queue():
 	factory = get_factory()
 	return factory.get_queue( SESSIONS_ANALYTICS )
 
+def _end_session( username, session_id, timestamp=None ):
+	user = get_entity( username )
+	if session_id is not None and user is not None:
+		db_sessions.end_session( user, session_id, timestamp )
+		logger.debug( 'Session ended (user=%s) (session_id=%s)', username )
+
 def _add_session( username, user_agent, timestamp, ip_addr ):
 	if username:
 		user = get_entity( username )
@@ -40,6 +46,13 @@ def _do_new_session( username, request ):
 
 def handle_new_session( username, request ):
 	_do_new_session( username, request )
+
+def handle_end_session( username, session_id ):
+	timestamp = datetime.utcnow()
+	process_event( _get_job_queue, _end_session,
+					username=username,
+					session_id=session_id,
+					timestamp=timestamp )
 
 def get_current_session_id( user ):
 	result = None

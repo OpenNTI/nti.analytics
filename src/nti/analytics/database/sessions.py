@@ -31,6 +31,7 @@ class Sessions(Base):
 	start_time = Column('start_time', DateTime)
 	end_time = Column('end_time', DateTime)
 
+# TODO If we no longer infer current sessions, we can remove this table.
 class CurrentSessions(Base):
 	__tablename__ = 'CurrentSessions'
 	session_id = Column('session_id', SESSION_COLUMN_TYPE, ForeignKey('Sessions.session_id'), index=True, primary_key=True )
@@ -66,6 +67,22 @@ def _update_current_session( db, new_session, uid ):
 def _get_user_agent( user_agent ):
 	# We have a 512 limit on user agent, truncate if we have to
 	return user_agent[:512] if len( user_agent ) > 512 else user_agent
+
+def end_session( user, session_id, timestamp ):
+	# Make sure to verify the user/session match up.
+	user = get_or_create_user( user )
+	uid = user.user_id
+	timestamp = timestamp_type( timestamp )
+
+	# Empty our current sessions
+	db = get_analytics_db()
+	db.session.query( CurrentSessions ).filter( CurrentSessions.session_id == session_id,
+												CurrentSessions.user_id == uid ).delete()
+
+	old_session = db.session.query( Sessions ).filter( Sessions.session_id == session_id,
+														Sessions.user_id == uid ).first()
+	if old_session is not None:
+		old_session.end_time = timestamp
 
 def create_session( user, user_agent, timestamp, ip_addr ):
 	db = get_analytics_db()
