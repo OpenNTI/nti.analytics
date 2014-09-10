@@ -120,7 +120,13 @@ def create_forum(user, nti_session, course, forum):
 def delete_forum(timestamp, forum_ds_id):
 	db = get_analytics_db()
 	timestamp = timestamp_type( timestamp )
-	db_forum = db.session.query(ForumsCreated).filter( ForumsCreated.forum_ds_id==forum_ds_id ).one()
+	db_forum = db.session.query(ForumsCreated).filter( ForumsCreated.forum_ds_id==forum_ds_id ).first()
+	if db_forum is None:
+		# This only occurs in tests (e.g nti.app.products.ou ) when tearing down layers.
+		# Not really much we can do about it anyway; so log and forget.
+		logger.warn( 'Attempted to delete forum (%s) that does not exist', forum_ds_id )
+		return
+
 	db_forum.deleted=timestamp
 	db_forum.forum_ds_id = None
 	forum_id = db_forum.forum_id
@@ -162,7 +168,11 @@ def create_topic(user, nti_session, course, topic):
 def delete_topic(timestamp, topic_ds_id):
 	db = get_analytics_db()
 	timestamp = timestamp_type( timestamp )
-	db_topic = db.session.query(TopicsCreated).filter( TopicsCreated.topic_ds_id == topic_ds_id ).one()
+	db_topic = db.session.query(TopicsCreated).filter( TopicsCreated.topic_ds_id == topic_ds_id ).first()
+	if db_topic is None:
+		logger.warn( 'Attempted to delete topic (%s) that does not exist', topic_ds_id )
+		return
+
 	db_topic.deleted = timestamp
 	db_topic.topic_ds_id = None
 	topic_id = db_topic.topic_id
@@ -205,12 +215,12 @@ def create_topic_view(user, nti_session, timestamp, course, topic, time_length):
 	timestamp = timestamp_type( timestamp )
 
 	new_object = TopicsViewed( user_id=uid,
-									session_id=sid,
-									timestamp=timestamp,
-									course_id=course_id,
-									forum_id=fid,
-									topic_id=did,
-									time_length=time_length )
+								session_id=sid,
+								timestamp=timestamp,
+								course_id=course_id,
+								forum_id=fid,
+								topic_id=did,
+								time_length=time_length )
 	db.session.add( new_object )
 
 def create_forum_comment(user, nti_session, course, topic, comment):

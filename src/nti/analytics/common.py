@@ -211,8 +211,8 @@ def _execute_job( *args, **kwargs ):
 			sp.rollback()
 
 		vals = e.orig.args
-		# MySQL only
-		if 'Duplicate entry' in vals[1]:
+		# MySQL
+		if len( vals ) > 1 and 'Duplicate entry' in vals[1]:
 			# Ok duplicate entry, lets ignore these since we likely
 			# already have this record stored.
 			logger.info( 	'Duplicate entry found, will ignore (%s) (%s)',
