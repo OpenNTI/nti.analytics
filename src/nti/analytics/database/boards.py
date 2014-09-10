@@ -12,6 +12,8 @@ from sqlalchemy import Column
 from sqlalchemy import Integer
 from sqlalchemy import ForeignKey
 
+from sqlalchemy.orm.session import make_transient
+
 from sqlalchemy.schema import Sequence
 from sqlalchemy.schema import PrimaryKeyConstraint
 from sqlalchemy.ext.declarative import declared_attr
@@ -285,23 +287,34 @@ def flag_comment( comment, state ):
 	db_comment.is_flagged = state
 	db.session.flush()
 
+# TODO For some objects, we will need to exclude returning objects without a ds_id,
+# or, via a race condition, that are not resolveable after we've pulled them from the db.
+
+def _resolve_comment( row ):
+	# Detach this from the db, resolving objects as we go.
+	make_transient( row )
+	comment = CommentId.get_object( row.comment_id )
+	setattr( row, 'comment', comment )
+	return row
+
+def _resolve_topic( row ):
+	# Detach this from the db, resolving objects as we go.
+	make_transient( row )
+	topic = TopicId.get_object( row.topic_id )
+	setattr( row, 'topic', topic )
+	return row
+
 # StudentParticipationReport
 def get_forum_comments_for_user(user, course):
 	db = get_analytics_db()
 	user = get_or_create_user(user )
 	uid = user.user_id
 	course_id = get_course_id( db, course )
-	results = db.session.query(ForumCommentsCreated).filter( 	ForumCommentsCreated.user_id == uid,
+	results = db.session.query(ForumCommentsCreated).filter( ForumCommentsCreated.user_id == uid,
 															ForumCommentsCreated.course_id == course_id,
 															ForumCommentsCreated.deleted == None ).all()
 
-	# FIXME Do we have to worry about this getting persisted?
-	# We should only occur in GETs
-	for fcc in results:
-		comment = CommentId.get_object( fcc.comment_id )
-		setattr( fcc, 'comment', comment )
-
-	return results
+	return ( _resolve_comment( x ) for x in results )
 
 def get_topics_created_for_user(user, course):
 	db = get_analytics_db()
@@ -312,10 +325,7 @@ def get_topics_created_for_user(user, course):
 														TopicsCreated.course_id == course_id,
 														TopicsCreated.deleted == None  ).all()
 
-	for tc in results:
-		topic = TopicId.get_object( tc.topic_id )
-		setattr( tc, 'topic', topic )
-	return results
+	return ( _resolve_topic( x ) for x in results )
 
 #TopicReport
 def get_comments_for_topic( topic ):
@@ -323,7 +333,7 @@ def get_comments_for_topic( topic ):
 	topic_id = _get_topic_id_from_topic( topic )
 	results = db.session.query(ForumCommentsCreated).filter( ForumCommentsCreated.topic_id == topic_id,
 															ForumCommentsCreated.deleted == None ).all()
-	return results
+	return ( _resolve_comment( x ) for x in results )
 
 
 #ForumReport
@@ -332,14 +342,14 @@ def get_forum_comments(forum):
 	forum_id = _get_forum_id_from_forum( db, forum )
 	results = db.session.query(ForumCommentsCreated).filter( 	ForumCommentsCreated.forum_id == forum_id,
 																ForumCommentsCreated.deleted == None  ).all()
-	return results
+	return ( _resolve_comment( x ) for x in results )
 
 def get_topics_created_for_forum(forum):
 	db = get_analytics_db()
 	forum_id = _get_forum_id_from_forum( db, forum )
 	results = db.session.query(TopicsCreated).filter( TopicsCreated.forum_id == forum_id,
 													TopicsCreated.deleted == None  ).all()
-	return results
+	return ( _resolve_topic( x ) for x in results )
 
 
 #CourseReport
@@ -348,12 +358,12 @@ def get_forum_comments_for_course(course):
 	course_id = get_course_id( db, course )
 	results = db.session.query(ForumCommentsCreated).filter( 	ForumCommentsCreated.course_id == course_id,
 																ForumCommentsCreated.deleted == None  ).all()
-	return results
+	return ( _resolve_comment( x ) for x in results )
 
 def get_topics_created_for_course(course):
 	db = get_analytics_db()
 	course_id = get_course_id( db, course )
 	results = db.session.query(TopicsCreated).filter( 	TopicsCreated.course_id == course_id,
 														TopicsCreated.deleted == None  ).all()
-	return results
+	return ( _resolve_topic( x ) for x in results )
 

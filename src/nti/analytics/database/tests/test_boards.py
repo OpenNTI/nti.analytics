@@ -215,6 +215,7 @@ class TestForumComments(AnalyticsTestBase):
 
 	def test_comments(self):
 		results = db_boards.get_forum_comments_for_user( test_user_ds_id, self.course_name )
+		results = [x for x in results]
 		assert_that( results, has_length( 0 ) )
 
 		# Topic parent
@@ -228,9 +229,11 @@ class TestForumComments(AnalyticsTestBase):
 		assert_that( results, has_length( 1 ) )
 
 		results = db_boards.get_forum_comments_for_user( test_user_ds_id, self.course_name )
+		results = [x for x in results]
 		assert_that( results, has_length( 1 ) )
 
 		results = db_boards.get_forum_comments_for_course( self.course_name )
+		results = [x for x in results]
 		assert_that( results, has_length( 1 ) )
 
 		result = results[0]
@@ -248,6 +251,7 @@ class TestForumComments(AnalyticsTestBase):
 		results = self.session.query( ForumCommentsCreated ).all()
 		assert_that( results, has_length( 0 ) )
 		results = db_boards.get_forum_comments_for_user( test_user_ds_id, self.course_name )
+		results = [x for x in results]
 		assert_that( results, has_length( 0 ) )
 
 		# Comment parent
@@ -261,9 +265,11 @@ class TestForumComments(AnalyticsTestBase):
 										self.topic, my_comment )
 
 		results = db_boards.get_forum_comments_for_user( test_user_ds_id, self.course_name )
+		results = [x for x in results]
 		assert_that( results, has_length( 1 ) )
 
 		results = db_boards.get_forum_comments_for_course( self.course_name )
+		results = [x for x in results]
 		assert_that( results, has_length( 1 ) )
 
 		result = results[0]
@@ -278,6 +284,7 @@ class TestForumComments(AnalyticsTestBase):
 
 	def test_multiple_comments(self):
 		results = db_boards.get_forum_comments_for_user( test_user_ds_id, self.course_name )
+		results = [x for x in results]
 		assert_that( results, has_length( 0 ) )
 
 		new_comment1 = MockComment( self.topic, intid=19 )
@@ -294,24 +301,29 @@ class TestForumComments(AnalyticsTestBase):
 										self.topic, new_comment2 )
 
 		results = db_boards.get_forum_comments_for_user( test_user_ds_id, self.course_name )
+		results = [x for x in results]
 		assert_that( results, has_length( 2 ) )
 
 		results = db_boards.get_forum_comments_for_course( self.course_name )
+		results = [x for x in results]
 		assert_that( results, has_length( 2 ) )
 
 		#Deleted comments not returned
 		db_boards.delete_forum_comment( datetime.now(), 20 )
 
 		results = db_boards.get_forum_comments_for_user( test_user_ds_id, self.course_name )
+		results = [x for x in results]
 		assert_that( results, has_length( 1 ) )
 		assert_that( results[0].comment_id, new_comment2.intid )
 
 		results = db_boards.get_forum_comments_for_course( self.course_name )
+		results = [x for x in results]
 		assert_that( results, has_length( 1 ) )
 		assert_that( results[0].comment_id, new_comment2.intid )
 
 	def test_multiple_comments_users(self):
 		results = db_boards.get_forum_comments_for_user( test_user_ds_id, self.course_name )
+		results = [x for x in results]
 		assert_that( results, has_length( 0 ) )
 
 		test_user_ds_id2 = 9999
@@ -323,33 +335,35 @@ class TestForumComments(AnalyticsTestBase):
 		new_comment4 = MockComment( self.topic, intid=22 )
 
 		# Different user
-		db_boards.create_forum_comment( 	test_user_ds_id2,
+		db_boards.create_forum_comment( test_user_ds_id2,
 										test_session_id,
 										self.course_name,
 										self.topic, new_comment1 )
 
-		db_boards.create_forum_comment( 	test_user_ds_id,
+		db_boards.create_forum_comment( test_user_ds_id,
 										test_session_id,
 										self.course_name,
 										self.topic, new_comment2 )
 		# Deleted
-		db_boards.create_forum_comment( 	test_user_ds_id,
+		db_boards.create_forum_comment( test_user_ds_id,
 										test_session_id,
 										self.course_name,
 										self.topic, new_comment3 )
 		db_boards.delete_forum_comment( datetime.now(), 21 )
 		# Different course
-		db_boards.create_forum_comment( 	test_user_ds_id,
+		db_boards.create_forum_comment( test_user_ds_id,
 										test_session_id,
 										course_name2,
 										self.topic, new_comment4 )
 
 		# Only non-deleted comment for user in course
 		results = db_boards.get_forum_comments_for_user( test_user_ds_id, self.course_name )
+		results = [x for x in results]
 		assert_that( results, has_length( 1 ) )
 		assert_that( results[0].comment_id, new_comment2.intid )
 
 		results = db_boards.get_forum_comments_for_course( self.course_name )
+		results = [x for x in results]
 		assert_that( results, has_length( 2 ) )
 		results = [x.comment_id for x in results]
 		assert_that( results, has_items( new_comment1.intid, new_comment2.intid ) )
