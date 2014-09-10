@@ -69,7 +69,7 @@ def _get_blog_id( db, blog_ds_id ):
 
 def create_blog( user, nti_session, blog_entry ):
 	db = get_analytics_db()
-	user = get_or_create_user(user )
+	user = get_or_create_user( user )
 	uid = user.user_id
 	sid = SessionId.get_id( nti_session )
 	blog_ds_id = BlogId.get_id( blog_entry )
@@ -183,7 +183,7 @@ def delete_blog_comment(timestamp, comment_id):
 	db = get_analytics_db()
 	timestamp = timestamp_type( timestamp )
 	comment = db.session.query(BlogCommentsCreated).filter(
-						BlogCommentsCreated.comment_id == comment_id ).one()
+										BlogCommentsCreated.comment_id == comment_id ).one()
 	comment.deleted=timestamp
 	db.session.flush()
 

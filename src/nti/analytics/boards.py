@@ -62,7 +62,6 @@ def get_forum_comments_for_user( *args, **kwargs  ):
 	return db_boards.get_forum_comments_for_user( *args, **kwargs  )
 
 
-
 def _is_topic( obj ):
 	# Exclude blogs
 	result = 	frm_interfaces.ITopic.providedBy(obj) \

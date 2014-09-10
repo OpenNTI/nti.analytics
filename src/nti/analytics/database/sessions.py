@@ -40,7 +40,7 @@ class CurrentSessions(Base):
 class UserAgents(Base):
 	__tablename__ = 'UserAgents'
 	user_agent_id = Column('user_agent_id', Integer, Sequence('user_agent_id_seq'), index=True, primary_key=True )
-	# TODO Indexing this large column could be fairly expensive.  Does it get us anything,
+	# Indexing this large column could be fairly expensive.  Does it get us anything,
 	# or should we rely on a full column scan before inserting (perhaps also expensive)?
 	# Another alternative would be to hash this value in another column and just check that.
 	# If we do so, would we have to worry about collisions between unequal user-agents?
@@ -65,7 +65,7 @@ def _update_current_session( db, new_session, uid ):
 	db.session.add( new_current_session )
 
 def _get_user_agent( user_agent ):
-	# We have a 512 limit on user agent, truncate if we have to
+	# We have a 512 limit on user agent, truncate if we have to.
 	return user_agent[:512] if len( user_agent ) > 512 else user_agent
 
 def end_session( user, session_id, timestamp ):

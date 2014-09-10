@@ -87,6 +87,7 @@ def _get_enrollment_type_id(db, type_name):
 
 def create_course_enrollment(user, nti_session, timestamp, course, enrollment_type_name):
 	db = get_analytics_db()
+
 	user = get_or_create_user(user )
 	uid = user.user_id
 	sid = SessionId.get_id( nti_session )
@@ -121,3 +122,8 @@ def create_course_drop(user, nti_session, timestamp, course):
 															CourseEnrollments.course_id == course_id ).one()
 	db.session.delete( enrollment )
 
+def get_enrollments_for_course( course ):
+	db = get_analytics_db()
+	course_id = get_course_id( db, course )
+	enrollments = db.session.query( CourseEnrollments ).filter( CourseEnrollments.course_id == course_id ).all()
+	return enrollments

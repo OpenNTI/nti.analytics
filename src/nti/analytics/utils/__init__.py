@@ -37,7 +37,6 @@ def all_objects_iids(users, last_oid):
 					creator = creator.lower() if creator else ''
 				except AttributeError:
 					pass
-				# TODO we're losing deleted comments here.
 				if	not IDeletedObjectPlaceholder.providedBy(obj) and \
 					(not usernames or creator in usernames):
 					yield uid, obj

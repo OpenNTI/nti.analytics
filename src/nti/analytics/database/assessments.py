@@ -412,7 +412,7 @@ def create_submission_feedback( user, nti_session, timestamp, submission, feedba
 
 	submission_id = SubmissionId.get_id( submission )
 	assignment_taken_id = _get_assignment_taken_id( db, submission_id )
-	# TODO Do we need to handle any of these being None?
+	# Do we need to handle any of these being None?
 	# That's an error condition, right?
 	grade_id = _get_grade_id( db, assignment_taken_id )
 

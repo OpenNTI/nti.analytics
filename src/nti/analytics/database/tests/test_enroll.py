@@ -59,11 +59,15 @@ class TestCourseViews(AnalyticsTestBase):
 		assert_that( results, has_length( 0 ) )
 		results = self.session.query( CourseDrops ).all()
 		assert_that( results, has_length( 0 ) )
+		results = db_enrollments.get_enrollments_for_course( self.course_name )
+		assert_that( results, has_length( 0 ) )
 
 		for_credit = 'for_credit'
 		db_enrollments.create_course_enrollment( test_user_ds_id, test_session_id, datetime.now(), self.course_name, for_credit )
 
 		results = self.session.query( CourseEnrollments ).all()
+		assert_that( results, has_length( 1 ) )
+		results = db_enrollments.get_enrollments_for_course( self.course_name )
 		assert_that( results, has_length( 1 ) )
 
 		enrollment = self.session.query( CourseEnrollments ).one()
@@ -85,6 +89,8 @@ class TestCourseViews(AnalyticsTestBase):
 
 		results = self.session.query( CourseEnrollments ).all()
 		assert_that( results, has_length( 2 ) )
+		results = db_enrollments.get_enrollments_for_course( self.course_name )
+		assert_that( results, has_length( 2 ) )
 
 		results = self.session.query( EnrollmentTypes ).all()
 		assert_that( results, has_length( 1 ) )
@@ -93,6 +99,8 @@ class TestCourseViews(AnalyticsTestBase):
 		db_enrollments.create_course_drop( test_user_ds_id, test_session_id, datetime.now(), self.course_name )
 
 		results = self.session.query( CourseEnrollments ).all()
+		assert_that( results, has_length( 1 ) )
+		results = db_enrollments.get_enrollments_for_course( self.course_name )
 		assert_that( results, has_length( 1 ) )
 
 		results = self.session.query( CourseDrops ).all()

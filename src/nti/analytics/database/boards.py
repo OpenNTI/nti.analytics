@@ -295,6 +295,8 @@ def get_forum_comments_for_user(user, course):
 															ForumCommentsCreated.course_id == course_id,
 															ForumCommentsCreated.deleted == None ).all()
 
+	# FIXME Do we have to worry about this getting persisted?
+	# We should only occur in GETs
 	for fcc in results:
 		comment = CommentId.get_object( fcc.comment_id )
 		setattr( fcc, 'comment', comment )
@@ -319,8 +321,8 @@ def get_topics_created_for_user(user, course):
 def get_comments_for_topic( topic ):
 	db = get_analytics_db()
 	topic_id = _get_topic_id_from_topic( topic )
-	#FIXME null safety
-	results = db.session.query(ForumCommentsCreated).filter( ForumCommentsCreated.topic_id == topic_id ).all()
+	results = db.session.query(ForumCommentsCreated).filter( ForumCommentsCreated.topic_id == topic_id,
+															ForumCommentsCreated.deleted == None ).all()
 	return results
 
 
@@ -352,6 +354,6 @@ def get_topics_created_for_course(course):
 	db = get_analytics_db()
 	course_id = get_course_id( db, course )
 	results = db.session.query(TopicsCreated).filter( 	TopicsCreated.course_id == course_id,
-																TopicsCreated.deleted == None  ).all()
+														TopicsCreated.deleted == None  ).all()
 	return results
 

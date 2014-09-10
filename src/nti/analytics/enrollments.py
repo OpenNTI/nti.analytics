@@ -35,6 +35,9 @@ from .common import get_entity
 from nti.analytics import get_factory
 from nti.analytics import ENROLL_ANALYTICS
 
+def get_enrollments_for_course( course ):
+	return db_enrollments.get_enrollments_for_course( course )
+
 def _get_job_queue():
 	factory = get_factory()
 	return factory.get_queue( ENROLL_ANALYTICS )

@@ -61,7 +61,6 @@ def _add_comment( oid, nti_session=None ):
 		user = get_creator( comment )
 		blog = get_object_root( comment, frm_interfaces.IPersonalBlogEntry )
 		if blog is None:
-			# TODO Need to find out which type we should look for.
 			blog = get_object_root( comment, frm_interfaces.IPersonalBlogEntryPost )
 		if blog:
 			db_blogs.create_blog_comment( user, nti_session, blog, comment )
