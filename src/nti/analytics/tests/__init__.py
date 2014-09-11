@@ -80,31 +80,30 @@ class NTIAnalyticsApplicationTestLayer(ApplicationTestLayer):
 
 DEFAULT_INTID = 101
 
+cache = dict()
+id_map = dict()
+
+def _do_cache( obj, val ):
+	cache[obj] = val
+	id_map[val] = obj
+
+
 class TestIdentifier(_Identifier):
 	""" Defines ids simply if they are ints, or looks for an 'intid' field. """
 
 	default_intid = DEFAULT_INTID
-	cache = dict()
-	id_map = dict()
 
 	@classmethod
 	def get_id( cls, obj ):
+		result = None
+
+		if obj in cache:
+			return cache.get( obj )
 		# Opt for ds_intid if we're in a mock_ds
-		result = getattr( obj, '_ds_intid', None )
-		if result:
-			return result
-
-		# Or session id
-		result = getattr( obj, 'session_id', result )
-		if result:
-			return result
-
-		# Otherwise, let's check cache
-		if obj in TestIdentifier.cache:
-			return TestIdentifier.cache.get( obj )
-
+		elif hasattr( obj, '_ds_intid' ):
+			result = getattr( obj, '_ds_intid', None )
 		# Ok, make something up.
-		if isinstance( obj, ( integer_types, string_types ) ):
+		elif isinstance( obj, ( integer_types, string_types ) ):
 			result = obj
 		elif hasattr( obj, 'intid' ):
 			result = getattr( obj, 'intid', None )
@@ -113,10 +112,15 @@ class TestIdentifier(_Identifier):
 			result = TestIdentifier.default_intid
 			TestIdentifier.default_intid += 1
 
-		TestIdentifier.cache[obj] = result
+		_do_cache( obj, result )
 		return result
 
 	@classmethod
-	def get_object( cls, id ):
-		return object()
+	def get_object( cls, val ):
+		result = id_map.get( val, None )
+
+		if result is None:
+			result = object()
+
+		return result
 

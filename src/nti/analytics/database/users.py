@@ -59,6 +59,17 @@ def get_or_create_user(user):
 	found_user = db.session.query(Users).filter( Users.user_ds_id == uid ).first()
 	return found_user or create_user( user )
 
+def get_user( user_id ):
+	result = None
+	db = get_analytics_db()
+	found_user = db.session.query(Users).filter( Users.user_id == user_id,
+												Users.user_ds_id != None ).first()
+	if found_user is not None:
+		result = UserId.get_object( found_user.user_ds_id )
+
+	return result
+
+
 def delete_entity( entity_ds_id ):
 	db = get_analytics_db()
 	found_user = db.session.query(Users).filter( Users.user_ds_id == entity_ds_id ).first()

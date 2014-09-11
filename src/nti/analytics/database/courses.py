@@ -53,3 +53,13 @@ def delete_course( course_ds_id ):
 	found_course = db.session.query(Courses).filter( Courses.course_ds_id == course_ds_id ).first()
 	if found_course is not None:
 		found_course.course_ds_id = None
+
+def get_course( course_id ):
+	db = get_analytics_db()
+	result = None
+	found_course = db.session.query(Courses).filter( Courses.course_id == course_id,
+													Courses.course_ds_id != None ).first()
+	if found_course is not None:
+		course_ds_id = found_course.course_ds_id
+		result = CourseId.get_object( course_ds_id )
+	return result

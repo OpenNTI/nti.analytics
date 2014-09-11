@@ -99,3 +99,25 @@ class BatchResourceEvents(SchemaConfigured):
 	def __len__(self):
 		return len( self.events )
 
+
+@interface.implementer(interfaces.IAnalyticsTopic)
+@WithRepr
+class AnalyticsTopic(SchemaConfigured):
+	createDirectFieldProperties(interfaces.IAnalyticsTopic)
+
+	__external_can_create__ = False
+	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticstopic'
+
+	def __init__(self, *args, **kwargs):
+		SchemaConfigured.__init__(self, *args, **kwargs)
+
+@interface.implementer(interfaces.IAnalyticsForumComment)
+@WithRepr
+class AnalyticsForumComment(SchemaConfigured):
+	createDirectFieldProperties(interfaces.IAnalyticsForumComment)
+
+	__external_can_create__ = False
+	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticsforumcomment'
+
+	def __init__(self, *args, **kwargs):
+		SchemaConfigured.__init__(self, *args, **kwargs)

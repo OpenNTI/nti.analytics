@@ -39,7 +39,7 @@ class _DSIdentifier(_Identifier):
 
 	@classmethod
 	def get_object( cls, id ):
-		return _get_intid_utility().getObject( id )
+		return _get_intid_utility().queryObject( id, default=None )
 
 class _NtiidIdentifier(_Identifier):
 

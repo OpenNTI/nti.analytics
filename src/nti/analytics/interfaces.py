@@ -17,6 +17,10 @@ from nti.schema.field import IndexedIterable as TypedIterable
 
 from dolmen.builtins.interfaces import IIterable
 
+from nti.dataserver.contenttypes.forums.interfaces import IForum
+from nti.dataserver.contenttypes.forums.interfaces import ITopic
+from nti.dataserver.contenttypes.forums.interfaces import IPost
+
 class IAnalyticsQueueFactory(interface.Interface):
 	"""
 	A factory for analytics processing queues.
@@ -28,16 +32,17 @@ class IObjectProcessor(interface.Interface):
 		"""
 		Does analytic processing for the given object.
 		"""
-class IAnalyticsViewEvent(interface.Interface):
-	"""
-	A course event.
-	"""
+class IAnalyticsObjectBase(interface.Interface):
 	timestamp = Number(title=u"The timestamp when this event occurred, in seconds since epoch.",
 						default=0.0,
 						required=True )
 
 	user = ValidTextLine(title='User who created the event', required=True )
 
+class IAnalyticsViewEvent(IAnalyticsObjectBase):
+	"""
+	A basic analytics viewing event.
+	"""
 	time_length = Number(title=u"The time length of the event, in seconds",
 						default=0)
 
@@ -47,19 +52,19 @@ class IBlogViewEvent(IAnalyticsViewEvent):
 	"""
 	blog_id = ValidTextLine(title="The blog ntiid.")
 
-class ICourseEvent(IAnalyticsViewEvent):
+class ICourseEvent(interface.Interface):
 	"""
 	A course event.
 	"""
 	course = ValidTextLine(title='Course ntiid')
 
-class ITopicViewEvent(ICourseEvent):
+class ITopicViewEvent(IAnalyticsViewEvent, ICourseEvent):
 	"""
 	A topic viewing event.
 	"""
 	topic_id = ValidTextLine(title='Topic ntiid')
 
-class IResourceEvent(ICourseEvent):
+class IResourceEvent(IAnalyticsViewEvent, ICourseEvent):
 	"""
 	Describes a resource viewing event.
 	"""
@@ -70,7 +75,7 @@ class IResourceEvent(ICourseEvent):
 
 	resource_id = ValidTextLine(title="The resource ntiid.")
 
-class INoteViewEvent(ICourseEvent):
+class INoteViewEvent(IAnalyticsViewEvent, ICourseEvent):
 	"""
 	A note viewing event.
 	"""
@@ -90,7 +95,7 @@ class IVideoEvent(IResourceEvent):
 
 	with_transcript = Bool(title=u"Whether the video was viewed with a transcript or not.")
 
-class ICourseCatalogViewEvent(ICourseEvent):
+class ICourseCatalogViewEvent(IAnalyticsViewEvent, ICourseEvent):
 	"""
 	Describes a course catalog viewing event.
 	"""
@@ -99,3 +104,28 @@ class IBatchResourceEvents( IIterable ):
 	events = TypedIterable(
 		title="The events in this batch",
 		value_type=Object( IAnalyticsViewEvent ) )
+
+
+class IAnalyticsRatings(interface.Interface):
+	"""
+	Holds all ratings for this object.
+	"""
+	LikeCount = Number(title=u"The number of likes", default=0)
+
+	FavoriteCount = Number(title=u"The number of favorites", default=0)
+
+	Flagged = Bool(title=u"Whether the object is flagged/reported.", default=False)
+
+class IAnalyticsTopic(IAnalyticsObjectBase, ICourseEvent):
+	"""
+	An analytics topic.
+	"""
+	Topic = Object( ITopic, title='The underlying topic object.', required=True )
+
+class IAnalyticsForumComment(IAnalyticsObjectBase, ICourseEvent, IAnalyticsRatings):
+	"""
+	An analytics forum comment..
+	"""
+	CommentLength = Number(title=u"The character length of the comment.", default=0, required=False)
+
+	Comment = Object( IPost, title=u"The underlying comment for this object.", required=True )
