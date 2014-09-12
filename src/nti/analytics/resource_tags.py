@@ -8,6 +8,8 @@ __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
+import time
+
 from zope import component
 
 from datetime import datetime
@@ -29,6 +31,8 @@ from .common import process_event
 from .common import get_course_by_ntiid
 from .common import get_rating_from_event
 
+from nti.analytics.resolvers import get_course_by_object_id
+
 from nti.analytics.database import resource_tags as db_resource_tags
 
 from nti.analytics.identifier import NoteId
@@ -42,9 +46,9 @@ def _get_job_queue():
 	return factory.get_queue( TAGS_ANALYTICS )
 
 
-def _get_course( obj ):
-	__traceback_info__ = obj.containerId
-	result = get_course_by_ntiid( obj.containerId )
+def _get_course( object_id ):
+	__traceback_info__ = object_id
+	result = get_course_by_object_id( object_id )
 	return result
 
 # Notes
@@ -52,12 +56,15 @@ def _add_note( oid, nti_session=None ):
 	note = ntiids.find_object_with_ntiid( oid )
 	if note is not None:
 		user = get_creator( note )
-		course = _get_course( note )
+		note_id = NoteId.get_id( note )
+		start_time = time.time()
+		course = _get_course( note_id )
 		db_resource_tags.create_note( user, nti_session, course, note )
-		logger.debug( 	"Note created (user=%s) (course=%s) (note=%s)",
+		logger.debug( 	"Note created (user=%s) (course=%s) (note=%s) (time=%s)",
 						user,
 						getattr( course, '__name__', course ),
-						note )
+						note,
+						time.time() - start_time )
 
 def _remove_note( note_id, timestamp=None ):
 	db_resource_tags.delete_note( timestamp, note_id )
@@ -120,7 +127,8 @@ def _add_highlight( oid, nti_session=None ):
 	highlight = ntiids.find_object_with_ntiid( oid )
 	if highlight is not None:
 		user = get_creator( highlight )
-		course = _get_course( highlight )
+		hl_id = HighlightId.get_id( highlight )
+		course = _get_course( hl_id )
 		db_resource_tags.create_highlight( user, nti_session, course, highlight )
 		logger.debug( "Highlight created (user=%s) (course=%s)",
 					user,

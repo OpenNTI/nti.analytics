@@ -22,7 +22,7 @@ from nti.contenttypes.courses.interfaces import ICourseCatalogEntry
 from nti.contenttypes.courses.interfaces import ICourseInstance
 
 from nti.contentlibrary.interfaces import IContentPackageLibrary
-from nti.contentlibrary.indexed_data.interfaces import IAudioIndexedDataContainer
+from nti.contentlibrary.indexed_data.interfaces import IAudioIndexedDataContainer, IRelatedContentIndexedDataContainer
 from nti.contentlibrary.indexed_data.interfaces import IVideoIndexedDataContainer
 
 from nti.site import site
@@ -125,7 +125,7 @@ def _path_to_ugd_container(name):
 	if path:
 		return path
 
-	ifaces = (IAudioIndexedDataContainer,IVideoIndexedDataContainer)
+	ifaces = (IRelatedContentIndexedDataContainer, IAudioIndexedDataContainer,IVideoIndexedDataContainer)
 	def _search(unit):
 		for iface in ifaces:
 			if iface(unit).contains_data_item_with_ntiid(name):

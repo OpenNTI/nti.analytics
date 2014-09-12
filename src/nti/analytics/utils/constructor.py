@@ -20,6 +20,7 @@ from nti.analytics.interfaces import IObjectProcessor
 from nti.analytics.resource_views import logger as resource_view_logger
 from nti.analytics.users import logger as users_logger
 from nti.analytics.sessions import logger as sessions_logger
+from nti.analytics.resolvers import logger as resolvers_logger
 
 class Constructor(Processor):
 
@@ -31,6 +32,7 @@ class Constructor(Processor):
 			resource_view_logger.setLevel( logging.DEBUG )
 			users_logger.setLevel( logging.DEBUG )
 			sessions_logger.setLevel( logging.DEBUG )
+			resolvers_logger.setLevel( logging.DEBUG )
 
 	def process_args(self, args):
 		setattr(args, 'library', True)  # load library

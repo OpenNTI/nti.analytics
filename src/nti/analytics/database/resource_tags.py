@@ -84,8 +84,7 @@ def _get_sharing_enum( note, course ):
 
 	if _intersect( public_scopes, note.sharingTargets ):
 		result = 'PUBLIC'
-	else:
-		if _intersect( other_scopes, note.sharingTargets ):
+	elif _intersect( other_scopes, note.sharingTargets ):
 			result = 'COURSE'
 
 	return result

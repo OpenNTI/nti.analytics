@@ -28,6 +28,8 @@ from nti.ntiids.ntiids import find_object_with_ntiid
 
 from nti.analytics.sessions import get_nti_session_id
 
+from nti.analytics.resolvers import get_course_by_object_id
+
 from . import get_factory
 from . import ASSESSMENTS_ANALYTICS
 
@@ -41,7 +43,8 @@ from .common import get_created_timestamp
 
 from .database import assessments as db_assessments
 
-from .identifier import FeedbackId
+from nti.analytics.identifier import FeedbackId
+from nti.analytics.identifier import SubmissionId
 
 from .interfaces import IObjectProcessor
 
@@ -65,7 +68,8 @@ def _self_assessment_taken( oid, nti_session=None ):
 		# TODO This doesn't work for some submissions, why
 		# Missing content/courses?
 		__traceback_info__ = submission.containerId
-		course = get_course_by_ntiid( submission.containerId )
+		submission_id = SubmissionId.get_id( submission )
+		course = get_course_by_object_id( submission_id )
 		db_assessments.create_self_assessment_taken(user, nti_session,
 													timestamp, course, submission)
 		logger.debug("Self-assessment submitted (user=%s) (assignment=%s)",
