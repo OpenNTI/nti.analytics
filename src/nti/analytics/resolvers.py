@@ -20,6 +20,8 @@ from nti.assessment.interfaces import IQuestionSet
 
 from nti.contenttypes.courses.interfaces import ICourseInstance
 
+from nti.contentlibrary.interfaces import IContentPackageLibraryDidSyncEvent
+
 from nti.dataserver.metadata_index import CATALOG_NAME
 
 # XXX: Copied from nti.app.products.coursewarereports
@@ -124,19 +126,33 @@ class _CourseResolver(object):
 	def get_md_catalog(self):
 		return component.getUtility(ICatalog,CATALOG_NAME)
 
-	# FIXME need to re-build on re-sync
+	def rebuild(self):
+		_new_map = _build_ntiid_map()
+		self.course_to_containers = _new_map
 
 	def get_course(self, object_id):
 		# This is about 4x faster in the worst case than dynamically iterating
 		# through children and searching for contained objects (but costs in other ways).
-		for course, containers in self.course_to_containers.items():
+		_course_to_containers = self.course_to_containers
+
+		for course, containers in _course_to_containers.items():
 			md_catalog = self.get_md_catalog()
 			intids_of_objects_in_course_containers = md_catalog['containerId'].apply({'any_of': containers})
 			if object_id in intids_of_objects_in_course_containers:
 				return course
 		return None
 
-_course_resolver = _CourseResolver()
+_course_resolver = None
+
+def _get_resolver():
+	global _course_resolver
+	if _course_resolver is None:
+		_course_resolver = _CourseResolver()
+	return _course_resolver
+
+@component.adapter( IContentPackageLibraryDidSyncEvent )
+def _library_sync(event):
+	_get_resolver().rebuild()
 
 def get_course_by_object_id(object_id):
 	# Some content is only accessible from the global content
@@ -147,7 +163,7 @@ def get_course_by_object_id(object_id):
 	# This is expensive if we do not find our course.
 
 	# Update: JZ: TODO do we still need to check our global site for site packages?
-	result = _course_resolver.get_course( object_id )
+	result = _get_resolver().get_course( object_id )
 
 	if result is None:
 		raise TypeError( "No course found for object_id (%s)" % object_id )

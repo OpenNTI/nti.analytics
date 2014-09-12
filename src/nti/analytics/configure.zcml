@@ -81,6 +81,8 @@
 	<subscriber handler=".enrollments._enrolled" />
 	<subscriber handler=".enrollments._dropped" />
 
+	<subscriber handler=".resolvers._library_sync" />
+
 	<!-- utils -->
 
 	<utility component=".blogs" provides=".interfaces.IObjectProcessor" name="blogs"/>

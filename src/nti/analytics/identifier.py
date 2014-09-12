@@ -26,6 +26,7 @@ class _Identifier(object):
 
 intids = None
 def _get_intid_utility():
+	global intids
 	if intids is None:
 		intids = component.getUtility( zope.intid.IIntIds )
 	return intids
