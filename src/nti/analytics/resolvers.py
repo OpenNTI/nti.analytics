@@ -25,6 +25,9 @@ from nti.contentlibrary.interfaces import IContentPackageLibraryModifiedOnSyncEv
 
 from nti.dataserver.metadata_index import CATALOG_NAME
 
+from nti.externalization.externalization import to_external_ntiid_oid
+from nti.ntiids.ntiids import find_object_with_ntiid
+
 from nti.analytics import get_factory
 from nti.analytics import SESSIONS_ANALYTICS
 from nti.analytics.common import process_event
@@ -118,8 +121,8 @@ def _build_ntiid_map():
 	for entry in catalog.iterCatalogEntries():
 		course = ICourseInstance( entry )
 		containers = _do_get_containers_in_course( course )
-		# FIXME Do we need to store a weakref here? or ntiid?
-		course_dict[course] = containers
+		course_key = to_external_ntiid_oid( course )
+		course_dict[course_key] = containers
 
 	logger.info( 'Finished initializing course ntiid resolver (%ss) (course_count=%s)',
 				time.time() - start_time,
@@ -140,6 +143,8 @@ class _CourseResolver(object):
 		# ourselves out, and reset for the next read.  We build
 		# relatively cheaply (6s locally, 9.2014), and the sync
 		# events probably only occur during lulls.
+		if self.course_to_containers is not None:
+			logger.info( 'Resetting analytics course resolver' )
 		self.course_to_containers = None
 
 	def get_course(self, object_id):
@@ -150,10 +155,11 @@ class _CourseResolver(object):
 
 		# This is about 4x faster in the worst case than dynamically iterating
 		# through children and searching for contained objects (but costs in other ways).
-		for course, containers in _course_to_containers.items():
+		for course_key, containers in _course_to_containers.items():
 			md_catalog = self.get_md_catalog()
 			intids_of_objects_in_course_containers = md_catalog['containerId'].apply({'any_of': containers})
 			if object_id in intids_of_objects_in_course_containers:
+				course = find_object_with_ntiid( course_key )
 				return course
 		return None
 
@@ -166,7 +172,6 @@ def _get_resolver():
 	return _course_resolver
 
 def _reset():
-	logger.info( 'Resetting analytics course resolver' )
 	_get_resolver().reset()
 
 @component.adapter( IContentPackageLibraryModifiedOnSyncEvent )
