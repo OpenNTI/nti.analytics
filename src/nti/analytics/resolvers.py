@@ -18,11 +18,20 @@ from nti.app.assessment.interfaces import ICourseAssignmentCatalog
 from nti.assessment.interfaces import IQAssignment
 from nti.assessment.interfaces import IQuestionSet
 
+from nti.contenttypes.courses.interfaces import ICourseCatalog
 from nti.contenttypes.courses.interfaces import ICourseInstance
 
-from nti.contentlibrary.interfaces import IContentPackageLibraryDidSyncEvent
+from nti.contentlibrary.interfaces import IContentPackageLibraryModifiedOnSyncEvent
 
 from nti.dataserver.metadata_index import CATALOG_NAME
+
+from nti.analytics import get_factory
+from nti.analytics import SESSIONS_ANALYTICS
+from nti.analytics.common import process_event
+
+def _get_job_queue():
+	factory = get_factory()
+	return factory.get_queue( SESSIONS_ANALYTICS )
 
 # XXX: Copied from nti.app.products.coursewarereports
 def _get_self_assessments_for_course(course):
@@ -80,7 +89,7 @@ def _do_get_containers_in_course( course ):
 
 	containers_in_course = set()
 	for package in packages:
-		_recur(package, containers_in_course )
+		_recur( package, containers_in_course )
 
 	# Add in our self-assessments
 	# We filter out questions in assignments here for some reason
@@ -105,7 +114,6 @@ def _build_ntiid_map():
 	course_dict = dict()
 	start_time = time.time()
 	logger.info( 'Initializing course ntiid resolver' )
-	from nti.contenttypes.courses.interfaces import ICourseCatalog
 	catalog = component.getUtility( ICourseCatalog )
 	for entry in catalog.iterCatalogEntries():
 		course = ICourseInstance( entry )
@@ -121,20 +129,27 @@ def _build_ntiid_map():
 class _CourseResolver(object):
 
 	def __init__(self):
-		self.course_to_containers = _build_ntiid_map()
+		self.course_to_containers = None
 
 	def get_md_catalog(self):
 		return component.getUtility(ICatalog,CATALOG_NAME)
 
-	def rebuild(self):
-		_new_map = _build_ntiid_map()
-		self.course_to_containers = _new_map
+	def reset(self):
+		# We may have a few of these come in at once, one
+		# per each content package changed.  Let's just empty
+		# ourselves out, and reset for the next read.  We build
+		# relatively cheaply (6s locally, 9.2014), and the sync
+		# events probably only occur during lulls.
+		self.course_to_containers = None
 
 	def get_course(self, object_id):
-		# This is about 4x faster in the worst case than dynamically iterating
-		# through children and searching for contained objects (but costs in other ways).
 		_course_to_containers = self.course_to_containers
 
+		if self.course_to_containers is None:
+			self.course_to_containers = _course_to_containers = _build_ntiid_map()
+
+		# This is about 4x faster in the worst case than dynamically iterating
+		# through children and searching for contained objects (but costs in other ways).
 		for course, containers in _course_to_containers.items():
 			md_catalog = self.get_md_catalog()
 			intids_of_objects_in_course_containers = md_catalog['containerId'].apply({'any_of': containers})
@@ -150,9 +165,13 @@ def _get_resolver():
 		_course_resolver = _CourseResolver()
 	return _course_resolver
 
-@component.adapter( IContentPackageLibraryDidSyncEvent )
+def _reset():
+	logger.info( 'Resetting analytics course resolver' )
+	_get_resolver().reset()
+
+@component.adapter( IContentPackageLibraryModifiedOnSyncEvent )
 def _library_sync(event):
-	_get_resolver().rebuild()
+	process_event( _get_job_queue, _reset )
 
 def get_course_by_object_id(object_id):
 	# Some content is only accessible from the global content
