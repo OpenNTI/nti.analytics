@@ -38,7 +38,6 @@ from .common import get_course
 from .common import get_creator
 from .common import process_event
 from .common import get_object_root
-from .common import get_course_by_ntiid
 from .common import get_created_timestamp
 
 from .database import assessments as db_assessments

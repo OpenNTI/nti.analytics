@@ -21,12 +21,6 @@ from nti.dataserver.interfaces import IGlobalFlagStorage
 from nti.contenttypes.courses.interfaces import ICourseCatalogEntry
 from nti.contenttypes.courses.interfaces import ICourseInstance
 
-from nti.contentlibrary.interfaces import IContentPackageLibrary
-from nti.contentlibrary.indexed_data.interfaces import IAudioIndexedDataContainer, IRelatedContentIndexedDataContainer
-from nti.contentlibrary.indexed_data.interfaces import IVideoIndexedDataContainer
-
-from nti.site import site
-
 from nti.externalization import externalization
 
 from datetime import datetime
@@ -34,8 +28,6 @@ from datetime import datetime
 from pyramid.location import lineage
 
 from zope import component
-from zope.component.hooks import site as current_site
-from zope.traversing.interfaces import IEtcNamespace
 
 from zc.blist import BList
 
@@ -112,78 +104,6 @@ def get_course( obj ):
 	result = get_object_root( obj, ICourseInstance )
 	__traceback_info__ = result, obj
 	return ICourseInstance( result )
-
-# Copied from digest_email
-# Really expensive: 1s/call in local testing in which the worst case occurred frequently.
-def _path_to_ugd_container(name):
-	__traceback_info__ = name
-	assert name.startswith('tag:')
-
-	# Try to find a content unit, in decreasing order of chance
-	lib = component.getUtility(IContentPackageLibrary)
-	path = lib.pathToNTIID(name)
-	if path:
-		return path
-
-	ifaces = (IRelatedContentIndexedDataContainer, IAudioIndexedDataContainer,IVideoIndexedDataContainer)
-	def _search(unit):
-		for iface in ifaces:
-			if iface(unit).contains_data_item_with_ntiid(name):
-				return lib.pathToNTIID(unit.ntiid)
-		for child in unit.children:
-			r = _search(child)
-			if r:
-				return r
-
-	for package in lib.contentPackages:
-		r = _search(package)
-		if r:
-			return r
-	paths = lib.pathsToEmbeddedNTIID(name)
-	if paths:
-		return paths[0]
-
-def _do_get_course_by_ntiid(name):
-	"Return an arbitrary course associated with the content ntiid"
-	path = _path_to_ugd_container(name)
-	__traceback_info__ = path
-	if path:
-		course = None
-		for unit in reversed(path):
-			# The adapter function here is where the arbitraryness
-			# comes in
-			course = ICourseInstance( unit, None )
-			if course is not None:
-				return course
-
-def get_course_by_ntiid(name):
-	# Some content is only accessible from the global content
-	# package.  During migration, we'll need to (in most cases)
-	# check there first, before falling back to checking our current
-	# site.  Once the migration is complete, we should default to
-	# our current site in the fast lane.
-	# This is expensive if we do not find our course.
-
-	# Is there a better way to do this?
-	host_sites = component.getUtility(IEtcNamespace, name='hostsites')
-	ds_folder = host_sites.__parent__
-	ds_site_manager = ds_folder.getSiteManager()
-	my_site = site.getSite()
-
-	result = None
-
-	if my_site.getSiteManager() != ds_site_manager:
-		global_site = my_site.__parent__.__parent__
-		with current_site(global_site):
-			result = _do_get_course_by_ntiid(name)
-
-	if result is None:
-		# Try our current site
-		result = _do_get_course_by_ntiid(name)
-
-	if result is None:
-		raise TypeError( "No course found for containerId (%s)" % name )
-	return result
 
 def _execute_job( *args, **kwargs ):
 	# This is our merging solution.  String parse the error message

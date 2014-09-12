@@ -28,7 +28,6 @@ from nti.analytics.sessions import get_nti_session_id
 
 from .common import get_creator
 from .common import process_event
-from .common import get_course_by_ntiid
 from .common import get_rating_from_event
 
 from nti.analytics.resolvers import get_course_by_object_id
@@ -57,14 +56,12 @@ def _add_note( oid, nti_session=None ):
 	if note is not None:
 		user = get_creator( note )
 		note_id = NoteId.get_id( note )
-		start_time = time.time()
 		course = _get_course( note_id )
 		db_resource_tags.create_note( user, nti_session, course, note )
-		logger.debug( 	"Note created (user=%s) (course=%s) (note=%s) (time=%s)",
+		logger.debug( 	"Note created (user=%s) (course=%s) (note=%s)",
 						user,
 						getattr( course, '__name__', course ),
-						note,
-						time.time() - start_time )
+						note )
 
 def _remove_note( note_id, timestamp=None ):
 	db_resource_tags.delete_note( timestamp, note_id )
