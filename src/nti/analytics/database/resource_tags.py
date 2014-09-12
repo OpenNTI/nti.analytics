@@ -71,20 +71,22 @@ class HighlightsCreated(Base,BaseTableMixin,ResourceMixin,DeletedMixin):
 
 def _get_sharing_enum( note, course ):
 	# Logic duped in coursewarereports.views.admin_views
-	public_scope, = course.SharingScopes.getAllScopesImpliedbyScope('Public')
-	other_scopes = [x for x in course.SharingScopes.values() if x != public_scope]
+	# We may have many values here (course subinstance + parent)
+	public_scopes = course.SharingScopes.getAllScopesImpliedbyScope('Public')
+	other_scopes = [x for x in course.SharingScopes.values() if x not in public_scopes]
 
 	# Note: we could also do private if not shared at all
 	# or perhaps we want to store who we're sharing to.
 	result = 'OTHER'
 
-	if public_scope in note.sharingTargets:
+	def _intersect( set1, set2 ):
+		return any( x in set1 for x in set2 )
+
+	if _intersect( public_scopes, note.sharingTargets ):
 		result = 'PUBLIC'
 	else:
-		for course_only_scope in other_scopes:
-			if course_only_scope in note.sharingTargets:
-				result = 'COURSE'
-				break
+		if _intersect( other_scopes, note.sharingTargets ):
+			result = 'COURSE'
 
 	return result
 
