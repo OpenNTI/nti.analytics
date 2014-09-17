@@ -18,3 +18,8 @@ INTID_COLUMN_TYPE = BigInteger
 def get_analytics_db():
 	return component.getUtility( IAnalyticsDB )
 
+def resolve_objects( to_call, rows ):
+	# Resolve the objects, filtering out Nones
+	return (x for x in
+			( to_call( row ) for row in rows )
+			if x is not None)

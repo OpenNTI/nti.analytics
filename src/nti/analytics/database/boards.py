@@ -30,6 +30,7 @@ from nti.analytics.identifier import CommentId
 from nti.analytics.identifier import ForumId
 from nti.analytics.identifier import TopicId
 
+from nti.analytics.database import resolve_objects
 from nti.analytics.database import INTID_COLUMN_TYPE
 from nti.analytics.database import Base
 from nti.analytics.database import get_analytics_db
@@ -327,12 +328,6 @@ def _resolve_topic( row ):
 								course=course )
 	return result
 
-def _resolve_objects( to_call, rows ):
-	# Resolve the objects, filtering out Nones
-	return (x for x in
-			( to_call( row ) for row in rows )
-			if x is not None)
-
 # StudentParticipationReport
 def get_forum_comments_for_user(user, course):
 	db = get_analytics_db()
@@ -343,7 +338,7 @@ def get_forum_comments_for_user(user, course):
 															ForumCommentsCreated.course_id == course_id,
 															ForumCommentsCreated.deleted == None ).all()
 
-	return _resolve_objects( _resolve_comment, results )
+	return resolve_objects( _resolve_comment, results )
 
 def get_topics_created_for_user(user, course):
 	db = get_analytics_db()
@@ -354,7 +349,7 @@ def get_topics_created_for_user(user, course):
 														TopicsCreated.course_id == course_id,
 														TopicsCreated.deleted == None  ).all()
 
-	return _resolve_objects( _resolve_topic, results )
+	return resolve_objects( _resolve_topic, results )
 
 #TopicReport
 def get_comments_for_topic( topic ):
@@ -362,7 +357,7 @@ def get_comments_for_topic( topic ):
 	topic_id = _get_topic_id_from_topic( topic )
 	results = db.session.query(ForumCommentsCreated).filter( ForumCommentsCreated.topic_id == topic_id,
 															ForumCommentsCreated.deleted == None ).all()
-	return _resolve_objects( _resolve_comment, results )
+	return resolve_objects( _resolve_comment, results )
 
 
 #ForumReport
@@ -371,14 +366,14 @@ def get_forum_comments(forum):
 	forum_id = _get_forum_id_from_forum( db, forum )
 	results = db.session.query(ForumCommentsCreated).filter( 	ForumCommentsCreated.forum_id == forum_id,
 																ForumCommentsCreated.deleted == None  ).all()
-	return _resolve_objects( _resolve_comment, results )
+	return resolve_objects( _resolve_comment, results )
 
 def get_topics_created_for_forum(forum):
 	db = get_analytics_db()
 	forum_id = _get_forum_id_from_forum( db, forum )
 	results = db.session.query(TopicsCreated).filter( TopicsCreated.forum_id == forum_id,
 													TopicsCreated.deleted == None  ).all()
-	return _resolve_objects( _resolve_topic, results )
+	return resolve_objects( _resolve_topic, results )
 
 
 #CourseReport
@@ -387,12 +382,12 @@ def get_forum_comments_for_course(course):
 	course_id = get_course_id( db, course )
 	results = db.session.query(ForumCommentsCreated).filter( 	ForumCommentsCreated.course_id == course_id,
 																ForumCommentsCreated.deleted == None  ).all()
-	return _resolve_objects( _resolve_comment, results )
+	return resolve_objects( _resolve_comment, results )
 
 def get_topics_created_for_course(course):
 	db = get_analytics_db()
 	course_id = get_course_id( db, course )
 	results = db.session.query(TopicsCreated).filter( 	TopicsCreated.course_id == course_id,
 														TopicsCreated.deleted == None  ).all()
-	return _resolve_objects( _resolve_topic, results )
+	return resolve_objects( _resolve_topic, results )
 

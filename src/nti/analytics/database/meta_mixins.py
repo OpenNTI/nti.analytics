@@ -25,7 +25,6 @@ from nti.analytics.database import INTID_COLUMN_TYPE
 class BaseTableMixin(object):
 
 	# For migrating data, we may not have sessions (or timestamps); thus this is optional.
-	# Does the same apply to users?  Perhaps we don't have a 'creator' stored.
 	@declared_attr
 	def session_id(cls):
 		return Column('session_id', SESSION_COLUMN_TYPE, ForeignKey("Sessions.session_id"), nullable=True )

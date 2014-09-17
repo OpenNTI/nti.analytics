@@ -22,7 +22,7 @@ from sqlalchemy import Boolean
 from sqlalchemy import Text
 
 from sqlalchemy.schema import Sequence
-
+from sqlalchemy.orm.session import make_transient
 from sqlalchemy.ext.declarative import declared_attr
 
 from nti.app.products.gradebook.interfaces import IGrade
@@ -34,14 +34,20 @@ from nti.assessment.interfaces import IQModeledContentResponse
 from nti.analytics.common import timestamp_type
 from nti.analytics.common import get_creator
 
-from nti.analytics.database.users import get_or_create_user
-from nti.analytics.database.courses import get_course_id
+from nti.analytics.model import AnalyticsAssessmentTaken
+from nti.analytics.model import AnalyticsAssignmentTaken
 
 from nti.analytics.identifier import SessionId
 from nti.analytics.identifier import SubmissionId
 from nti.analytics.identifier import QuestionSetId
 from nti.analytics.identifier import FeedbackId
 
+from nti.analytics.database.users import get_or_create_user
+from nti.analytics.database.users import get_user
+from nti.analytics.database.courses import get_course_id
+from nti.analytics.database.courses import get_course
+
+from nti.analytics.database import resolve_objects
 from nti.analytics.database import NTIID_COLUMN_TYPE
 from nti.analytics.database import INTID_COLUMN_TYPE
 from nti.analytics.database import Base
@@ -72,7 +78,7 @@ class AssignmentSubmissionMixin(BaseTableMixin):
 
 
 class DetailMixin(TimeLengthMixin):
-	# TODO Can we rely on these parts/ids being integers?
+	# Counting on these parts/ids being integers.
 	# Max length of 114 as of 8.1.14
 	@declared_attr
 	def question_id(cls):
@@ -434,46 +440,88 @@ def delete_feedback( timestamp, feedback_ds_id ):
 	feedback.feedback_ds_id = None
 	db.session.flush()
 
+def _resolve_self_assessment( row ):
+	make_transient( row )
+	submission = SubmissionId.get_object( row.submission_id )
+	course = get_course( row.course_id )
+	user = get_user( row.user_id )
+	result = None
+	if 		submission is not None \
+		and user is not None \
+		and course is not None:
+		result = AnalyticsAssessmentTaken( Submission=submission,
+										user=user,
+										timestamp=row.timestamp,
+										course=course,
+										time_length=row.time_length )
+	return result
+
+def _resolve_assignment( row ):
+	# We may have multiple assignment records here at one point.
+	submission_record, grade_record = row
+	make_transient( submission_record )
+
+	grade_num = grade = grader = None
+	if grade_record is not None:
+		make_transient( grade_record )
+		grade_num = grade_record.grade_num
+		grade = grade_record.grade
+		grader = grade_record.grader
+
+	submission = SubmissionId.get_object( submission_record.submission_id )
+	course = get_course( submission_record.course_id )
+	user = get_user( submission_record.user_id )
+	result = None
+	if 		submission is not None \
+		and user is not None \
+		and course is not None:
+		result = AnalyticsAssignmentTaken( Submission=submission,
+										user=user,
+										timestamp=submission_record.timestamp,
+										course=course,
+										time_length=submission_record.time_length,
+										AssignmentId=submission_record.assignment_id,
+										GradeNum=grade_num,
+										Grade=grade,
+										Grader=grader )
+	return result
+
 def get_self_assessments_for_user(user, course):
 	db = get_analytics_db()
-	user = get_or_create_user(user )
+	user = get_or_create_user( user )
 	uid = user.user_id
 	course_id = get_course_id( db, course )
 	results = db.session.query(SelfAssessmentsTaken).filter( 	SelfAssessmentsTaken.user_id == uid,
 																SelfAssessmentsTaken.course_id == course_id ).all()
 
-	for sat in results:
-		submission = SubmissionId.get_object( sat.submission_id )
-		setattr( sat, 'submission', submission )
-	return results
+	return resolve_objects( _resolve_self_assessment, results )
 
 def get_assignments_for_user(user, course):
+	# We may not have a grade here.
 	db = get_analytics_db()
 	user = get_or_create_user(user )
 	uid = user.user_id
 	course_id = get_course_id( db, course )
-	results = db.session.query(AssignmentsTaken).filter( 	AssignmentsTaken.user_id == uid,
-															AssignmentsTaken.course_id == course_id ).all()
-	for at in results:
-		submission = SubmissionId.get_object( at.submission_id )
-		setattr( at, 'submission', submission )
-	return results
+	results = db.session.query( AssignmentsTaken, AssignmentGrades ).outerjoin( AssignmentGrades ) \
+						.filter( AssignmentsTaken.user_id == uid,
+								AssignmentsTaken.course_id == course_id ).all()
+
+	return resolve_objects( _resolve_assignment, results )
 
 def get_self_assessments_for_course(course):
 	db = get_analytics_db()
 	course_id = get_course_id( db, course )
 	results = db.session.query(SelfAssessmentsTaken).filter( SelfAssessmentsTaken.course_id == course_id ).all()
 
-	for sat in results:
-		submission = SubmissionId.get_object( sat.submission_id )
-		setattr( sat, 'submission', submission )
-	return results
+	return resolve_objects( _resolve_self_assessment, results )
 
 def get_assignments_for_course(course):
 	db = get_analytics_db()
 	course_id = get_course_id( db, course )
-	results = db.session.query(AssignmentsTaken).filter( AssignmentsTaken.course_id == course_id ).all()
-	return results
+	results = db.session.query(AssignmentsTaken, AssignmentGrades).outerjoin( AssignmentGrades ) \
+						.filter( AssignmentsTaken.course_id == course_id ).all()
+
+	return resolve_objects( _resolve_assignment, results )
 
 #AssignmentReport
 def get_assignment_details_for_course(course):
@@ -482,5 +530,7 @@ def get_assignment_details_for_course(course):
 	results = db.session.query(AssignmentDetails).\
 						join(AssignmentsTaken).\
 						filter( AssignmentsTaken.course_id == course_id ).all()
+
+	# FIXME Implement
 	return results
 

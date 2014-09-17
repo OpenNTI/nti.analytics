@@ -17,9 +17,12 @@ from nti.schema.field import IndexedIterable as TypedIterable
 
 from dolmen.builtins.interfaces import IIterable
 
-from nti.dataserver.contenttypes.forums.interfaces import IForum
 from nti.dataserver.contenttypes.forums.interfaces import ITopic
 from nti.dataserver.contenttypes.forums.interfaces import IPost
+
+from nti.assessment.interfaces import IQAssessedQuestionSet
+
+from nti.app.assessment.interfaces import IUsersCourseAssignmentHistoryItem
 
 class IAnalyticsQueueFactory(interface.Interface):
 	"""
@@ -39,12 +42,15 @@ class IAnalyticsObjectBase(interface.Interface):
 
 	user = ValidTextLine(title='User who created the event', required=True )
 
-class IAnalyticsViewEvent(IAnalyticsObjectBase):
+class ITimeLength(interface.Interface):
+	time_length = Number(title=u"The time length of the event, in seconds",
+						default=0)
+
+class IAnalyticsViewEvent(IAnalyticsObjectBase, ITimeLength):
 	"""
 	A basic analytics viewing event.
 	"""
-	time_length = Number(title=u"The time length of the event, in seconds",
-						default=0)
+	pass
 
 class IBlogViewEvent(IAnalyticsViewEvent):
 	"""
@@ -124,8 +130,30 @@ class IAnalyticsTopic(IAnalyticsObjectBase, ICourseEvent):
 
 class IAnalyticsForumComment(IAnalyticsObjectBase, ICourseEvent, IAnalyticsRatings):
 	"""
-	An analytics forum comment..
+	An analytics forum comment.
 	"""
 	CommentLength = Number(title=u"The character length of the comment.", default=0, required=False)
 
 	Comment = Object( IPost, title=u"The underlying comment for this object.", required=True )
+
+class IAnalyticsAssessmentTaken(IAnalyticsObjectBase, ITimeLength, ICourseEvent):
+	"""
+	An analytics self-assessment taken record.
+	"""
+	Submission = Object( IQAssessedQuestionSet, title=u"The underlying submission for this object.",
+									required=True )
+
+class IAnalyticsAssignmentTaken(IAnalyticsObjectBase, ITimeLength, ICourseEvent):
+	"""
+	An analytics assignment taken record.
+	"""
+	Submission = Object( IUsersCourseAssignmentHistoryItem, title=u"The underlying submission for this object.",
+									required=True )
+
+	AssignmentId = ValidTextLine( title=u"The assessment identifier.", required=True )
+
+	GradeNum = Number( title=u"The numerical value of the grade.", required=False )
+
+	Grade = ValidTextLine( title=u"The textual value of the grade.", required=False )
+
+	Grader = ValidTextLine( title=u"The user who graded the assignment", required=False )

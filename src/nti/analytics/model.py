@@ -121,3 +121,26 @@ class AnalyticsForumComment(SchemaConfigured):
 
 	def __init__(self, *args, **kwargs):
 		SchemaConfigured.__init__(self, *args, **kwargs)
+
+@interface.implementer(interfaces.IAnalyticsAssessmentTaken)
+@WithRepr
+class AnalyticsAssessmentTaken(SchemaConfigured):
+	createDirectFieldProperties(interfaces.IAnalyticsAssessmentTaken)
+
+	__external_can_create__ = False
+	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticsassessment'
+
+	def __init__(self, *args, **kwargs):
+		SchemaConfigured.__init__(self, *args, **kwargs)
+
+@interface.implementer(interfaces.IAnalyticsAssignmentTaken)
+@WithRepr
+class AnalyticsAssignmentTaken(SchemaConfigured):
+	createDirectFieldProperties(interfaces.IAnalyticsAssignmentTaken)
+
+	__external_can_create__ = False
+	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticsassignment'
+
+	def __init__(self, *args, **kwargs):
+		SchemaConfigured.__init__(self, *args, **kwargs)
+
