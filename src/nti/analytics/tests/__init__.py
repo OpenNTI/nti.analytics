@@ -97,10 +97,8 @@ class TestIdentifier(_Identifier):
 	def get_id( cls, obj ):
 		result = None
 
-		if obj in cache:
-			return cache.get( obj )
 		# Opt for ds_intid if we're in a mock_ds
-		elif hasattr( obj, '_ds_intid' ):
+		if hasattr( obj, '_ds_intid' ):
 			result = getattr( obj, '_ds_intid', None )
 		# Ok, make something up.
 		elif isinstance( obj, ( integer_types, string_types ) ):
@@ -109,10 +107,18 @@ class TestIdentifier(_Identifier):
 			result = getattr( obj, 'intid', None )
 
 		if result is None:
+			if obj in cache:
+				return cache.get( obj )
+
+		if result is None:
 			result = TestIdentifier.default_intid
 			TestIdentifier.default_intid += 1
 
-		_do_cache( obj, result )
+		try:
+			# Some objects attempt to access the backing db.
+			_do_cache( obj, result )
+		except:
+			pass
 		return result
 
 	@classmethod
