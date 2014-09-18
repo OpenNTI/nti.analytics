@@ -122,10 +122,10 @@ class AnalyticsForumComment(SchemaConfigured):
 	def __init__(self, *args, **kwargs):
 		SchemaConfigured.__init__(self, *args, **kwargs)
 
-@interface.implementer(interfaces.IAnalyticsAssessmentTaken)
+@interface.implementer(interfaces.IAnalyticsAssessment)
 @WithRepr
-class AnalyticsAssessmentTaken(SchemaConfigured):
-	createDirectFieldProperties(interfaces.IAnalyticsAssessmentTaken)
+class AnalyticsAssessment(SchemaConfigured):
+	createDirectFieldProperties(interfaces.IAnalyticsAssessment)
 
 	__external_can_create__ = False
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticsassessment'
@@ -133,10 +133,10 @@ class AnalyticsAssessmentTaken(SchemaConfigured):
 	def __init__(self, *args, **kwargs):
 		SchemaConfigured.__init__(self, *args, **kwargs)
 
-@interface.implementer(interfaces.IAnalyticsAssignmentTaken)
+@interface.implementer(interfaces.IAnalyticsAssignment)
 @WithRepr
-class AnalyticsAssignmentTaken(SchemaConfigured):
-	createDirectFieldProperties(interfaces.IAnalyticsAssignmentTaken)
+class AnalyticsAssignment(SchemaConfigured):
+	createDirectFieldProperties(interfaces.IAnalyticsAssignment)
 
 	__external_can_create__ = False
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticsassignment'
@@ -144,3 +144,13 @@ class AnalyticsAssignmentTaken(SchemaConfigured):
 	def __init__(self, *args, **kwargs):
 		SchemaConfigured.__init__(self, *args, **kwargs)
 
+@interface.implementer(interfaces.IAnalyticsAssignmentDetail)
+@WithRepr
+class AnalyticsAssignmentDetail(SchemaConfigured):
+	createDirectFieldProperties(interfaces.IAnalyticsAssignmentDetail)
+
+	__external_can_create__ = False
+	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticsassignmentdetail'
+
+	def __init__(self, *args, **kwargs):
+		SchemaConfigured.__init__(self, *args, **kwargs)

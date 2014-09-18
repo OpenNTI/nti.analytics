@@ -88,7 +88,7 @@ class NTIAnalyticsApplicationTestLayer(ApplicationTestLayer):
 
 class MockParent(object):
 
-	def __init__(self, parent, inReplyTo=None, intid=None, containerId=None, children=None, vals=None, description=None, body=None):
+	def __init__(self, parent, inReplyTo=None, intid=None, containerId=None, children=None, vals=None ):
 		self.__parent__ = parent
 		self.inReplyTo = inReplyTo
 		self.intid = intid

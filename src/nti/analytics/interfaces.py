@@ -8,14 +8,20 @@ __docformat__ = "restructuredtext en"
 
 from zope import interface
 
+from dolmen.builtins.interfaces import IDict
+from dolmen.builtins.interfaces import IList
+from dolmen.builtins.interfaces import IString
+from dolmen.builtins.interfaces import INumeric
+from dolmen.builtins.interfaces import IUnicode
+from dolmen.builtins.interfaces import IIterable
+
 from nti.schema.field import Number
 from nti.schema.field import Object
 from nti.schema.field import Bool
 from nti.schema.field import List
+from nti.schema.field import Variant
 from nti.schema.field import DecodingValidTextLine as ValidTextLine
 from nti.schema.field import IndexedIterable as TypedIterable
-
-from dolmen.builtins.interfaces import IIterable
 
 from nti.dataserver.contenttypes.forums.interfaces import ITopic
 from nti.dataserver.contenttypes.forums.interfaces import IPost
@@ -136,14 +142,39 @@ class IAnalyticsForumComment(IAnalyticsObjectBase, ICourseEvent, IAnalyticsRatin
 
 	Comment = Object( IPost, title=u"The underlying comment for this object.", required=True )
 
-class IAnalyticsAssessmentTaken(IAnalyticsObjectBase, ITimeLength, ICourseEvent):
+class IAnalyticsAssessment(IAnalyticsObjectBase, ITimeLength, ICourseEvent):
 	"""
 	An analytics self-assessment taken record.
 	"""
 	Submission = Object( IQAssessedQuestionSet, title=u"The underlying submission for this object.",
-									required=True )
+						required=True )
 
-class IAnalyticsAssignmentTaken(IAnalyticsObjectBase, ITimeLength, ICourseEvent):
+class IAssessmentGrade(interface.Interface):
+	"""
+	The analytics grade information.
+	"""
+	GradeNum = Number( title=u"The numerical value of the grade.", required=False )
+
+	Grade = ValidTextLine( title=u"The textual value of the grade.", required=False )
+
+	Grader = ValidTextLine( title=u"The user who graded the assignment", required=False )
+
+	IsCorrect = Bool( title=u"Whether the object could be considered correct.", required=False )
+
+class IAnalyticsAssignmentDetail( ITimeLength, IAssessmentGrade ):
+
+	QuestionId = ValidTextLine( title=u"The question ntiid.", required=True )
+	QuestionPartId = Number( title=u"The question part index.", required=True )
+	Answer = Variant( (Object(IString),
+						Object(INumeric),
+						Object(IDict),
+						Object(IList),
+						Object(IUnicode) ),
+					variant_raise_when_schema_provided=True,
+					title=u"The user submission for this question part.", required=True )
+
+
+class IAnalyticsAssignment(IAnalyticsObjectBase, ITimeLength, ICourseEvent, IAssessmentGrade):
 	"""
 	An analytics assignment taken record.
 	"""
@@ -152,8 +183,7 @@ class IAnalyticsAssignmentTaken(IAnalyticsObjectBase, ITimeLength, ICourseEvent)
 
 	AssignmentId = ValidTextLine( title=u"The assessment identifier.", required=True )
 
-	GradeNum = Number( title=u"The numerical value of the grade.", required=False )
-
-	Grade = ValidTextLine( title=u"The textual value of the grade.", required=False )
-
-	Grader = ValidTextLine( title=u"The user who graded the assignment", required=False )
+	Details = TypedIterable(
+		title="The detail parts of this assignment.",
+		value_type=Object( IAnalyticsAssignmentDetail ),
+		required=False )

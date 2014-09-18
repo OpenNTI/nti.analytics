@@ -22,6 +22,7 @@ from sqlalchemy import Boolean
 from sqlalchemy import Text
 
 from sqlalchemy.schema import Sequence
+from sqlalchemy.orm import relationship
 from sqlalchemy.orm.session import make_transient
 from sqlalchemy.ext.declarative import declared_attr
 
@@ -34,8 +35,9 @@ from nti.assessment.interfaces import IQModeledContentResponse
 from nti.analytics.common import timestamp_type
 from nti.analytics.common import get_creator
 
-from nti.analytics.model import AnalyticsAssessmentTaken
-from nti.analytics.model import AnalyticsAssignmentTaken
+from nti.analytics.model import AnalyticsAssessment
+from nti.analytics.model import AnalyticsAssignment
+from nti.analytics.model import AnalyticsAssignmentDetail
 
 from nti.analytics.identifier import SessionId
 from nti.analytics.identifier import SubmissionId
@@ -70,6 +72,9 @@ class AssignmentsTaken(Base,AssignmentMixin):
 
 	assignment_taken_id = Column('assignment_taken_id', Integer, Sequence( 'assignments_taken_seq' ),
 								index=True, nullable=False, primary_key=True )
+
+	# We may have multiple grades in the future.
+	grade = relationship( 'AssignmentGrades', uselist=False, lazy='joined' )
 
 class AssignmentSubmissionMixin(BaseTableMixin):
 	@declared_attr
@@ -119,6 +124,7 @@ class AssignmentDetails(Base,DetailMixin,AssignmentSubmissionMixin):
 	__tablename__ = 'AssignmentDetails'
 
 	assignment_details_id = Column('assignment_details_id', Integer, Sequence( 'assignment_details_seq' ), primary_key=True )
+	grade = relationship( 'AssignmentDetailGrades', uselist=False, lazy='joined' )
 
 class AssignmentGrades(Base,AssignmentSubmissionMixin,GradeMixin):
 	__tablename__ = 'AssignmentGrades'
@@ -186,12 +192,28 @@ def _get_response(part):
 
 	return result
 
-def _get_grade( grade_value ):
+def _load_response( value ):
+	response = json.loads( value )
+	if isinstance( response, dict ):
+		# Map
+		# Convert to int keys, if possible.
+		# We currently do not handle mixed types of keys.
+		try:
+			response = {int( x ): y for x,y in response.items()}
+		except ValueError:
+			pass
+	return response
+
+
+def _get_grade_val( grade_value ):
 	# Convert the webapp's "number - letter" scheme to a number, or None.
 	result = None
-	if grade_value and isinstance(grade_value, string_types) and grade_value.endswith(' -'):
+	if grade_value and isinstance(grade_value, string_types):
 		try:
-			result = float(grade_value.split()[0])
+			if grade_value.endswith(' -'):
+				result = float(grade_value.split()[0])
+			else:
+				result = float(grade_value)
 		except ValueError:
 			pass
 	elif grade_value and isinstance( grade_value, ( integer_types, float ) ):
@@ -249,6 +271,9 @@ def create_self_assessment_taken(user, nti_session, timestamp, course, submissio
 													time_length=time_length )
 			db.session.add( grade_details )
 
+def _get_grade( submission ):
+	return IGrade( submission, None )
+
 def _get_grader_id( submission ):
 	"""
 	Returns a grader id for the submission if one exists (otherwise None).
@@ -256,7 +281,7 @@ def _get_grader_id( submission ):
 	would need to change for things like peer grading.
 	"""
 	grader = None
-	graded_submission = IGrade( submission, None )
+	graded_submission = _get_grade( submission )
 	# If None, we're pending right?
 	if graded_submission is not None:
 		grader = get_creator( graded_submission )
@@ -321,11 +346,11 @@ def create_assignment_taken(user, nti_session, timestamp, course, submission ):
 
 
 	# Grade
-	graded_submission = IGrade( submission, None )
+	graded_submission = _get_grade( submission )
 	# If None, we're pending right?
 	if graded_submission is not None:
 		grade = graded_submission.grade
-		grade_num = _get_grade( grade )
+		grade_num = _get_grade_val( grade )
 
 		grader = _get_grader_id( submission )
 
@@ -371,7 +396,7 @@ def grade_submission(user, nti_session, timestamp, grader, graded_val, submissio
 	grade_entry = _get_grade_entry( db, assignment_taken_id )
 	timestamp = timestamp_type( timestamp )
 
-	grade_num = _get_grade( graded_val )
+	grade_num = _get_grade_val( graded_val )
 
 	if grade_entry:
 		# Update
@@ -449,16 +474,17 @@ def _resolve_self_assessment( row ):
 	if 		submission is not None \
 		and user is not None \
 		and course is not None:
-		result = AnalyticsAssessmentTaken( Submission=submission,
+		result = AnalyticsAssessment( Submission=submission,
 										user=user,
 										timestamp=row.timestamp,
 										course=course,
 										time_length=row.time_length )
 	return result
 
-def _resolve_assignment( row ):
+def _resolve_assignment( row, details=None ):
 	# We may have multiple assignment records here at one point.
-	submission_record, grade_record = row
+	submission_record = row
+	grade_record = submission_record.grade
 	make_transient( submission_record )
 
 	grade_num = grade = grader = None
@@ -475,7 +501,7 @@ def _resolve_assignment( row ):
 	if 		submission is not None \
 		and user is not None \
 		and course is not None:
-		result = AnalyticsAssignmentTaken( Submission=submission,
+		result = AnalyticsAssignment( Submission=submission,
 										user=user,
 										timestamp=submission_record.timestamp,
 										course=course,
@@ -483,8 +509,39 @@ def _resolve_assignment( row ):
 										AssignmentId=submission_record.assignment_id,
 										GradeNum=grade_num,
 										Grade=grade,
-										Grader=grader )
+										Grader=grader,
+										Details=details )
 	return result
+
+def _resolve_assignment_details( row ):
+	submission_record, detail_records = row
+	details = []
+
+	# Seems like this would be automatic.
+	if not isinstance( detail_records, list ):
+		detail_records = (detail_records,)
+
+	for detail_record in detail_records:
+		make_transient( detail_record )
+
+		grade = grader = is_correct = None
+		grade_record = detail_record.grade
+		if grade_record:
+			grade = grade_record.grade
+			grader = grade_record.grader
+			is_correct = grade_record.is_correct
+
+		answer = _load_response( detail_record.submission )
+
+		result = AnalyticsAssignmentDetail( QuestionId=detail_record.question_id,
+											QuestionPartId=detail_record.question_part_id,
+											Answer=answer,
+											time_length=detail_record.time_length,
+											Grade=grade,
+											Grader=grader,
+											IsCorrect=is_correct )
+		details.append( result )
+	return _resolve_assignment( submission_record, details=details )
 
 def get_self_assessments_for_user(user, course):
 	db = get_analytics_db()
@@ -502,35 +559,45 @@ def get_assignments_for_user(user, course):
 	user = get_or_create_user(user )
 	uid = user.user_id
 	course_id = get_course_id( db, course )
-	results = db.session.query( AssignmentsTaken, AssignmentGrades ).outerjoin( AssignmentGrades ) \
-						.filter( AssignmentsTaken.user_id == uid,
-								AssignmentsTaken.course_id == course_id ).all()
+	results = db.session.query( AssignmentsTaken ) \
+					.filter( AssignmentsTaken.user_id == uid,
+							AssignmentsTaken.course_id == course_id ).all()
 
 	return resolve_objects( _resolve_assignment, results )
 
 def get_self_assessments_for_course(course):
 	db = get_analytics_db()
 	course_id = get_course_id( db, course )
-	results = db.session.query(SelfAssessmentsTaken).filter( SelfAssessmentsTaken.course_id == course_id ).all()
+	results = db.session.query(SelfAssessmentsTaken).filter(
+							SelfAssessmentsTaken.course_id == course_id ).all()
 
 	return resolve_objects( _resolve_self_assessment, results )
 
 def get_assignments_for_course(course):
 	db = get_analytics_db()
 	course_id = get_course_id( db, course )
-	results = db.session.query(AssignmentsTaken, AssignmentGrades).outerjoin( AssignmentGrades ) \
+	results = db.session.query(AssignmentsTaken) \
 						.filter( AssignmentsTaken.course_id == course_id ).all()
 
 	return resolve_objects( _resolve_assignment, results )
 
-#AssignmentReport
-def get_assignment_details_for_course(course):
+# AssignmentReport
+def get_assignment_grades_for_course(course, assignment_id):
 	db = get_analytics_db()
 	course_id = get_course_id( db, course )
-	results = db.session.query(AssignmentDetails).\
-						join(AssignmentsTaken).\
-						filter( AssignmentsTaken.course_id == course_id ).all()
+	results = db.session.query(AssignmentsTaken) \
+						.filter( AssignmentsTaken.course_id == course_id,
+								 AssignmentsTaken.assignment_id == assignment_id ).all()
 
-	# FIXME Implement
-	return results
+	return resolve_objects( _resolve_assignment, results )
+
+def get_assignment_details_for_course(course, assignment_id):
+	db = get_analytics_db()
+	course_id = get_course_id( db, course )
+	results = db.session.query( AssignmentsTaken, AssignmentDetails ) \
+						.join( AssignmentDetails ) \
+						.filter( AssignmentsTaken.course_id == course_id,
+								AssignmentsTaken.assignment_id == assignment_id ).all()
+
+	return resolve_objects( _resolve_assignment_details, results )
 
