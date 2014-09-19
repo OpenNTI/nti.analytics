@@ -106,40 +106,16 @@ def get_course( obj ):
 	return ICourseInstance( result )
 
 def _execute_job( *args, **kwargs ):
-	# This is our merging solution.  String parse the error message
-	# to detect mysql-only 'Duplicate entry' remarks.  We cannot
-	# use sqlalchemy merge because most of our primary keys are
-	# sequences.  We cannot use the dataserver ids as primary keys
-	# since they may be reused.  Another option would be to manually
-	# read query the db to see if a duplicate record exists before
-	# insert.  However, since this should only occur during the small
-	# migration window (populating the queues with everything from
-	# the dataserver db: ~10 minutes with PROD DB locally), let us
-	# go with this approach.
 	db = get_analytics_db()
 
 	args = BList( args )
 	func = args.pop( 0 )
 
-	sp = db.savepoint()
-	try:
-		func( *args, **kwargs )
-		# Must flush to verify integrity
-		db.session.flush()
-	except IntegrityError as e:
-		if sp is not None:
-			sp.rollback()
-
-		vals = e.orig.args
-		# MySQL
-		if len( vals ) > 1 and 'Duplicate entry' in vals[1]:
-			# Duplicate entry, let's ignore these since we likely
-			# already have this record stored.
-			logger.info( 	'Duplicate entry found, will ignore (%s) (%s)',
-							func, kwargs )
-		else:
-			raise e
-
+	func( *args, **kwargs )
+	# Must flush to verify integrity.  If we hit any race
+	# conditions below.  This will throw and the job can
+	# be re-run.
+	db.session.flush()
 
 
 def process_event( get_job_queue, object_op, obj=None, **kwargs ):
