@@ -18,6 +18,7 @@ from nti.analytics.common import get_course_name
 
 from nti.analytics.identifier import CourseId
 
+from nti.analytics.database import NTIID_COLUMN_TYPE
 from nti.analytics.database import INTID_COLUMN_TYPE
 from nti.analytics.database import Base
 from nti.analytics.database import get_analytics_db
@@ -27,11 +28,24 @@ class Courses(Base):
 	course_id = Column('course_id', Integer, Sequence('course_id_seq'), index=True, nullable=False, primary_key=True )
 	course_ds_id = Column('course_ds_id', INTID_COLUMN_TYPE, nullable=True, index=True )
 	course_name = Column('course_name', String(64), nullable=True, unique=False, index=True)
+	course_long_name = Column('course_long_name', NTIID_COLUMN_TYPE, nullable=True)
+
+def _get_course_long_name( course ):
+	bundle = getattr( course, 'ContentPackageBundle', None )
+	course_long_name = getattr( bundle, 'ntiid', None )
+
+	if course_long_name is None:
+		# Nothing, try legacy
+		course_long_name = getattr( course, 'ContentPackageNTIID', None )
+
+	return course_long_name
 
 def _create_course( db, course, course_ds_id ):
 	course_name = get_course_name( course )
+	course_long_name = _get_course_long_name( course )
 	course = Courses( 	course_ds_id=course_ds_id,
-						course_name=course_name )
+						course_name=course_name,
+						course_long_name=course_long_name )
 	# For race conditions, let's just throw since we cannot really handle retrying
 	# gracefully at this level. A job-level retry should work though.
 	db.session.add( course )
@@ -41,6 +55,10 @@ def _create_course( db, course, course_ds_id ):
 
 def _get_or_create_course( db, course, course_ds_id ):
 	found_course = db.session.query(Courses).filter( Courses.course_ds_id == course_ds_id ).first()
+	if found_course is not None:
+		if found_course.course_long_name is None:
+			# Lazy populate new field
+			found_course.course_long_name = _get_course_long_name( course )
 	return found_course or _create_course( db, course, course_ds_id )
 
 def get_course_id( db, course ):

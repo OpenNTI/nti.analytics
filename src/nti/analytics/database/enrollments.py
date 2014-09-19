@@ -88,7 +88,7 @@ def _get_enrollment_type_id(db, type_name):
 def create_course_enrollment(user, nti_session, timestamp, course, enrollment_type_name):
 	db = get_analytics_db()
 
-	user = get_or_create_user(user )
+	user = get_or_create_user( user )
 	uid = user.user_id
 	sid = SessionId.get_id( nti_session )
 	course_id = get_course_id( db, course )
