@@ -27,7 +27,13 @@ def do_evolve(context):
 	setHooks()
 
 	db = get_analytics_db()
-	mc = MigrationContext.configure( db.engine.connect() )
+
+	if db.defaultSQLite and db.dburi == "sqlite://":
+		# In-memory mode for dev
+		return
+
+	connection = db.session.connection()
+	mc = MigrationContext.configure( connection )
 	op = Operations(mc)
 
 	op.add_column( "Courses", Column('course_long_name', NTIID_COLUMN_TYPE, nullable=True) )
