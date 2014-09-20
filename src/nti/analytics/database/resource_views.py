@@ -28,7 +28,7 @@ from nti.analytics.database.meta_mixins import TimeLengthMixin
 
 from nti.analytics.database.users import get_or_create_user
 from nti.analytics.database.courses import get_course_id
-
+from nti.analytics.database.resources import get_resource_id
 
 # For meta-views into synthetic course info, we can special type the resource_id:
 #	(about|instructors|tech_support)
@@ -36,7 +36,7 @@ class CourseResourceViews(Base,ResourceViewMixin,TimeLengthMixin):
 	__tablename__ = 'CourseResourceViews'
 
 	# Need to have a seq primary key that we will not use to work around primary key limits
-	# in mysql, or we could put our resource_ids into another table to conserve space.
+	# in mysql, or we could put our resource_ids into another table to conserve space (we did).
 	# We'll probably just pull all of these events by indexed course; so, to avoid a join,
 	# let's try this.
 	resource_view_id = Column('resource_view_id', Integer, Sequence( 'resource_view_id_seq' ), primary_key=True )
@@ -62,6 +62,8 @@ def create_course_resource_view(user, nti_session, timestamp, course, context_pa
 	uid = user.user_id
 	sid = SessionId.get_id( nti_session )
 	rid = ResourceId.get_id( resource )
+	rid = get_resource_id( db, rid )
+
 	course_id = get_course_id( db, course )
 	timestamp = timestamp_type( timestamp )
 	context_path = _get_context_path( context_path )
@@ -89,6 +91,8 @@ def create_video_event(	user,
 	uid = user.user_id
 	sid = SessionId.get_id( nti_session )
 	vid = ResourceId.get_id( video_resource )
+	vid = get_resource_id( db, vid )
+
 	course_id = get_course_id( db, course )
 	timestamp = timestamp_type( timestamp )
 	context_path = _get_context_path( context_path )

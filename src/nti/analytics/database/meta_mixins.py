@@ -18,7 +18,6 @@ from sqlalchemy import Boolean
 from sqlalchemy.schema import Index
 from sqlalchemy.ext.declarative import declared_attr
 
-from nti.analytics.database import NTIID_COLUMN_TYPE
 from nti.analytics.database import SESSION_COLUMN_TYPE
 from nti.analytics.database import INTID_COLUMN_TYPE
 
@@ -60,7 +59,10 @@ class CourseMixin(object):
 		return (Index('ix_%s_user_course' % cls.__tablename__, 'user_id', 'course_id'),)
 
 class ResourceMixin(CourseMixin):
-	resource_id = Column('resource_id', NTIID_COLUMN_TYPE, nullable=False, index=True)
+
+	@declared_attr
+	def resource_id(cls):
+		return Column('resource_id', Integer, ForeignKey("Resources.resource_id"), nullable=False, index=True)
 
 class ResourceViewMixin(ResourceMixin,BaseViewMixin):
 	# RHP/username/

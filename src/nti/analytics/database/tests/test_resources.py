@@ -8,6 +8,7 @@ __docformat__ = "restructuredtext en"
 # pylint: disable=W0212,R0904
 
 import fudge
+import time
 
 from datetime import datetime
 
@@ -26,6 +27,8 @@ MockFL = MockNote = MockHighlight = MockTopic = MockComment = MockThought = Mock
 from nti.analytics.database import resource_tags as db_tags
 from nti.analytics.database import resource_views as db_views
 
+from nti.analytics.database.resources import Resources
+
 from nti.analytics.database.resource_views import CourseResourceViews
 from nti.analytics.database.resource_views import VideoEvents
 from nti.analytics.database.resource_tags import NotesCreated
@@ -40,6 +43,7 @@ class TestCourseResources(AnalyticsTestBase):
 		super( TestCourseResources, self ).setUp()
 		self.course_name='course1'
 		self.course_id = 1 #seq insert
+		self.resource_id = 1
 		self.context_path_flat = 'dashboard'
 		self.context_path= [ 'dashboard' ]
 
@@ -62,8 +66,43 @@ class TestCourseResources(AnalyticsTestBase):
 		assert_that( resource_view.timestamp, not_none() )
 		assert_that( resource_view.course_id, is_( self.course_id ) )
 		assert_that( resource_view.context_path, is_( self.context_path_flat ) )
-		assert_that( resource_view.resource_id, is_( resource_id ) )
+		assert_that( resource_view.resource_id, is_( self.resource_id ) )
 		assert_that( resource_view.time_length, is_( time_length ) )
+
+	def test_resources(self):
+		results = self.session.query( Resources ).all()
+		assert_that( results, has_length( 0 ) )
+		t0 = time.time()
+		t1 = time.time() + 1
+
+		resource_id = 'ntiid:course_resource'
+		time_length = 30
+		db_views.create_course_resource_view( test_user_ds_id,
+											test_session_id, t0,
+											self.course_name, self.context_path,
+											resource_id, time_length )
+		results = self.session.query( Resources ).all()
+		assert_that( results, has_length( 1 ) )
+
+		resource_record = results[0]
+		assert_that( resource_record.resource_id, is_( self.resource_id ) )
+		assert_that( resource_record.resource_ds_id, is_( resource_id ) )
+
+		# Now another insert does not change our Resources table
+		db_views.create_course_resource_view( test_user_ds_id,
+											test_session_id, t1,
+											self.course_name, self.context_path,
+											resource_id, time_length )
+		results = self.session.query( Resources ).all()
+		assert_that( results, has_length( 1 ) )
+
+		# Now we add a new resource id
+		db_views.create_course_resource_view( test_user_ds_id,
+											test_session_id, t0,
+											self.course_name, self.context_path,
+											'ntiid:course_resource2', time_length )
+		results = self.session.query( Resources ).all()
+		assert_that( results, has_length( 2 ) )
 
 	def test_video_view(self):
 		results = self.session.query( VideoEvents ).all()
@@ -90,7 +129,7 @@ class TestCourseResources(AnalyticsTestBase):
 		assert_that( resource_view.timestamp, not_none() )
 		assert_that( resource_view.course_id, is_( self.course_id ) )
 		assert_that( resource_view.context_path, is_( self.context_path_flat ) )
-		assert_that( resource_view.resource_id, is_( resource_id ) )
+		assert_that( resource_view.resource_id, is_( self.resource_id ) )
 		assert_that( resource_view.video_event_type, is_( video_event_type ) )
 		assert_that( resource_view.video_start_time, is_( video_start_time ) )
 		assert_that( resource_view.video_end_time, is_( video_end_time ) )
@@ -123,7 +162,7 @@ class TestCourseResources(AnalyticsTestBase):
 		assert_that( note.session_id, is_( test_session_id ) )
 		assert_that( note.course_id, is_( self.course_id ) )
 		assert_that( note.note_id, is_( note_id ) )
-		assert_that( note.resource_id, is_( resource_id ) )
+		assert_that( note.resource_id, is_( self.resource_id ) )
 		# 'UNKNOWN' since we cannot access course and it's scopes.
 		assert_that( note.sharing, is_( 'UNKNOWN' ) )
 		assert_that( note.deleted, none() )
@@ -141,7 +180,7 @@ class TestCourseResources(AnalyticsTestBase):
 		assert_that( note.session_id, is_( test_session_id ) )
 		assert_that( note.course_id, is_( self.course_id ) )
 		assert_that( note.note_id, is_( note_id ) )
-		assert_that( note.resource_id, is_( resource_id ) )
+		assert_that( note.resource_id, is_( self.resource_id ) )
 		assert_that( note.timestamp, not_none() )
 
 		# Delete note
@@ -178,7 +217,7 @@ class TestCourseResources(AnalyticsTestBase):
 		assert_that( highlight.session_id, is_( test_session_id ) )
 		assert_that( highlight.course_id, is_( self.course_id ) )
 		assert_that( highlight.highlight_id, is_( highlight_id ) )
-		assert_that( highlight.resource_id, is_( resource_id ) )
+		assert_that( highlight.resource_id, is_( self.resource_id ) )
 		assert_that( highlight.deleted, none() )
 		assert_that( highlight.timestamp, not_none() )
 

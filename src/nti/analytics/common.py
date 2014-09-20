@@ -113,7 +113,7 @@ def _execute_job( *args, **kwargs ):
 
 	func( *args, **kwargs )
 	# Must flush to verify integrity.  If we hit any race
-	# conditions below.  This will throw and the job can
+	# conditions below, this will raise and the job can
 	# be re-run.
 	db.session.flush()
 

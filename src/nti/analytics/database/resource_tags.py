@@ -38,6 +38,7 @@ from nti.analytics.database.meta_mixins import RatingsMixin
 
 from nti.analytics.database.users import get_or_create_user
 from nti.analytics.database.courses import get_course_id
+from nti.analytics.database.resources import get_resource_id
 
 class NoteMixin(ResourceMixin):
 
@@ -99,6 +100,8 @@ def create_note(user, nti_session, course, note):
 	uid = user.user_id
 	sid = SessionId.get_id( nti_session )
 	rid = ResourceId.get_id( note.containerId )
+	rid = get_resource_id( db, rid )
+
 	note_ds_id = NoteId.get_id( note )
 	course_id = get_course_id( db, course )
 	timestamp = get_created_timestamp( note )
@@ -163,6 +166,8 @@ def create_note_view(user, nti_session, timestamp, course, note):
 	uid = user.user_id
 	sid = SessionId.get_id( nti_session )
 	rid = ResourceId.get_id( note.containerId )
+	rid = get_resource_id( db, rid )
+
 	note_ds_id = NoteId.get_id( note )
 	note_id = _get_note_id( db, note_ds_id )
 	course_id = get_course_id( db, course )
@@ -182,6 +187,8 @@ def create_highlight(user, nti_session, course, highlight):
 	uid = user.user_id
 	sid = SessionId.get_id( nti_session )
 	rid = ResourceId.get_id( highlight.containerId )
+	rid = get_resource_id( db, rid )
+
 	highlight_ds_id = HighlightId.get_id( highlight )
 	course_id = get_course_id( db, course )
 
