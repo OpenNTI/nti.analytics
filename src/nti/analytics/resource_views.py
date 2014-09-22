@@ -38,6 +38,12 @@ from nti.analytics import TOPIC_VIEW_ANALYTICS
 from nti.analytics import BLOG_VIEW_ANALYTICS
 from nti.analytics import NOTE_VIEW_ANALYTICS
 
+def get_user_resource_views( *args, **kwargs ):
+	return db_resource_views.get_user_resource_views( *args, **kwargs  )
+
+def get_user_video_events( *args, **kwargs  ):
+	return db_resource_views.get_user_video_events( *args, **kwargs  )
+
 def _get_object( ntiid ):
 	return ntiids.find_object_with_ntiid( ntiid )
 

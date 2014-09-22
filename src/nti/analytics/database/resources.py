@@ -16,6 +16,7 @@ from sqlalchemy.schema import Sequence
 
 from nti.ntiids import ntiids
 
+from nti.analytics.database import get_analytics_db
 from nti.analytics.database import NTIID_COLUMN_TYPE
 from nti.analytics.database import Base
 
@@ -26,29 +27,36 @@ class Resources(Base):
 	resource_ds_id = Column( 'resource_ds_id', NTIID_COLUMN_TYPE, nullable=False  )
 	resource_display_name = Column( 'resource_display_name', String( 128 ), unique=False, nullable=True )
 
-def _get_resource_display_name( resource_id ):
-	content_unit = ntiids.find_object_with_ntiid( resource_id )
+def _get_resource_display_name( resource_val ):
+	content_unit = ntiids.find_object_with_ntiid( resource_val )
 	display_name = getattr( content_unit, 'label', None )
 	return display_name
 
 
-def _create_resource( db, resource_id ):
-	display_name = _get_resource_display_name( resource_id )
-	new_resource = Resources( 	resource_ds_id=resource_id,
+def _create_resource( db, resource_val ):
+	display_name = _get_resource_display_name( resource_val )
+	new_resource = Resources( 	resource_ds_id=resource_val,
 								resource_display_name=display_name)
 
 	db.session.add( new_resource )
 	db.session.flush()
 	return new_resource
 
-def _get_or_create_resource( db, resource_id ):
-	found_resource = db.session.query(Resources).filter( Resources.resource_ds_id == resource_id ).first()
+def _get_or_create_resource( db, resource_val ):
+	found_resource = db.session.query(Resources).filter( Resources.resource_ds_id == resource_val ).first()
 	if found_resource is not None:
 		if found_resource.resource_display_name is None:
 			# Lazy populate new field
-			found_resource.resource_display_name = _get_resource_display_name( resource_id )
-	return found_resource or _create_resource( db, resource_id )
+			found_resource.resource_display_name = _get_resource_display_name( resource_val )
+	return found_resource or _create_resource( db, resource_val )
 
 def get_resource_id( db, resource_id ):
+	""" Returns the db id for the given ds resource id (probably ntiid). """
 	resource = _get_or_create_resource( db, resource_id )
 	return resource.resource_id
+
+def get_resource_val( resource_id ):
+	""" Returns the ds resource id (probably ntiid) for the given db id. """
+	db = get_analytics_db()
+	resource_record = db.session.query( Resources ).filter( Resources.resource_id == resource_id ).first()
+	return resource_record.resource_ds_id

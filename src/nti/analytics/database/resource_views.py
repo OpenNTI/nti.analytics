@@ -20,15 +20,21 @@ from nti.analytics.common import timestamp_type
 from nti.analytics.identifier import SessionId
 from nti.analytics.identifier import ResourceId
 
+from nti.analytics.model import ResourceEvent
+from nti.analytics.model import WatchVideoEvent
+from nti.analytics.model import SkipVideoEvent
+
 from nti.analytics.database import Base
 from nti.analytics.database import get_analytics_db
 
 from nti.analytics.database.meta_mixins import ResourceViewMixin
 from nti.analytics.database.meta_mixins import TimeLengthMixin
 
+from nti.analytics.database import resolve_objects
 from nti.analytics.database.users import get_or_create_user
 from nti.analytics.database.courses import get_course_id
 from nti.analytics.database.resources import get_resource_id
+from nti.analytics.database.resources import get_resource_val
 
 # For meta-views into synthetic course info, we can special type the resource_id:
 #	(about|instructors|tech_support)
@@ -55,6 +61,9 @@ class VideoEvents(Base,ResourceViewMixin,TimeLengthMixin):
 def _get_context_path( context_path ):
 	#'/' is illegal in ntiid strings
 	return '/'.join( context_path ) if context_path else ''
+
+def _expand_context_path( context_path ):
+	return context_path.split( '/' )
 
 def create_course_resource_view(user, nti_session, timestamp, course, context_path, resource, time_length):
 	db = get_analytics_db()
@@ -87,7 +96,7 @@ def create_video_event(	user,
 						video_end_time,
 						with_transcript ):
 	db = get_analytics_db()
-	user = get_or_create_user(user )
+	user = get_or_create_user( user )
 	uid = user.user_id
 	sid = SessionId.get_id( nti_session )
 	vid = ResourceId.get_id( video_resource )
@@ -109,4 +118,78 @@ def create_video_event(	user,
 								video_end_time=video_end_time,
 								with_transcript=with_transcript )
 	db.session.add( new_object )
+
+def _resolve_resource_view( record, course=None, user=None ):
+	time_length = record.time_length
+
+	if time_length < 1:
+		# Ignore inconsequential events
+		return None
+
+	timestamp = record.timestamp
+	context_path = record.context_path
+	context_path = _expand_context_path( context_path )
+
+	resource_id = record.resource_id
+	resource_ntiid = get_resource_val( resource_id )
+
+	resource_event = ResourceEvent(user=user,
+					timestamp=timestamp,
+					course=course,
+					context_path=context_path,
+					resource_id=resource_ntiid,
+					time_length=time_length)
+
+	return resource_event
+
+def _resolve_video_view( record, course=None, user=None ):
+	time_length = record.time_length
+
+	if time_length < 1:
+		# Ignore inconsequential events
+		return None
+
+	timestamp = record.timestamp
+	context_path = record.context_path
+	context_path = _expand_context_path( context_path )
+
+	resource_id = record.resource_id
+	resource_ntiid = get_resource_val( resource_id )
+	video_start_time = record.video_start_time
+	video_end_time = record.video_end_time
+	with_transcript = record.with_transcript
+
+	if record.video_event_type == SkipVideoEvent.event_type:
+		video_type = SkipVideoEvent
+	else:
+		video_type = WatchVideoEvent
+
+	video_event = video_type(user=user,
+				timestamp=timestamp,
+				course=course,
+				context_path=context_path,
+				resource_id=resource_ntiid,
+				time_length=time_length,
+				video_start_time=video_start_time,
+				video_end_time=video_end_time,
+				with_transcript=with_transcript)
+	return video_event
+
+def get_user_resource_views( user, course ):
+	db = get_analytics_db()
+	user_record = get_or_create_user( user )
+	user_id = user_record.user_id
+	course_id = get_course_id( db, course )
+	results = db.session.query( CourseResourceViews ).filter( CourseResourceViews.user_id == user_id,
+															CourseResourceViews.course_id == course_id ).all()
+	return resolve_objects( _resolve_resource_view, results, user=user, course=course )
+
+def get_user_video_events( user, course ):
+	db = get_analytics_db()
+	user_record = get_or_create_user( user )
+	user_id = user_record.user_id
+	course_id = get_course_id( db, course )
+	results = db.session.query( VideoEvents ).filter( VideoEvents.user_id == user_id,
+													VideoEvents.course_id == course_id ).all()
+	return resolve_objects( _resolve_video_view, results, user=user, course=course )
 

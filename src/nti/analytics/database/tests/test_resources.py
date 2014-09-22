@@ -48,15 +48,18 @@ class TestCourseResources(AnalyticsTestBase):
 		self.context_path= [ 'dashboard' ]
 
 	def test_resource_view(self):
+		results = db_views.get_user_resource_views( test_user_ds_id, self.course_name )
+		results = [x for x in results]
+		assert_that( results, has_length( 0 ) )
 		results = self.session.query( CourseResourceViews ).all()
 		assert_that( results, has_length( 0 ) )
 
-		resource_id = 'ntiid:course_resource'
+		resource_val = 'ntiid:course_resource'
 		time_length = 30
 		db_views.create_course_resource_view( test_user_ds_id,
 											test_session_id, datetime.now(),
 											self.course_name, self.context_path,
-											resource_id, time_length )
+											resource_val, time_length )
 		results = self.session.query(CourseResourceViews).all()
 		assert_that( results, has_length( 1 ) )
 
@@ -69,30 +72,39 @@ class TestCourseResources(AnalyticsTestBase):
 		assert_that( resource_view.resource_id, is_( self.resource_id ) )
 		assert_that( resource_view.time_length, is_( time_length ) )
 
+		results = db_views.get_user_resource_views( test_user_ds_id, self.course_name )
+		results = [x for x in results]
+		assert_that( results, has_length( 1 ) )
+
+		resource_view = results[0]
+		assert_that( resource_view.user, is_( test_user_ds_id ) )
+		assert_that( resource_view.course, is_( self.course_name ))
+		assert_that( resource_view.resource_id, is_( resource_val ))
+
 	def test_resources(self):
 		results = self.session.query( Resources ).all()
 		assert_that( results, has_length( 0 ) )
 		t0 = time.time()
 		t1 = time.time() + 1
 
-		resource_id = 'ntiid:course_resource'
+		resource_val = 'ntiid:course_resource'
 		time_length = 30
 		db_views.create_course_resource_view( test_user_ds_id,
 											test_session_id, t0,
 											self.course_name, self.context_path,
-											resource_id, time_length )
+											resource_val, time_length )
 		results = self.session.query( Resources ).all()
 		assert_that( results, has_length( 1 ) )
 
 		resource_record = results[0]
 		assert_that( resource_record.resource_id, is_( self.resource_id ) )
-		assert_that( resource_record.resource_ds_id, is_( resource_id ) )
+		assert_that( resource_record.resource_ds_id, is_( resource_val ) )
 
 		# Now another insert does not change our Resources table
 		db_views.create_course_resource_view( test_user_ds_id,
 											test_session_id, t1,
 											self.course_name, self.context_path,
-											resource_id, time_length )
+											resource_val, time_length )
 		results = self.session.query( Resources ).all()
 		assert_that( results, has_length( 1 ) )
 
@@ -105,10 +117,13 @@ class TestCourseResources(AnalyticsTestBase):
 		assert_that( results, has_length( 2 ) )
 
 	def test_video_view(self):
+		results = db_views.get_user_video_events( test_user_ds_id, self.course_name )
+		results = [x for x in results]
+		assert_that( results, has_length( 0 ) )
 		results = self.session.query( VideoEvents ).all()
 		assert_that( results, has_length( 0 ) )
 
-		resource_id = 'ntiid:course_video'
+		resource_val = 'ntiid:course_video'
 		time_length = 30
 		video_event_type = 'WATCH'
 		video_start_time = 30
@@ -117,7 +132,7 @@ class TestCourseResources(AnalyticsTestBase):
 		db_views.create_video_event( test_user_ds_id,
 									test_session_id, datetime.now(),
 									self.course_name, self.context_path,
-									resource_id, time_length,
+									resource_val, time_length,
 									video_event_type, video_start_time,
 									video_end_time,  with_transcript )
 		results = self.session.query(VideoEvents).all()
@@ -135,6 +150,19 @@ class TestCourseResources(AnalyticsTestBase):
 		assert_that( resource_view.video_end_time, is_( video_end_time ) )
 		assert_that( resource_view.time_length, is_( time_length ) )
 		assert_that( resource_view.with_transcript )
+
+		results = db_views.get_user_video_events( test_user_ds_id, self.course_name )
+		results = [x for x in results]
+		assert_that( results, has_length( 1 ) )
+
+		resource_view = results[0]
+		assert_that( resource_view.user, is_( test_user_ds_id ) )
+		assert_that( resource_view.course, is_( self.course_name ))
+		assert_that( resource_view.resource_id, is_( resource_val ))
+		assert_that( resource_view.video_start_time, is_( video_start_time ))
+		assert_that( resource_view.video_end_time, is_( video_end_time ))
+		assert_that( resource_view.with_transcript, is_( with_transcript ))
+		assert_that( resource_view.time_length, is_( time_length ))
 
 	@fudge.patch( 'nti.analytics.database.resource_tags._get_sharing_enum' )
 	def test_note(self, mock_sharing_enum):
