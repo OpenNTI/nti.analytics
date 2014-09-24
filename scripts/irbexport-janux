@@ -1,0 +1,68 @@
+# /bin/bash
+
+# Script to export only analytics data for users that have opted-in to IRB research.
+
+DATE=`date "+%Y%m%d%H%M"`
+
+BASE_OUTPUT_DIR="/home/ntibackup/irb_analytics_dump"
+USER_OUTPUT_FILE="$BASE_OUTPUT_DIR/irb_analytics_user_tables.sql"
+OTHER_OUTPUT_FILE="$BASE_OUTPUT_DIR/irb_analytics_non_user_tables.sql"
+OUTPUT_TAR="$BASE_OUTPUT_DIR/irb_analytics_export-$DATE.tar.gz"
+
+mysql_cmd="mysql -h **** -P **** -u **** -p**** -D Analytics"
+mysqldmp_cmd="mysqldump -h **** -P **** -u **** -p**** Analytics "
+
+ALLOW_RESEARCH_FILTER="user_id in (SELECT user_id from Users where allow_research=1)"
+#echo "dump cmd is $mysqldmp_cmd"
+
+# Get the tables with the 'user_id' column
+TABLES_WITH_COLUMN_SQL="SELECT DISTINCT TABLE_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE COLUMN_NAME = 'user_id' AND TABLE_SCHEMA='Analytics';"
+
+filter_tables_array=()
+results=($($mysql_cmd --skip-column-names -e "$TABLES_WITH_COLUMN_SQL"))
+
+for row in "${results[@]}"
+do
+	#echo "Found table: $row"
+	filter_tables_array+=("$row")
+done
+
+# Get all tables so we can diff
+ALL_TABLES_SQL="SELECT DISTINCT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA='Analytics';"
+
+all_tables_array=()
+results2=($($mysql_cmd --skip-column-names -e "$ALL_TABLES_SQL"))
+
+for row in "${results2[@]}"
+do
+	#echo "Found non-user table: $row"
+	all_tables_array+=("$row")
+done
+
+# Find the tables that do not have column, via a diff
+other_tables_array=()
+
+for i in "${all_tables_array[@]}"; do
+	skip=
+		for j in "${filter_tables_array[@]}"; do
+			[[ $i == $j ]] && { skip=1; break; }
+		done
+	[[ -n $skip ]] || other_tables_array+=("$i")
+done
+
+# Dump user tables
+mysqldmp_filter_cmd_final="$mysqldmp_cmd ${filter_tables_array[@]}"
+echo "Dumping user tables with: $mysqldmp_filter_cmd_final"
+$mysqldmp_filter_cmd_final --single-transaction --where="$ALLOW_RESEARCH_FILTER" > $USER_OUTPUT_FILE
+
+# Dump rest of tables
+mysqldmp_cmd_final="$mysqldmp_cmd ${other_tables_array[@]}"
+echo "Dumping user tables with: $mysqldmp_cmd_final"
+$mysqldmp_cmd_final > $OTHER_OUTPUT_FILE
+
+echo "Generating tarball at $OUTPUT_TAR"
+tar -czf $OUTPUT_TAR $USER_OUTPUT_FILE $OTHER_OUTPUT_FILE
+rm -rf $USER_OUTPUT_FILE
+rm -rf $OTHER_OUTPUT_FILE
+
+echo "Finished dumping Analytics IRB database."
