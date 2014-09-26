@@ -57,7 +57,9 @@ def do_evolve(context):
 		# In-memory mode for dev
 		return
 
-	connection = db.session.connection()
+	# We cannot use our transaction connection since we have
+	# implicit commits below.
+	connection = db.engine.connect()
 
 	# Fill our new table
 	logger.info( 'Populating new table' )
