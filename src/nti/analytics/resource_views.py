@@ -62,8 +62,8 @@ def _validate_analytics_event( event ):
 							( event.user, event ) )
 
 	time_length = getattr( event, 'time_length', 0 )
-	if time_length < 0:
-		raise ValueError( """Event received with negative time_length
+	if time_length <= 0:
+		raise ValueError( """Event received with zero or less time_length
 							(user=%s) (time_length=%s) (event=%s)""" %
 							( event.user, time_length, event ) )
 
