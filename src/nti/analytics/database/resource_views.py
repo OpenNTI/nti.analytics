@@ -8,6 +8,8 @@ __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
+from collections import OrderedDict
+
 from sqlalchemy import Column
 from sqlalchemy import Integer
 from sqlalchemy import Boolean
@@ -59,8 +61,20 @@ class VideoEvents(Base,ResourceViewMixin,TimeLengthMixin):
 	video_view_id = Column('video_view_id', Integer, Sequence( 'video_view_id_seq' ), primary_key=True )
 
 def _get_context_path( context_path ):
-	#'/' is illegal in ntiid strings
-	return '/'.join( context_path ) if context_path else ''
+	# Note: we could also sub these resource_ids for the actual
+	# ids off of the Resources table.  That would be a bit tricky, because
+	# we sometimes have courses and client specific strings (e.g. 'overview')
+	# in this collection.
+
+	result = ''
+	if context_path:
+		# This will remove all duplicate elements. Hopefully we do
+		# not have scattered duplicates, which would be an error condition.
+		context_path = list( OrderedDict.fromkeys( context_path ) )
+		# '/' is illegal in ntiid strings
+		result = '/'.join( context_path )
+
+	return result
 
 def _expand_context_path( context_path ):
 	return context_path.split( '/' )

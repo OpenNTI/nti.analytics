@@ -31,6 +31,7 @@ from nti.analytics.database.resources import Resources
 
 from nti.analytics.database.resource_views import CourseResourceViews
 from nti.analytics.database.resource_views import VideoEvents
+from nti.analytics.database.resource_views import _get_context_path
 from nti.analytics.database.resource_tags import NotesCreated
 from nti.analytics.database.resource_tags import NotesViewed
 from nti.analytics.database.resource_tags import HighlightsCreated
@@ -262,3 +263,25 @@ class TestCourseResources(AnalyticsTestBase):
 		assert_that( highlight.highlight_id, is_( highlight_id ) )
 		assert_that( highlight.deleted, not_none() )
 		assert_that( highlight.highlight_ds_id, none() )
+
+	def test_context_path(self):
+		path = ['dashboard']
+		result = _get_context_path( path )
+		assert_that( result, is_( 'dashboard' ))
+
+		path = None
+		result = _get_context_path( path )
+		assert_that( result, is_( '' ))
+
+		path = [ 'ntiid:lesson1', 'ntiid:overview' ]
+		result = _get_context_path( path )
+		assert_that( result, is_( 'ntiid:lesson1/ntiid:overview' ))
+
+		path = [ 'ntiid:lesson1', 'ntiid:lesson1', 'ntiid:lesson1', 'ntiid:lesson1', 'ntiid:overview' ]
+		result = _get_context_path( path )
+		assert_that( result, is_( 'ntiid:lesson1/ntiid:overview' ))
+
+		path = [ 'ntiid:overview', 'ntiid:lesson1', 'ntiid:lesson1', 'ntiid:lesson1', 'ntiid:lesson1', 'ntiid:reading1' ]
+		result = _get_context_path( path )
+		assert_that( result, is_( 'ntiid:overview/ntiid:lesson1/ntiid:reading1' ))
+
