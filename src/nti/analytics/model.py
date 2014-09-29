@@ -154,3 +154,31 @@ class AnalyticsAssignmentDetail(SchemaConfigured):
 
 	def __init__(self, *args, **kwargs):
 		SchemaConfigured.__init__(self, *args, **kwargs)
+
+@interface.implementer(interfaces.IAnalyticsSessions)
+@WithRepr
+@NoPickle
+class AnalyticsSessions(SchemaConfigured):
+	createDirectFieldProperties(interfaces.IAnalyticsSessions)
+
+	__external_can_create__ = True
+	__external_class_name__ = "AnalyticsSessions"
+	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticssessions'
+
+	def __iter__(self):
+		return iter( self.sessions )
+
+	def __len__(self):
+		return len( self.sessions )
+
+@interface.implementer(interfaces.IAnalyticsSession)
+@WithRepr
+class AnalyticsSession(SchemaConfigured):
+	createDirectFieldProperties(interfaces.IAnalyticsSession)
+
+	__external_can_create__ = True
+	__external_class_name__ = "AnalyticsSession"
+	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticssession'
+
+	def __init__(self, *args, **kwargs):
+		SchemaConfigured.__init__(self, *args, **kwargs)

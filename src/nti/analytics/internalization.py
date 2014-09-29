@@ -20,6 +20,7 @@ from nti.analytics.interfaces import ICourseCatalogViewEvent
 from nti.analytics.interfaces import IBlogViewEvent
 from nti.analytics.interfaces import INoteViewEvent
 from nti.analytics.interfaces import ITopicViewEvent
+from nti.analytics.interfaces import IAnalyticsSession
 
 @interface.implementer(IInternalObjectUpdater)
 @component.adapter(IVideoEvent)
@@ -85,4 +86,15 @@ class _TopicViewEventUpdater(object):
 
 	def updateFromExternalObject(self, parsed, *args, **kwargs):
 		result = InterfaceObjectIO( self.obj, ITopicViewEvent ).updateFromExternalObject( parsed )
+		return result
+
+@interface.implementer(IInternalObjectUpdater)
+@component.adapter(IAnalyticsSession)
+class _AnalyticsSessionUpdater(object):
+
+	def __init__(self, obj):
+		self.obj = obj
+
+	def updateFromExternalObject(self, parsed, *args, **kwargs):
+		result = InterfaceObjectIO( self.obj, IAnalyticsSession ).updateFromExternalObject( parsed )
 		return result

@@ -22,6 +22,12 @@
 			 provides="zope.generations.interfaces.IInstallableSchemaManager"/>
 
 
+	<!-- decorators -->
+	<subscriber factory=".decorators._CourseOutlineAssignmentProgressNodeDecorator"
+				provides="nti.externalization.interfaces.IExternalObjectDecorator"
+				for="nti.contenttypes.courses.interfaces.ICourseOutlineContentNode
+					 pyramid.interfaces.IRequest"  />
+
 	<!-- database -->
 
 	<include package=".database" file="configure.zcml" />
@@ -103,7 +109,9 @@
 						 .interfaces.IBlogViewEvent
 						 .interfaces.INoteViewEvent
 						 .interfaces.ITopicViewEvent
-						 .interfaces.IBatchResourceEvents"
+						 .interfaces.IBatchResourceEvents
+						 .interfaces.IAnalyticsSession
+						 .interfaces.IAnalyticsSessions"
 		modules=".model" />
 
 	<adapter factory=".internalization._ResourceEventUpdater"
@@ -128,6 +136,10 @@
 
 	<adapter factory=".internalization._TopicViewEventUpdater"
 			 for=".interfaces.ITopicViewEvent"
+			 provides="nti.externalization.interfaces.IInternalObjectUpdater" />
+
+		<adapter factory=".internalization._AnalyticsSessionUpdater"
+			 for=".interfaces.IAnalyticsSession"
 			 provides="nti.externalization.interfaces.IInternalObjectUpdater" />
 
 	<configure zcml:condition="have devmode">

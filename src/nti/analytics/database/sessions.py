@@ -13,6 +13,8 @@ from sqlalchemy import Integer
 from sqlalchemy import String
 from sqlalchemy import ForeignKey
 from sqlalchemy import DateTime
+
+from sqlalchemy.orm.session import make_transient
 from sqlalchemy.schema import Sequence
 
 from nti.analytics.common import timestamp_type
@@ -84,22 +86,27 @@ def end_session( user, session_id, timestamp ):
 	if old_session is not None:
 		old_session.end_time = timestamp
 
-def create_session( user, user_agent, timestamp, ip_addr ):
+def create_session( user, user_agent, start_time, ip_addr, end_time=None ):
 	db = get_analytics_db()
 	user = get_or_create_user( user )
 	uid = user.user_id
-	timestamp = timestamp_type( timestamp )
+	start_time = timestamp_type( start_time )
+	end_time = timestamp_type( end_time ) if end_time is not None else None
 	user_agent = _get_user_agent( user_agent )
 	user_agent_id = _get_user_agent_id( db, user_agent )
 
 	new_session = Sessions( user_id=uid,
-							start_time=timestamp,
+							start_time=start_time,
+							end_time=end_time,
 							ip_addr=ip_addr,
 							user_agent_id=user_agent_id )
 	db.session.add( new_session )
 	db.session.flush()
 
+	# TODO Need to return analytics sessions, and maintains backwards compat.
 	_update_current_session( db, new_session, uid )
+	make_transient( new_session )
+	return new_session
 
 def get_current_session_id( user ):
 	db = get_analytics_db()

@@ -29,6 +29,8 @@ from nti.analytics.model import TopicViewEvent
 from nti.analytics.model import WatchVideoEvent
 from nti.analytics.model import SkipVideoEvent
 from nti.analytics.model import BatchResourceEvents
+from nti.analytics.model import AnalyticsSessions
+from nti.analytics.model import AnalyticsSession
 
 from nti.testing.matchers import verifiably_provides
 
@@ -41,6 +43,7 @@ from nti.analytics.interfaces import IBlogViewEvent
 from nti.analytics.interfaces import INoteViewEvent
 from nti.analytics.interfaces import ITopicViewEvent
 from nti.analytics.interfaces import IBatchResourceEvents
+from nti.analytics.interfaces import IAnalyticsSessions
 
 timestamp = time.mktime( datetime.utcnow().timetuple() )
 user = 'jzuech@nextthought.com'
@@ -104,6 +107,8 @@ watch_video_event = WatchVideoEvent(user=user,
 				video_start_time=video_start_time,
 				video_end_time=video_end_time,
 				with_transcript=with_transcript)
+
+session = AnalyticsSession( SessionStartTime=timestamp, session_end_time=timestamp+1 )
 
 class TestResourceEvents(NTIAnalyticsTestCase):
 
@@ -289,3 +294,31 @@ class TestResourceEvents(NTIAnalyticsTestCase):
 		events = [x for x in new_io]
 		assert_that( events, not_none() )
 		assert_that( events, has_length( batch_count ))
+
+	def test_sessions(self):
+		sessions = [ session, session, session ]
+
+		session_count = len( sessions )
+		io = AnalyticsSessions( sessions=sessions )
+		assert_does_not_pickle(io)
+		assert_that( io, verifiably_provides( IAnalyticsSessions ) )
+
+		ext_obj = toExternalObject(io)
+		assert_that(ext_obj, has_entry('Class', 'AnalyticsSessions'))
+		assert_that(ext_obj, has_entry('MimeType', 'application/vnd.nextthought.analytics.analyticssessions' ))
+
+		factory = internalization.find_factory_for(ext_obj)
+		assert_that(factory, is_(not_none()))
+
+		new_io = factory()
+		internalization.update_from_external_object(new_io, ext_obj)
+		assert_that( new_io.sessions, has_length( session_count ) )
+		assert_that( new_io, is_( AnalyticsSessions ) )
+
+		# Test iterable
+		assert_that( new_io, has_length( session_count ) )
+		sessions = [x for x in new_io]
+		assert_that( sessions, not_none() )
+		assert_that( sessions, has_length( session_count ))
+		assert_that( sessions[0], is_( AnalyticsSession ) )
+

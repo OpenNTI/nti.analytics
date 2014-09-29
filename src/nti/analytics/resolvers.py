@@ -11,6 +11,7 @@ logger = __import__('logging').getLogger(__name__)
 import time
 
 from zope import component
+from zope import interface
 from zope.catalog.interfaces import ICatalog
 
 from nti.app.assessment.interfaces import ICourseAssessmentItemCatalog
@@ -30,6 +31,7 @@ from nti.ntiids.ntiids import find_object_with_ntiid
 
 from nti.analytics import get_factory
 from nti.analytics import SESSIONS_ANALYTICS
+
 from nti.analytics.common import process_event
 
 def _get_job_queue():
@@ -75,24 +77,25 @@ def _get_self_assessments_for_course(course):
 	result = [x for x in result if x.ntiid not in qsids_to_strip]
 	return result
 
+# Ok, this node is a 'ContentPackage'
+def recur_children_ntiid( node, accum ):
+	#Get our embedded ntiids and recursively fetch our children's ntiids
+	ntiid = node.ntiid
+	accum.update( node.embeddedContainerNTIIDs )
+	if ntiid:
+		accum.add( ntiid )
+	for n in node.children:
+		recur_children_ntiid( n, accum )
+
 def _do_get_containers_in_course( course ):
 	try:
 		packages = course.ContentPackageBundle.ContentPackages
 	except AttributeError:
 		packages = (course.legacy_content_package,)
 
-	def _recur( node, accum ):
-		#Get our embedded ntiids and recursively fetch our children's ntiids
-		ntiid = node.ntiid
-		accum.update( node.embeddedContainerNTIIDs )
-		if ntiid:
-			accum.add( ntiid )
-		for n in node.children:
-			_recur( n, accum )
-
 	containers_in_course = set()
 	for package in packages:
-		_recur( package, containers_in_course )
+		recur_children_ntiid( package, containers_in_course )
 
 	# Add in our self-assessments
 	# We filter out questions in assignments here for some reason
@@ -129,7 +132,7 @@ def _build_ntiid_map():
 				len( course_dict ) )
 	return course_dict
 
-class _CourseResolver(object):
+class _CourseFromChildNTIIDResolver(object):
 
 	def __init__(self):
 		self.course_to_containers = None
@@ -163,16 +166,16 @@ class _CourseResolver(object):
 				return course
 		return None
 
-_course_resolver = None
+_course_from_ntiid_resolver = None
 
-def _get_resolver():
-	global _course_resolver
-	if _course_resolver is None:
-		_course_resolver = _CourseResolver()
-	return _course_resolver
+def _get_course_from_ntiid_resolver():
+	global _course_from_ntiid_resolver
+	if _course_from_ntiid_resolver is None:
+		_course_from_ntiid_resolver = _CourseFromChildNTIIDResolver()
+	return _course_from_ntiid_resolver
 
 def _reset():
-	_get_resolver().reset()
+	_get_course_from_ntiid_resolver().reset()
 
 @component.adapter( IContentPackageLibraryModifiedOnSyncEvent )
 def _library_sync(event):
@@ -187,9 +190,8 @@ def get_course_by_object_id(object_id):
 	# This is expensive if we do not find our course.
 
 	# Update: JZ: TODO do we still need to check our global site for site packages?
-	result = _get_resolver().get_course( object_id )
+	result = _get_course_from_ntiid_resolver().get_course( object_id )
 
 	if result is None:
 		raise TypeError( "No course found for object_id (%s)" % object_id )
 	return result
-

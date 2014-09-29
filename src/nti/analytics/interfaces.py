@@ -41,6 +41,7 @@ class IObjectProcessor(interface.Interface):
 		"""
 		Does analytic processing for the given object.
 		"""
+
 class IAnalyticsObjectBase(interface.Interface):
 	timestamp = Number(title=u"The timestamp when this event occurred, in seconds since epoch.",
 						default=0.0,
@@ -187,3 +188,25 @@ class IAnalyticsAssignment(IAnalyticsObjectBase, ITimeLength, ICourseEvent, IAss
 		title="The detail parts of this assignment.",
 		value_type=Object( IAnalyticsAssignmentDetail ),
 		required=False )
+
+class IAnalyticsSession(interface.Interface):
+	"""
+	The analytics logical session.
+	"""
+	SessionId = Number( title=u"The analytics session id.", required=False )
+
+	SessionStartTime = Number(title=u"The timestamp when this sessiom started, in seconds since epoch.",
+						default=0.0,
+						required=False )
+
+	session_end_time = Number(title=u"The timestamp when this session ended, in seconds since epoch.",
+						default=0.0,
+						required=False )
+
+class IAnalyticsSessions(interface.Interface):
+	"""
+	A collection of analytics sessions.
+	"""
+	sessions = TypedIterable(
+		title="The analytics sessions.",
+		value_type=Object( IAnalyticsSession ) )

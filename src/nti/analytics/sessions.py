@@ -27,11 +27,12 @@ def _end_session( username, session_id, timestamp=None ):
 		db_sessions.end_session( user, session_id, timestamp )
 		logger.debug( 'Session ended (user=%s) (session_id=%s)', username )
 
-def _add_session( username, user_agent, timestamp, ip_addr ):
+def _add_session( username, user_agent, start_time, ip_addr, end_time=None ):
 	if username:
 		user = get_entity( username )
-		db_sessions.create_session( user, user_agent, timestamp, ip_addr )
+		new_session = db_sessions.create_session( user, user_agent, start_time, ip_addr, end_time )
 		logger.debug( 'Session created (user=%s)', user )
+		return new_session
 
 def _do_new_session( username, request ):
 	ip_addr = getattr( request, 'remote_addr' , None )
@@ -42,7 +43,7 @@ def _do_new_session( username, request ):
 					username=username,
 					user_agent=user_agent,
 					ip_addr=ip_addr,
-					timestamp=timestamp )
+					start_time=timestamp )
 
 def handle_new_session( username, request ):
 	_do_new_session( username, request )
@@ -53,6 +54,12 @@ def handle_end_session( username, session_id ):
 					username=username,
 					session_id=session_id,
 					timestamp=timestamp )
+
+def handle_sessions( sessions, user, user_agent=None, ip_addr=None ):
+	"Create new sessions based on information given and return, synchronously."
+	for session in sessions:
+		new_session = _add_session( user, user_agent, session.SessionStartTime, ip_addr, session.session_end_time )
+		session.SessionId = new_session.session_id
 
 def get_current_session_id( user ):
 	result = None
