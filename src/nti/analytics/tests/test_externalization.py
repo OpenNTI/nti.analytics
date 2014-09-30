@@ -108,7 +108,7 @@ watch_video_event = WatchVideoEvent(user=user,
 				video_end_time=video_end_time,
 				with_transcript=with_transcript)
 
-session = AnalyticsSession( SessionStartTime=timestamp, session_end_time=timestamp+1 )
+session = AnalyticsSession( SessionStartTime=timestamp, SessionEndTime=timestamp+1 )
 
 class TestResourceEvents(NTIAnalyticsTestCase):
 

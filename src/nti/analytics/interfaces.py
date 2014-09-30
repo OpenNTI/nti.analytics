@@ -199,7 +199,7 @@ class IAnalyticsSession(interface.Interface):
 						default=0.0,
 						required=False )
 
-	session_end_time = Number(title=u"The timestamp when this session ended, in seconds since epoch.",
+	SessionEndTime = Number(title=u"The timestamp when this session ended, in seconds since epoch.",
 						default=0.0,
 						required=False )
 
