@@ -21,13 +21,6 @@
 			 name="nti.dataserver-analytics"
 			 provides="zope.generations.interfaces.IInstallableSchemaManager"/>
 
-
-	<!-- decorators -->
-	<subscriber factory=".decorators._CourseOutlineAssignmentProgressNodeDecorator"
-				provides="nti.externalization.interfaces.IExternalObjectDecorator"
-				for="nti.contenttypes.courses.interfaces.ICourseOutlineContentNode
-					 pyramid.interfaces.IRequest"  />
-
 	<!-- database -->
 
 	<include package=".database" file="configure.zcml" />
