@@ -193,7 +193,7 @@ class IAnalyticsSession(interface.Interface):
 	"""
 	The analytics logical session.
 	"""
-	SessionId = Number( title=u"The analytics session id.", required=False )
+	SessionID = Number( title=u"The analytics session id.", required=False )
 
 	SessionStartTime = Number(title=u"The timestamp when this sessiom started, in seconds since epoch.",
 						default=0.0,

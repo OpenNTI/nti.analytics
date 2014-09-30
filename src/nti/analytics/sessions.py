@@ -59,7 +59,7 @@ def handle_sessions( sessions, user, user_agent=None, ip_addr=None ):
 	"Create new sessions based on information given and return, synchronously."
 	for session in sessions:
 		new_session = _add_session( user, user_agent, session.SessionStartTime, ip_addr, session.SessionEndTime )
-		session.SessionId = new_session.session_id
+		session.SessionID = new_session.session_id
 
 def get_current_session_id( user ):
 	result = None
