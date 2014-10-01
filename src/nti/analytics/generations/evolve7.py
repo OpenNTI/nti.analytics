@@ -49,44 +49,43 @@ UPDATE_SQL = """UPDATE %s old_table
 OLD_TABLES = ['CourseResourceViews', 'VideoEvents', 'NotesCreated', 'NotesViewed', 'HighlightsCreated']
 
 def do_evolve(context):
-# 	setHooks()
-#
-# 	# This should automatically build our new resources table
-# 	db = get_analytics_db()
-# 	if db.defaultSQLite and db.dburi == "sqlite://":
-# 		# In-memory mode for dev
-# 		return
-#
-# 	# We cannot use our transaction connection since we have
-# 	# implicit commits below.
-# 	connection = db.engine.connect()
-#
-# 	# Fill our new table
-# 	logger.info( 'Populating new table' )
-# 	connection.execute( INSERT_SQL )
-# 	db.session.flush()
-#
-# 	# Update our references with int vals in a string column
-# 	logger.info( 'Update references' )
-# 	for old_table in OLD_TABLES:
-# 		connection.execute( UPDATE_SQL % old_table )
-#
-# 	mc = MigrationContext.configure( connection )
-# 	op = Operations( mc )
-#
-# 	# Change our column type
-# 	logger.info( 'Updating metadata' )
-# 	for old_table in OLD_TABLES:
-# 		op.alter_column( old_table, 'resource_id', type_=Integer )
-#
-# 	# Add foreign key constraints
-# 	for old_table in OLD_TABLES:
-# 		op.create_foreign_key( 'fk_' + old_table + '_resources',
-# 								old_table,
-# 								'Resources',
-# 								['resource_id'], ['resource_id'] )
+	setHooks()
 
-	# Skipping for now, need foreign constraints.
+	# This should automatically build our new resources table
+	db = get_analytics_db()
+	if db.defaultSQLite and db.dburi == "sqlite://":
+		# In-memory mode for dev
+		return
+
+	# We cannot use our transaction connection since we have
+	# implicit commits below.
+	connection = db.engine.connect()
+
+	# Fill our new table
+	logger.info( 'Populating new table' )
+	connection.execute( INSERT_SQL )
+	db.session.flush()
+
+	# Update our references with int vals in a string column
+	logger.info( 'Update references' )
+	for old_table in OLD_TABLES:
+		connection.execute( UPDATE_SQL % old_table )
+
+	mc = MigrationContext.configure( connection )
+	op = Operations( mc )
+
+	# Change our column type
+	logger.info( 'Updating metadata' )
+	for old_table in OLD_TABLES:
+		op.alter_column( old_table, 'resource_id', type_=Integer )
+
+	# Add foreign key constraints
+	for old_table in OLD_TABLES:
+		op.create_foreign_key( 'fk_' + old_table + '_resources',
+								old_table,
+								'Resources',
+								['resource_id'], ['resource_id'] )
+
 	logger.info( 'Finished analytics evolve7' )
 
 def evolve(context):
