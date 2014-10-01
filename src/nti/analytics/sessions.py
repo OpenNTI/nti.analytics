@@ -19,10 +19,10 @@ from nti.analytics.database import sessions as db_sessions
 from nti.analytics import get_factory
 from nti.analytics import SESSIONS_ANALYTICS
 
-ANALYTICS_SESSION_COOKIE_NAME = str( 'nti.analytics_session' )
+ANALYTICS_SESSION_COOKIE_NAME = str( 'nti.da_session' )
+ANALYTICS_SESSION_HEADER = str( 'x-nti-da-session')
 
-def _get_cookie_id( request ):
-	val = request.cookies.get( ANALYTICS_SESSION_COOKIE_NAME )
+def _get_session_id_from_val( val ):
 	if val is None:
 		return None
 
@@ -33,6 +33,14 @@ def _get_cookie_id( request ):
 		logger.warn( 'Received analytics session id that is not an int (%s)', val )
 		result = None
 	return result
+
+def _get_header_id( request ):
+	val = request.headers.get( ANALYTICS_SESSION_HEADER )
+	return _get_session_id_from_val( val )
+
+def _get_cookie_id( request ):
+	val = request.cookies.get( ANALYTICS_SESSION_COOKIE_NAME )
+	return _get_session_id_from_val( val )
 
 def _set_cookie( request, new_session ):
 	# If we have current session, let's end it.
@@ -106,23 +114,32 @@ def handle_sessions( sessions, user, user_agent=None, ip_addr=None ):
 			_process_end_session( username=user, session_id=session.SessionID, timestamp=session.SessionEndTime )
 
 def get_current_session_id( user ):
-	current_sessions = ()
-	if user is not None:
-		current_sessions = db_sessions.get_current_session_ids( user )
-
+	# We look for the header first, it takes precedence (and is probably from the iPad).
+	# If not, we check for cookie, which should be from webapp, that we can
+	# validate.
 	request = get_current_request()
-	cookie_id = None
-	if request is not None:
+	if request is None:
+		return None
+
+	result = header_id = _get_header_id( request )
+	# We could validate if the header_id matches our user.
+
+	if header_id is None:
 		cookie_id = _get_cookie_id( request )
 
-	# Validate against what we have on record.
-	if cookie_id and cookie_id not in current_sessions:
-		logger.warn( 'Received analytics session that we have no record of (cookie=%s) (found=%s)',
-					cookie_id, current_sessions )
-		# Survive, but do not use the weird value.
-		cookie_id = None
+		current_sessions = ()
+		if user is not None:
+			current_sessions = db_sessions.get_current_session_ids( user )
 
-	return cookie_id
+		# Validate against what we have on record.
+		if cookie_id and cookie_id not in current_sessions:
+			logger.warn( 'Received analytics session that we have no record of (cookie=%s) (found=%s)',
+						cookie_id, current_sessions )
+			# Survive, but do not use the weird value.
+			cookie_id = None
+		result = cookie_id
+
+	return result
 
 get_nti_session_id = get_current_session_id
 
