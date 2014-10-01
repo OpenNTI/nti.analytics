@@ -27,8 +27,10 @@ def _end_session( username, session_id, timestamp=None ):
 		db_sessions.end_session( user, session_id, timestamp )
 		logger.debug( 'Session ended (user=%s) (session_id=%s)', username )
 
-def _add_session( username, user_agent, start_time, ip_addr, end_time=None ):
+def _add_session( username, user_agent, ip_addr, end_time=None, start_time=None, timestamp=None ):
 	if username:
+		# Backwards compat
+		start_time = start_time or timestamp
 		user = get_entity( username )
 		new_session = db_sessions.create_session( user, user_agent, start_time, ip_addr, end_time )
 		logger.debug( 'Session created (user=%s)', user )
@@ -58,7 +60,7 @@ def handle_end_session( username, session_id ):
 def handle_sessions( sessions, user, user_agent=None, ip_addr=None ):
 	"Create new sessions based on information given and return, synchronously."
 	for session in sessions:
-		new_session = _add_session( user, user_agent, session.SessionStartTime, ip_addr, session.SessionEndTime )
+		new_session = _add_session( user, user_agent, ip_addr, session.SessionEndTime, start_time=session.SessionStartTime )
 		session.SessionID = new_session.session_id
 
 def get_current_session_id( user ):
