@@ -81,6 +81,7 @@ def end_session( user, session_id, timestamp ):
 
 	old_session = db.session.query( Sessions ).filter( Sessions.session_id == session_id,
 														Sessions.user_id == uid ).first()
+
 	if old_session is not None:
 		old_session.end_time = timestamp
 

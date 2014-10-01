@@ -80,22 +80,30 @@ def handle_new_session( username, request ):
 						start_time=timestamp )
 	_set_cookie( request, new_session )
 
+def _process_end_session( username, session_id, timestamp ):
+	process_event( _get_job_queue, _end_session,
+						username=username,
+						session_id=session_id,
+						timestamp=timestamp )
+
 def handle_end_session( username, request ):
 	# This could be done synchronously, to be consistent, but we don't have to currently.
 	session_id = _get_cookie_id( request )
 	if session_id is not None:
 		timestamp = datetime.utcnow()
-		process_event( _get_job_queue, _end_session,
-						username=username,
-						session_id=session_id,
-						timestamp=timestamp )
+		_process_end_session( username=username, session_id=session_id, timestamp=timestamp )
 		_remove_cookie( request )
 
 def handle_sessions( sessions, user, user_agent=None, ip_addr=None ):
-	"Create new sessions based on information given and return, synchronously."
+	"Create and update sessions based on information given and return. "
 	for session in sessions:
-		new_session = _add_session( user, user_agent, ip_addr, session.SessionEndTime, start_time=session.SessionStartTime )
-		session.SessionID = new_session.session_id
+		if session.SessionID is None:
+			# Insert now
+			new_session = _add_session( user, user_agent, ip_addr, session.SessionEndTime, start_time=session.SessionStartTime )
+			session.SessionID = new_session.session_id
+		elif session.SessionEndTime is not None:
+			# Update end time by queuing job
+			_process_end_session( username=user, session_id=session.SessionID, timestamp=session.SessionEndTime )
 
 def get_current_session_id( user ):
 	current_sessions = ()
