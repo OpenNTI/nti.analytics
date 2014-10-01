@@ -19,6 +19,7 @@ from hamcrest import has_length
 from hamcrest import assert_that
 from hamcrest import greater_than
 from hamcrest import less_than_or_equal_to
+from hamcrest import contains_inanyorder
 
 from nti.analytics.database.interfaces import IAnalyticsDB
 from nti.analytics.database.database import AnalyticsDB
@@ -70,15 +71,9 @@ class TestSessions(unittest.TestCase):
 		assert_that( new_session.start_time, not_none() )
 		assert_that( new_session.end_time, none() )
 
-		results = self.session.query(CurrentSessions).all()
-		assert_that( results, has_length( 1 ) )
-
-		new_session = self.session.query(CurrentSessions).one()
-		assert_that( new_session.user_id, is_( user.user_id ) )
-		assert_that( new_session.session_id, is_( 1 ) )
-
-		new_session_id = db_sessions.get_current_session_id( test_user_ds_id )
-		assert_that( new_session_id, is_( 1 ) )
+		session_ids = db_sessions.get_current_session_ids( test_user_ds_id )
+		assert_that( session_ids, has_length( 1 ))
+		assert_that( session_ids[0], is_( 1 ) )
 
 		results = self.session.query(UserAgents).all()
 		assert_that( results, has_length( 1 ) )
@@ -92,15 +87,9 @@ class TestSessions(unittest.TestCase):
 		results = self.session.query(Sessions).all()
 		assert_that( results, has_length( 2 ) )
 
-		results = self.session.query(CurrentSessions).all()
-		assert_that( results, has_length( 1 ) )
-
-		new_session = self.session.query(CurrentSessions).one()
-		assert_that( new_session.user_id, is_( user.user_id ) )
-		assert_that( new_session.session_id, is_( 2 ) )
-
-		new_session_id = db_sessions.get_current_session_id( test_user_ds_id )
-		assert_that( new_session_id, is_( 2 ) )
+		session_ids = db_sessions.get_current_session_ids( test_user_ds_id )
+		assert_that( session_ids, has_length( 2 ))
+		assert_that( session_ids, contains_inanyorder( 1, 2 ) )
 
 		results = self.session.query(UserAgents).all()
 		assert_that( results, has_length( 1 ) )
@@ -112,26 +101,26 @@ class TestSessions(unittest.TestCase):
 		assert_that( results, has_length( 3 ) )
 
 		results = self.session.query(CurrentSessions).all()
-		assert_that( results, has_length( 1 ) )
+		assert_that( results, has_length( 3 ) )
 
-		new_session_id = db_sessions.get_current_session_id( test_user_ds_id )
-		assert_that( new_session_id, is_( 3 ) )
+		session_ids = db_sessions.get_current_session_ids( test_user_ds_id )
+		assert_that( session_ids, has_length( 3 ))
+		assert_that( session_ids, contains_inanyorder( 1, 2, 3 ) )
 
 		results = self.session.query(UserAgents).all()
 		assert_that( results, has_length( 2 ) )
 
 		# End session
+		new_session_id = 3
 		db_sessions.end_session( test_user_ds_id, new_session_id, timestamp=time.time() )
 
 		current_session = self.session.query(Sessions).filter( Sessions.session_id == new_session_id ).first()
 		assert_that( current_session, not_none() )
 		assert_that( current_session.end_time, not_none() )
 
-		results = self.session.query(CurrentSessions).all()
-		assert_that( results, has_length( 0 ) )
-
-		new_session_id = db_sessions.get_current_session_id( test_user_ds_id )
-		assert_that( new_session_id, none() )
+		session_ids = db_sessions.get_current_session_ids( test_user_ds_id )
+		assert_that( session_ids, has_length( 2 ))
+		assert_that( session_ids, contains_inanyorder( 1, 2 ) )
 
 	def test_large_user_agent(self):
 		results = self.session.query(Sessions).all()

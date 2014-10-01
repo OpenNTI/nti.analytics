@@ -33,7 +33,6 @@ class Sessions(Base):
 	start_time = Column('start_time', DateTime)
 	end_time = Column('end_time', DateTime)
 
-# TODO If we no longer infer current sessions, we can remove this table.
 class CurrentSessions(Base):
 	__tablename__ = 'CurrentSessions'
 	session_id = Column('session_id', SESSION_COLUMN_TYPE, ForeignKey('Sessions.session_id'), index=True, primary_key=True )
@@ -61,8 +60,7 @@ def _get_user_agent_id( db, user_agent ):
 	return user_agent_record.user_agent_id
 
 def _update_current_session( db, new_session, uid ):
-	# Wipe old sessions, add our new one.
-	db.session.query( CurrentSessions ).filter( CurrentSessions.user_id == uid ).delete()
+	# Add our new session.
 	new_current_session = CurrentSessions( user_id=uid, session_id=new_session.session_id )
 	db.session.add( new_current_session )
 
@@ -103,17 +101,17 @@ def create_session( user, user_agent, start_time, ip_addr, end_time=None ):
 	db.session.add( new_session )
 	db.session.flush()
 
-	# TODO Need to return analytics sessions, and maintains backwards compat.
 	_update_current_session( db, new_session, uid )
 	make_transient( new_session )
 	return new_session
 
-def get_current_session_id( user ):
+def get_current_session_ids( user ):
+	"""
+	Returns all 'live' sessions for a user.  Primarily used for validation.
+	"""
 	db = get_analytics_db()
 	user = get_or_create_user( user )
 	uid = user.user_id
-	current_session = db.session.query( CurrentSessions ).filter( CurrentSessions.user_id == uid ).first()
-	result = None
-	if current_session is not None:
-		result = current_session.session_id
+	all_sessions = db.session.query( CurrentSessions ).filter( CurrentSessions.user_id == uid ).all()
+	result = [x.session_id for x in all_sessions]
 	return result
