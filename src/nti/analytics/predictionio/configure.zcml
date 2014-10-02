@@ -1,0 +1,78 @@
+<!-- -*- mode: nxml -*- -->
+<configure	xmlns="http://namespaces.zope.org/zope"
+			xmlns:i18n="http://namespaces.zope.org/i18n"
+			xmlns:zcml="http://namespaces.zope.org/zcml"
+			xmlns:pio="http://nextthought.com/ntp/predictionio">
+
+	<include package="zope.component" file="meta.zcml" />
+	<include package="zope.security" file="meta.zcml" />
+	<include package="zope.component" />
+	<include package="zope.security" />
+			 	
+	<!-- adapters --> 
+	<adapter for=""
+			 factory=".adapters._GenericPropertyAdpater"
+			 provides=".interfaces.IProperties" />
+			 			
+	<adapter for="*"
+			 factory=".adapters._GenericPropertyAdpater"
+			 provides=".interfaces.IProperties" />
+	
+	<adapter for="nti.dataserver.interfaces.IUser"
+			 factory=".adapters._UserPropertyAdpater"
+			 provides=".interfaces.IProperties" />
+	
+	<adapter for="nti.dataserver.interfaces.INote"
+			 factory=".adapters._NotePropertyAdpater"
+			 provides=".interfaces.IProperties" />
+			 
+	<adapter for="nti.contentlibrary.interfaces.IContentUnit"
+			 factory=".adapters._ContentUnitPropertyAdpater"
+			 provides=".interfaces.IProperties" />
+			 
+	<adapter for=""
+			 factory=".adapters._GenericTypesAdpater"
+			 provides=".interfaces.ITypes" />
+			 			
+	<adapter for="*"
+			 factory=".adapters._GenericTypesAdpater"
+			 provides=".interfaces.ITypes" />
+			 		 
+	<adapter for="nti.dataserver.interfaces.IModeledContent"
+			 factory=".adapters._ModeledTypesAdpater"
+			 provides=".interfaces.ITypes" />
+
+	<adapter for="nti.dataserver.contenttypes.forums.interfaces.IGeneralForumComment"
+			 factory=".adapters._CommentTypesAdpater"
+			 provides=".interfaces.ITypes" />
+
+	<adapter for="nti.dataserver.contenttypes.forums.interfaces.IPersonalBlogComment"
+			 factory=".adapters._CommentTypesAdpater"
+			 provides=".interfaces.ITypes" />
+			 
+	<adapter for="nti.dataserver.contenttypes.forums.interfaces.ITopic"
+			 factory=".adapters._TopicTypesAdpater"
+			 provides=".interfaces.ITypes" />
+			 
+	<adapter for="nti.contentlibrary.interfaces.IContentUnit"
+			 factory=".adapters._ContentUnitTypesAdpater"
+			 provides=".interfaces.ITypes" />
+	 
+	<!-- subscribers -->
+	<subscriber handler=".ratings._topic_rated" />
+	<subscriber handler=".ratings._object_rated" />
+	<!--
+	<subscriber handler=".generated._modeled_removed" />
+	<subscriber handler=".generated._topic_removed" />
+	-->
+
+	<!-- predictionio app -->
+	
+	<include package="." file="meta.zcml" />
+	<configure zcml:condition="have devmode">
+		<pio:registerPredictionIOApp
+				appKey="72NRa2bQLjnTFSESX9tkISbU7oPHMNDt5yUU5P5l5SQiFeRKGJwEcHN83EBFXa6p"  />
+	</configure>
+	
+</configure>
+
