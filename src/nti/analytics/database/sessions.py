@@ -120,5 +120,6 @@ def get_current_session_ids( user ):
 def get_session_by_id( session_id ):
 	db = get_analytics_db()
 	session_record = db.session.query( Sessions ).filter( Sessions.session_id == session_id ).first()
-	make_transient( session_record )
+	if session_record:
+		make_transient( session_record )
 	return session_record

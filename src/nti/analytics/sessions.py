@@ -104,29 +104,28 @@ def handle_end_session( username, request ):
 		_process_end_session( username=username, session_id=session_id, timestamp=timestamp )
 		_remove_cookie( request )
 
-def handle_sessions( sessions, user, user_agent=None, ip_addr=None ):
-	"Create and update sessions based on information given and return. "
-	results = []
-	for session in sessions:
-		if session.SessionID is None:
-			# Insert now
-			new_session = _add_session( user, user_agent, ip_addr, session.SessionEndTime, start_time=session.SessionStartTime )
-			session.SessionID = new_session.session_id
-			results.append( session )
-		elif session.SessionEndTime is not None:
-			# Update end time by queuing job
-			_process_end_session( username=user, session_id=session.SessionID, timestamp=session.SessionEndTime )
-			session_record = db_sessions.get_session_by_id( session.SessionID )
+def update_session( session, user, user_agent=None, ip_addr=None ):
+	"Create and update the given session based on information given and return. "
+	if session.SessionID is None:
+		# Insert now
+		new_session = _add_session( user, user_agent, ip_addr, session.SessionEndTime, start_time=session.SessionStartTime )
+		session.SessionID = new_session.session_id
+	elif session.SessionEndTime is not None:
+		# Update end time by queuing job
+		_process_end_session( username=user, session_id=session.SessionID, timestamp=session.SessionEndTime )
+		session_record = db_sessions.get_session_by_id( session.SessionID )
 
-			if session_record and session_record.start_time:
-				# Update the sent start time with our information.
-				start_time = session_record.start_time
-				start_time = _calendar_timegm( start_time.utctimetuple() )
-				session.SessionStartTime = start_time
-				results.append( session )
-			else:
-				# TODO We would like to notify the client if the record DNE.
-				pass
+		if session_record:
+			# Update the start time with our information.
+			start_time = session_record.start_time
+			start_time = _calendar_timegm( start_time.utctimetuple() )
+			session.SessionStartTime = start_time
+		else:
+			# Hmm, invalid information
+			raise ValueError( "Session has invalid values (sessionid=%s) (starttime=%s)"  %
+							( 	session.SessionID,
+								getattr( session_record, 'start_time', None ) ) )
+	return session
 
 def get_current_session_id( user ):
 	# We look for the header first, it takes precedence (and is probably from the iPad).
