@@ -116,3 +116,9 @@ def get_current_session_ids( user ):
 	all_sessions = db.session.query( CurrentSessions ).filter( CurrentSessions.user_id == uid ).all()
 	result = [x.session_id for x in all_sessions]
 	return result
+
+def get_session_by_id( session_id ):
+	db = get_analytics_db()
+	session_record = db.session.query( Sessions ).filter( Sessions.session_id == session_id ).first()
+	make_transient( session_record )
+	return session_record
