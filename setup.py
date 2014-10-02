@@ -12,7 +12,7 @@ entry_points = {
 }
 
 setup(
-    name='nti.analytics',
+      name='nti.analytics',
     version=VERSION,
     author='Josh Zuech',
     author_email='josh.zuech@nextthought.com',
@@ -21,20 +21,21 @@ setup(
     license='Proprietary',
     keywords='pyramid preference',
     classifiers=[
-        'Intended Audience :: Developers',
+                 'Intended Audience :: Developers',
         'Natural Language :: English',
         'Operating System :: OS Independent',
-		'Programming Language :: Python :: 2',
+        'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.3',
-        ],
+    ],
 	packages=find_packages('src'),
 	package_dir={'': 'src'},
 	namespace_packages=['nti'],
 	install_requires=[
-		'setuptools',
-		'nti.async'
+        'setuptools',
+        'nti.async',
+        'predictionio'
 	],
 	entry_points=entry_points
 )
