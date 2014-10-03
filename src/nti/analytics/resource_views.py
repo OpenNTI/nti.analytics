@@ -8,6 +8,8 @@ __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
+from zope.event import notify
+
 from nti.ntiids import ntiids
 
 from nti.contenttypes.courses.interfaces import ICourseInstance
@@ -29,6 +31,8 @@ from nti.analytics.database import resource_views as db_resource_views
 from nti.analytics.database import enrollments as db_enrollments
 from nti.analytics.database import boards as db_boards
 from nti.analytics.database import blogs as db_blogs
+
+from nti.analytics.recorded.interfaces import NoteViewedRecordedEvent
 
 from nti.analytics import get_factory
 from nti.analytics import RESOURCE_VIEW_ANALYTICS
@@ -121,6 +125,9 @@ def _add_note_event( event, nti_session=None ):
 	logger.debug( 	"Course note view event (user=%s) (course=%s)",
 					user,
 					getattr( course, '__name__', course ) )
+
+	notify(NoteViewedRecordedEvent(	user=user, note=note, timestamp=event.timestamp,
+									course=course, session=nti_session))
 
 def _add_topic_event( event, nti_session=None ):
 	_validate_course_event( event )
