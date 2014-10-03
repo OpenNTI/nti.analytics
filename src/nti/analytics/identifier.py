@@ -51,7 +51,6 @@ class _NtiidIdentifier(_Identifier):
 			result = resource
 		else:
 			result = getattr( resource, 'ntiid', None )
-		result = result.encode( 'utf-8', 'replace' ) if result else result
 		return result
 
 	@classmethod
