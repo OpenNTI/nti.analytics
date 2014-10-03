@@ -36,6 +36,7 @@ def _remove_invalid_records( db ):
 #
 # 	logger.info( 'Finished analytics evolve8 (total=%s) (dropped_records=%s)',
 # 				total_count, delete_count )
+	pass
 
 def do_evolve(context):
 	setHooks()
