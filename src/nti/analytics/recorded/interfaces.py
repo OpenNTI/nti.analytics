@@ -61,9 +61,8 @@ class NoteViewedRecordedEvent(ObjectViewedRecordedEvent):
 	note = alias('object')
 	
 	def __init__(self, user, note, course=None, timestamp=None, session=None):
-		super(NoteViewedRecordedEvent, self).__init__(user, note, timestamp)
+		super(NoteViewedRecordedEvent, self).__init__(user, note, timestamp, session)
 		self.course = course
-		self.session = session
 		
 @interface.implementer(ITopicViewedRecordedEvent)
 class TopicViewedRecordedEvent(ObjectViewedRecordedEvent):
@@ -71,24 +70,14 @@ class TopicViewedRecordedEvent(ObjectViewedRecordedEvent):
 	topic = alias('object')
 	
 	def __init__(self, user, topic, course=None, timestamp=None, session=None):
-		super(TopicViewedRecordedEvent, self).__init__(user, topic, timestamp)
+		super(TopicViewedRecordedEvent, self).__init__(user, topic, timestamp, session)
 		self.course = course
-		self.session = session
 
 @interface.implementer(IBlogViewedRecordedEvent)
 class BlogViewedRecordedEvent(ObjectViewedRecordedEvent):
-
 	blog = alias('object')
 	
-	def __init__(self, user, blog, timestamp=None, session=None):
-		super(BlogViewedRecordedEvent, self).__init__(user, blog, timestamp)
-		self.session = session
-
 @interface.implementer(ICatalogViewedRecordedEvent)
 class CatalogViewedRecordedEvent(ObjectViewedRecordedEvent):
-
 	catalog = course = alias('object')
-	
-	def __init__(self, user, course, timestamp=None, session=None):
-		super(CatalogViewedRecordedEvent, self).__init__(user, course, timestamp)
-		self.session = session
+
