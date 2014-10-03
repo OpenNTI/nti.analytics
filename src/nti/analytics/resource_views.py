@@ -33,6 +33,7 @@ from nti.analytics.database import boards as db_boards
 from nti.analytics.database import blogs as db_blogs
 
 from nti.analytics.recorded.interfaces import NoteViewedRecordedEvent
+from nti.analytics.recorded.interfaces import TopicViewedRecordedEvent
 
 from nti.analytics import get_factory
 from nti.analytics import RESOURCE_VIEW_ANALYTICS
@@ -147,6 +148,9 @@ def _add_topic_event( event, nti_session=None ):
 					getattr( course, '__name__', course ),
 					getattr( topic, '__name__', topic ),
 					event.time_length )
+	
+	notify(TopicViewedRecordedEvent(user=user, topic=topic, timestamp=event.timestamp,
+									course=course, session=nti_session))
 
 def _add_blog_event( event, nti_session=None ):
 	_validate_analytics_event( event )
