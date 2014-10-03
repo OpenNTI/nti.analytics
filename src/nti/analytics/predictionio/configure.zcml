@@ -61,10 +61,9 @@
 	<!-- subscribers -->
 	<subscriber handler=".ratings._topic_rated" />
 	<subscriber handler=".ratings._object_rated" />
-	<!--
-	<subscriber handler=".generated._modeled_removed" />
+
 	<subscriber handler=".generated._topic_removed" />
-	-->
+	<subscriber handler=".generated._created_removed" />
 
 	<!-- predictionio app -->
 	
