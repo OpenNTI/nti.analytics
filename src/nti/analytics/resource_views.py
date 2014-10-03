@@ -26,14 +26,16 @@ from nti.analytics.common import process_event
 
 from nti.analytics.sessions import get_nti_session_id
 
+from nti.analytics.database import blogs as db_blogs
+from nti.analytics.database import boards as db_boards
+from nti.analytics.database import enrollments as db_enrollments
 from nti.analytics.database import resource_tags as db_resource_tags
 from nti.analytics.database import resource_views as db_resource_views
-from nti.analytics.database import enrollments as db_enrollments
-from nti.analytics.database import boards as db_boards
-from nti.analytics.database import blogs as db_blogs
 
+from nti.analytics.recorded.interfaces import BlogViewedRecordedEvent
 from nti.analytics.recorded.interfaces import NoteViewedRecordedEvent
 from nti.analytics.recorded.interfaces import TopicViewedRecordedEvent
+from nti.analytics.recorded.interfaces import CatalogViewedRecordedEvent
 
 from nti.analytics import get_factory
 from nti.analytics import RESOURCE_VIEW_ANALYTICS
@@ -165,6 +167,9 @@ def _add_blog_event( event, nti_session=None ):
 								event.time_length )
 	logger.debug( 	"Blog view event (user=%s) (blog=%s) (time_length=%s)",
 					user, blog, event.time_length )
+	
+	notify(BlogViewedRecordedEvent(user=user, blog=blog, timestamp=event.timestamp,
+								   session=nti_session))
 
 def _add_catalog_event( event, nti_session=None ):
 	_validate_course_event( event )
@@ -181,6 +186,9 @@ def _add_catalog_event( event, nti_session=None ):
 					user,
 					getattr( course, '__name__', course ),
 					event.time_length )
+	
+	notify(CatalogViewedRecordedEvent(user=user, course=course, timestamp=event.timestamp,
+									  session=nti_session))
 
 def _add_resource_event( event, nti_session=None ):
 	_validate_resource_event( event )
