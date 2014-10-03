@@ -30,6 +30,7 @@ class Resources(Base):
 def _get_resource_display_name( resource_val ):
 	content_unit = ntiids.find_object_with_ntiid( resource_val )
 	display_name = getattr( content_unit, 'label', None )
+	display_name = display_name.encode( 'utf-8', 'replace' ) if display_name else display_name
 	return display_name
 
 
