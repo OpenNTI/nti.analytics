@@ -106,42 +106,16 @@ def get_course( obj ):
 	return ICourseInstance( result )
 
 def _execute_job( *args, **kwargs ):
-	# 	db = get_analytics_db()
-	#
-	# 	args = BList( args )
-	# 	func = args.pop( 0 )
-	#
-	# 	func( *args, **kwargs )
-	# 	# Must flush to verify integrity.  If we hit any race
-	# 	# conditions below, this will raise and the job can
-	# 	# be re-run.
-	# 	db.session.flush()
-
-	# Temporarily remove duplicates due to migration.
 	db = get_analytics_db()
 
 	args = BList( args )
 	func = args.pop( 0 )
 
-	sp = db.savepoint()
-	try:
-		func( *args, **kwargs )
-		# Must flush to verify integrity
-		db.session.flush()
-	except IntegrityError as e:
-		if sp is not None:
-			sp.rollback()
-
-		vals = e.orig.args
-		# MySQL
-		if len( vals ) > 1 and 'Duplicate entry' in vals[1]:
-			# Duplicate entry, let's ignore these since we likely
-			# already have this record stored.
-			logger.info('Duplicate entry found, will ignore (%s) (%s)',
-						func, kwargs )
-		else:
-			raise e
-
+	func( *args, **kwargs )
+	# Must flush to verify integrity.  If we hit any race
+	# conditions below, this will raise and the job can
+	# be re-run.
+	db.session.flush()
 
 def process_event( get_job_queue, object_op, obj=None, **kwargs ):
 	effective_kwargs = kwargs
