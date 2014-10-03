@@ -16,17 +16,22 @@ from nti.dataserver.interfaces import IUser
 
 from nti.utils.property import alias
 
+from nti.schema.field import Number
 from nti.schema.field import Object
 
 class IObjectViewedRecordedEvent(IObjectEvent):
 	user = Object(IUser, title="user that viewed object")
-
+	timestamp = Number(	title=u"The timestamp when this event occurred",
+						default=0.0,
+						required=False )
+		
 @interface.implementer(IObjectViewedRecordedEvent)
 class ObjectViewedRecordedEvent(ObjectEvent):
 
-	def __init__(self, user, obj):
+	def __init__(self, user, obj, timestamp=None):
 		super(ObjectViewedRecordedEvent, self).__init__(obj)
 		self.user = user
+		self.timestamp = timestamp or 0.0
 		
 class INoteViewedRecordedEvent(IObjectViewedRecordedEvent):
 	object = Object(INote, title="note viewed", required=True)
@@ -34,11 +39,11 @@ class INoteViewedRecordedEvent(IObjectViewedRecordedEvent):
 	session = interface.Attribute("user session")
 
 @interface.implementer(INoteViewedRecordedEvent)
-class NoteViewedRecordedEvent(object):
+class NoteViewedRecordedEvent(ObjectViewedRecordedEvent):
 
 	note = alias('object')
 	
-	def __init__(self, user, note, course=None, session=None):
-		super(NoteViewedRecordedEvent, self).__init__(user, note)
+	def __init__(self, user, note, timestamp=None, course=None, session=None):
+		super(NoteViewedRecordedEvent, self).__init__(user, note, timestamp)
 		self.course = course
 		self.session = session
