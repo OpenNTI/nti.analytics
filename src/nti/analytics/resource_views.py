@@ -36,14 +36,15 @@ from nti.analytics.recorded.interfaces import BlogViewedRecordedEvent
 from nti.analytics.recorded.interfaces import NoteViewedRecordedEvent
 from nti.analytics.recorded.interfaces import TopicViewedRecordedEvent
 from nti.analytics.recorded.interfaces import CatalogViewedRecordedEvent
+from nti.analytics.recorded.interfaces import ResourceViewedRecordedEvent
 
 from nti.analytics import get_factory
-from nti.analytics import RESOURCE_VIEW_ANALYTICS
-from nti.analytics import VIDEO_VIEW_ANALYTICS
-from nti.analytics import CATALOG_VIEW_ANALYTICS
-from nti.analytics import TOPIC_VIEW_ANALYTICS
 from nti.analytics import BLOG_VIEW_ANALYTICS
 from nti.analytics import NOTE_VIEW_ANALYTICS
+from nti.analytics import TOPIC_VIEW_ANALYTICS
+from nti.analytics import VIDEO_VIEW_ANALYTICS
+from nti.analytics import CATALOG_VIEW_ANALYTICS
+from nti.analytics import RESOURCE_VIEW_ANALYTICS
 
 def get_user_resource_views( *args, **kwargs ):
 	return db_resource_views.get_user_resource_views( *args, **kwargs  )
@@ -208,7 +209,9 @@ def _add_resource_event( event, nti_session=None ):
 					user,
 					getattr( course, '__name__', course ),
 					resource_id, event.time_length )
-
+	
+	notify(ResourceViewedRecordedEvent(user=user, resource=resource_id, course=course, 
+									   timestamp=event.timestamp, session=nti_session))
 
 def _add_video_event( event, nti_session=None ):
 	_validate_video_event( event )

@@ -10,6 +10,8 @@ from zope import interface
 from zope.container.interfaces import IContained
 from zope.interface.interfaces import ObjectEvent, IObjectEvent
 
+from dolmen.builtins import IString
+
 from nti.contenttypes.courses.interfaces import ICourseInstance
 from nti.contenttypes.courses.interfaces import	ICourseCatalogEntry
 
@@ -30,14 +32,7 @@ class IObjectViewedRecordedEvent(IObjectEvent):
 						required=False )
 	session = interface.Attribute("analytics session")
 		
-@interface.implementer(IObjectViewedRecordedEvent)
-class ObjectViewedRecordedEvent(ObjectEvent):
 
-	def __init__(self, user, obj, timestamp=None, session=None):
-		super(ObjectViewedRecordedEvent, self).__init__(obj)
-		self.user = user
-		self.session = session
-		self.timestamp = timestamp or 0.0
 		
 class INoteViewedRecordedEvent(IObjectViewedRecordedEvent):
 	object = Object(INote, title="note viewed", required=True)
@@ -54,6 +49,19 @@ class ICatalogViewedRecordedEvent(IObjectViewedRecordedEvent):
 	
 class IBlogViewedRecordedEvent(IObjectViewedRecordedEvent):
 	object = Object(IContained, title="blog viewed", required=True)
+
+class IResourceViewedRecordedEvent(IObjectViewedRecordedEvent):
+	object = Object(IString, title="resourced viewed", required=True)
+	course = Object(ICourseInstance, title="course", required=False)
+	
+@interface.implementer(IObjectViewedRecordedEvent)
+class ObjectViewedRecordedEvent(ObjectEvent):
+
+	def __init__(self, user, obj, timestamp=None, session=None):
+		super(ObjectViewedRecordedEvent, self).__init__(obj)
+		self.user = user
+		self.session = session
+		self.timestamp = timestamp or 0.0
 
 @interface.implementer(INoteViewedRecordedEvent)
 class NoteViewedRecordedEvent(ObjectViewedRecordedEvent):
@@ -75,9 +83,25 @@ class TopicViewedRecordedEvent(ObjectViewedRecordedEvent):
 
 @interface.implementer(IBlogViewedRecordedEvent)
 class BlogViewedRecordedEvent(ObjectViewedRecordedEvent):
+	
 	blog = alias('object')
+	
+	def __init__(self, user, blog, timestamp=None, session=None):
+		super(BlogViewedRecordedEvent, self).__init__(user, blog, timestamp, session)
 	
 @interface.implementer(ICatalogViewedRecordedEvent)
 class CatalogViewedRecordedEvent(ObjectViewedRecordedEvent):
+
 	catalog = course = alias('object')
 
+	def __init__(self, user, course, timestamp=None, session=None):
+		super(CatalogViewedRecordedEvent, self).__init__(user, course, timestamp, session)
+
+@interface.implementer(IResourceViewedRecordedEvent)
+class ResourceViewedRecordedEvent(ObjectViewedRecordedEvent):
+	
+	resource = alias('object')
+	
+	def __init__(self, user, resource, course=None, timestamp=None, session=None):
+		super(ResourceViewedRecordedEvent, self).__init__(user, resource, timestamp, session)
+		self.course = course
