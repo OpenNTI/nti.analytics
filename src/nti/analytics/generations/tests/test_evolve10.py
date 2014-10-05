@@ -13,7 +13,8 @@ logger = __import__('logging').getLogger(__name__)
 from hamcrest import assert_that
 from hamcrest import has_length
 
-from nti.analytics.generations.evolve8 import _remove_invalid_records
+from nti.analytics.generations.evolve10 import _gather_invalid_records
+from nti.analytics.generations.evolve10 import _delete_from_resources
 
 from nti.analytics.database import get_analytics_db
 from nti.analytics.database.resources import Resources
@@ -23,10 +24,10 @@ from nti.dataserver.tests.mock_dataserver import WithMockDSTrans
 
 from nti.analytics.tests import NTIAnalyticsTestCase
 
-class TestEvolve8(NTIAnalyticsTestCase):
+class TestEvolve10(NTIAnalyticsTestCase):
 
 	@WithMockDSTrans
-	def test_evolve8(self):
+	def test_evolve10(self):
 		# Populate with relevant data
 		with mock_dataserver.mock_db_trans(self.ds):
 			db = get_analytics_db()
@@ -50,7 +51,9 @@ class TestEvolve8(NTIAnalyticsTestCase):
 		# Do it
 		with mock_dataserver.mock_db_trans(self.ds):
 			db = get_analytics_db()
-			_remove_invalid_records( db )
+			bad_values = _gather_invalid_records( db )
+			assert_that( bad_values, has_length( 5 ))
+			_delete_from_resources( db, bad_values )
 
 		db = get_analytics_db()
 		all_resources = db.session.query( Resources ).all()

@@ -59,51 +59,51 @@ note_id = 'ntiid:note1'
 blog_event = BlogViewEvent(user=user,
 					timestamp=timestamp,
 					blog_id=blog_id,
-					time_length=time_length)
+					Duration=time_length)
 
 note_event = NoteViewEvent(user=user,
 					timestamp=timestamp,
-					course=course,
+					RootContextID=course,
 					note_id=note_id,
-					time_length=time_length)
+					Duration=time_length)
 
 topic_event = TopicViewEvent(user=user,
 					timestamp=timestamp,
-					course=course,
+					RootContextID=course,
 					topic_id=topic_id,
-					time_length=time_length)
+					Duration=time_length)
 
 course_catalog_event = CourseCatalogViewEvent(user=user,
 					timestamp=timestamp,
-					course=course,
-					time_length=time_length)
+					RootContextID=course,
+					Duration=time_length)
 
 resource_event = ResourceEvent(user=user,
 					timestamp=timestamp,
-					course=course,
+					RootContextID=course,
 					context_path=context_path,
 					resource_id=resource_id,
-					time_length=time_length)
+					Duration=time_length)
 
 video_start_time = 13
 video_end_time = 39
 with_transcript = True
 skip_video_event = SkipVideoEvent(user=user,
 					timestamp=timestamp,
-					course=course,
+					RootContextID=course,
 					context_path=context_path,
 					resource_id=resource_id,
-					time_length=time_length,
+					Duration=time_length,
 					video_start_time=video_start_time,
 					video_end_time=video_end_time,
 					with_transcript=with_transcript)
 
 watch_video_event = WatchVideoEvent(user=user,
 				timestamp=timestamp,
-				course=course,
+				RootContextID=course,
 				context_path=context_path,
 				resource_id=resource_id,
-				time_length=time_length,
+				Duration=time_length,
 				video_start_time=video_start_time,
 				video_end_time=video_end_time,
 				with_transcript=with_transcript)
@@ -128,7 +128,7 @@ class TestResourceEvents(NTIAnalyticsTestCase):
 		assert_that(new_io, has_property('user', is_( user )))
 		assert_that(new_io, has_property('timestamp', is_( timestamp )))
 		assert_that(new_io, has_property('blog_id', is_( blog_id )))
-		assert_that(new_io, has_property('time_length', is_( time_length )))
+		assert_that(new_io, has_property( 'Duration', is_( time_length )))
 		assert_that( new_io, is_( BlogViewEvent ) )
 
 	def test_note_event(self):
@@ -146,9 +146,9 @@ class TestResourceEvents(NTIAnalyticsTestCase):
 		internalization.update_from_external_object(new_io, ext_obj)
 		assert_that(new_io, has_property('user', is_( user )))
 		assert_that(new_io, has_property('timestamp', is_( timestamp )))
-		assert_that(new_io, has_property('course', is_( course )))
+		assert_that(new_io, has_property( 'RootContextID', is_( course )))
 		assert_that(new_io, has_property('note_id', is_( note_id )))
-		assert_that(new_io, has_property('time_length', is_( time_length )))
+		assert_that(new_io, has_property( 'Duration', is_( time_length )))
 		assert_that( new_io, is_( NoteViewEvent ) )
 
 	def test_topic_event(self):
@@ -166,9 +166,9 @@ class TestResourceEvents(NTIAnalyticsTestCase):
 		internalization.update_from_external_object(new_io, ext_obj)
 		assert_that(new_io, has_property('user', is_( user )))
 		assert_that(new_io, has_property('timestamp', is_( timestamp )))
-		assert_that(new_io, has_property('course', is_( course )))
+		assert_that(new_io, has_property( 'RootContextID', is_( course )))
 		assert_that(new_io, has_property('topic_id', is_( topic_id )))
-		assert_that(new_io, has_property('time_length', is_( time_length )))
+		assert_that(new_io, has_property( 'Duration', is_( time_length )))
 		assert_that( new_io, is_( TopicViewEvent ) )
 
 	def test_course_catalog_event(self):
@@ -186,8 +186,8 @@ class TestResourceEvents(NTIAnalyticsTestCase):
 		internalization.update_from_external_object(new_io, ext_obj)
 		assert_that(new_io, has_property('user', is_( user )))
 		assert_that(new_io, has_property('timestamp', is_( timestamp )))
-		assert_that(new_io, has_property('course', is_( course )))
-		assert_that(new_io, has_property('time_length', is_( time_length )))
+		assert_that(new_io, has_property( 'RootContextID', is_( course )))
+		assert_that(new_io, has_property( 'Duration', is_( time_length )))
 		assert_that( new_io, is_( CourseCatalogViewEvent ) )
 
 	def test_resource_event(self):
@@ -205,10 +205,10 @@ class TestResourceEvents(NTIAnalyticsTestCase):
 		internalization.update_from_external_object(new_io, ext_obj)
 		assert_that(new_io, has_property('user', is_( user )))
 		assert_that(new_io, has_property('timestamp', is_( timestamp )))
-		assert_that(new_io, has_property('course', is_( course )))
+		assert_that(new_io, has_property( 'RootContextID', is_( course )))
 		assert_that(new_io, has_property('context_path', is_( context_path )))
 		assert_that(new_io, has_property('resource_id', is_( resource_id )))
-		assert_that(new_io, has_property('time_length', is_( time_length )))
+		assert_that(new_io, has_property( 'Duration', is_( time_length )))
 		assert_that( new_io, is_( ResourceEvent ) )
 
 	def test_video_event(self):
@@ -225,10 +225,10 @@ class TestResourceEvents(NTIAnalyticsTestCase):
 		internalization.update_from_external_object(new_io, ext_obj)
 		assert_that(new_io, has_property('user', is_( user )))
 		assert_that(new_io, has_property('timestamp', is_( timestamp )))
-		assert_that(new_io, has_property('course', is_( course )))
+		assert_that(new_io, has_property( 'RootContextID', is_( course )))
 		assert_that(new_io, has_property('context_path', is_( context_path )))
 		assert_that(new_io, has_property('resource_id', is_( resource_id )))
-		assert_that(new_io, has_property('time_length', is_( time_length )))
+		assert_that(new_io, has_property( 'Duration', is_( time_length )))
 		assert_that(new_io, has_property('event_type', is_( SkipVideoEvent.event_type )))
 		assert_that(new_io, has_property('video_start_time', is_( video_start_time )))
 		assert_that(new_io, has_property('video_end_time', is_( video_end_time )))
@@ -257,10 +257,10 @@ class TestResourceEvents(NTIAnalyticsTestCase):
 		internalization.update_from_external_object(new_io, ext_obj)
 		assert_that(new_io, has_property('with_transcript', is_( False )))
 		assert_that(new_io, has_property('user', is_( 'andrew.ligon' )))
-		assert_that(new_io, has_property('course', is_( "tag:nextthought.com,2011-10:system-OID-0x7e30:5573657273:YV7ubjAxx3S" )))
+		assert_that(new_io, has_property( 'RootContextID', is_( "tag:nextthought.com,2011-10:system-OID-0x7e30:5573657273:YV7ubjAxx3S" )))
 		assert_that(new_io, has_property('context_path', is_( ['a test'] )))
 		assert_that(new_io, has_property('resource_id', is_( '1500101:0_ey2kllmp' )))
-		assert_that(new_io, has_property('time_length', is_( 24791 )))
+		assert_that(new_io, has_property( 'Duration', is_( 24791 )))
 		assert_that(new_io, has_property('event_type', is_( WatchVideoEvent.event_type )))
 		assert_that(new_io, has_property('video_start_time', is_( 0 )))
 		assert_that(new_io, has_property('video_end_time', is_( 30 )))

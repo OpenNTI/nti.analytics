@@ -53,7 +53,7 @@ def _fix_references( db, foreign_table, bad_values ):
 	logger.info( 'Finished fixing references in foreign key table (%s) (count=%s) (expected=%s)',
 				foreign_table, updated_count, total_count )
 
-def _remove_invalid_records( db ):
+def _gather_invalid_records( db ):
 	# Remove all int values from Resources table due to
 	# double migration.
 	all_resources = db.session.query( Resources ).all()
@@ -91,7 +91,7 @@ def do_evolve(context):
 		return
 
 	# Gather our bad values
-	bad_values = _remove_invalid_records( db )
+	bad_values = _gather_invalid_records( db )
 
 	# Delete foreign references
 	for old_table in FOREIGN_TABLES:

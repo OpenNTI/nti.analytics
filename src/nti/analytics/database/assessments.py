@@ -477,8 +477,8 @@ def _resolve_self_assessment( row ):
 		result = AnalyticsAssessment( Submission=submission,
 										user=user,
 										timestamp=row.timestamp,
-										course=course,
-										time_length=row.time_length )
+										RootContextID=course,
+										Duration=row.time_length )
 	return result
 
 def _resolve_assignment( row, details=None ):
@@ -504,8 +504,8 @@ def _resolve_assignment( row, details=None ):
 		result = AnalyticsAssignment( Submission=submission,
 										user=user,
 										timestamp=submission_record.timestamp,
-										course=course,
-										time_length=submission_record.time_length,
+										RootContextID=course,
+										Duration=submission_record.time_length,
 										AssignmentId=submission_record.assignment_id,
 										GradeNum=grade_num,
 										Grade=grade,
@@ -536,7 +536,7 @@ def _resolve_assignment_details( row ):
 		result = AnalyticsAssignmentDetail( QuestionId=detail_record.question_id,
 											QuestionPartId=detail_record.question_part_id,
 											Answer=answer,
-											time_length=detail_record.time_length,
+											Duration=detail_record.time_length,
 											Grade=grade,
 											Grader=grader,
 											IsCorrect=is_correct )

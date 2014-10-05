@@ -23,78 +23,63 @@ from nti.analytics.interfaces import ITopicViewEvent
 from nti.analytics.interfaces import IAnalyticsSession
 
 @interface.implementer(IInternalObjectUpdater)
-@component.adapter(IVideoEvent)
-class _VideoEventUpdater(object):
+class _NTIAnalyticsModelUpdater(object):
+
+	model_interface = None
 
 	def __init__(self, obj):
 		self.obj = obj
 
 	def updateFromExternalObject(self, parsed, *args, **kwargs):
-		result = InterfaceObjectIO( self.obj, IVideoEvent ).updateFromExternalObject(parsed)
+		root_context_id = parsed.get( 'course', None )
+		duration = parsed.get( 'time_length', None )
+		if root_context_id is not None:
+			parsed['RootContextID'] = root_context_id
+		if duration is not None:
+			parsed['Duration'] = duration
+		result = InterfaceObjectIO( self.obj, self.model_interface ).updateFromExternalObject( parsed )
 		return result
+
+@interface.implementer(IInternalObjectUpdater)
+@component.adapter(IVideoEvent)
+class _VideoEventUpdater(_NTIAnalyticsModelUpdater):
+
+	model_interface = IVideoEvent
 
 @interface.implementer(IInternalObjectUpdater)
 @component.adapter(IResourceEvent)
-class _ResourceEventUpdater(object):
+class _ResourceEventUpdater(_NTIAnalyticsModelUpdater):
 
-	def __init__(self, obj):
-		self.obj = obj
+		model_interface = IResourceEvent
 
-	def updateFromExternalObject(self, parsed, *args, **kwargs):
-		result = InterfaceObjectIO( self.obj, IResourceEvent ).updateFromExternalObject( parsed )
-		return result
 
 @interface.implementer(IInternalObjectUpdater)
 @component.adapter(ICourseCatalogViewEvent)
-class _CourseCatalogEventUpdater(object):
+class _CourseCatalogEventUpdater(_NTIAnalyticsModelUpdater):
 
-	def __init__(self, obj):
-		self.obj = obj
+	model_interface = ICourseCatalogViewEvent
 
-	def updateFromExternalObject(self, parsed, *args, **kwargs):
-		result = InterfaceObjectIO( self.obj, ICourseCatalogViewEvent ).updateFromExternalObject( parsed )
-		return result
 
 @interface.implementer(IInternalObjectUpdater)
 @component.adapter(IBlogViewEvent)
-class _BlogViewEventUpdater(object):
+class _BlogViewEventUpdater(_NTIAnalyticsModelUpdater):
 
-	def __init__(self, obj):
-		self.obj = obj
-
-	def updateFromExternalObject(self, parsed, *args, **kwargs):
-		result = InterfaceObjectIO( self.obj, IBlogViewEvent ).updateFromExternalObject( parsed )
-		return result
+	model_interface = IBlogViewEvent
 
 @interface.implementer(IInternalObjectUpdater)
 @component.adapter(INoteViewEvent)
-class _NoteViewEventUpdater(object):
+class _NoteViewEventUpdater(_NTIAnalyticsModelUpdater):
 
-	def __init__(self, obj):
-		self.obj = obj
-
-	def updateFromExternalObject(self, parsed, *args, **kwargs):
-		result = InterfaceObjectIO( self.obj, INoteViewEvent ).updateFromExternalObject( parsed )
-		return result
+	model_interface = INoteViewEvent
 
 @interface.implementer(IInternalObjectUpdater)
 @component.adapter(ITopicViewEvent)
-class _TopicViewEventUpdater(object):
+class _TopicViewEventUpdater(_NTIAnalyticsModelUpdater):
 
-	def __init__(self, obj):
-		self.obj = obj
-
-	def updateFromExternalObject(self, parsed, *args, **kwargs):
-		result = InterfaceObjectIO( self.obj, ITopicViewEvent ).updateFromExternalObject( parsed )
-		return result
+	model_interface = ITopicViewEvent
 
 @interface.implementer(IInternalObjectUpdater)
 @component.adapter(IAnalyticsSession)
-class _AnalyticsSessionUpdater(object):
+class _AnalyticsSessionUpdater(_NTIAnalyticsModelUpdater):
 
-	def __init__(self, obj):
-		self.obj = obj
-
-	def updateFromExternalObject(self, parsed, *args, **kwargs):
-		result = InterfaceObjectIO( self.obj, IAnalyticsSession ).updateFromExternalObject( parsed )
-		return result
+	model_interface = IAnalyticsSession

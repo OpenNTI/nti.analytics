@@ -149,10 +149,10 @@ def _resolve_resource_view( record, course=None, user=None ):
 
 	resource_event = ResourceEvent(user=user,
 					timestamp=timestamp,
-					course=course,
+					RootContextID=course,
 					context_path=context_path,
 					resource_id=resource_ntiid,
-					time_length=time_length)
+					Duration=time_length)
 
 	return resource_event
 
@@ -180,10 +180,10 @@ def _resolve_video_view( record, course=None, user=None ):
 
 	video_event = video_type(user=user,
 				timestamp=timestamp,
-				course=course,
+				RootContextID=course,
 				context_path=context_path,
 				resource_id=resource_ntiid,
-				time_length=time_length,
+				Duration=time_length,
 				video_start_time=video_start_time,
 				video_end_time=video_end_time,
 				with_transcript=with_transcript)

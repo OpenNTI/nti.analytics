@@ -50,7 +50,8 @@ class IAnalyticsObjectBase(interface.Interface):
 	user = ValidTextLine(title='User who created the event', required=True )
 
 class ITimeLength(interface.Interface):
-	time_length = Number(title=u"The time length of the event, in seconds",
+
+	Duration = Number(title=u"The time length of the event, in seconds",
 						default=0)
 
 class IAnalyticsViewEvent(IAnalyticsObjectBase, ITimeLength):
@@ -69,7 +70,7 @@ class ICourseEvent(interface.Interface):
 	"""
 	A course event.
 	"""
-	course = ValidTextLine(title='Course ntiid')
+	RootContextID = ValidTextLine(title='Course ntiid')
 
 class ITopicViewEvent(IAnalyticsViewEvent, ICourseEvent):
 	"""

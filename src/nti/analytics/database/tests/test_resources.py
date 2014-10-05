@@ -79,7 +79,7 @@ class TestCourseResources(AnalyticsTestBase):
 
 		resource_view = results[0]
 		assert_that( resource_view.user, is_( test_user_ds_id ) )
-		assert_that( resource_view.course, is_( self.course_name ))
+		assert_that( resource_view.RootContextID, is_( self.course_name ))
 		assert_that( resource_view.resource_id, is_( resource_val ))
 
 	def test_resources(self):
@@ -158,12 +158,12 @@ class TestCourseResources(AnalyticsTestBase):
 
 		resource_view = results[0]
 		assert_that( resource_view.user, is_( test_user_ds_id ) )
-		assert_that( resource_view.course, is_( self.course_name ))
+		assert_that( resource_view.RootContextID, is_( self.course_name ))
 		assert_that( resource_view.resource_id, is_( resource_val ))
 		assert_that( resource_view.video_start_time, is_( video_start_time ))
 		assert_that( resource_view.video_end_time, is_( video_end_time ))
 		assert_that( resource_view.with_transcript, is_( with_transcript ))
-		assert_that( resource_view.time_length, is_( time_length ))
+		assert_that( resource_view.Duration, is_( time_length ))
 
 	@fudge.patch( 'nti.analytics.database.resource_tags._get_sharing_enum' )
 	def test_note(self, mock_sharing_enum):

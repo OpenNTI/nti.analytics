@@ -310,7 +310,7 @@ def _resolve_comment( row ):
 								Flagged=row.is_flagged,
 								LikeCount=row.like_count,
 								FavoriteCount=row.favorite_count,
-								course=course )
+								RootContextID=course )
 	return result
 
 def _resolve_topic( row ):
@@ -325,7 +325,7 @@ def _resolve_topic( row ):
 		result = AnalyticsTopic( Topic=topic,
 								user = user,
 								timestamp=row.timestamp,
-								course=course )
+								RootContextID=course )
 	return result
 
 # StudentParticipationReport

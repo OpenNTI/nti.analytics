@@ -56,8 +56,8 @@ def _get_object( ntiid ):
 	return ntiids.find_object_with_ntiid( ntiid )
 
 def _get_course( event ):
-	__traceback_info__ = event.course
-	result = _get_object( event.course )
+	__traceback_info__ = event.RootContextID
+	result = _get_object( event.RootContextID )
 	# Course catalog views may resolve to catalog entries
 	return ICourseInstance( result )
 
@@ -69,7 +69,7 @@ def _validate_analytics_event( event ):
 		raise ValueError( 'Event received with non-existent user (user=%s) (event=%s)' %
 							( event.user, event ) )
 
-	time_length = getattr( event, 'time_length', 0 )
+	time_length = getattr( event, 'Duration', 0 )
 	if time_length <= 0:
 		raise ValueError( """Event received with zero or less time_length
 							(user=%s) (time_length=%s) (event=%s)""" %
@@ -83,7 +83,7 @@ def _validate_course_event( event ):
 
 	course = _get_course( event )
 	if course is None:
-		raise ValueError( """Event received with non-existent course
+		raise ValueError( """Event received with non-existent root context id
 							(user=%s) (course=%s) (event=%s)""" %
 							( event.user, event.course, event ) )
 
