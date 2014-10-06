@@ -7,6 +7,7 @@ from __future__ import print_function, unicode_literals, absolute_import, divisi
 __docformat__ = "restructuredtext en"
 
 from zope import interface
+from zope.schema import vocabulary
 
 from dolmen.builtins.interfaces import IDict
 from dolmen.builtins.interfaces import IList
@@ -15,21 +16,28 @@ from dolmen.builtins.interfaces import INumeric
 from dolmen.builtins.interfaces import IUnicode
 from dolmen.builtins.interfaces import IIterable
 
-from nti.schema.field import Number
-from nti.schema.field import Object
+from nti.app.assessment.interfaces import IUsersCourseAssignmentHistoryItem
+
+from nti.assessment.interfaces import IQAssessedQuestionSet
+
+from nti.dataserver.contenttypes.forums.interfaces import IPost
+from nti.dataserver.contenttypes.forums.interfaces import ITopic
+
 from nti.schema.field import Bool
 from nti.schema.field import List
+from nti.schema.field import Choice
+from nti.schema.field import Number
+from nti.schema.field import Object
 from nti.schema.field import Variant
 from nti.schema.field import DecodingValidTextLine as ValidTextLine
 from nti.schema.field import IndexedIterable as TypedIterable
 
-from nti.dataserver.contenttypes.forums.interfaces import ITopic
-from nti.dataserver.contenttypes.forums.interfaces import IPost
-
-from nti.assessment.interfaces import IQAssessedQuestionSet
-
-from nti.app.assessment.interfaces import IUsersCourseAssignmentHistoryItem
-
+VIDEO_SKIP = u'SKIP'
+VIDEO_WATCH = u'WATCH'
+VIDEO_EVENTS = (VIDEO_SKIP, VIDEO_WATCH)
+VIDEO_EVENTS_VOCABULARY = \
+	vocabulary.SimpleVocabulary([vocabulary.SimpleTerm(_x) for _x in VIDEO_EVENTS])
+	
 class IAnalyticsQueueFactory(interface.Interface):
 	"""
 	A factory for analytics processing queues.
@@ -99,7 +107,8 @@ class IVideoEvent(IResourceEvent):
 	"""
 	Describes a video event.
 	"""
-	event_type = ValidTextLine(title='The type of video event {WATCH, SKIP}')
+	event_type = Choice(vocabulary=VIDEO_EVENTS_VOCABULARY,
+					    title='The type of video event', required=True) 
 
 	video_start_time = Number(title=u"The point in the video that starts playing, in seconds.",
 							default=0)

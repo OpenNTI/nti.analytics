@@ -16,78 +16,94 @@ from nti.externalization.representation import WithRepr
 from nti.schema.field import SchemaConfigured
 from nti.schema.fieldproperty import createDirectFieldProperties
 
-from nti.analytics import interfaces
+from nti.analytics.interfaces import VIDEO_SKIP
+from nti.analytics.interfaces import VIDEO_WATCH
 
-@interface.implementer(interfaces.IResourceEvent)
+from nti.analytics.interfaces import IVideoEvent
+from nti.analytics.interfaces import IBlogViewEvent
+from nti.analytics.interfaces import INoteViewEvent
+from nti.analytics.interfaces import IResourceEvent
+from nti.analytics.interfaces import IAnalyticsTopic
+from nti.analytics.interfaces import ITopicViewEvent
+from nti.analytics.interfaces import IAnalyticsSession
+from nti.analytics.interfaces import IAnalyticsSessions
+from nti.analytics.interfaces import IAnalyticsAssessment
+from nti.analytics.interfaces import IAnalyticsAssignment
+from nti.analytics.interfaces import IBatchResourceEvents
+from nti.analytics.interfaces import IAnalyticsForumComment
+from nti.analytics.interfaces import ICourseCatalogViewEvent
+from nti.analytics.interfaces import IAnalyticsAssignmentDetail
+
+@interface.implementer(IResourceEvent)
 @WithRepr
 class ResourceEvent(SchemaConfigured):
-	createDirectFieldProperties(interfaces.IResourceEvent)
+	createDirectFieldProperties(IResourceEvent)
 
 	__external_can_create__ = True
 	__external_class_name__ = "ResourceEvent"
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.resourceevent'
 
-@interface.implementer(interfaces.IVideoEvent)
+@interface.implementer(IVideoEvent)
 @WithRepr
 class WatchVideoEvent(SchemaConfigured):
-	createDirectFieldProperties(interfaces.IVideoEvent)
+	createDirectFieldProperties(IVideoEvent)
 
 	__external_can_create__ = True
 	__external_class_name__ = "WatchVideoEvent"
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.watchvideoevent'
-	event_type = 'WATCH'
+	event_type = VIDEO_WATCH
 
-@interface.implementer(interfaces.IVideoEvent)
+@interface.implementer(IVideoEvent)
 @WithRepr
 class SkipVideoEvent(SchemaConfigured):
-	createDirectFieldProperties(interfaces.IVideoEvent)
+	createDirectFieldProperties(IVideoEvent)
 
 	__external_can_create__ = True
 	__external_class_name__ = "SkipVideoEvent"
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.skipvideoevent'
-	event_type = 'SKIP'
+	event_type = VIDEO_SKIP
 
-@interface.implementer(interfaces.ICourseCatalogViewEvent)
+@interface.implementer(ICourseCatalogViewEvent)
 @WithRepr
 class CourseCatalogViewEvent(SchemaConfigured):
-	createDirectFieldProperties(interfaces.ICourseCatalogViewEvent)
+	createDirectFieldProperties(ICourseCatalogViewEvent)
 
 	__external_can_create__ = True
 	__external_class_name__ = "CourseCatalogViewEvent"
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.coursecatalogviewevent'
 
-@interface.implementer(interfaces.IBlogViewEvent)
+@interface.implementer(IBlogViewEvent)
 @WithRepr
 class BlogViewEvent(SchemaConfigured):
-	createDirectFieldProperties(interfaces.IBlogViewEvent)
+	createDirectFieldProperties(IBlogViewEvent)
 
 	__external_can_create__ = True
 	__external_class_name__ = "BlogViewEvent"
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.blogviewevent'
 
-@interface.implementer(interfaces.INoteViewEvent)
+@interface.implementer(INoteViewEvent)
 @WithRepr
 class NoteViewEvent(SchemaConfigured):
-	createDirectFieldProperties(interfaces.INoteViewEvent)
+	createDirectFieldProperties(INoteViewEvent)
 
 	__external_can_create__ = True
 	__external_class_name__ = "NoteViewEvent"
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.noteviewevent'
 
-@interface.implementer(interfaces.ITopicViewEvent)
+@interface.implementer(ITopicViewEvent)
 @WithRepr
 class TopicViewEvent(SchemaConfigured):
-	createDirectFieldProperties(interfaces.ITopicViewEvent)
+	createDirectFieldProperties(ITopicViewEvent)
 
 	__external_can_create__ = True
 	__external_class_name__ = "TopicViewEvent"
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.topicviewevent'
 
-@interface.implementer(interfaces.IBatchResourceEvents)
+@interface.implementer(IBatchResourceEvents)
 @WithRepr
 @NoPickle
 class BatchResourceEvents(SchemaConfigured):
-	createDirectFieldProperties(interfaces.IBatchResourceEvents)
+	createDirectFieldProperties(IBatchResourceEvents)
 
 	__external_can_create__ = True
 	__external_class_name__ = "BatchResourceEvents"
@@ -100,10 +116,10 @@ class BatchResourceEvents(SchemaConfigured):
 		return len( self.events )
 
 
-@interface.implementer(interfaces.IAnalyticsTopic)
+@interface.implementer(IAnalyticsTopic)
 @WithRepr
 class AnalyticsTopic(SchemaConfigured):
-	createDirectFieldProperties(interfaces.IAnalyticsTopic)
+	createDirectFieldProperties(IAnalyticsTopic)
 
 	__external_can_create__ = False
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticstopic'
@@ -111,10 +127,10 @@ class AnalyticsTopic(SchemaConfigured):
 	def __init__(self, *args, **kwargs):
 		SchemaConfigured.__init__(self, *args, **kwargs)
 
-@interface.implementer(interfaces.IAnalyticsForumComment)
+@interface.implementer(IAnalyticsForumComment)
 @WithRepr
 class AnalyticsForumComment(SchemaConfigured):
-	createDirectFieldProperties(interfaces.IAnalyticsForumComment)
+	createDirectFieldProperties(IAnalyticsForumComment)
 
 	__external_can_create__ = False
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticsforumcomment'
@@ -122,10 +138,10 @@ class AnalyticsForumComment(SchemaConfigured):
 	def __init__(self, *args, **kwargs):
 		SchemaConfigured.__init__(self, *args, **kwargs)
 
-@interface.implementer(interfaces.IAnalyticsAssessment)
+@interface.implementer(IAnalyticsAssessment)
 @WithRepr
 class AnalyticsAssessment(SchemaConfigured):
-	createDirectFieldProperties(interfaces.IAnalyticsAssessment)
+	createDirectFieldProperties(IAnalyticsAssessment)
 
 	__external_can_create__ = False
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticsassessment'
@@ -133,10 +149,10 @@ class AnalyticsAssessment(SchemaConfigured):
 	def __init__(self, *args, **kwargs):
 		SchemaConfigured.__init__(self, *args, **kwargs)
 
-@interface.implementer(interfaces.IAnalyticsAssignment)
+@interface.implementer(IAnalyticsAssignment)
 @WithRepr
 class AnalyticsAssignment(SchemaConfigured):
-	createDirectFieldProperties(interfaces.IAnalyticsAssignment)
+	createDirectFieldProperties(IAnalyticsAssignment)
 
 	__external_can_create__ = False
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticsassignment'
@@ -144,10 +160,10 @@ class AnalyticsAssignment(SchemaConfigured):
 	def __init__(self, *args, **kwargs):
 		SchemaConfigured.__init__(self, *args, **kwargs)
 
-@interface.implementer(interfaces.IAnalyticsAssignmentDetail)
+@interface.implementer(IAnalyticsAssignmentDetail)
 @WithRepr
 class AnalyticsAssignmentDetail(SchemaConfigured):
-	createDirectFieldProperties(interfaces.IAnalyticsAssignmentDetail)
+	createDirectFieldProperties(IAnalyticsAssignmentDetail)
 
 	__external_can_create__ = False
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticsassignmentdetail'
@@ -155,11 +171,11 @@ class AnalyticsAssignmentDetail(SchemaConfigured):
 	def __init__(self, *args, **kwargs):
 		SchemaConfigured.__init__(self, *args, **kwargs)
 
-@interface.implementer(interfaces.IAnalyticsSessions)
+@interface.implementer(IAnalyticsSessions)
 @WithRepr
 @NoPickle
 class AnalyticsSessions(SchemaConfigured):
-	createDirectFieldProperties(interfaces.IAnalyticsSessions)
+	createDirectFieldProperties(IAnalyticsSessions)
 
 	__external_can_create__ = True
 	__external_class_name__ = "AnalyticsSessions"
@@ -171,10 +187,10 @@ class AnalyticsSessions(SchemaConfigured):
 	def __len__(self):
 		return len( self.sessions )
 
-@interface.implementer(interfaces.IAnalyticsSession)
+@interface.implementer(IAnalyticsSession)
 @WithRepr
 class AnalyticsSession(SchemaConfigured):
-	createDirectFieldProperties(interfaces.IAnalyticsSession)
+	createDirectFieldProperties(IAnalyticsSession)
 
 	__external_can_create__ = True
 	__external_class_name__ = "AnalyticsSession"
