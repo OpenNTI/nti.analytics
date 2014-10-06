@@ -41,6 +41,8 @@ from nti.analytics.recorded.interfaces import CatalogViewedRecordedEvent
 from nti.analytics.recorded.interfaces import ResourceViewedRecordedEvent
 
 from nti.analytics import get_factory
+from nti.analytics import get_current_username
+
 from nti.analytics import BLOG_VIEW_ANALYTICS
 from nti.analytics import NOTE_VIEW_ANALYTICS
 from nti.analytics import TOPIC_VIEW_ANALYTICS
@@ -286,8 +288,10 @@ def handle_events( batch_events ):
 		# lose our otherwise valid events.  Since the batch send
 		# time on the client side is currently 10s, we can reasonably
 		# expect a valid session to exist.
-		user = get_entity( event.user )
-		nti_session = get_nti_session_id( user )
+		if not event.user:
+			event.user = get_current_username()
+		user = get_entity(event.user)
+		nti_session = get_nti_session_id(user)
 
 		if INoteViewEvent.providedBy( event ):
 			process_event( _get_note_queue, _add_note_event, event=event, nti_session=nti_session )

@@ -55,7 +55,7 @@ class IAnalyticsObjectBase(interface.Interface):
 						default=0.0,
 						required=True )
 
-	user = ValidTextLine(title='User who created the event', required=True )
+	user = ValidTextLine(title='User who created the event', required=False)
 
 class ITimeLength(interface.Interface):
 
