@@ -21,6 +21,7 @@ from nti.dataserver.contenttypes.forums.interfaces import ITopic
 
 from nti.utils.property import alias
 
+from nti.schema.field import Bool
 from nti.schema.field import Number
 from nti.schema.field import Object
 from nti.schema.field import Variant
@@ -54,6 +55,22 @@ class IResourceViewedRecordedEvent(IObjectViewedRecordedEvent):
 	object = Object(IString, title="resourced viewed", required=True)
 	course = Object(ICourseInstance, title="course", required=False)
 	
+class IVideoRecordedEvent(IObjectViewedRecordedEvent):
+	object = Object(IString, title="video id", required=True)
+	course = Object(ICourseInstance, title="course", required=False)
+	context_path = Object(IString, title="context path", required=False)
+	time_length = Number(title="Time length", required=False)
+	video_start_time = Number(title="Start time (secs)", required=False, default=0)
+	video_end_time = Number(title="End time (secs)", required=False, default=0)
+	with_transcript = Bool(title="Viewed with a trascript", required=False, 
+						   default=False)
+
+class IVideoWatchRecordedEvent(IVideoRecordedEvent):
+	pass
+	
+class IVideoSkipRecordedEvent(IVideoRecordedEvent):
+	pass
+
 @interface.implementer(IObjectViewedRecordedEvent)
 class ObjectViewedRecordedEvent(ObjectEvent):
 
@@ -105,3 +122,29 @@ class ResourceViewedRecordedEvent(ObjectViewedRecordedEvent):
 	def __init__(self, user, resource, course=None, timestamp=None, session=None):
 		super(ResourceViewedRecordedEvent, self).__init__(user, resource, timestamp, session)
 		self.course = course
+
+@interface.implementer(IVideoRecordedEvent)
+class VideoRecordedEvent(ObjectViewedRecordedEvent):
+	
+	resource = alias('object')
+	
+	def __init__(self, user, video, course=None, timestamp=None, session=None,
+				 context_path=None, time_length=0, video_start_time=0, 
+				 video_end_time=0, with_transcript=False):
+		super(VideoRecordedEvent, self).__init__(user, video, timestamp, session)
+		self.course = course
+		self.time_length = time_length
+		self.context_path = context_path
+		self.video_end_time = video_end_time
+		self.with_transcript = with_transcript
+		self.video_start_time = video_start_time
+		
+@interface.implementer(IVideoWatchRecordedEvent)
+class VideoWatchRecordedEvent(VideoRecordedEvent):
+	pass
+	
+@interface.implementer(IVideoSkipRecordedEvent)
+class VideoSkipRecordedEvent(VideoRecordedEvent):
+	pass
+
+	

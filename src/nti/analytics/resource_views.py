@@ -32,8 +32,10 @@ from nti.analytics.database import enrollments as db_enrollments
 from nti.analytics.database import resource_tags as db_resource_tags
 from nti.analytics.database import resource_views as db_resource_views
 
+from nti.analytics.recorded.interfaces import VideoSkipRecordedEvent
 from nti.analytics.recorded.interfaces import BlogViewedRecordedEvent
 from nti.analytics.recorded.interfaces import NoteViewedRecordedEvent
+from nti.analytics.recorded.interfaces import VideoWatchRecordedEvent
 from nti.analytics.recorded.interfaces import TopicViewedRecordedEvent
 from nti.analytics.recorded.interfaces import CatalogViewedRecordedEvent
 from nti.analytics.recorded.interfaces import ResourceViewedRecordedEvent
@@ -237,7 +239,21 @@ def _add_video_event( event, nti_session=None ):
 					resource_id,
 					event.event_type, event.video_start_time,
 					event.video_end_time, event.time_length )
-
+	
+	
+	if event.event_type == 'WATCH':
+		clazz = VideoWatchRecordedEvent
+	else:
+		clazz = VideoSkipRecordedEvent
+		
+	notify(clazz(user=user, video=resource_id, course=course,
+				 session=nti_session, 
+				 timestamp=event.timestamp,
+				 context_path=event.context_path, 
+				 time_length=event.time_length, 
+				 video_start_time=event.video_start_time, 
+				 video_end_time=event.video_end_time,
+				 with_transcript=event.with_transcript))
 
 def _get_resource_queue():
 	factory = get_factory()
