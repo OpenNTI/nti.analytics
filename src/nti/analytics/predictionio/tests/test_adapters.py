@@ -14,6 +14,8 @@ from hamcrest import has_entry
 from hamcrest import has_length
 from hamcrest import assert_that
 
+import unittest
+
 from nti.contentfragments.interfaces import IPlainTextContentFragment
 
 from nti.dataserver.users import User
@@ -26,6 +28,7 @@ from nti.dataserver.tests.mock_dataserver import WithMockDSTrans
 
 from nti.analytics.predictionio.tests import PIOTestCase
 
+@unittest.SkipTest
 class TestAdapters(PIOTestCase):
 
 	def create_user(self, username='nt@nti.com', password='temp001', **kwargs):

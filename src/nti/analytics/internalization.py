@@ -31,13 +31,13 @@ class _NTIAnalyticsModelUpdater(object):
 		self.obj = obj
 
 	def updateFromExternalObject(self, parsed, *args, **kwargs):
-		root_context_id = parsed.get( 'course', None )
-		duration = parsed.get( 'time_length', None )
-		if root_context_id is not None:
+		root_context_id = parsed.get('course', None)
+		duration = parsed.get('time_length', None)
+		if root_context_id is not None and parsed.get('RootContextID') is None:
 			parsed['RootContextID'] = root_context_id
-		if duration is not None:
+		if duration is not None and parsed.get('Duration') is None:
 			parsed['Duration'] = duration
-		result = InterfaceObjectIO( self.obj, self.model_interface ).updateFromExternalObject( parsed )
+		result = InterfaceObjectIO(self.obj, self.model_interface).updateFromExternalObject(parsed)
 		return result
 
 @interface.implementer(IInternalObjectUpdater)
@@ -50,15 +50,13 @@ class _VideoEventUpdater(_NTIAnalyticsModelUpdater):
 @component.adapter(IResourceEvent)
 class _ResourceEventUpdater(_NTIAnalyticsModelUpdater):
 
-		model_interface = IResourceEvent
-
+	model_interface = IResourceEvent
 
 @interface.implementer(IInternalObjectUpdater)
 @component.adapter(ICourseCatalogViewEvent)
 class _CourseCatalogEventUpdater(_NTIAnalyticsModelUpdater):
 
 	model_interface = ICourseCatalogViewEvent
-
 
 @interface.implementer(IInternalObjectUpdater)
 @component.adapter(IBlogViewEvent)

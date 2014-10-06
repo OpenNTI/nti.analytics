@@ -13,6 +13,8 @@ from zope import interface
 from nti.externalization.persistence import NoPickle
 from nti.externalization.representation import WithRepr
 
+from nti.utils.property import alias
+
 from nti.schema.field import SchemaConfigured
 from nti.schema.fieldproperty import createDirectFieldProperties
 
@@ -34,68 +36,59 @@ from nti.analytics.interfaces import IAnalyticsForumComment
 from nti.analytics.interfaces import ICourseCatalogViewEvent
 from nti.analytics.interfaces import IAnalyticsAssignmentDetail
 
-@interface.implementer(IResourceEvent)
 @WithRepr
-class ResourceEvent(SchemaConfigured):
+class ViewEvent(SchemaConfigured):
+	__external_can_create__ = True
+	time_length = alias('Duration')
+
+@interface.implementer(IResourceEvent)
+class ResourceEvent(ViewEvent):
 	createDirectFieldProperties(IResourceEvent)
 
-	__external_can_create__ = True
 	__external_class_name__ = "ResourceEvent"
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.resourceevent'
 
 @interface.implementer(IVideoEvent)
-@WithRepr
-class WatchVideoEvent(SchemaConfigured):
+class WatchVideoEvent(ViewEvent):
 	createDirectFieldProperties(IVideoEvent)
 
-	__external_can_create__ = True
 	__external_class_name__ = "WatchVideoEvent"
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.watchvideoevent'
 	event_type = VIDEO_WATCH
 
 @interface.implementer(IVideoEvent)
-@WithRepr
-class SkipVideoEvent(SchemaConfigured):
+class SkipVideoEvent(ViewEvent):
 	createDirectFieldProperties(IVideoEvent)
 
-	__external_can_create__ = True
 	__external_class_name__ = "SkipVideoEvent"
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.skipvideoevent'
 	event_type = VIDEO_SKIP
 
 @interface.implementer(ICourseCatalogViewEvent)
-@WithRepr
-class CourseCatalogViewEvent(SchemaConfigured):
+class CourseCatalogViewEvent(ViewEvent):
 	createDirectFieldProperties(ICourseCatalogViewEvent)
 
-	__external_can_create__ = True
 	__external_class_name__ = "CourseCatalogViewEvent"
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.coursecatalogviewevent'
 
 @interface.implementer(IBlogViewEvent)
-@WithRepr
-class BlogViewEvent(SchemaConfigured):
+class BlogViewEvent(ViewEvent):
 	createDirectFieldProperties(IBlogViewEvent)
 
-	__external_can_create__ = True
 	__external_class_name__ = "BlogViewEvent"
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.blogviewevent'
 
 @interface.implementer(INoteViewEvent)
-@WithRepr
-class NoteViewEvent(SchemaConfigured):
+class NoteViewEvent(ViewEvent):
 	createDirectFieldProperties(INoteViewEvent)
 
-	__external_can_create__ = True
 	__external_class_name__ = "NoteViewEvent"
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.noteviewevent'
 
 @interface.implementer(ITopicViewEvent)
-@WithRepr
-class TopicViewEvent(SchemaConfigured):
+class TopicViewEvent(ViewEvent):
 	createDirectFieldProperties(ITopicViewEvent)
 
-	__external_can_create__ = True
 	__external_class_name__ = "TopicViewEvent"
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.topicviewevent'
 
@@ -114,7 +107,6 @@ class BatchResourceEvents(SchemaConfigured):
 
 	def __len__(self):
 		return len( self.events )
-
 
 @interface.implementer(IAnalyticsTopic)
 @WithRepr
