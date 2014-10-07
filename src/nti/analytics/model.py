@@ -36,36 +36,60 @@ from nti.analytics.interfaces import IAnalyticsForumComment
 from nti.analytics.interfaces import ICourseCatalogViewEvent
 from nti.analytics.interfaces import IAnalyticsAssignmentDetail
 
+def _replace_state(obj, old, new):
+	if old in obj.__dict__:
+		value = obj.__dict__.pop(old)
+		if obj.__dict__.get(new, None) is None:
+			obj.__dict__[new] = value
+			
 @WithRepr
 class ViewEvent(SchemaConfigured):
+
 	__external_can_create__ = True
 	time_length = alias('Duration')
+	
+	def __setstate__(self, data):
+		self.__dict__ = data
+		_replace_state(self, 'time_length', 'Duration')
+		
+class RootContextEvent(ViewEvent): # alias 
 
+	course = alias('RootContextID')
+	
+	def __setstate__(self, data):
+		self.__dict__ = data
+		_replace_state(self, 'time_length', 'Duration')
+		_replace_state(self, 'course', 'RootContextID')
+			
 @interface.implementer(IResourceEvent)
-class ResourceEvent(ViewEvent):
+class ResourceEvent(RootContextEvent):
 	createDirectFieldProperties(IResourceEvent)
 
 	__external_class_name__ = "ResourceEvent"
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.resourceevent'
 
 @interface.implementer(IVideoEvent)
-class WatchVideoEvent(ViewEvent):
+class WatchVideoEvent(RootContextEvent):
 	createDirectFieldProperties(IVideoEvent)
 
 	__external_class_name__ = "WatchVideoEvent"
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.watchvideoevent'
 	event_type = VIDEO_WATCH
+	
+	course = alias('RootContextID')
 
 @interface.implementer(IVideoEvent)
-class SkipVideoEvent(ViewEvent):
+class SkipVideoEvent(RootContextEvent):
 	createDirectFieldProperties(IVideoEvent)
 
 	__external_class_name__ = "SkipVideoEvent"
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.skipvideoevent'
 	event_type = VIDEO_SKIP
+	
+	course = alias('RootContextID')
 
 @interface.implementer(ICourseCatalogViewEvent)
-class CourseCatalogViewEvent(ViewEvent):
+class CourseCatalogViewEvent(RootContextEvent):
 	createDirectFieldProperties(ICourseCatalogViewEvent)
 
 	__external_class_name__ = "CourseCatalogViewEvent"
@@ -79,14 +103,14 @@ class BlogViewEvent(ViewEvent):
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.blogviewevent'
 
 @interface.implementer(INoteViewEvent)
-class NoteViewEvent(ViewEvent):
+class NoteViewEvent(RootContextEvent):
 	createDirectFieldProperties(INoteViewEvent)
 
 	__external_class_name__ = "NoteViewEvent"
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.noteviewevent'
 
 @interface.implementer(ITopicViewEvent)
-class TopicViewEvent(ViewEvent):
+class TopicViewEvent(RootContextEvent):
 	createDirectFieldProperties(ITopicViewEvent)
 
 	__external_class_name__ = "TopicViewEvent"

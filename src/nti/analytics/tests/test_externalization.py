@@ -10,40 +10,43 @@ __docformat__ = "restructuredtext en"
 from hamcrest import is_
 from hamcrest import not_none
 from hamcrest import has_entry
+from hamcrest import has_length
 from hamcrest import assert_that
 from hamcrest import has_property
-from hamcrest import has_length
 
 import time
+import pickle
 from datetime import datetime
 
 from nti.externalization import internalization
 from nti.externalization.externalization import toExternalObject
-from nti.externalization.tests import assert_does_not_pickle
 
-from nti.analytics.model import CourseCatalogViewEvent
 from nti.analytics.model import ResourceEvent
 from nti.analytics.model import BlogViewEvent
 from nti.analytics.model import NoteViewEvent
+from nti.analytics.model import SkipVideoEvent
 from nti.analytics.model import TopicViewEvent
 from nti.analytics.model import WatchVideoEvent
-from nti.analytics.model import SkipVideoEvent
-from nti.analytics.model import BatchResourceEvents
-from nti.analytics.model import AnalyticsSessions
 from nti.analytics.model import AnalyticsSession
+from nti.analytics.model import AnalyticsSessions
+from nti.analytics.model import BatchResourceEvents
+from nti.analytics.model import CourseCatalogViewEvent
+
+from nti.analytics.interfaces import IVideoEvent
+from nti.analytics.interfaces import IResourceEvent
+from nti.analytics.interfaces import IBlogViewEvent
+from nti.analytics.interfaces import INoteViewEvent
+from nti.analytics.interfaces import ITopicViewEvent
+from nti.analytics.interfaces import IAnalyticsSessions
+from nti.analytics.interfaces import IBatchResourceEvents
+
+from nti.analytics.interfaces import ICourseCatalogViewEvent
+
+from nti.externalization.tests import assert_does_not_pickle
 
 from nti.testing.matchers import verifiably_provides
 
 from nti.analytics.tests import NTIAnalyticsTestCase
-
-from nti.analytics.interfaces import ICourseCatalogViewEvent
-from nti.analytics.interfaces import IResourceEvent
-from nti.analytics.interfaces import IVideoEvent
-from nti.analytics.interfaces import IBlogViewEvent
-from nti.analytics.interfaces import INoteViewEvent
-from nti.analytics.interfaces import ITopicViewEvent
-from nti.analytics.interfaces import IBatchResourceEvents
-from nti.analytics.interfaces import IAnalyticsSessions
 
 timestamp = time.mktime( datetime.utcnow().timetuple() )
 user = 'jzuech@nextthought.com'
@@ -323,3 +326,13 @@ class TestResourceEvents(NTIAnalyticsTestCase):
 		assert_that( sessions, has_length( session_count ))
 		assert_that( sessions[0], is_( AnalyticsSession ) )
 
+	def test_pickle_legacy(self):
+		ve = ResourceEvent()
+		del ve.Duration
+		del ve.RootContextID
+		ve.__dict__['course'] = 'foo'
+		ve.__dict__['time_length'] = 10
+		f_string = pickle.dumps(ve)
+		f_new = pickle.loads(f_string)
+		assert_that(f_new, has_property('Duration', 10))
+		assert_that(f_new, has_property('RootContextID', 'foo'))

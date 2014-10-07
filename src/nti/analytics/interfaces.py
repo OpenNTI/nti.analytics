@@ -214,6 +214,5 @@ class IAnalyticsSessions(interface.Interface):
 	"""
 	A collection of analytics sessions.
 	"""
-	sessions = TypedIterable(
-		title="The analytics sessions.",
-		value_type=Object( IAnalyticsSession ) )
+	sessions = TypedIterable(title="The analytics sessions.",
+							 value_type=Object( IAnalyticsSession ) )
