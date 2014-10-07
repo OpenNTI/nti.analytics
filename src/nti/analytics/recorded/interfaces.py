@@ -11,6 +11,7 @@ from zope.container.interfaces import IContained
 from zope.interface.interfaces import ObjectEvent, IObjectEvent
 
 from dolmen.builtins import IString
+from dolmen.builtins import INumeric
 
 from nti.contenttypes.courses.interfaces import ICourseInstance
 from nti.contenttypes.courses.interfaces import	ICourseCatalogEntry
@@ -32,16 +33,17 @@ class IObjectViewedRecordedEvent(IObjectEvent):
 						default=0.0,
 						required=False )
 	session = interface.Attribute("analytics session")
-		
 
-		
 class INoteViewedRecordedEvent(IObjectViewedRecordedEvent):
 	object = Object(INote, title="note viewed", required=True)
-	course = Object(ICourseInstance, title="course", required=False)
+	context = Object(ICourseInstance, title="root context", required=False)
 
 class ITopicViewedRecordedEvent(IObjectViewedRecordedEvent):
 	object = Object(ITopic, title="topic viewed", required=True)
-	course = Object(ICourseInstance, title="course", required=False)
+	context = Variant((Object(IString, title="the context id"),
+					   Object(INumeric, title="the context id"),
+					   Object(ICourseInstance, title="the context course")), 
+					 title="context object", required=False)
 	
 class ICatalogViewedRecordedEvent(IObjectViewedRecordedEvent):
 	object = Variant((Object(ICourseInstance, title="the course"),
@@ -53,17 +55,22 @@ class IBlogViewedRecordedEvent(IObjectViewedRecordedEvent):
 
 class IResourceViewedRecordedEvent(IObjectViewedRecordedEvent):
 	object = Object(IString, title="resourced viewed", required=True)
-	course = Object(ICourseInstance, title="course", required=False)
+	context = Variant((Object(IString, title="the context id"),
+					   Object(INumeric, title="the context id"),
+					   Object(ICourseInstance, title="the context course")), 
+					 title="context object", required=False)
 	
 class IVideoRecordedEvent(IObjectViewedRecordedEvent):
 	object = Object(IString, title="video id", required=True)
-	course = Object(ICourseInstance, title="course", required=False)
 	context_path = Object(IString, title="context path", required=False)
-	time_length = Number(title="Time length", required=False)
+	duration = Number(title="Time length duration", required=False, default=0)
 	video_start_time = Number(title="Start time (secs)", required=False, default=0)
 	video_end_time = Number(title="End time (secs)", required=False, default=0)
-	with_transcript = Bool(title="Viewed with a trascript", required=False, 
-						   default=False)
+	with_transcript = Bool(title="Viewed with a trascript", required=False, default=False)
+	context = Variant((Object(IString, title="the context id"),
+					   Object(INumeric, title="the context id"),
+					   Object(ICourseInstance, title="the context course")), 
+					 title="context object", required=False)
 
 class IVideoWatchRecordedEvent(IVideoRecordedEvent):
 	pass
@@ -85,18 +92,18 @@ class NoteViewedRecordedEvent(ObjectViewedRecordedEvent):
 
 	note = alias('object')
 	
-	def __init__(self, user, note, course=None, timestamp=None, session=None):
+	def __init__(self, user, note, context=None, timestamp=None, session=None):
 		super(NoteViewedRecordedEvent, self).__init__(user, note, timestamp, session)
-		self.course = course
+		self.context = context
 		
 @interface.implementer(ITopicViewedRecordedEvent)
 class TopicViewedRecordedEvent(ObjectViewedRecordedEvent):
 
 	topic = alias('object')
 	
-	def __init__(self, user, topic, course=None, timestamp=None, session=None):
+	def __init__(self, user, topic, context=None, timestamp=None, session=None):
 		super(TopicViewedRecordedEvent, self).__init__(user, topic, timestamp, session)
-		self.course = course
+		self.context = context
 
 @interface.implementer(IBlogViewedRecordedEvent)
 class BlogViewedRecordedEvent(ObjectViewedRecordedEvent):
@@ -111,29 +118,30 @@ class CatalogViewedRecordedEvent(ObjectViewedRecordedEvent):
 
 	catalog = course = alias('object')
 
-	def __init__(self, user, course, timestamp=None, session=None):
-		super(CatalogViewedRecordedEvent, self).__init__(user, course, timestamp, session)
+	def __init__(self, user, context, timestamp=None, session=None):
+		super(CatalogViewedRecordedEvent, self).__init__(user, context, timestamp, session)
 
 @interface.implementer(IResourceViewedRecordedEvent)
 class ResourceViewedRecordedEvent(ObjectViewedRecordedEvent):
 	
 	resource = alias('object')
 	
-	def __init__(self, user, resource, course=None, timestamp=None, session=None):
+	def __init__(self, user, resource, context=None, timestamp=None, session=None):
 		super(ResourceViewedRecordedEvent, self).__init__(user, resource, timestamp, session)
-		self.course = course
+		self.context = context
 
 @interface.implementer(IVideoRecordedEvent)
 class VideoRecordedEvent(ObjectViewedRecordedEvent):
 	
 	resource = alias('object')
+	time_length = alias('duration')
 	
-	def __init__(self, user, video, course=None, timestamp=None, session=None,
-				 context_path=None, time_length=0, video_start_time=0, 
+	def __init__(self, user, video, context=None, timestamp=None, session=None,
+				 context_path=None, duration=0, video_start_time=0, 
 				 video_end_time=0, with_transcript=False):
 		super(VideoRecordedEvent, self).__init__(user, video, timestamp, session)
-		self.course = course
-		self.time_length = time_length
+		self.context = context
+		self.duration = duration
 		self.context_path = context_path
 		self.video_end_time = video_end_time
 		self.with_transcript = with_transcript

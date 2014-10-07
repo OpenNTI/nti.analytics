@@ -135,7 +135,7 @@ def _add_note_event( event, nti_session=None ):
 					getattr( course, '__name__', course ) )
 
 	notify(NoteViewedRecordedEvent(	user=user, note=note, timestamp=event.timestamp,
-									course=course, session=nti_session))
+									context=course, session=nti_session))
 
 def _add_topic_event( event, nti_session=None ):
 	_validate_course_event( event )
@@ -157,7 +157,7 @@ def _add_topic_event( event, nti_session=None ):
 					event.time_length )
 	
 	notify(TopicViewedRecordedEvent(user=user, topic=topic, timestamp=event.timestamp,
-									course=course, session=nti_session))
+									context=course, session=nti_session))
 
 def _add_blog_event( event, nti_session=None ):
 	_validate_analytics_event( event )
@@ -192,7 +192,7 @@ def _add_catalog_event( event, nti_session=None ):
 					getattr( course, '__name__', course ),
 					event.time_length )
 	
-	notify(CatalogViewedRecordedEvent(user=user, course=course, timestamp=event.timestamp,
+	notify(CatalogViewedRecordedEvent(user=user, context=course, timestamp=event.timestamp,
 									  session=nti_session))
 
 def _add_resource_event( event, nti_session=None ):
@@ -214,7 +214,7 @@ def _add_resource_event( event, nti_session=None ):
 					getattr( course, '__name__', course ),
 					resource_id, event.time_length )
 	
-	notify(ResourceViewedRecordedEvent(user=user, resource=resource_id, course=course, 
+	notify(ResourceViewedRecordedEvent(user=user, resource=resource_id, context=course, 
 									   timestamp=event.timestamp, session=nti_session))
 
 def _add_video_event( event, nti_session=None ):
@@ -248,11 +248,12 @@ def _add_video_event( event, nti_session=None ):
 	else:
 		clazz = VideoSkipRecordedEvent
 		
-	notify(clazz(user=user, video=resource_id, course=course,
+	notify(clazz(user=user, video=resource_id,
+				 context=course,
 				 session=nti_session, 
 				 timestamp=event.timestamp,
 				 context_path=event.context_path, 
-				 time_length=event.time_length, 
+				 duration=event.time_length, 
 				 video_start_time=event.video_start_time, 
 				 video_end_time=event.video_end_time,
 				 with_transcript=event.with_transcript))
