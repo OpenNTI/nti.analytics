@@ -179,7 +179,7 @@ def create_note_view(user, nti_session, timestamp, course, note):
 								course_id=course_id,
 								resource_id=rid,
 								note_id=note_id )
-	db.session.add( new_object )
+	db.session.merge( new_object )
 
 def create_highlight(user, nti_session, course, highlight):
 	db = get_analytics_db()
