@@ -229,7 +229,7 @@ def create_topic_view(user, nti_session, timestamp, course, topic, time_length):
 								forum_id=fid,
 								topic_id=did,
 								time_length=time_length )
-	db.session.add( new_object )
+	db.session.merge( new_object )
 
 def create_forum_comment(user, nti_session, course, topic, comment):
 	db = get_analytics_db()

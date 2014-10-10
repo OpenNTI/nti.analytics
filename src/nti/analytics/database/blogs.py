@@ -147,7 +147,7 @@ def create_blog_view(user, nti_session, timestamp, blog_entry, time_length):
 								timestamp=timestamp,
 								blog_id=blog_id,
 								time_length=time_length )
-	db.session.add( new_object )
+	db.session.merge( new_object )
 
 def create_blog_comment(user, nti_session, blog, comment ):
 	db = get_analytics_db()

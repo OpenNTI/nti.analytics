@@ -73,7 +73,7 @@ def create_course_catalog_view( user, nti_session, timestamp, course, time_lengt
 										timestamp=timestamp,
 										course_id=course_id,
 										time_length=time_length )
-	db.session.add( new_object )
+	db.session.merge( new_object )
 
 def _create_enrollment_type(db, type_name):
 	enrollment_type = EnrollmentTypes( type_name=type_name )
