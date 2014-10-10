@@ -8,7 +8,7 @@ BASE_OUTPUT_DIR="/home/ntibackup/irb_analytics_dump"
 USER_OUTPUT_FILE="$BASE_OUTPUT_DIR/irb_analytics_user_tables.sql"
 OTHER_OUTPUT_FILE="$BASE_OUTPUT_DIR/irb_analytics_non_user_tables.sql"
 OUTPUT_TAR="$BASE_OUTPUT_DIR/irb_analytics_export-$DATE.tar.gz"
-OUTPUT_PGP="$OUTPUT_TAR.gpg"
+OUTPUT_GPG="$OUTPUT_TAR.gpg"
 
 mysql_cmd="mysql -h **** -P **** -u **** -p**** -D Analytics"
 mysqldmp_cmd="mysqldump -h **** -P **** -u **** -p**** Analytics "
@@ -63,7 +63,7 @@ $mysqldmp_cmd_final > $OTHER_OUTPUT_FILE
 
 echo "Generating tarball at $OUTPUT_TAR"
 tar -czf $OUTPUT_TAR $USER_OUTPUT_FILE $OTHER_OUTPUT_FILE
-gpg2 --passphrase boomersooner1 --symmetric --output $OUTPUT_PGP $OUTPUT_TAR
+gpg2 --passphrase boomersooner1 --symmetric --batch --output $OUTPUT_GPG $OUTPUT_TAR
 rm -rf $USER_OUTPUT_FILE
 rm -rf $OTHER_OUTPUT_FILE
 
