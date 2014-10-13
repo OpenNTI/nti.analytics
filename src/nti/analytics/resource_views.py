@@ -70,12 +70,14 @@ def _validate_analytics_event( event ):
 	# I think nti.externalization handles encoding.
 	user = get_entity( event.user )
 	if user is None:
-		raise ValueError( 'Event received with non-existent user (user=%s) (event=%s)' %
+		raise UnrecoverableAnalyticsError(
+							'Event received with non-existent user (user=%s) (event=%s)' %
 							( event.user, event ) )
 
 	time_length = getattr( event, 'Duration', 0 )
 	if time_length <= 0:
-		raise ValueError( """Event received with zero or less time_length
+		raise UnrecoverableAnalyticsError(
+							"""Event received with zero or less time_length
 							(user=%s) (time_length=%s) (event=%s)""" %
 							( event.user, time_length, event ) )
 
@@ -87,6 +89,7 @@ def _validate_course_event( event ):
 
 	course = _get_course( event )
 	if course is None:
+		# We could potentially recover from this in the future.
 		raise ValueError( """Event received with non-existent root context id
 							(user=%s) (course=%s) (event=%s)""" %
 							( event.user, event.course, event ) )
@@ -97,7 +100,8 @@ def _validate_resource_event( event ):
 	_validate_course_event( event )
 
 	if not ntiids.is_valid_ntiid_string( event.resource_id ):
-		raise ValueError( """Event received for invalid resource id
+		raise UnrecoverableAnalyticsError(
+							"""Event received for invalid resource id
 							(user=%s) (resource=%s) (event=%s)""" %
 							( event.user, event.resource_id, event ) )
 
@@ -111,14 +115,19 @@ def _validate_video_event( event ):
 	end = event.video_end_time
 	if 		start < 0 	\
 		or 	end < 0:
-		raise ValueError( 'Video event has invalid time values (start=%s) (end=%s) (event=%s)' %
+		raise UnrecoverableAnalyticsError(
+						'Video event has invalid time values (start=%s) (end=%s) (event=%s)' %
 						( start, end, event.event_type ) )
 
 	event.video_start_time = int( start )
 	event.video_end_time = int( end )
 
 def _add_note_event( event, nti_session=None ):
-	_validate_course_event( event )
+	try:
+		_validate_course_event( event )
+	except UnrecoverableAnalyticsError as e:
+		logger.warn( 'Error while validating event (%s)', e )
+		return
 
 	user = get_entity( event.user )
 	course = _get_course( event )
@@ -138,7 +147,11 @@ def _add_note_event( event, nti_session=None ):
 									context=course, session=nti_session))
 
 def _add_topic_event( event, nti_session=None ):
-	_validate_course_event( event )
+	try:
+		_validate_course_event( event )
+	except UnrecoverableAnalyticsError as e:
+		logger.warn( 'Error while validating event (%s)', e )
+		return
 
 	user = get_entity( event.user )
 	course = _get_course( event )
@@ -155,12 +168,16 @@ def _add_topic_event( event, nti_session=None ):
 					getattr( course, '__name__', course ),
 					getattr( topic, '__name__', topic ),
 					event.time_length )
-	
+
 	notify(TopicViewedRecordedEvent(user=user, topic=topic, timestamp=event.timestamp,
 									context=course, session=nti_session))
 
 def _add_blog_event( event, nti_session=None ):
-	_validate_analytics_event( event )
+	try:
+		_validate_analytics_event( event )
+	except UnrecoverableAnalyticsError as e:
+		logger.warn( 'Error while validating event (%s)', e )
+		return
 
 	user = get_entity( event.user )
 	blog = _get_object( event.blog_id )
@@ -172,12 +189,16 @@ def _add_blog_event( event, nti_session=None ):
 								event.time_length )
 	logger.debug( 	"Blog view event (user=%s) (blog=%s) (time_length=%s)",
 					user, blog, event.time_length )
-	
+
 	notify(BlogViewedRecordedEvent(user=user, blog=blog, timestamp=event.timestamp,
 								   session=nti_session))
 
 def _add_catalog_event( event, nti_session=None ):
-	_validate_course_event( event )
+	try:
+		_validate_course_event( event )
+	except UnrecoverableAnalyticsError as e:
+		logger.warn( 'Error while validating event (%s)', e )
+		return
 
 	user = get_entity( event.user )
 	course = _get_course( event )
@@ -191,12 +212,16 @@ def _add_catalog_event( event, nti_session=None ):
 					user,
 					getattr( course, '__name__', course ),
 					event.time_length )
-	
+
 	notify(CatalogViewedRecordedEvent(user=user, context=course, timestamp=event.timestamp,
 									  session=nti_session))
 
 def _add_resource_event( event, nti_session=None ):
-	_validate_resource_event( event )
+	try:
+		_validate_resource_event( event )
+	except UnrecoverableAnalyticsError as e:
+		logger.warn( 'Error while validating event (%s)', e )
+		return
 
 	user = get_entity( event.user )
 	resource_id = event.resource_id
@@ -213,12 +238,16 @@ def _add_resource_event( event, nti_session=None ):
 					user,
 					getattr( course, '__name__', course ),
 					resource_id, event.time_length )
-	
-	notify(ResourceViewedRecordedEvent(user=user, resource=resource_id, context=course, 
+
+	notify(ResourceViewedRecordedEvent(user=user, resource=resource_id, context=course,
 									   timestamp=event.timestamp, session=nti_session))
 
 def _add_video_event( event, nti_session=None ):
-	_validate_video_event( event )
+	try:
+		_validate_video_event( event )
+	except UnrecoverableAnalyticsError as e:
+		logger.warn( 'Error while validating event (%s)', e )
+		return
 
 	user = get_entity( event.user )
 	resource_id = event.resource_id
@@ -241,20 +270,20 @@ def _add_video_event( event, nti_session=None ):
 					resource_id,
 					event.event_type, event.video_start_time,
 					event.video_end_time, event.time_length )
-	
-	
+
+
 	if event.event_type == 'WATCH':
 		clazz = VideoWatchRecordedEvent
 	else:
 		clazz = VideoSkipRecordedEvent
-		
+
 	notify(clazz(user=user, video=resource_id,
 				 context=course,
-				 session=nti_session, 
+				 session=nti_session,
 				 timestamp=event.timestamp,
-				 context_path=event.context_path, 
-				 duration=event.time_length, 
-				 video_start_time=event.video_start_time, 
+				 context_path=event.context_path,
+				 duration=event.time_length,
+				 video_start_time=event.video_start_time,
 				 video_end_time=event.video_end_time,
 				 with_transcript=event.with_transcript))
 
@@ -311,3 +340,17 @@ def handle_events( batch_events ):
 	# events. The nti.async.processor does this and at least drops the bad
 	# events in a failed queue.
 	return len( batch_events )
+
+
+class UnrecoverableAnalyticsError( Exception ):
+	"""
+	Errors that the analytics process fundamentally cannot recover from. Events
+	with such errors should log the issue and return, such that the event will
+	not be re-run in the future.
+	"""
+
+	def __init__(self, message):
+		self.message = message
+
+	def __str__(self):
+		return self.message
