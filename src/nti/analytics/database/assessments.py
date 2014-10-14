@@ -46,6 +46,7 @@ from nti.analytics.identifier import FeedbackId
 
 from nti.analytics.database.users import get_or_create_user
 from nti.analytics.database.users import get_user
+from nti.analytics.database.users import get_user_db_id
 from nti.analytics.database.courses import get_course_id
 from nti.analytics.database.courses import get_course
 
@@ -545,8 +546,7 @@ def _resolve_assignment_details( row ):
 
 def get_self_assessments_for_user(user, course):
 	db = get_analytics_db()
-	user = get_or_create_user( user )
-	uid = user.user_id
+	uid = get_user_db_id( user )
 	course_id = get_course_id( db, course )
 	results = db.session.query(SelfAssessmentsTaken).filter( 	SelfAssessmentsTaken.user_id == uid,
 																SelfAssessmentsTaken.course_id == course_id ).all()
@@ -556,8 +556,7 @@ def get_self_assessments_for_user(user, course):
 def get_assignments_for_user(user, course):
 	# We may not have a grade here.
 	db = get_analytics_db()
-	user = get_or_create_user(user )
-	uid = user.user_id
+	uid = get_user_db_id( user )
 	course_id = get_course_id( db, course )
 	results = db.session.query( AssignmentsTaken ) \
 					.filter( AssignmentsTaken.user_id == uid,

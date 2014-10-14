@@ -65,16 +65,24 @@ def create_user(user):
 	logger.info( 'Created user (user=%s) (user_id=%s) (user_ds_id=%s)', username, user.user_id, uid )
 	return user
 
-def get_or_create_user(user):
+def _get_user_record( user ):
 	db = get_analytics_db()
 	uid = UserId.get_id( user )
 	found_user = db.session.query(Users).filter( Users.user_ds_id == uid ).first()
+	return found_user
+
+def get_or_create_user( user ):
+	found_user = _get_user_record( user )
 	if found_user is not None:
 		if found_user.username2 is None:
 			# Lazy build this new field
 			found_user.username2 = _get_username2( user )
 
 	return found_user or create_user( user )
+
+def get_user_db_id( user ):
+	found_user = _get_user_record( user )
+	return found_user.user_id
 
 def get_user( user_id ):
 	result = None
