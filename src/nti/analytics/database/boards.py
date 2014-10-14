@@ -45,6 +45,7 @@ from nti.analytics.database.meta_mixins import RatingsMixin
 
 from nti.analytics.database.users import get_or_create_user
 from nti.analytics.database.users import get_user
+from nti.analytics.database.users import get_user_db_id
 from nti.analytics.database.courses import get_course_id
 from nti.analytics.database.courses import get_course
 
@@ -331,8 +332,7 @@ def _resolve_topic( row ):
 # StudentParticipationReport
 def get_forum_comments_for_user(user, course):
 	db = get_analytics_db()
-	user = get_or_create_user(user )
-	uid = user.user_id
+	uid = get_user_db_id( user )
 	course_id = get_course_id( db, course )
 	results = db.session.query(ForumCommentsCreated).filter( ForumCommentsCreated.user_id == uid,
 															ForumCommentsCreated.course_id == course_id,
@@ -342,8 +342,7 @@ def get_forum_comments_for_user(user, course):
 
 def get_topics_created_for_user(user, course):
 	db = get_analytics_db()
-	user = get_or_create_user(user )
-	uid = user.user_id
+	uid = get_user_db_id( user )
 	course_id = get_course_id( db, course )
 	results = db.session.query(TopicsCreated).filter( TopicsCreated.user_id == uid,
 														TopicsCreated.course_id == course_id,

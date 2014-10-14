@@ -34,6 +34,7 @@ from nti.analytics.database.meta_mixins import TimeLengthMixin
 
 from nti.analytics.database import resolve_objects
 from nti.analytics.database.users import get_or_create_user
+from nti.analytics.database.users import get_user_db_id
 from nti.analytics.database.courses import get_course_id
 from nti.analytics.database.resources import get_resource_id
 from nti.analytics.database.resources import get_resource_val
@@ -191,8 +192,7 @@ def _resolve_video_view( record, course=None, user=None ):
 
 def get_user_resource_views( user, course ):
 	db = get_analytics_db()
-	user_record = get_or_create_user( user )
-	user_id = user_record.user_id
+	user_id = get_user_db_id( user )
 	course_id = get_course_id( db, course )
 	results = db.session.query( CourseResourceViews ).filter( CourseResourceViews.user_id == user_id,
 															CourseResourceViews.course_id == course_id ).all()
@@ -200,8 +200,7 @@ def get_user_resource_views( user, course ):
 
 def get_user_video_events( user, course ):
 	db = get_analytics_db()
-	user_record = get_or_create_user( user )
-	user_id = user_record.user_id
+	user_id = get_user_db_id( user )
 	course_id = get_course_id( db, course )
 	results = db.session.query( VideoEvents ).filter( VideoEvents.user_id == user_id,
 													VideoEvents.course_id == course_id ).all()
