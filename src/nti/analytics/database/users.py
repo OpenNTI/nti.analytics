@@ -33,7 +33,7 @@ class Users(Base):
 	username2 = Column('username2', String(64), nullable=True, unique=False)
 
 def _get_username2( user ):
-	# TODO OU Specific
+	# TODO OU Specific; probably needs subscriber.
 	# Currently just used for OU's 4x4
 	profile  = IOUUserProfile( user, None )
 	username2 = getattr( profile, 'OU4x4', None )

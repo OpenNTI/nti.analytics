@@ -103,7 +103,7 @@ def create_note(user, nti_session, course, note):
 	rid = get_resource_id( db, rid )
 
 	note_ds_id = NoteId.get_id( note )
-	course_id = get_course_id( db, course )
+	course_id = get_course_id( db, course, create=True )
 	timestamp = get_created_timestamp( note )
 	sharing = _get_sharing_enum( note, course )
 	like_count, favorite_count, is_flagged = get_ratings( note )
@@ -170,7 +170,7 @@ def create_note_view(user, nti_session, timestamp, course, note):
 
 	note_ds_id = NoteId.get_id( note )
 	note_id = _get_note_id( db, note_ds_id )
-	course_id = get_course_id( db, course )
+	course_id = get_course_id( db, course, create=True )
 	timestamp = timestamp_type( timestamp )
 
 	new_object = NotesViewed( 	user_id=uid,
@@ -190,7 +190,7 @@ def create_highlight(user, nti_session, course, highlight):
 	rid = get_resource_id( db, rid )
 
 	highlight_ds_id = HighlightId.get_id( highlight )
-	course_id = get_course_id( db, course )
+	course_id = get_course_id( db, course, create=True )
 
 	timestamp = get_created_timestamp( highlight )
 

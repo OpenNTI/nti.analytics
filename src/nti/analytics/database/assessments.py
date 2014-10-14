@@ -230,7 +230,7 @@ def create_self_assessment_taken(user, nti_session, timestamp, course, submissio
 	user = get_or_create_user(user )
 	uid = user.user_id
 	sid = SessionId.get_id( nti_session )
-	course_id = get_course_id( db, course )
+	course_id = get_course_id( db, course, create=True )
 	timestamp = timestamp_type( timestamp )
 	submission_id = SubmissionId.get_id( submission )
 	self_assessment_id = QuestionSetId.get_id( submission.questionSetId )
@@ -300,7 +300,7 @@ def create_assignment_taken(user, nti_session, timestamp, course, submission ):
 	user = get_or_create_user(user )
 	uid = user.user_id
 	sid = SessionId.get_id( nti_session )
-	course_id = get_course_id( db, course )
+	course_id = get_course_id( db, course, create=True )
 	timestamp = timestamp_type( timestamp )
 	submission_id = SubmissionId.get_id( submission )
 	assignment_id = submission.assignmentId

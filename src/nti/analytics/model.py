@@ -41,26 +41,26 @@ def _replace_state(obj, old, new):
 		value = obj.__dict__.pop(old)
 		if obj.__dict__.get(new, None) is None:
 			obj.__dict__[new] = value
-			
+
 @WithRepr
 class ViewEvent(SchemaConfigured):
 
 	__external_can_create__ = True
 	time_length = alias('Duration')
-	
+
 	def __setstate__(self, data):
 		self.__dict__ = data
 		_replace_state(self, 'time_length', 'Duration')
-		
-class RootContextEvent(ViewEvent): # alias 
+
+class RootContextEvent(ViewEvent): # alias
 
 	course = alias('RootContextID')
-	
+
 	def __setstate__(self, data):
 		self.__dict__ = data
 		_replace_state(self, 'time_length', 'Duration')
 		_replace_state(self, 'course', 'RootContextID')
-			
+
 @interface.implementer(IResourceEvent)
 class ResourceEvent(RootContextEvent):
 	createDirectFieldProperties(IResourceEvent)
@@ -75,7 +75,7 @@ class WatchVideoEvent(RootContextEvent):
 	__external_class_name__ = "WatchVideoEvent"
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.watchvideoevent'
 	event_type = VIDEO_WATCH
-	
+
 	course = alias('RootContextID')
 
 @interface.implementer(IVideoEvent)
@@ -85,7 +85,7 @@ class SkipVideoEvent(RootContextEvent):
 	__external_class_name__ = "SkipVideoEvent"
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.skipvideoevent'
 	event_type = VIDEO_SKIP
-	
+
 	course = alias('RootContextID')
 
 @interface.implementer(ICourseCatalogViewEvent)

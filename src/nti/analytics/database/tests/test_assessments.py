@@ -75,8 +75,6 @@ class TestAssessments(AnalyticsTestBase):
 
 	def setUp(self):
 		super( TestAssessments, self ).setUp()
-		self.course_name='course1'
-		self.course_id = 1
 
 	def test_assessments(self):
 		sa_records = db_assessments.get_self_assessments_for_user( test_user_ds_id, self.course_id )
@@ -139,8 +137,6 @@ class TestAssignments(AnalyticsTestBase):
 
 	def setUp(self):
 		super( TestAssignments, self ).setUp()
-		self.course_name='course1'
-		self.course_id = 1
 
 	def test_grade(self):
 		# Could be a lot of types: 7, 7/10, 95, 95%, A-, 90 A

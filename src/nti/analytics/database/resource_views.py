@@ -88,7 +88,7 @@ def create_course_resource_view(user, nti_session, timestamp, course, context_pa
 	rid = ResourceId.get_id( resource )
 	rid = get_resource_id( db, rid )
 
-	course_id = get_course_id( db, course )
+	course_id = get_course_id( db, course, create=True )
 	timestamp = timestamp_type( timestamp )
 	context_path = _get_context_path( context_path )
 
@@ -117,7 +117,7 @@ def create_video_event(	user,
 	vid = ResourceId.get_id( video_resource )
 	vid = get_resource_id( db, vid )
 
-	course_id = get_course_id( db, course )
+	course_id = get_course_id( db, course, create=True )
 	timestamp = timestamp_type( timestamp )
 	context_path = _get_context_path( context_path )
 

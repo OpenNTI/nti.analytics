@@ -42,14 +42,12 @@ class TestCourseResources(AnalyticsTestBase):
 
 	def setUp(self):
 		super( TestCourseResources, self ).setUp()
-		self.course_name='course1'
-		self.course_id = 1 #seq insert
 		self.resource_id = 1
 		self.context_path_flat = 'dashboard'
 		self.context_path= [ 'dashboard' ]
 
 	def test_resource_view(self):
-		results = db_views.get_user_resource_views( test_user_ds_id, self.course_name )
+		results = db_views.get_user_resource_views( test_user_ds_id, self.course_id )
 		results = [x for x in results]
 		assert_that( results, has_length( 0 ) )
 		results = self.session.query( CourseResourceViews ).all()
@@ -59,7 +57,7 @@ class TestCourseResources(AnalyticsTestBase):
 		time_length = 30
 		db_views.create_course_resource_view( test_user_ds_id,
 											test_session_id, datetime.now(),
-											self.course_name, self.context_path,
+											self.course_id, self.context_path,
 											resource_val, time_length )
 		results = self.session.query(CourseResourceViews).all()
 		assert_that( results, has_length( 1 ) )
@@ -73,13 +71,13 @@ class TestCourseResources(AnalyticsTestBase):
 		assert_that( resource_view.resource_id, is_( self.resource_id ) )
 		assert_that( resource_view.time_length, is_( time_length ) )
 
-		results = db_views.get_user_resource_views( test_user_ds_id, self.course_name )
+		results = db_views.get_user_resource_views( test_user_ds_id, self.course_id )
 		results = [x for x in results]
 		assert_that( results, has_length( 1 ) )
 
 		resource_view = results[0]
 		assert_that( resource_view.user, is_( test_user_ds_id ) )
-		assert_that( resource_view.RootContextID, is_( self.course_name ))
+		assert_that( resource_view.RootContextID, is_( self.course_id ))
 		assert_that( resource_view.resource_id, is_( resource_val ))
 
 	def test_resources(self):
@@ -92,7 +90,7 @@ class TestCourseResources(AnalyticsTestBase):
 		time_length = 30
 		db_views.create_course_resource_view( test_user_ds_id,
 											test_session_id, t0,
-											self.course_name, self.context_path,
+											self.course_id, self.context_path,
 											resource_val, time_length )
 		results = self.session.query( Resources ).all()
 		assert_that( results, has_length( 1 ) )
@@ -104,7 +102,7 @@ class TestCourseResources(AnalyticsTestBase):
 		# Now another insert does not change our Resources table
 		db_views.create_course_resource_view( test_user_ds_id,
 											test_session_id, t1,
-											self.course_name, self.context_path,
+											self.course_id, self.context_path,
 											resource_val, time_length )
 		results = self.session.query( Resources ).all()
 		assert_that( results, has_length( 1 ) )
@@ -112,13 +110,13 @@ class TestCourseResources(AnalyticsTestBase):
 		# Now we add a new resource id
 		db_views.create_course_resource_view( test_user_ds_id,
 											test_session_id, t0,
-											self.course_name, self.context_path,
+											self.course_id, self.context_path,
 											'ntiid:course_resource2', time_length )
 		results = self.session.query( Resources ).all()
 		assert_that( results, has_length( 2 ) )
 
 	def test_video_view(self):
-		results = db_views.get_user_video_events( test_user_ds_id, self.course_name )
+		results = db_views.get_user_video_events( test_user_ds_id, self.course_id )
 		results = [x for x in results]
 		assert_that( results, has_length( 0 ) )
 		results = self.session.query( VideoEvents ).all()
@@ -132,7 +130,7 @@ class TestCourseResources(AnalyticsTestBase):
 		with_transcript = True
 		db_views.create_video_event( test_user_ds_id,
 									test_session_id, datetime.now(),
-									self.course_name, self.context_path,
+									self.course_id, self.context_path,
 									resource_val, time_length,
 									video_event_type, video_start_time,
 									video_end_time,  with_transcript )
@@ -152,13 +150,13 @@ class TestCourseResources(AnalyticsTestBase):
 		assert_that( resource_view.time_length, is_( time_length ) )
 		assert_that( resource_view.with_transcript )
 
-		results = db_views.get_user_video_events( test_user_ds_id, self.course_name )
+		results = db_views.get_user_video_events( test_user_ds_id, self.course_id )
 		results = [x for x in results]
 		assert_that( results, has_length( 1 ) )
 
 		resource_view = results[0]
 		assert_that( resource_view.user, is_( test_user_ds_id ) )
-		assert_that( resource_view.RootContextID, is_( self.course_name ))
+		assert_that( resource_view.RootContextID, is_( self.course_id ))
 		assert_that( resource_view.resource_id, is_( resource_val ))
 		assert_that( resource_view.video_start_time, is_( video_start_time ))
 		assert_that( resource_view.video_end_time, is_( video_end_time ))
@@ -181,9 +179,9 @@ class TestCourseResources(AnalyticsTestBase):
 
 		# Create note
 		db_tags.create_note( 	test_user_ds_id,
-								test_session_id, self.course_name, my_note )
+								test_session_id, self.course_id, my_note )
 
-		results = db_tags.get_notes_created_for_course( self.course_name )
+		results = db_tags.get_notes_created_for_course( self.course_id )
 		assert_that( results, has_length( 1 ) )
 
 		note = self.session.query(NotesCreated).one()
@@ -200,7 +198,7 @@ class TestCourseResources(AnalyticsTestBase):
 		# Note view
 		db_tags.create_note_view( 	test_user_ds_id,
 									test_session_id, datetime.now(),
-									self.course_name, my_note )
+									self.course_id, my_note )
 		results = self.session.query( NotesViewed ).all()
 		assert_that( results, has_length( 1 ) )
 
@@ -218,7 +216,7 @@ class TestCourseResources(AnalyticsTestBase):
 		results = self.session.query(NotesCreated).all()
 		assert_that( results, has_length( 1 ) )
 
-		results = db_tags.get_notes_created_for_course( self.course_name )
+		results = db_tags.get_notes_created_for_course( self.course_id )
 		assert_that( results, has_length( 0 ) )
 
 		note = self.session.query(NotesCreated).one()
@@ -236,9 +234,9 @@ class TestCourseResources(AnalyticsTestBase):
 
 		# Create highlight
 		db_tags.create_highlight( 	test_user_ds_id,
-									test_session_id, self.course_name, my_highlight )
+									test_session_id, self.course_id, my_highlight )
 
-		results = db_tags.get_highlights_created_for_course( self.course_name )
+		results = db_tags.get_highlights_created_for_course( self.course_id )
 		assert_that( results, has_length( 1 ) )
 
 		highlight = self.session.query(HighlightsCreated).one()
@@ -256,7 +254,7 @@ class TestCourseResources(AnalyticsTestBase):
 		results = self.session.query(HighlightsCreated).all()
 		assert_that( results, has_length( 1 ) )
 
-		results = db_tags.get_highlights_created_for_course( self.course_name )
+		results = db_tags.get_highlights_created_for_course( self.course_id )
 		assert_that( results, has_length( 0 ) )
 
 		highlight = self.session.query(HighlightsCreated).one()

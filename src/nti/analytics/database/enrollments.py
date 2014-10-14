@@ -65,7 +65,7 @@ def create_course_catalog_view( user, nti_session, timestamp, course, time_lengt
 	user = get_or_create_user(user )
 	uid = user.user_id
 	sid = SessionId.get_id( nti_session )
-	course_id = get_course_id( db, course )
+	course_id = get_course_id( db, course, create=True )
 	timestamp = timestamp_type( timestamp )
 
 	new_object = CourseCatalogViews( 	user_id=uid,
@@ -91,7 +91,7 @@ def create_course_enrollment(user, nti_session, timestamp, course, enrollment_ty
 	user = get_or_create_user( user )
 	uid = user.user_id
 	sid = SessionId.get_id( nti_session )
-	course_id = get_course_id( db, course )
+	course_id = get_course_id( db, course, create=True )
 	timestamp = timestamp_type( timestamp )
 
 	enrollment_type = _get_enrollment_type_id( db, enrollment_type_name )
@@ -109,7 +109,7 @@ def create_course_drop(user, nti_session, timestamp, course):
 	user = get_or_create_user(user )
 	uid = user.user_id
 	sid = SessionId.get_id( nti_session )
-	course_id = get_course_id( db, course )
+	course_id = get_course_id( db, course, create=True )
 	timestamp = timestamp_type( timestamp )
 
 	new_object = CourseDrops( 	user_id=uid,

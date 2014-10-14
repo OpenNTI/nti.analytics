@@ -50,7 +50,8 @@ def _create_course( db, course, course_ds_id ):
 	# gracefully at this level. A job-level retry should work though.
 	db.session.add( course )
 	db.session.flush()
-	logger.debug( 'Created course (course_id=%s) (course_ds_id=%s) (course=%s)', course.course_id, course_ds_id, course_name )
+	logger.debug( 	'Created course (course_id=%s) (course_ds_id=%s) (course=%s)',
+					course.course_id, course_ds_id, course_name )
 	return course
 
 def _get_or_create_course( db, course, course_ds_id ):
@@ -61,10 +62,14 @@ def _get_or_create_course( db, course, course_ds_id ):
 			found_course.course_long_name = _get_course_long_name( course )
 	return found_course or _create_course( db, course, course_ds_id )
 
-def get_course_id( db, course ):
+def get_course_id( db, course, create=False ):
+	""" Retrieves the db id for the given course, optionally creating the course if it does not exist. """
 	course_ds_id = CourseId.get_id( course )
-	course = _get_or_create_course( db, course, course_ds_id )
-	return course.course_id
+	if create:
+		found_course = _get_or_create_course( db, course, course_ds_id )
+	else:
+		found_course = db.session.query(Courses).filter( Courses.course_ds_id == course_ds_id ).first()
+	return found_course.course_id
 
 def delete_course( course_ds_id ):
 	db = get_analytics_db()

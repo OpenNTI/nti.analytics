@@ -115,7 +115,7 @@ def create_forum(user, nti_session, course, forum):
 	uid = user.user_id
 	sid = SessionId.get_id( nti_session )
 	forum_ds_id = ForumId.get_id( forum )
-	course_id = get_course_id( db, course )
+	course_id = get_course_id( db, course, create=True )
 
 	timestamp = get_created_timestamp( forum )
 
@@ -158,7 +158,7 @@ def create_topic(user, nti_session, course, topic):
 	__traceback_info__ = topic, topic.__parent__
 	fid = _get_forum_id_from_forum( db, topic.__parent__ )
 	topic_ds_id = TopicId.get_id( topic )
-	course_id = get_course_id( db, course )
+	course_id = get_course_id( db, course, create=True )
 
 	timestamp = get_created_timestamp( topic )
 	like_count, favorite_count, is_flagged = get_ratings( topic )
@@ -220,7 +220,7 @@ def create_topic_view(user, nti_session, timestamp, course, topic, time_length):
 	__traceback_info__ = topic, topic.__parent__
 	fid = _get_forum_id_from_forum( db, topic.__parent__ )
 	did = _get_topic_id_from_topic( db, topic )
-	course_id = get_course_id( db, course )
+	course_id = get_course_id( db, course, create=True )
 	timestamp = timestamp_type( timestamp )
 
 	new_object = TopicsViewed( user_id=uid,
@@ -241,7 +241,7 @@ def create_forum_comment(user, nti_session, course, topic, comment):
 	fid = _get_forum_id_from_forum( db, forum )
 	topic_id = _get_topic_id_from_topic( db, topic )
 	cid = CommentId.get_id(comment)
-	course_id = get_course_id( db, course )
+	course_id = get_course_id( db, course, create=True )
 	pid = None
 	timestamp = get_created_timestamp( comment )
 	like_count, favorite_count, is_flagged = get_ratings( comment )
