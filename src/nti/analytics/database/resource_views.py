@@ -117,11 +117,12 @@ def create_course_resource_view(user, nti_session, timestamp, course, context_pa
 										time_length=time_length )
 	db.session.add( new_object )
 
-def _video_view_exists( db, user_id, resource_id, timestamp ):
+def _video_view_exists( db, user_id, resource_id, timestamp, event_type ):
 	return db.session.query( VideoEvents ).filter(
 							VideoEvents.user_id == user_id,
 							VideoEvents.resource_id == resource_id,
-							VideoEvents.timestamp == timestamp ).count()
+							VideoEvents.timestamp == timestamp,
+							VideoEvents.video_event_type == event_type ).count()
 
 def create_video_event(	user,
 						nti_session, timestamp,
@@ -142,7 +143,7 @@ def create_video_event(	user,
 	course_id = get_course_id( db, course, create=True )
 	timestamp = timestamp_type( timestamp )
 
-	if _video_view_exists( db, uid, vid, timestamp ):
+	if _video_view_exists( db, uid, vid, timestamp, video_event_type ):
 		logger.warn( 'Video view already exists (user=%s) (resource_id=%s) (timestamp=%s)',
 					user, vid, timestamp )
 		return
