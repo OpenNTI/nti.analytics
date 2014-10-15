@@ -138,6 +138,8 @@ def timestamp_type(timestamp):
 	result = timestamp
 	if isinstance( timestamp, ( float, integer_types ) ):
 		result = datetime.utcfromtimestamp( timestamp )
+	# Mysql drops milliseconds
+	result = result.replace( microsecond = 0 )
 	return result
 
 def get_course_name(course):

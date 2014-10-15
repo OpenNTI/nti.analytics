@@ -227,16 +227,28 @@ def flag_topic( topic, state ):
 	db_topic.is_flagged = state
 	db.session.flush()
 
+
+def _topic_view_exists( db, user_id, topic_id, timestamp ):
+	return db.session.query( TopicsViewed ).filter(
+							TopicsViewed.user_id == user_id,
+							TopicsViewed.topic_id == topic_id,
+							TopicsViewed.timestamp == timestamp ).count()
+
 def create_topic_view(user, nti_session, timestamp, course, topic, time_length):
 	db = get_analytics_db()
-	user = get_or_create_user(user )
-	uid = user.user_id
+	user_record = get_or_create_user( user )
+	uid = user_record.user_id
 	sid = SessionId.get_id( nti_session )
 	__traceback_info__ = topic, topic.__parent__
 	fid = _get_forum_id_from_forum( db, topic.__parent__ )
 	did = _get_topic_id_from_topic( db, topic )
 	course_id = get_course_id( db, course, create=True )
 	timestamp = timestamp_type( timestamp )
+
+	if _topic_view_exists( db, uid, did, timestamp ):
+		logger.warn( 'Topic view already exists (user=%s) (topic=%s)',
+					user, did )
+		return
 
 	new_object = TopicsViewed( user_id=uid,
 								session_id=sid,
@@ -245,17 +257,27 @@ def create_topic_view(user, nti_session, timestamp, course, topic, time_length):
 								forum_id=fid,
 								topic_id=did,
 								time_length=time_length )
-	db.session.merge( new_object )
+	db.session.add( new_object )
+
+def _comment_exists( db, comment_id ):
+	return db.session.query( ForumCommentsCreated ).filter(
+							ForumCommentsCreated.comment_id == comment_id ).count()
 
 def create_forum_comment(user, nti_session, course, topic, comment):
 	db = get_analytics_db()
-	user = get_or_create_user(user )
-	uid = user.user_id
+	user_record = get_or_create_user( user )
+	uid = user_record.user_id
 	sid = SessionId.get_id( nti_session )
 	forum = topic.__parent__
 	fid = _get_forum_id_from_forum( db, forum )
 	topic_id = _get_topic_id_from_topic( db, topic )
 	cid = CommentId.get_id(comment)
+
+	if _comment_exists( db, cid ):
+		logger.warn( 'Forum comment already exists (user=%s) (comment_id=%s)',
+					user, cid )
+		return
+
 	course_id = get_course_id( db, course, create=True )
 	pid = None
 	timestamp = get_created_timestamp( comment )
@@ -279,7 +301,7 @@ def create_forum_comment(user, nti_session, course, topic, comment):
 										like_count=like_count,
 										favorite_count=favorite_count,
 										is_flagged=is_flagged )
-	db.session.merge( new_object )
+	db.session.add( new_object )
 
 def delete_forum_comment(timestamp, comment_id):
 	db = get_analytics_db()

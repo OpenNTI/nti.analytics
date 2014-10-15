@@ -59,6 +59,11 @@ class CourseDrops(Base,BaseViewMixin,CourseMixin):
         PrimaryKeyConstraint('course_id', 'user_id', 'timestamp'),
     )
 
+def _course_catalog_view_exists( db, user_id, course_id, timestamp ):
+	return db.session.query( CourseCatalogViews ).filter(
+							CourseCatalogViews.user_id == user_id,
+							CourseCatalogViews.course_id == course_id,
+							CourseCatalogViews.timestamp == timestamp ).count()
 
 def create_course_catalog_view( user, nti_session, timestamp, course, time_length ):
 	db = get_analytics_db()
@@ -68,12 +73,17 @@ def create_course_catalog_view( user, nti_session, timestamp, course, time_lengt
 	course_id = get_course_id( db, course, create=True )
 	timestamp = timestamp_type( timestamp )
 
+	if _course_catalog_view_exists( db, uid, course_id, timestamp ):
+		logger.warn( 'Course catalog view already exists (user=%s) (catalog=%s)',
+					uid, course_id )
+		return
+
 	new_object = CourseCatalogViews( 	user_id=uid,
 										session_id=sid,
 										timestamp=timestamp,
 										course_id=course_id,
 										time_length=time_length )
-	db.session.merge( new_object )
+	db.session.add( new_object )
 
 def _create_enrollment_type(db, type_name):
 	enrollment_type = EnrollmentTypes( type_name=type_name )
@@ -85,13 +95,24 @@ def _get_enrollment_type_id(db, type_name):
 	enrollment_type = db.session.query(EnrollmentTypes).filter( EnrollmentTypes.type_name == type_name ).first()
 	return enrollment_type or _create_enrollment_type( db, type_name )
 
+def _enrollment_exists( db, user_id, course_id ):
+	return db.session.query( CourseEnrollments ).filter(
+							CourseEnrollments.user_id == user_id,
+							CourseEnrollments.course_id == course_id ).count()
+
 def create_course_enrollment(user, nti_session, timestamp, course, enrollment_type_name):
 	db = get_analytics_db()
 
-	user = get_or_create_user( user )
-	uid = user.user_id
+	user_record = get_or_create_user( user )
+	uid = user_record.user_id
 	sid = SessionId.get_id( nti_session )
 	course_id = get_course_id( db, course, create=True )
+
+	if _enrollment_exists( db, uid, course_id ):
+		logger.warn( 'Enrollment already exists (user=%s) (course=%s)',
+					user, course_id )
+		return
+
 	timestamp = timestamp_type( timestamp )
 
 	enrollment_type = _get_enrollment_type_id( db, enrollment_type_name )
@@ -102,21 +123,32 @@ def create_course_enrollment(user, nti_session, timestamp, course, enrollment_ty
 									timestamp=timestamp,
 									course_id=course_id,
 									type_id=type_id )
-	db.session.merge( new_object )
+	db.session.add( new_object )
+
+def _course_drop_exists( db, user_id, course_id, timestamp ):
+	return db.session.query( CourseDrops ).filter(
+							CourseDrops.user_id == user_id,
+							CourseDrops.course_id == course_id,
+							CourseDrops.timestamp == timestamp ).count()
 
 def create_course_drop(user, nti_session, timestamp, course):
 	db = get_analytics_db()
-	user = get_or_create_user(user )
-	uid = user.user_id
+	user_record = get_or_create_user( user )
+	uid = user_record.user_id
 	sid = SessionId.get_id( nti_session )
 	course_id = get_course_id( db, course, create=True )
 	timestamp = timestamp_type( timestamp )
+
+	if _course_drop_exists( db, uid, course_id, timestamp ):
+		logger.warn( 'Course drop already exists (user=%s) (course=%s)',
+					user, course_id )
+		return
 
 	new_object = CourseDrops( 	user_id=uid,
 								session_id=sid,
 								timestamp=timestamp,
 								course_id=course_id )
-	db.session.merge( new_object )
+	db.session.add( new_object )
 
 	enrollment = db.session.query(CourseEnrollments).filter( 	CourseEnrollments.user_id == uid,
 															CourseEnrollments.course_id == course_id ).one()

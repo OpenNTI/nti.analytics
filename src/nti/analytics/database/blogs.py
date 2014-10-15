@@ -140,21 +140,36 @@ def flag_blog( blog, state ):
 	db_blog.is_flagged = state
 	db.session.flush()
 
+def _blog_view_exists( db, user_id, blog_id, timestamp ):
+	return db.session.query( BlogsViewed ).filter(
+							BlogsViewed.user_id == user_id,
+							BlogsViewed.blog_id == blog_id,
+							BlogsViewed.timestamp == timestamp ).count()
+
 def create_blog_view(user, nti_session, timestamp, blog_entry, time_length):
 	db = get_analytics_db()
-	user = get_or_create_user(user )
-	uid = user.user_id
+	user_record = get_or_create_user( user )
+	uid = user_record.user_id
 	sid = SessionId.get_id( nti_session )
 	blog_ds_id = BlogId.get_id( blog_entry )
 	blog_id = _get_blog_id( db, blog_ds_id )
 	timestamp = timestamp_type( timestamp )
+
+	if _blog_view_exists( db, uid, blog_id, timestamp ):
+		logger.warn( 'Blog view already exists (user=%s) (blog_id=%s)',
+					user, blog_id )
+		return
 
 	new_object = BlogsViewed( 	user_id=uid,
 								session_id=sid,
 								timestamp=timestamp,
 								blog_id=blog_id,
 								time_length=time_length )
-	db.session.merge( new_object )
+	db.session.add( new_object )
+
+def _blog_comment_exists( db, cid ):
+	return db.session.query( BlogCommentsCreated ).filter(
+							BlogCommentsCreated.comment_id == cid ).count()
 
 def create_blog_comment(user, nti_session, blog, comment ):
 	db = get_analytics_db()
@@ -164,6 +179,11 @@ def create_blog_comment(user, nti_session, blog, comment ):
 	blog_ds_id = BlogId.get_id( blog )
 	bid = _get_blog_id( db, blog_ds_id )
 	cid = CommentId.get_id( comment )
+
+	if _blog_comment_exists( db, cid ):
+		logger.warn( 'Blog comment already exists (comment_id=%s)', cid )
+		return
+
 	pid = None
 	like_count, favorite_count, is_flagged = get_ratings( comment )
 
@@ -184,7 +204,7 @@ def create_blog_comment(user, nti_session, blog, comment ):
 										like_count=like_count,
 										favorite_count=favorite_count,
 										is_flagged=is_flagged )
-	db.session.merge( new_object )
+	db.session.add( new_object )
 
 def delete_blog_comment(timestamp, comment_id):
 	db = get_analytics_db()

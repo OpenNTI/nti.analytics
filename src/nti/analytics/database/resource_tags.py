@@ -168,10 +168,16 @@ def flag_note( note, state ):
 	db_note.is_flagged = state
 	db.session.flush()
 
+def _note_view_exists( db, note_id, user_id, timestamp ):
+	return db.session.query( NotesViewed ).filter(
+							NotesViewed.note_id == note_id,
+							NotesViewed.user_id == user_id,
+							NotesViewed.timestamp == timestamp ).count()
+
 def create_note_view(user, nti_session, timestamp, course, note):
 	db = get_analytics_db()
-	user = get_or_create_user(user )
-	uid = user.user_id
+	user_record = get_or_create_user( user )
+	uid = user_record.user_id
 	sid = SessionId.get_id( nti_session )
 	rid = ResourceId.get_id( note.containerId )
 	rid = get_resource_id( db, rid )
@@ -181,13 +187,18 @@ def create_note_view(user, nti_session, timestamp, course, note):
 	course_id = get_course_id( db, course, create=True )
 	timestamp = timestamp_type( timestamp )
 
+	if _note_view_exists( db, note_id, uid, timestamp ):
+		logger.warn( 'Note view already exists (user=%s) (note_id=%s)',
+					user, note_id )
+		return
+
 	new_object = NotesViewed( 	user_id=uid,
 								session_id=sid,
 								timestamp=timestamp,
 								course_id=course_id,
 								resource_id=rid,
 								note_id=note_id )
-	db.session.merge( new_object )
+	db.session.add( new_object )
 
 def _highlight_exists( db, highlight_ds_id ):
 	return db.session.query( HighlightsCreated ).filter(
