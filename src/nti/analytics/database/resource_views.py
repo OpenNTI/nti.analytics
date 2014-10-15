@@ -39,6 +39,12 @@ from nti.analytics.database.courses import get_course_id
 from nti.analytics.database.resources import get_resource_id
 from nti.analytics.database.resources import get_resource_val
 
+# TODO We do not check for duplicate events
+# being submitted to us.  To do so correctly would
+# involve an index on the timestamp column, which
+# we may end up needed eventually anyway.
+# Looking at prod data, this is something we need to do.
+
 # For meta-views into synthetic course info, we can special type the resource_id:
 #	(about|instructors|tech_support)
 class CourseResourceViews(Base,ResourceViewMixin,TimeLengthMixin):

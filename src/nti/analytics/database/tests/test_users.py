@@ -74,7 +74,7 @@ class TestUsers(unittest.TestCase):
 
 		# Update research field
 		update_user_research( fooser, True )
-		result = self.session.query(Users).filter( Users.user_ds_id == fooser ).one()
+		self.session.query(Users).filter( Users.user_ds_id == fooser ).one()
 		assert_that( new_user.user_id, is_( 1 ) )
 		assert_that( new_user.user_ds_id, is_( fooser ) )
 		assert_that( new_user.allow_research, is_( True ) )

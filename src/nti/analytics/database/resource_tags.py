@@ -92,17 +92,25 @@ def _get_sharing_enum( note, course ):
 
 def _get_note_id( db, note_ds_id ):
 	note = db.session.query(NotesCreated).filter( NotesCreated.note_ds_id == note_ds_id ).first()
-	return note.note_id
+	return note and note.note_id
+
+_note_exists = _get_note_id
 
 def create_note(user, nti_session, course, note):
 	db = get_analytics_db()
-	user = get_or_create_user(user )
-	uid = user.user_id
+	user_record = get_or_create_user( user )
+	uid = user_record.user_id
 	sid = SessionId.get_id( nti_session )
 	rid = ResourceId.get_id( note.containerId )
 	rid = get_resource_id( db, rid )
 
 	note_ds_id = NoteId.get_id( note )
+
+	if _note_exists( db, note_ds_id ):
+		logger.warn( 'Note already exists (ds_id=%s) (user=%s)',
+					note_ds_id, user )
+		return
+
 	course_id = get_course_id( db, course, create=True )
 	timestamp = get_created_timestamp( note )
 	sharing = _get_sharing_enum( note, course )
@@ -181,17 +189,26 @@ def create_note_view(user, nti_session, timestamp, course, note):
 								note_id=note_id )
 	db.session.merge( new_object )
 
+def _highlight_exists( db, highlight_ds_id ):
+	return db.session.query( HighlightsCreated ).filter(
+							HighlightsCreated.highlight_ds_id == highlight_ds_id ).count()
+
 def create_highlight(user, nti_session, course, highlight):
 	db = get_analytics_db()
-	user = get_or_create_user(user )
-	uid = user.user_id
+	user_record = get_or_create_user( user )
+	uid = user_record.user_id
 	sid = SessionId.get_id( nti_session )
 	rid = ResourceId.get_id( highlight.containerId )
 	rid = get_resource_id( db, rid )
 
 	highlight_ds_id = HighlightId.get_id( highlight )
-	course_id = get_course_id( db, course, create=True )
 
+	if _highlight_exists( db, highlight_ds_id ):
+		logger.warn( 'Highlight already exists (ds_id=%s) (user=%s)',
+					highlight_ds_id, user )
+		return
+
+	course_id = get_course_id( db, course, create=True )
 	timestamp = get_created_timestamp( highlight )
 
 	new_object = HighlightsCreated( user_id=uid,

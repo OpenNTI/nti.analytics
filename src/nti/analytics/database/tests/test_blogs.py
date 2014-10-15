@@ -79,6 +79,40 @@ class TestBlog(AnalyticsTestBase):
 		assert_that( blog.deleted, not_none() )
 		assert_that( blog.blog_ds_id, none() )
 
+	def test_idempotent(self):
+		results = self.session.query( BlogsCreated ).all()
+		assert_that( results, has_length( 0 ) )
+
+		new_blog_ds_id = 999
+		new_blog = MockParent( None, intid=new_blog_ds_id )
+		db_blogs.create_blog( test_user_ds_id, test_session_id, new_blog )
+
+		results = self.session.query( BlogsCreated ).all()
+		assert_that( results, has_length( 1 ) )
+
+		db_blogs.create_blog( test_user_ds_id, test_session_id, new_blog )
+
+		results = self.session.query( BlogsCreated ).all()
+		assert_that( results, has_length( 1 ) )
+
+	def test_idempotent_views(self):
+		results = self.session.query( BlogsViewed ).all()
+		assert_that( results, has_length( 0 ) )
+
+		event_time = datetime.now()
+		new_blog_ds_id = 999
+		new_blog = MockParent( None, intid=new_blog_ds_id )
+		db_blogs.create_blog( test_user_ds_id, test_session_id, new_blog )
+		db_blogs.create_blog_view( test_user_ds_id, test_session_id, event_time, new_blog, 18 )
+
+		results = self.session.query( BlogsViewed ).all()
+		assert_that( results, has_length( 1 ) )
+
+		db_blogs.create_blog_view( test_user_ds_id, test_session_id, event_time, new_blog, 18 )
+
+		results = self.session.query( BlogsViewed ).all()
+		assert_that( results, has_length( 1 ) )
+
 class TestBlogComments(AnalyticsTestBase):
 
 	def setUp(self):
@@ -98,7 +132,6 @@ class TestBlogComments(AnalyticsTestBase):
 		# Empty parent
 		comment_id = DEFAULT_INTID
 		my_comment = MockComment( MockThought( None ), intid=comment_id )
-
 		db_blogs.create_blog_comment( test_user_ds_id, test_session_id, self.blog_ds_id, my_comment )
 
 		results = self.session.query( BlogCommentsCreated ).all()
@@ -117,6 +150,22 @@ class TestBlogComments(AnalyticsTestBase):
 		assert_that( blog_comment.blog_id, is_( self.blog_id ) )
 		assert_that( blog_comment.comment_id, is_( comment_id ) )
 		assert_that( blog_comment.deleted, not_none() )
+
+	def test_idempotent(self):
+		results = self.session.query( BlogCommentsCreated ).all()
+		assert_that( results, has_length( 0 ) )
+
+		comment_id = DEFAULT_INTID
+		my_comment = MockComment( MockThought( None ), intid=comment_id )
+		db_blogs.create_blog_comment( test_user_ds_id, test_session_id, self.blog_ds_id, my_comment )
+
+		results = self.session.query( BlogCommentsCreated ).all()
+		assert_that( results, has_length( 1 ) )
+
+		db_blogs.create_blog_comment( test_user_ds_id, test_session_id, self.blog_ds_id, my_comment )
+
+		results = self.session.query( BlogCommentsCreated ).all()
+		assert_that( results, has_length( 1 ) )
 
 	def test_chain_delete(self):
 		results = self.session.query( BlogCommentsCreated ).all()

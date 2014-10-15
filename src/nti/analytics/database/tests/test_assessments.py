@@ -133,6 +133,28 @@ class TestAssessments(AnalyticsTestBase):
 		assert_that( sa_detail.question_id, is_( '1968' ) )
 		assert_that( sa_detail.question_part_id, is_( 0 ) )
 
+	def test_idempotent(self):
+		sa_records = db_assessments.get_self_assessments_for_user( test_user_ds_id, self.course_id )
+		sa_records = [x for x in sa_records]
+		assert_that( sa_records, has_length( 0 ) )
+
+		assessment_time = datetime.now()
+		new_assessment = _get_assessed_question_set()
+		db_assessments.create_self_assessment_taken(
+								test_user_ds_id, test_session_id, assessment_time, self.course_id, new_assessment )
+
+		sa_records = db_assessments.get_self_assessments_for_user( test_user_ds_id, self.course_id )
+		sa_records = [x for x in sa_records]
+		assert_that( sa_records, has_length( 1 ) )
+
+		# Again
+		db_assessments.create_self_assessment_taken(
+								test_user_ds_id, test_session_id, assessment_time, self.course_id, new_assessment )
+
+		sa_records = db_assessments.get_self_assessments_for_user( test_user_ds_id, self.course_id )
+		sa_records = [x for x in sa_records]
+		assert_that( sa_records, has_length( 1 ) )
+
 class TestAssignments(AnalyticsTestBase):
 
 	def setUp(self):
@@ -328,3 +350,26 @@ class TestAssignments(AnalyticsTestBase):
 		assert_that( assignment_detail.question_part_id, is_( 0 ) )
 		assert_that( assignment_detail.is_correct, is_( 1 ) )
 		assert_that( assignment_detail.grade, is_( '1.0' ) )
+
+	def test_idempotent(self):
+		assignment_records = db_assessments.get_assignments_for_user( test_user_ds_id, self.course_id )
+		assignment_records = [x for x in assignment_records]
+		assert_that( assignment_records, has_length( 0 ) )
+
+		assignment_time = datetime.now()
+		new_assignment = _get_history_item()
+		db_assessments.create_assignment_taken(
+					test_user_ds_id, test_session_id, assignment_time, self.course_id, new_assignment )
+
+		assignment_records = db_assessments.get_assignments_for_user( test_user_ds_id, self.course_id )
+		assignment_records = [x for x in assignment_records]
+		assert_that( assignment_records, has_length( 1 ) )
+
+		# Again
+		db_assessments.create_assignment_taken(
+					test_user_ds_id, test_session_id, assignment_time, self.course_id, new_assignment )
+
+		assignment_records = db_assessments.get_assignments_for_user( test_user_ds_id, self.course_id )
+		assignment_records = [x for x in assignment_records]
+		assert_that( assignment_records, has_length( 1 ) )
+

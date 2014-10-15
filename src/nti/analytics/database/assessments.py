@@ -222,17 +222,26 @@ def _get_grade_val( grade_value ):
 	return result
 
 def _get_self_assessment_id( db, submission_id ):
-	self_assessment = db.session.query(SelfAssessmentsTaken).filter( SelfAssessmentsTaken.submission_id == submission_id ).first()
-	return self_assessment.self_assessment_id
+	self_assessment = db.session.query(SelfAssessmentsTaken).filter(
+									SelfAssessmentsTaken.submission_id == submission_id ).first()
+	return self_assessment and self_assessment.self_assessment_id
+
+_self_assessment_exists = _get_self_assessment_id
 
 def create_self_assessment_taken(user, nti_session, timestamp, course, submission ):
 	db = get_analytics_db()
-	user = get_or_create_user(user )
-	uid = user.user_id
+	user_record = get_or_create_user( user )
+	uid = user_record.user_id
 	sid = SessionId.get_id( nti_session )
 	course_id = get_course_id( db, course, create=True )
 	timestamp = timestamp_type( timestamp )
 	submission_id = SubmissionId.get_id( submission )
+
+	if _self_assessment_exists( db, submission_id ):
+		logger.warn( "Self-assessment already exists (ds_id=%s) (user=%s) ",
+					submission_id, user )
+		return
+
 	self_assessment_id = QuestionSetId.get_id( submission.questionSetId )
 	# We likely will not have a grader.
 	grader = _get_grader_id( submission )
@@ -293,16 +302,24 @@ def _get_grader_id( submission ):
 
 def _get_assignment_taken_id( db, submission_id ):
 	submission = db.session.query(AssignmentsTaken).filter( AssignmentsTaken.submission_id == submission_id ).first()
-	return submission.assignment_taken_id
+	return submission and submission.assignment_taken_id
+
+_assignment_taken_exists = _get_assignment_taken_id
 
 def create_assignment_taken(user, nti_session, timestamp, course, submission ):
 	db = get_analytics_db()
-	user = get_or_create_user(user )
-	uid = user.user_id
+	user_record = get_or_create_user( user )
+	uid = user_record.user_id
 	sid = SessionId.get_id( nti_session )
 	course_id = get_course_id( db, course, create=True )
 	timestamp = timestamp_type( timestamp )
 	submission_id = SubmissionId.get_id( submission )
+
+	if _assignment_taken_exists( db, submission_id ):
+		logger.warn( 'Assignment taken already exists (ds_id=%s) (user=%s)',
+					submission_id, user )
+		return
+
 	assignment_id = submission.assignmentId
 	submission_obj = submission.Submission
 	time_length = _get_duration( submission_obj )
@@ -388,9 +405,9 @@ def create_assignment_taken(user, nti_session, timestamp, course, submission ):
 															grader=grader )
 					db.session.add( grade_details )
 
-def grade_submission(user, nti_session, timestamp, grader, graded_val, submission ):
+def grade_submission( user, nti_session, timestamp, grader, graded_val, submission ):
 	db = get_analytics_db()
-	grader = get_or_create_user(grader )
+	grader = get_or_create_user( grader )
 	grader_id  = grader.user_id
 	submission_id = SubmissionId.get_id( submission )
 	assignment_taken_id = _get_assignment_taken_id( db, submission_id )
@@ -433,13 +450,22 @@ def _get_grade_id( db, assignment_taken_id ):
 	grade_entry = _get_grade_entry( db, assignment_taken_id )
 	return grade_entry.grade_id
 
+def _feedback_exists( db, feedback_ds_id ):
+	return db.session.query( AssignmentFeedback ).filter(
+							AssignmentFeedback.feedback_ds_id == feedback_ds_id ).count()
+
 def create_submission_feedback( user, nti_session, timestamp, submission, feedback ):
 	db = get_analytics_db()
-	user = get_or_create_user(user )
-	uid = user.user_id
+	user_record = get_or_create_user( user )
+	uid = user_record.user_id
 	sid = SessionId.get_id( nti_session )
 	timestamp = timestamp_type( timestamp )
 	feedback_ds_id = FeedbackId.get_id( feedback )
+
+	if _feedback_exists( db, feedback_ds_id ):
+		logger.warn( 'Feedback exists (ds_id=%s) (user=%s)', feedback_ds_id, user )
+		return
+
 	feedback_length = sum( len( x ) for x in feedback.body )
 
 	submission_id = SubmissionId.get_id( submission )

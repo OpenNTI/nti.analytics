@@ -55,8 +55,9 @@ class TestCourseResources(AnalyticsTestBase):
 
 		resource_val = 'ntiid:course_resource'
 		time_length = 30
+		event_time = datetime.now()
 		db_views.create_course_resource_view( test_user_ds_id,
-											test_session_id, datetime.now(),
+											test_session_id, event_time,
 											self.course_id, self.context_path,
 											resource_val, time_length )
 		results = self.session.query(CourseResourceViews).all()
@@ -79,6 +80,15 @@ class TestCourseResources(AnalyticsTestBase):
 		assert_that( resource_view.user, is_( test_user_ds_id ) )
 		assert_that( resource_view.RootContextID, is_( self.course_id ))
 		assert_that( resource_view.resource_id, is_( resource_val ))
+
+		# Idempotent check
+# 		db_views.create_course_resource_view( test_user_ds_id,
+# 											test_session_id, event_time,
+# 											self.course_id, self.context_path,
+# 											resource_val, time_length )
+#
+# 		results = self.session.query(CourseResourceViews).all()
+# 		assert_that( results, has_length( 1 ) )
 
 	def test_resources(self):
 		results = self.session.query( Resources ).all()
@@ -128,8 +138,9 @@ class TestCourseResources(AnalyticsTestBase):
 		video_start_time = 30
 		video_end_time = 60
 		with_transcript = True
+		event_time = datetime.now()
 		db_views.create_video_event( test_user_ds_id,
-									test_session_id, datetime.now(),
+									test_session_id, event_time,
 									self.course_id, self.context_path,
 									resource_val, time_length,
 									video_event_type, video_start_time,
@@ -163,6 +174,17 @@ class TestCourseResources(AnalyticsTestBase):
 		assert_that( resource_view.with_transcript, is_( with_transcript ))
 		assert_that( resource_view.Duration, is_( time_length ))
 
+		# Idempotent check
+# 		db_views.create_video_event( test_user_ds_id,
+# 									test_session_id, event_time,
+# 									self.course_id, self.context_path,
+# 									resource_val, time_length,
+# 									video_event_type, video_start_time,
+# 									video_end_time,  with_transcript )
+#
+# 		results = self.session.query(VideoEvents).all()
+# 		assert_that( results, has_length( 1 ) )
+
 	@fudge.patch( 'nti.analytics.database.resource_tags._get_sharing_enum' )
 	def test_note(self, mock_sharing_enum):
 		mock_sharing_enum.is_callable().returns( 'UNKNOWN' )
@@ -178,8 +200,8 @@ class TestCourseResources(AnalyticsTestBase):
 		my_note = MockNote( resource_id, containerId=resource_id, intid=note_ds_id )
 
 		# Create note
-		db_tags.create_note( 	test_user_ds_id,
-								test_session_id, self.course_id, my_note )
+		db_tags.create_note( test_user_ds_id,
+							test_session_id, self.course_id, my_note )
 
 		results = db_tags.get_notes_created_for_course( self.course_id )
 		assert_that( results, has_length( 1 ) )
@@ -223,6 +245,48 @@ class TestCourseResources(AnalyticsTestBase):
 		assert_that( note.note_id, is_( note_id ) )
 		assert_that( note.deleted, not_none() )
 
+	@fudge.patch( 'nti.analytics.database.resource_tags._get_sharing_enum' )
+	def test_idempotent_note(self, mock_sharing_enum):
+		mock_sharing_enum.is_callable().returns( 'UNKNOWN' )
+
+		results = self.session.query( NotesCreated ).all()
+		assert_that( results, has_length( 0 ) )
+		results = self.session.query( NotesViewed ).all()
+		assert_that( results, has_length( 0 ) )
+
+		resource_id = 'ntiid:course_resource'
+		note_ds_id = DEFAULT_INTID
+		my_note = MockNote( resource_id, containerId=resource_id, intid=note_ds_id )
+
+		# Create note
+		db_tags.create_note( test_user_ds_id,
+							test_session_id, self.course_id, my_note )
+
+		results = self.session.query( NotesCreated ).all()
+		assert_that( results, has_length( 1 ) )
+
+		db_tags.create_note( test_user_ds_id,
+							test_session_id, self.course_id, my_note )
+
+		results = self.session.query( NotesCreated ).all()
+		assert_that( results, has_length( 1 ) )
+
+		# Note views
+		event_time = datetime.now()
+		db_tags.create_note_view( 	test_user_ds_id,
+									test_session_id, event_time,
+									self.course_id, my_note )
+
+		results = self.session.query( NotesViewed ).all()
+		assert_that( results, has_length( 1 ) )
+
+		db_tags.create_note_view( 	test_user_ds_id,
+									test_session_id, event_time,
+									self.course_id, my_note )
+
+		results = self.session.query( NotesViewed ).all()
+		assert_that( results, has_length( 1 ) )
+
 	def test_highlight(self):
 		results = self.session.query( HighlightsCreated ).all()
 		assert_that( results, has_length( 0 ) )
@@ -261,6 +325,27 @@ class TestCourseResources(AnalyticsTestBase):
 		assert_that( highlight.highlight_id, is_( highlight_id ) )
 		assert_that( highlight.deleted, not_none() )
 		assert_that( highlight.highlight_ds_id, none() )
+
+	def test_idempotent_highlights(self):
+		results = self.session.query( HighlightsCreated ).all()
+		assert_that( results, has_length( 0 ) )
+
+		resource_id = 'ntiid:course_resource'
+		highlight_ds_id = DEFAULT_INTID
+		my_highlight = MockHighlight( resource_id, intid=highlight_ds_id, containerId=resource_id )
+
+		# Create highlight
+		db_tags.create_highlight( 	test_user_ds_id,
+									test_session_id, self.course_id, my_highlight )
+
+		results = self.session.query( HighlightsCreated ).all()
+		assert_that( results, has_length( 1 ) )
+
+		db_tags.create_highlight( 	test_user_ds_id,
+									test_session_id, self.course_id, my_highlight )
+
+		results = self.session.query( HighlightsCreated ).all()
+		assert_that( results, has_length( 1 ) )
 
 	def test_context_path(self):
 		path = ['dashboard']

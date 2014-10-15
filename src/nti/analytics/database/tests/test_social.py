@@ -19,7 +19,7 @@ from nti.analytics.database.tests import test_user_ds_id
 from nti.analytics.database.tests import test_session_id
 from nti.analytics.database.tests import AnalyticsTestBase
 from nti.analytics.database.tests import MockParent
-MockFL = MockNote = MockHighlight = MockTopic = MockComment = MockThought = MockForum = MockParent
+MockFL = MockParent
 
 from nti.analytics.database import social as db_social
 
@@ -79,6 +79,20 @@ class TestSocial(AnalyticsTestBase):
 		db_social.update_chat( datetime.now(), new_chat, new_occupants )
 		members = self.session.query(ChatsJoined).all()
 		assert_that( members, has_length( 4 ) )
+
+	def test_idempotent_chat(self):
+		results = self.session.query(ChatsInitiated).all()
+		assert_that( results, has_length( 0 ) )
+
+		test_chat_ds_id = 999
+		db_social.create_chat_initiated( test_user_ds_id, test_session_id, test_chat_ds_id )
+
+		results = self.session.query(ChatsInitiated).all()
+		assert_that( results, has_length( 1 ) )
+
+		db_social.create_chat_initiated( test_user_ds_id, test_session_id, test_chat_ds_id )
+		results = self.session.query(ChatsInitiated).all()
+		assert_that( results, has_length( 1 ) )
 
 
 	def test_dfl(self):
@@ -142,6 +156,22 @@ class TestSocial(AnalyticsTestBase):
 		assert_that( dfl.dfl_id, is_( test_dfl_id ) )
 		assert_that( dfl.dfl_ds_id, none() )
 		assert_that( dfl.deleted, not_none() )
+
+	def test_idempotent_dfl(self):
+		results = self.session.query( DynamicFriendsListsCreated ).all()
+		assert_that( results, has_length( 0 ) )
+
+		test_dfl_ds_id = 999
+		# Create DFL
+		db_social.create_dynamic_friends_list( test_user_ds_id, test_session_id, test_dfl_ds_id )
+
+		results = self.session.query( DynamicFriendsListsCreated ).all()
+		assert_that( results, has_length( 1 ) )
+
+		db_social.create_dynamic_friends_list( test_user_ds_id, test_session_id, test_dfl_ds_id )
+
+		results = self.session.query( DynamicFriendsListsCreated ).all()
+		assert_that( results, has_length( 1 ) )
 
 	def test_dfl_multiple_members(self):
 		results = self.session.query( DynamicFriendsListsCreated ).all()
@@ -266,6 +296,23 @@ class TestSocial(AnalyticsTestBase):
 		assert_that( fl.friends_list_id, is_( test_fl_id ) )
 		assert_that( fl.deleted, not_none() )
 		assert_that( fl.friends_list_ds_id, none() )
+
+	def test_idempotent_friends_list(self):
+		results = self.session.query( FriendsListsCreated ).all()
+		assert_that( results, has_length( 0 ) )
+
+		test_fl_ds_id = 999
+		event_time = datetime.now()
+		# Create FL
+		db_social.create_friends_list( test_user_ds_id, test_session_id, event_time, test_fl_ds_id )
+
+		results = self.session.query( FriendsListsCreated ).all()
+		assert_that( results, has_length( 1 ) )
+
+		db_social.create_friends_list( test_user_ds_id, test_session_id, event_time, test_fl_ds_id )
+
+		results = self.session.query( FriendsListsCreated ).all()
+		assert_that( results, has_length( 1 ) )
 
 	def test_contacts(self):
 		results = self.session.query( ContactsAdded ).all()

@@ -91,7 +91,9 @@ def _get_forum( db, forum_ds_id ):
 
 def _get_forum_id( db, forum_ds_id ):
 	forum = _get_forum( db, forum_ds_id )
-	return forum.forum_id
+	return forum and forum.forum_id
+
+_forum_exists = _get_forum_id
 
 def _get_forum_id_from_forum( db, forum ):
 	forum_ds_id = ForumId.get_id( forum )
@@ -103,7 +105,9 @@ def _get_topic( db, topic_ds_id ):
 
 def _get_topic_id( db, topic_ds_id ):
 	topic = _get_topic( db, topic_ds_id )
-	return topic.topic_id
+	return topic and topic.topic_id
+
+_topic_exists = _get_topic_id
 
 def _get_topic_id_from_topic( db, topic ):
 	topic_ds_id = TopicId.get_id( topic )
@@ -111,10 +115,15 @@ def _get_topic_id_from_topic( db, topic ):
 
 def create_forum(user, nti_session, course, forum):
 	db = get_analytics_db()
-	user = get_or_create_user( user )
-	uid = user.user_id
+	user_record = get_or_create_user( user )
+	uid = user_record.user_id
 	sid = SessionId.get_id( nti_session )
 	forum_ds_id = ForumId.get_id( forum )
+
+	if _forum_exists( db, forum_ds_id ):
+		logger.warn( 'Forum already exists (ds_id=%s) (user=%s)', forum_ds_id, user )
+		return
+
 	course_id = get_course_id( db, course, create=True )
 
 	timestamp = get_created_timestamp( forum )
@@ -152,12 +161,18 @@ def delete_forum(timestamp, forum_ds_id):
 
 def create_topic(user, nti_session, course, topic):
 	db = get_analytics_db()
-	user = get_or_create_user(user )
-	uid = user.user_id
+	user_record = get_or_create_user( user )
+	uid = user_record.user_id
 	sid = SessionId.get_id( nti_session )
 	__traceback_info__ = topic, topic.__parent__
 	fid = _get_forum_id_from_forum( db, topic.__parent__ )
 	topic_ds_id = TopicId.get_id( topic )
+
+	if _topic_exists( db, topic_ds_id ):
+		logger.warn( 'Topic already exists (ds_id=%s) (user=%s)',
+					topic_ds_id, user )
+		return
+
 	course_id = get_course_id( db, course, create=True )
 
 	timestamp = get_created_timestamp( topic )
@@ -264,7 +279,7 @@ def create_forum_comment(user, nti_session, course, topic, comment):
 										like_count=like_count,
 										favorite_count=favorite_count,
 										is_flagged=is_flagged )
-	db.session.add( new_object )
+	db.session.merge( new_object )
 
 def delete_forum_comment(timestamp, comment_id):
 	db = get_analytics_db()

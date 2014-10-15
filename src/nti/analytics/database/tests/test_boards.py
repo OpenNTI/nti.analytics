@@ -48,7 +48,7 @@ class TestForums(AnalyticsTestBase):
 		assert_that( results, has_length( 0 ) )
 		my_forum = MockForum( None, intid=self.forum_ds_id )
 		# Create forum
-		db_boards.create_forum( 	test_user_ds_id,
+		db_boards.create_forum( test_user_ds_id,
 								test_session_id, self.course_id, my_forum )
 
 		results = self.session.query( ForumsCreated ).all()
@@ -73,6 +73,24 @@ class TestForums(AnalyticsTestBase):
 		assert_that( forum.forum_ds_id, none() )
 		assert_that( forum.deleted, not_none() )
 		assert_that( forum.forum_ds_id, none() )
+
+	def test_idempotent(self):
+		results = self.session.query( ForumsCreated ).all()
+		assert_that( results, has_length( 0 ) )
+
+		my_forum = MockForum( None, intid=self.forum_ds_id )
+		# Create forum
+		db_boards.create_forum( test_user_ds_id,
+								test_session_id, self.course_id, my_forum )
+
+		results = self.session.query( ForumsCreated ).all()
+		assert_that( results, has_length( 1 ) )
+
+		db_boards.create_forum( test_user_ds_id,
+								test_session_id, self.course_id, my_forum )
+
+		results = self.session.query( ForumsCreated ).all()
+		assert_that( results, has_length( 1 ) )
 
 	def test_chain_delete(self):
 		forum = MockForum( None, intid=self.forum_ds_id )
@@ -133,12 +151,11 @@ class TestTopics(AnalyticsTestBase):
 
 	def setUp(self):
 		super( TestTopics, self ).setUp()
-		self.course_id = 'course1'
 		self.course_id = 1
 		self.forum_id = 1
 		self.forum_ds_id = 999
 		self.forum = MockForum( None, intid=self.forum_ds_id )
-		db_boards.create_forum( 	test_user_ds_id,
+		db_boards.create_forum( test_user_ds_id,
 								test_session_id, self.course_id, self.forum )
 
 	def test_topics(self):
@@ -151,8 +168,8 @@ class TestTopics(AnalyticsTestBase):
 		topic_ds_id = DEFAULT_INTID
 		my_topic = MockTopic( self.forum, intid=topic_ds_id )
 		# Create topic
-		db_boards.create_topic( 	test_user_ds_id,
-									test_session_id, self.course_id, my_topic )
+		db_boards.create_topic( test_user_ds_id,
+								test_session_id, self.course_id, my_topic )
 
 		results = self.session.query( TopicsCreated ).all()
 		assert_that( results, has_length( 1 ) )
@@ -196,11 +213,57 @@ class TestTopics(AnalyticsTestBase):
 		assert_that( topic.deleted, not_none() )
 		assert_that( topic.topic_ds_id, none() )
 
+	def test_idempotent(self):
+		results = self.session.query( TopicsCreated ).all()
+		assert_that( results, has_length( 0 ) )
+
+		topic_ds_id = DEFAULT_INTID
+		my_topic = MockTopic( self.forum, intid=topic_ds_id )
+		# Create topic
+		db_boards.create_topic( test_user_ds_id,
+								test_session_id, self.course_id, my_topic )
+
+		results = self.session.query( TopicsCreated ).all()
+		assert_that( results, has_length( 1 ) )
+
+		db_boards.create_topic( test_user_ds_id,
+								test_session_id, self.course_id, my_topic )
+
+		results = self.session.query( TopicsCreated ).all()
+		assert_that( results, has_length( 1 ) )
+
+	def test_idempotent_views(self):
+		results = self.session.query( TopicsViewed ).all()
+		assert_that( results, has_length( 0 ) )
+
+		topic_ds_id = DEFAULT_INTID
+		my_topic = MockTopic( self.forum, intid=topic_ds_id )
+		# Create topic
+		db_boards.create_topic( test_user_ds_id,
+								test_session_id, self.course_id, my_topic )
+
+		event_time = datetime.now()
+		time_length = 30
+		db_boards.create_topic_view( test_user_ds_id,
+										test_session_id, event_time,
+										self.course_id, my_topic,
+										time_length )
+
+		results = self.session.query( TopicsViewed ).all()
+		assert_that( results, has_length( 1 ) )
+
+		db_boards.create_topic_view( test_user_ds_id,
+										test_session_id, event_time,
+										self.course_id, my_topic,
+										time_length )
+
+		results = self.session.query( TopicsViewed ).all()
+		assert_that( results, has_length( 1 ) )
+
 class TestForumComments(AnalyticsTestBase):
 
 	def setUp(self):
 		super( TestForumComments, self ).setUp()
-		self.course_id='course1'
 		self.course_id = 1
 		self.forum_id = 1
 		self.forum_ds_id = 999
@@ -248,6 +311,28 @@ class TestForumComments(AnalyticsTestBase):
 		assert_that( result.parent_id, none() )
 		assert_that( result.deleted, none() )
 
+	@fudge.patch( 'dm.zope.schema.schema.Object._validate' )
+	def test_idempotent(self, mock_validate):
+		mock_validate.is_callable().returns( True )
+		results = db_boards.get_forum_comments_for_user( test_user_ds_id, self.course_id )
+		results = [x for x in results]
+		assert_that( results, has_length( 0 ) )
+
+		comment_id = DEFAULT_INTID
+		my_comment = MockComment( self.topic, intid=comment_id )
+		db_boards.create_forum_comment( test_user_ds_id, test_session_id, self.course_id,
+										self.topic, my_comment )
+
+		results = db_boards.get_forum_comments_for_user( test_user_ds_id, self.course_id )
+		results = [x for x in results]
+		assert_that( results, has_length( 1 ) )
+
+		db_boards.create_forum_comment( test_user_ds_id, test_session_id, self.course_id,
+										self.topic, my_comment )
+
+		results = db_boards.get_forum_comments_for_user( test_user_ds_id, self.course_id )
+		results = [x for x in results]
+		assert_that( results, has_length( 1 ) )
 
 	@fudge.patch( 'dm.zope.schema.schema.Object._validate' )
 	def test_comment_with_parent(self, mock_validate):

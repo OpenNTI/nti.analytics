@@ -61,7 +61,8 @@ class TestCourseViews(AnalyticsTestBase):
 		assert_that( results, has_length( 0 ) )
 
 		for_credit = 'for_credit'
-		db_enrollments.create_course_enrollment( test_user_ds_id, test_session_id, datetime.now(), self.course_id, for_credit )
+		db_enrollments.create_course_enrollment( test_user_ds_id, test_session_id,
+												datetime.now(), self.course_id, for_credit )
 
 		results = self.session.query( CourseEnrollments ).all()
 		assert_that( results, has_length( 1 ) )
@@ -83,7 +84,8 @@ class TestCourseViews(AnalyticsTestBase):
 		assert_that( enrollment_type.type_name, is_( for_credit ) )
 
 		# Another enrollment
-		db_enrollments.create_course_enrollment( test_user_ds_id + 1, test_session_id, datetime.now(), self.course_id, for_credit )
+		db_enrollments.create_course_enrollment( test_user_ds_id + 1, test_session_id,
+												datetime.now(), self.course_id, for_credit )
 
 		results = self.session.query( CourseEnrollments ).all()
 		assert_that( results, has_length( 2 ) )
@@ -109,3 +111,38 @@ class TestCourseViews(AnalyticsTestBase):
 		assert_that( drop.course_id, is_( self.course_id ) )
 		assert_that( drop.timestamp, not_none() )
 
+	def test_idempotent(self):
+		results = self.session.query( CourseEnrollments ).all()
+		assert_that( results, has_length( 0 ) )
+
+		for_credit = 'for_credit'
+		event_time = datetime.now()
+		db_enrollments.create_course_enrollment( test_user_ds_id, test_session_id,
+												event_time, self.course_id, for_credit )
+
+		results = self.session.query( CourseEnrollments ).all()
+		assert_that( results, has_length( 1 ) )
+
+		db_enrollments.create_course_enrollment( test_user_ds_id, test_session_id,
+												event_time, self.course_id, for_credit )
+
+		results = self.session.query( CourseEnrollments ).all()
+		assert_that( results, has_length( 1 ) )
+
+	def test_idempotent_views(self):
+		results = self.session.query( CourseCatalogViews ).all()
+		assert_that( results, has_length( 0 ) )
+
+		event_time = datetime.now()
+		time_length = 30
+		db_enrollments.create_course_catalog_view( test_user_ds_id, test_session_id, event_time,
+													self.course_id, time_length )
+
+		results = self.session.query( CourseCatalogViews ).all()
+		assert_that( results, has_length( 1 ) )
+
+		db_enrollments.create_course_catalog_view( test_user_ds_id, test_session_id, event_time,
+													self.course_id, time_length )
+
+		results = self.session.query( CourseCatalogViews ).all()
+		assert_that( results, has_length( 1 ) )

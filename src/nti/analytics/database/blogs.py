@@ -65,14 +65,21 @@ class BlogCommentsCreated(Base,CommentsMixin,BlogMixin,RatingsMixin):
 
 def _get_blog_id( db, blog_ds_id ):
 	blog = db.session.query(BlogsCreated).filter( BlogsCreated.blog_ds_id == blog_ds_id ).first()
-	return blog.blog_id
+	return blog and blog.blog_id
+
+_blog_exists = _get_blog_id
 
 def create_blog( user, nti_session, blog_entry ):
 	db = get_analytics_db()
-	user = get_or_create_user( user )
-	uid = user.user_id
+	user_record = get_or_create_user( user )
+	uid = user_record.user_id
 	sid = SessionId.get_id( nti_session )
 	blog_ds_id = BlogId.get_id( blog_entry )
+
+	if _blog_exists( db, blog_ds_id ):
+		logger.warn( 'Blog already exists (blog_id=%s) (user=%s)', blog_ds_id, user )
+		return
+
 	like_count, favorite_count, is_flagged = get_ratings( blog_entry )
 
 	timestamp = get_created_timestamp( blog_entry )
@@ -177,7 +184,7 @@ def create_blog_comment(user, nti_session, blog, comment ):
 										like_count=like_count,
 										favorite_count=favorite_count,
 										is_flagged=is_flagged )
-	db.session.add( new_object )
+	db.session.merge( new_object )
 
 def delete_blog_comment(timestamp, comment_id):
 	db = get_analytics_db()

@@ -102,7 +102,7 @@ def create_course_enrollment(user, nti_session, timestamp, course, enrollment_ty
 									timestamp=timestamp,
 									course_id=course_id,
 									type_id=type_id )
-	db.session.add( new_object )
+	db.session.merge( new_object )
 
 def create_course_drop(user, nti_session, timestamp, course):
 	db = get_analytics_db()
@@ -116,7 +116,7 @@ def create_course_drop(user, nti_session, timestamp, course):
 								session_id=sid,
 								timestamp=timestamp,
 								course_id=course_id )
-	db.session.add( new_object )
+	db.session.merge( new_object )
 
 	enrollment = db.session.query(CourseEnrollments).filter( 	CourseEnrollments.user_id == uid,
 															CourseEnrollments.course_id == course_id ).one()

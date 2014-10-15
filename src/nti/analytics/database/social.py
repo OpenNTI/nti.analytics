@@ -123,14 +123,20 @@ class ContactsRemoved(Base,BaseTableMixin,FriendMixin):
 
 def _get_chat_id( db, chat_ds_id ):
 	chat = db.session.query(ChatsInitiated).filter( ChatsInitiated.chat_ds_id == chat_ds_id ).first()
-	return chat.chat_id
+	return chat and chat.chat_id
+
+_chat_exists = _get_chat_id
 
 def create_chat_initiated(user, nti_session, chat):
 	db = get_analytics_db()
-	user = get_or_create_user(user )
-	uid = user.user_id
+	user_record = get_or_create_user( user )
+	uid = user_record.user_id
 	sid = SessionId.get_id( nti_session )
 	chat_ds_id = ChatId.get_id( chat )
+
+	if _chat_exists( db, chat_ds_id ):
+		logger.warn( 'Chat already exists (ds_id=%s) (owner=%s)', chat_ds_id, user )
+		return
 
 	timestamp = get_created_timestamp( chat )
 
@@ -183,14 +189,21 @@ def update_chat( timestamp, chat, new_members ):
 # DFLs
 def _get_dfl_id( db, dfl_ds_id ):
 	dfl = db.session.query(DynamicFriendsListsCreated).filter( DynamicFriendsListsCreated.dfl_ds_id == dfl_ds_id ).first()
-	return dfl.dfl_id
+	return dfl and dfl.dfl_id
+
+_dfl_exists = _get_dfl_id
 
 def create_dynamic_friends_list(user, nti_session, dynamic_friends_list):
 	db = get_analytics_db()
-	user = get_or_create_user(user )
-	uid = user.user_id
+	user_record = get_or_create_user( user )
+	uid = user_record.user_id
 	sid = SessionId.get_id( nti_session )
 	dfl_ds_id = DFLId.get_id( dynamic_friends_list )
+
+	if _dfl_exists( db, dfl_ds_id ):
+		logger.warn( 'DFL already exists (dfl_id=%s) (owner=%s)', dfl_ds_id, user )
+		return
+
 	timestamp = get_created_timestamp( dynamic_friends_list )
 
 	new_object = DynamicFriendsListsCreated( 	user_id=uid,
@@ -259,14 +272,22 @@ def remove_dynamic_friends_member(user, nti_session, timestamp, dynamic_friends_
 # FLs
 def _get_friends_list_id( db, friends_list_ds_id ):
 	friends_list = db.session.query(FriendsListsCreated).filter( FriendsListsCreated.friends_list_ds_id == friends_list_ds_id ).first()
-	return friends_list.friends_list_id
+	return friends_list and friends_list.friends_list_id
+
+_friends_list_exists = _get_friends_list_id
 
 def create_friends_list(user, nti_session, timestamp, friends_list):
 	db = get_analytics_db()
-	user = get_or_create_user(user )
-	uid = user.user_id
+	user_record = get_or_create_user(user )
+	uid = user_record.user_id
 	sid = SessionId.get_id( nti_session )
 	friends_list_ds_id = FriendsListId.get_id( friends_list )
+
+	if _friends_list_exists( db, friends_list_ds_id ):
+		logger.warn( 'Friends list already exists (ds_id=%s) (owner=%s)',
+					friends_list_ds_id, user )
+		return
+
 	timestamp = timestamp_type( timestamp )
 
 	new_object = FriendsListsCreated( 	user_id=uid,
