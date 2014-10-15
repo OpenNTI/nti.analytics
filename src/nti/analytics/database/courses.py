@@ -18,10 +18,10 @@ from nti.analytics.common import get_course_name
 
 from nti.analytics.identifier import CourseId
 
-from nti.analytics.database import NTIID_COLUMN_TYPE
-from nti.analytics.database import INTID_COLUMN_TYPE
 from nti.analytics.database import Base
 from nti.analytics.database import get_analytics_db
+from nti.analytics.database import NTIID_COLUMN_TYPE
+from nti.analytics.database import INTID_COLUMN_TYPE
 
 class Courses(Base):
 	__tablename__ = 'Courses'
@@ -33,11 +33,9 @@ class Courses(Base):
 def _get_course_long_name( course ):
 	bundle = getattr( course, 'ContentPackageBundle', None )
 	course_long_name = getattr( bundle, 'ntiid', None )
-
 	if course_long_name is None:
 		# Nothing, try legacy
 		course_long_name = getattr( course, 'ContentPackageNTIID', None )
-
 	return course_long_name
 
 def _create_course( db, course, course_ds_id ):
@@ -69,7 +67,7 @@ def get_course_id( db, course, create=False ):
 		found_course = _get_or_create_course( db, course, course_ds_id )
 	else:
 		found_course = db.session.query(Courses).filter( Courses.course_ds_id == course_ds_id ).first()
-	return found_course.course_id
+	return found_course.course_id if found_course is not None else None 
 
 def delete_course( course_ds_id ):
 	db = get_analytics_db()
