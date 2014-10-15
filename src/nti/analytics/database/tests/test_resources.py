@@ -82,13 +82,13 @@ class TestCourseResources(AnalyticsTestBase):
 		assert_that( resource_view.resource_id, is_( resource_val ))
 
 		# Idempotent check
-# 		db_views.create_course_resource_view( test_user_ds_id,
-# 											test_session_id, event_time,
-# 											self.course_id, self.context_path,
-# 											resource_val, time_length )
-#
-# 		results = self.session.query(CourseResourceViews).all()
-# 		assert_that( results, has_length( 1 ) )
+		db_views.create_course_resource_view( test_user_ds_id,
+											test_session_id, event_time,
+											self.course_id, self.context_path,
+											resource_val, time_length )
+
+		results = self.session.query(CourseResourceViews).all()
+		assert_that( results, has_length( 1 ) )
 
 	def test_resources(self):
 		results = self.session.query( Resources ).all()
@@ -175,15 +175,15 @@ class TestCourseResources(AnalyticsTestBase):
 		assert_that( resource_view.Duration, is_( time_length ))
 
 		# Idempotent check
-# 		db_views.create_video_event( test_user_ds_id,
-# 									test_session_id, event_time,
-# 									self.course_id, self.context_path,
-# 									resource_val, time_length,
-# 									video_event_type, video_start_time,
-# 									video_end_time,  with_transcript )
-#
-# 		results = self.session.query(VideoEvents).all()
-# 		assert_that( results, has_length( 1 ) )
+		db_views.create_video_event( test_user_ds_id,
+									test_session_id, event_time,
+									self.course_id, self.context_path,
+									resource_val, time_length,
+									video_event_type, video_start_time,
+									video_end_time,  with_transcript )
+
+		results = self.session.query(VideoEvents).all()
+		assert_that( results, has_length( 1 ) )
 
 	@fudge.patch( 'nti.analytics.database.resource_tags._get_sharing_enum' )
 	def test_note(self, mock_sharing_enum):

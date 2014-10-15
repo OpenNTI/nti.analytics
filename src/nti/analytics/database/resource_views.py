@@ -39,12 +39,6 @@ from nti.analytics.database.courses import get_course_id
 from nti.analytics.database.resources import get_resource_id
 from nti.analytics.database.resources import get_resource_val
 
-# TODO We do not check for duplicate events
-# being submitted to us.  To do so correctly would
-# involve an index on the timestamp column, which
-# we may end up needed eventually anyway.
-# Looking at prod data, this is something we need to do.
-
 # For meta-views into synthetic course info, we can special type the resource_id:
 #	(about|instructors|tech_support)
 class CourseResourceViews(Base,ResourceViewMixin,TimeLengthMixin):
@@ -86,16 +80,32 @@ def _get_context_path( context_path ):
 def _expand_context_path( context_path ):
 	return context_path.split( '/' )
 
+def _resource_view_exists( db, user_id, resource_id, timestamp ):
+	# TODO Need to clean up these dupe events
+	# We probably do not need a timestamp index here since we have an index on
+	# the user and resource columns.
+	return db.session.query( CourseResourceViews ).filter(
+							CourseResourceViews.user_id == user_id,
+							CourseResourceViews.resource_id == resource_id,
+							CourseResourceViews.timestamp == timestamp ).count()
+
 def create_course_resource_view(user, nti_session, timestamp, course, context_path, resource, time_length):
 	db = get_analytics_db()
-	user = get_or_create_user(user )
-	uid = user.user_id
+	user_record = get_or_create_user( user )
+	uid = user_record.user_id
 	sid = SessionId.get_id( nti_session )
 	rid = ResourceId.get_id( resource )
 	rid = get_resource_id( db, rid )
 
 	course_id = get_course_id( db, course, create=True )
 	timestamp = timestamp_type( timestamp )
+
+	if _resource_view_exists( db, uid, rid, timestamp ):
+		logger.warn( 'Resource view already exists (user=%s) (resource_id=%s) (timestamp=%s)',
+					user, rid, timestamp )
+		return
+
+
 	context_path = _get_context_path( context_path )
 
 	new_object = CourseResourceViews( 	user_id=uid,
@@ -106,6 +116,12 @@ def create_course_resource_view(user, nti_session, timestamp, course, context_pa
 										resource_id=rid,
 										time_length=time_length )
 	db.session.add( new_object )
+
+def _video_view_exists( db, user_id, resource_id, timestamp ):
+	return db.session.query( VideoEvents ).filter(
+							VideoEvents.user_id == user_id,
+							VideoEvents.resource_id == resource_id,
+							VideoEvents.timestamp == timestamp ).count()
 
 def create_video_event(	user,
 						nti_session, timestamp,
@@ -125,6 +141,12 @@ def create_video_event(	user,
 
 	course_id = get_course_id( db, course, create=True )
 	timestamp = timestamp_type( timestamp )
+
+	if _video_view_exists( db, uid, vid, timestamp ):
+		logger.warn( 'Video view already exists (user=%s) (resource_id=%s) (timestamp=%s)',
+					user, vid, timestamp )
+		return
+
 	context_path = _get_context_path( context_path )
 
 	new_object = VideoEvents(	user_id=uid,
