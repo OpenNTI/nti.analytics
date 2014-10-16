@@ -13,7 +13,7 @@ OUTPUT_GPG="$OUTPUT_TAR.gpg"
 mysql_cmd="mysql -h **** -P **** -u **** -p**** -D Analytics"
 mysqldmp_cmd="mysqldump -h **** -P **** -u **** -p**** Analytics "
 
-ALLOW_RESEARCH_FILTER="user_id in (SELECT user_id from Users where allow_research=1)"
+ALLOW_RESEARCH_FILTER="user_id in (SELECT user_id FROM Users WHERE allow_research=1)"
 #echo "dump cmd is $mysqldmp_cmd"
 
 # Get the tables with the 'user_id' column
