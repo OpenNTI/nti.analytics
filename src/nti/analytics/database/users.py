@@ -82,7 +82,7 @@ def get_or_create_user( user ):
 
 def get_user_db_id( user ):
 	found_user = _get_user_record( user )
-	return found_user.user_id
+	return found_user and found_user.user_id
 
 def get_user( user_id ):
 	result = None
