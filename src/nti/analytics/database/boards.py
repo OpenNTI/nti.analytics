@@ -253,6 +253,14 @@ def create_topic_view(user, nti_session, timestamp, course, topic, time_length):
 	__traceback_info__ = topic, topic.__parent__
 	fid = _get_forum_id_from_forum( db, topic.__parent__ )
 	did = _get_topic_id_from_topic( db, topic )
+
+	if not did:
+		# Ok, create our topic.
+		new_topic = create_topic( user, nti_session, course, topic )
+		logger.info( 'Created topic (topic=%s) (user=%s) (course=%s)',
+					topic, user, course )
+		did = new_topic.topic_id
+
 	course_id = get_course_id( db, course, create=True )
 	timestamp = timestamp_type( timestamp )
 
