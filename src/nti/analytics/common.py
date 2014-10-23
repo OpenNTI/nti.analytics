@@ -131,15 +131,18 @@ def process_event( get_job_queue, object_op, obj=None, **kwargs ):
 
 def get_created_timestamp(obj):
 	result = getattr( obj, 'createdTime', None )
+	result = result or datetime.utcnow()
 	result = timestamp_type( result )
-	return result or datetime.utcnow()
+	return result
 
 def timestamp_type(timestamp):
 	result = timestamp
 	if isinstance( timestamp, ( float, integer_types ) ):
 		result = datetime.utcfromtimestamp( timestamp )
-	# Mysql drops milliseconds
-	result = result.replace( microsecond = 0 )
+
+	if result:
+		# Mysql drops milliseconds
+		result = result.replace( microsecond = 0 )
 	return result
 
 def get_course_name(course):

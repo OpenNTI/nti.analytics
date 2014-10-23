@@ -184,6 +184,11 @@ def create_note_view(user, nti_session, timestamp, course, note):
 
 	note_ds_id = NoteId.get_id( note )
 	note_id = _get_note_id( db, note_ds_id )
+	if note_id is None:
+		create_note( user, nti_session, course, note )
+		logger.info( 'Created note (user=%s) (note=%s)', user, note_id )
+		note_id = _get_note_id( db, note_ds_id )
+
 	course_id = get_course_id( db, course, create=True )
 	timestamp = timestamp_type( timestamp )
 
