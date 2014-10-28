@@ -23,7 +23,7 @@ from nti.analytics.database.resource_tags import NotesCreated
 from nti.analytics.database.resource_tags import NotesViewed
 from nti.analytics.database.resource_tags import HighlightsCreated
 
-FOREIGN_TABLES = [ CourseResourceViews, VideoEvents, NotesCreated, NotesViewed, HighlightsCreated]
+FOREIGN_TABLES = [ CourseResourceViews, VideoEvents, NotesCreated, NotesViewed, HighlightsCreated ]
 
 def _fix_references( db, foreign_table, bad_values ):
 	logger.info( 'Fixing references in foreign key table (%s)', foreign_table )

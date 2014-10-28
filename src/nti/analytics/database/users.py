@@ -12,6 +12,7 @@ from sqlalchemy import Column
 from sqlalchemy import Integer
 from sqlalchemy import String
 from sqlalchemy import Boolean
+from sqlalchemy import DateTime
 
 from sqlalchemy.schema import Sequence
 
@@ -19,6 +20,8 @@ from nti.app.products.ou.interfaces import IUserResearchStatus
 from nti.app.products.ou.interfaces import IOUUserProfile
 
 from nti.analytics.identifier import UserId
+
+from nti.analytics.common import get_created_timestamp
 
 from nti.analytics.database import INTID_COLUMN_TYPE
 from nti.analytics.database import Base
@@ -31,6 +34,7 @@ class Users(Base):
 	allow_research = Column('allow_research', Boolean, nullable=True, default=None )
 	username = Column('username', String(64), nullable=True, unique=False, index=True)
 	username2 = Column('username2', String(64), nullable=True, unique=False)
+	create_date = Column('create_date', DateTime, nullable=True)
 
 def _get_username2( user ):
 	# TODO OU Specific; probably needs subscriber.
@@ -53,11 +57,13 @@ def create_user(user):
 		allow_research = user_research.allow_research
 
 	username2 = _get_username2( user )
+	create_date = get_created_timestamp( user )
 
 	user = Users( 	user_ds_id=uid,
 					allow_research=allow_research,
 					username=username,
-					username2=username2 )
+					username2=username2,
+					create_date=create_date )
 	# For race conditions, let's just throw since we cannot really handle retrying
 	# gracefully at this level. A job-level retry should work though.
 	db.session.add( user )
@@ -74,9 +80,12 @@ def _get_user_record( user ):
 def get_or_create_user( user ):
 	found_user = _get_user_record( user )
 	if found_user is not None:
+		# Lazy build fields.
+		# This can only be called on POSTs.
 		if found_user.username2 is None:
-			# Lazy build this new field
 			found_user.username2 = _get_username2( user )
+		if found_user.create_date is None:
+			found_user.create_date = get_created_timestamp( user )
 
 	return found_user or create_user( user )
 
