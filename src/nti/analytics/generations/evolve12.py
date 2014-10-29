@@ -12,21 +12,30 @@ logger = __import__('logging').getLogger(__name__)
 
 generation = 12
 
-from zope import component
-from zope.component.hooks import site
 from zope.component.hooks import setHooks
-from zope.intid.interfaces import IIntIds
 
 from alembic.operations import Operations
 from alembic.migration import MigrationContext
 
 from sqlalchemy import Column
-from sqlalchemy import String
 from sqlalchemy import DateTime
+from sqlalchemy import Interval
 
 from nti.analytics.database import get_analytics_db
 
-def do_evolve( intids ):
+COLUMN_EXISTS_QUERY = 	"""
+						SELECT *
+						FROM information_schema.COLUMNS
+						WHERE TABLE_SCHEMA = 'Analytics'
+							AND TABLE_NAME = '%s'
+							AND COLUMN_NAME = '%s'
+						"""
+
+def _column_exists( con, table, column ):
+	res = con.execute( COLUMN_EXISTS_QUERY % ( table, column ) )
+	return res.scalar()
+
+def do_evolve():
 	setHooks()
 
 	db = get_analytics_db()
@@ -40,11 +49,17 @@ def do_evolve( intids ):
 	mc = MigrationContext.configure( connection )
 	op = Operations(mc)
 
-	op.add_column( "Courses", Column('start_date', DateTime, nullable=True) )
-	op.add_column( "Courses", Column('end_date', DateTime, nullable=True) )
-	op.add_column( "Courses", Column('duration', String(32), nullable=True) )
+	if not _column_exists( connection, 'Courses', 'start_date' ):
+		op.add_column( "Courses", Column('start_date', DateTime, nullable=True) )
 
-	op.add_column( "Users", Column('create_date', DateTime, nullable=True) )
+	if not _column_exists( connection, 'Courses', 'end_date' ):
+		op.add_column( "Courses", Column('end_date', DateTime, nullable=True) )
+
+	if not _column_exists( connection, 'Courses', 'duration' ):
+		op.add_column( "Courses", Column('duration', Interval, nullable=True) )
+
+	if not _column_exists( connection, 'Users', 'create_date' ):
+		op.add_column( "Users", Column('create_date', DateTime, nullable=True) )
 
 	logger.info( 'Finished analytics evolve12' )
 
@@ -52,7 +67,4 @@ def evolve(context):
 	"""
 	Evolve to generation 12
 	"""
-	ds_folder = context.connection.root()['nti.dataserver']
-	with site( ds_folder ):
-		intids = component.getUtility( IIntIds )
-		do_evolve( intids )
+	do_evolve()
