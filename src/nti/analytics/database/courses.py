@@ -12,6 +12,7 @@ from sqlalchemy import Column
 from sqlalchemy import Integer
 from sqlalchemy import String
 from sqlalchemy import DateTime
+from sqlalchemy import Interval
 
 from sqlalchemy.schema import Sequence
 
@@ -34,7 +35,7 @@ class Courses(Base):
 	course_long_name = Column('course_long_name', NTIID_COLUMN_TYPE, nullable=True)
 	start_date = Column('start_date', DateTime, nullable=True)
 	end_date = Column('end_date', DateTime, nullable=True)
-	duration = Column('duration', String(32), nullable=True)
+	duration = Column('duration', Interval, nullable=True)
 
 def _get_course_long_name( course ):
 	bundle = getattr( course, 'ContentPackageBundle', None )
