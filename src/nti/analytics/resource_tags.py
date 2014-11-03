@@ -28,7 +28,7 @@ from .common import get_creator
 from .common import process_event
 from .common import get_rating_from_event
 
-from nti.analytics.resolvers import get_course_by_object_id
+from nti.analytics.resolvers import get_course_by_container_id
 
 from nti.analytics.database import resource_tags as db_resource_tags
 
@@ -43,9 +43,9 @@ def _get_job_queue():
 	return factory.get_queue( TAGS_ANALYTICS )
 
 
-def _get_course( object_id ):
-	__traceback_info__ = object_id
-	result = get_course_by_object_id( object_id )
+def _get_course( obj ):
+	__traceback_info__ = obj.containerId
+	result = get_course_by_container_id( obj.containerId )
 	return result
 
 # Notes
@@ -53,8 +53,7 @@ def _add_note( oid, nti_session=None ):
 	note = ntiids.find_object_with_ntiid( oid )
 	if note is not None:
 		user = get_creator( note )
-		note_id = NoteId.get_id( note )
-		course = _get_course( note_id )
+		course = _get_course( note )
 		db_resource_tags.create_note( user, nti_session, course, note )
 		logger.debug( 	"Note created (user=%s) (course=%s) (note=%s)",
 						user,
@@ -122,8 +121,7 @@ def _add_highlight( oid, nti_session=None ):
 	highlight = ntiids.find_object_with_ntiid( oid )
 	if highlight is not None:
 		user = get_creator( highlight )
-		hl_id = HighlightId.get_id( highlight )
-		course = _get_course( hl_id )
+		course = _get_course( highlight )
 		db_resource_tags.create_highlight( user, nti_session, course, highlight )
 		logger.debug( "Highlight created (user=%s) (course=%s)",
 					user,

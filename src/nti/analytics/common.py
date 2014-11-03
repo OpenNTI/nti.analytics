@@ -34,7 +34,6 @@ from zc.blist import BList
 from nti.async import create_job
 from six import integer_types
 
-from sqlalchemy.exc import IntegrityError
 from nti.analytics.database import get_analytics_db
 
 def get_rating_from_event( event ):

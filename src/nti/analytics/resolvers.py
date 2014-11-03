@@ -11,8 +11,6 @@ logger = __import__('logging').getLogger(__name__)
 import time
 
 from zope import component
-from zope import interface
-from zope.catalog.interfaces import ICatalog
 
 from nti.app.assessment.interfaces import ICourseAssessmentItemCatalog
 from nti.app.assessment.interfaces import ICourseAssignmentCatalog
@@ -23,8 +21,6 @@ from nti.contenttypes.courses.interfaces import ICourseCatalog
 from nti.contenttypes.courses.interfaces import ICourseInstance
 
 from nti.contentlibrary.interfaces import IContentPackageLibraryModifiedOnSyncEvent
-
-from nti.dataserver.metadata_index import CATALOG_NAME
 
 from nti.externalization.externalization import to_external_ntiid_oid
 from nti.ntiids.ntiids import find_object_with_ntiid
@@ -139,9 +135,6 @@ class _CourseFromChildNTIIDResolver(object):
 		self.course_to_containers = None
 		self.course_to_self_assessments = None
 
-	def get_md_catalog(self):
-		return component.getUtility(ICatalog,CATALOG_NAME)
-
 	def reset(self):
 		# We may have a few of these come in at once, one
 		# per each content package changed.  Let's just empty
@@ -164,7 +157,7 @@ class _CourseFromChildNTIIDResolver(object):
 		self_assessment_ids = course_to_self_assessments.get( course_key )
 		return self_assessment_ids
 
-	def get_course(self, object_id):
+	def get_course(self, container_id):
 		course_to_containers = self.course_to_containers
 
 		if course_to_containers is None:
@@ -174,9 +167,10 @@ class _CourseFromChildNTIIDResolver(object):
 		# This is about 4x faster in the worst case than dynamically iterating
 		# through children and searching for contained objects (but costs in other ways).
 		for course_key, containers in course_to_containers.items():
-			md_catalog = self.get_md_catalog()
-			intids_of_objects_in_course_containers = md_catalog['containerId'].apply({'any_of': containers})
-			if object_id in intids_of_objects_in_course_containers:
+
+			# We can no longer check the catalog due to timing issues,
+			# but this may be a proper solution anyways.
+			if container_id in containers:
 				course = find_object_with_ntiid( course_key )
 				return course
 		return None
@@ -196,7 +190,7 @@ def _reset():
 def _library_sync(event):
 	process_event( _get_job_queue, _reset )
 
-def get_course_by_object_id(object_id):
+def get_course_by_container_id( container_id ):
 	# Some content is only accessible from the global content
 	# package.  During migration, we'll need to (in most cases)
 	# check there first, before falling back to checking our current
@@ -205,10 +199,10 @@ def get_course_by_object_id(object_id):
 	# This is expensive if we do not find our course.
 
 	# Update: JZ: TODO do we still need to check our global site for site packages?
-	result = _get_course_from_ntiid_resolver().get_course( object_id )
+	result = _get_course_from_ntiid_resolver().get_course( container_id )
 
 	if result is None:
-		raise TypeError( "No course found for object_id (%s)" % object_id )
+		raise TypeError( "No course found for container (%s)" % container_id )
 	return result
 
 def get_self_assessments_for_course(course):
