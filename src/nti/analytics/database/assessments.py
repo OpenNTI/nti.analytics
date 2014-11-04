@@ -34,6 +34,7 @@ from nti.assessment.interfaces import IQModeledContentResponse
 
 from nti.analytics.common import timestamp_type
 from nti.analytics.common import get_creator
+from nti.analytics.common import get_course as get_course_from_object
 
 from nti.analytics.model import AnalyticsAssessment
 from nti.analytics.model import AnalyticsAssignment
@@ -365,6 +366,7 @@ def create_assignment_taken(user, nti_session, timestamp, course, submission ):
 
 	# Grade
 	graded_submission = _get_grade( submission )
+
 	# If None, we're pending right?
 	if graded_submission is not None:
 		grade = graded_submission.grade
@@ -406,11 +408,24 @@ def create_assignment_taken(user, nti_session, timestamp, course, submission ):
 					db.session.add( grade_details )
 
 def grade_submission( user, nti_session, timestamp, grader, graded_val, submission ):
+	# The server creates an assignment placeholder if a grade
+	# is received without a submission, which should jive with
+	# what we are expecting here.
+
 	db = get_analytics_db()
 	grader = get_or_create_user( grader )
 	grader_id  = grader.user_id
 	submission_id = SubmissionId.get_id( submission )
 	assignment_taken_id = _get_assignment_taken_id( db, submission_id )
+
+	if assignment_taken_id is None:
+		# Somehow, in prod, we got a grade before a placeholder submission event.
+		course = get_course_from_object( submission )
+		create_assignment_taken( user, nti_session, timestamp, course, submission )
+		logger.info( 'Creating assignment taken (user=%s) (submission=%s)', user, submission )
+		# Creating an assignment also takes care of the grade
+		return
+
 	grade_entry = _get_grade_entry( db, assignment_taken_id )
 	timestamp = timestamp_type( timestamp )
 
