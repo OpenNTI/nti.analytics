@@ -9,6 +9,7 @@ USER_OUTPUT_FILE="$BASE_OUTPUT_DIR/irb_analytics_user_tables.sql"
 OTHER_OUTPUT_FILE="$BASE_OUTPUT_DIR/irb_analytics_non_user_tables.sql"
 OUTPUT_TAR="$BASE_OUTPUT_DIR/irb_analytics_export-$DATE.tar.gz"
 OUTPUT_GPG="$OUTPUT_TAR.gpg"
+SFTP_LOCATION="sftp -b - ou-001@sftp.nextthought.com:outgoing/"
 
 mysql_cmd="mysql -h **** -P **** -u **** -p**** -D Analytics"
 mysqldmp_cmd="mysqldump -h **** -P **** -u **** -p**** Analytics "
@@ -66,5 +67,11 @@ tar -czf $OUTPUT_TAR $USER_OUTPUT_FILE $OTHER_OUTPUT_FILE
 gpg2 --passphrase boomersooner1 --symmetric --batch --output $OUTPUT_GPG $OUTPUT_TAR
 rm -rf $USER_OUTPUT_FILE
 rm -rf $OTHER_OUTPUT_FILE
+rm -rf $OUTPUT_TAR
+
+# Uploading to sftp
+echo "Uploading to $SFTP_LOCATION"
+echo "put $OUTPUT_GPG" | $SFTP_LOCATION
+
 
 echo "Finished dumping Analytics IRB database."
