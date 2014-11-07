@@ -1,0 +1,59 @@
+# /bin/bash
+
+# Script to export data for capstone analysis.  This should only target
+# table records with a specific course.
+# There should be no relevant users or grade data in the export.
+DATE=`date "+%Y%m%d%H%M"`
+
+BASE_OUTPUT_DIR="/home/ntibackup/capstone_analytics_dump"
+OUTPUT_FILE="$BASE_OUTPUT_DIR/capstone_analytics.sql"
+OUTPUT_TAR="$BASE_OUTPUT_DIR/capstone_mysql_export-$DATE.tar.gz"
+OUTPUT_GPG="$OUTPUT_TAR.gpg"
+
+# TODO Set this up for capstone...
+#SFTP_LOCATION="sftp -b - ou-001@sftp.nextthought.com:outgoing/"
+
+mysql_cmd="mysql -h **** -P **** -u **** -p**** -D Analytics"
+mysqldmp_cmd="mysqldump -h **** -P **** -u **** -p**** Analytics "
+
+#CHEM 4970 - 100
+COURSE_FILTER="course_id = 10"
+#echo "dump cmd is $mysqldmp_cmd"
+
+# Get the tables with the 'user_id' column
+TABLES_WITH_COLUMN_SQL="SELECT DISTINCT TABLE_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE COLUMN_NAME = 'course_id' AND TABLE_SCHEMA='Analytics';"
+
+filter_tables_array=()
+results=($($mysql_cmd --skip-column-names -e "$TABLES_WITH_COLUMN_SQL"))
+
+# Filter out tables we do not want to share
+for row in "${results[@]}"
+do
+	if [ "$row" != "AssignmentGrades" ]; then
+		if [ "$row" != "AssignmentDetailGrades" ]; then
+			if [ "$row" != "CourseEnrollments" ]; then
+				if [ "$row" != "CourseDrops" ]; then
+					echo "Found table: $row"
+					filter_tables_array+=("$row")
+				fi
+			fi
+		fi
+	fi
+done
+
+# Dump tables
+mysqldmp_filter_cmd_final="$mysqldmp_cmd ${filter_tables_array[@]}"
+#echo "Dumping user tables with: $mysqldmp_filter_cmd_final"
+$mysqldmp_filter_cmd_final --single-transaction --where="$COURSE_FILTER" > $OUTPUT_FILE
+
+echo "Generating tarball at $OUTPUT_TAR"
+tar -czf $OUTPUT_TAR $OUTPUT_FILE
+gpg2 --passphrase ****** --symmetric --batch --output $OUTPUT_GPG $OUTPUT_TAR
+rm -rf $OUTPUT_FILE
+rm -rf $OUTPUT_TAR
+
+# Uploading to sftp
+echo "Uploading to $SFTP_LOCATION"
+echo "put $OUTPUT_GPG" | $SFTP_LOCATION
+
+echo "Finished dumping Analytics capstone export."

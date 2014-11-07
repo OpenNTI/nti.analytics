@@ -60,11 +60,11 @@ $mysqldmp_filter_cmd_final --single-transaction --where="$ALLOW_RESEARCH_FILTER"
 # Dump rest of tables
 mysqldmp_cmd_final="$mysqldmp_cmd ${other_tables_array[@]}"
 echo "Dumping user tables with: $mysqldmp_cmd_final"
-$mysqldmp_cmd_final > $OTHER_OUTPUT_FILE
+$mysqldmp_cmd_final --single-transaction > $OTHER_OUTPUT_FILE
 
 echo "Generating tarball at $OUTPUT_TAR"
 tar -czf $OUTPUT_TAR $USER_OUTPUT_FILE $OTHER_OUTPUT_FILE
-gpg2 --passphrase boomersooner1 --symmetric --batch --output $OUTPUT_GPG $OUTPUT_TAR
+gpg2 --passphrase ****** --symmetric --batch --output $OUTPUT_GPG $OUTPUT_TAR
 rm -rf $USER_OUTPUT_FILE
 rm -rf $OTHER_OUTPUT_FILE
 rm -rf $OUTPUT_TAR
