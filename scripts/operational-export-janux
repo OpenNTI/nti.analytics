@@ -1,0 +1,29 @@
+# /bin/bash
+
+# Script to export all data for operational level analysis
+
+DATE=`date "+%Y%m%d%H%M"`
+
+BASE_OUTPUT_DIR="/home/ntibackup/irb_analytics_dump"
+OUTPUT_FILE="$BASE_OUTPUT_DIR/op_analytics_export-$DATE.sql"
+OUTPUT_TAR="$BASE_OUTPUT_DIR/operational_analytics_export-$DATE.tar.gz"
+OUTPUT_GPG="$OUTPUT_TAR.gpg"
+SFTP_LOCATION="sftp -b - ou-001@sftp.nextthought.com:outgoing/"
+
+mysqldmp_cmd="mysqldump -h **** -P **** -u **** -p**** Analytics "
+
+# Dump user tables
+echo "Dumping user tables with: $mysqldmp_cmd"
+$mysqldmp_cmd --single-transaction > $OUTPUT_FILE
+
+echo "Generating tarball at $OUTPUT_TAR"
+tar -czf $OUTPUT_TAR $OUTPUT_FILE
+gpg2 --passphrase ****** --symmetric --batch --output $OUTPUT_GPG $OUTPUT_TAR
+rm -rf $OUTPUT_FILE
+rm -rf $OUTPUT_TAR
+
+# Upload to sftp location
+echo "Uploading to $SFTP_LOCATION"
+echo "put $OUTPUT_GPG" | $SFTP_LOCATION
+
+echo "Finished dumping Analytics database."
