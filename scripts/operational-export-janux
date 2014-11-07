@@ -26,4 +26,5 @@ rm -rf $OUTPUT_TAR
 echo "Uploading to $SFTP_LOCATION"
 echo "put $OUTPUT_GPG" | $SFTP_LOCATION
 
+rm -rf $OUTPUT_GPG
 echo "Finished dumping Analytics database."
