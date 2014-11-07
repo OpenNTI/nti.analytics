@@ -199,7 +199,6 @@ def get_course_by_container_id( container_id ):
 	# This is expensive if we do not find our course.
 
 	# Update: JZ: TODO do we still need to check our global site for site packages?
-	#x = 'tag:nextthought.com,2011-10:NextThought-HTML-NextThoughtFAQ_MC.nextthought_faq'
 	result = _get_course_from_ntiid_resolver().get_course( container_id )
 
 	if result is None:
