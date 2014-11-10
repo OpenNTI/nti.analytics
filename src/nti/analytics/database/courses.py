@@ -35,6 +35,7 @@ class Courses(Base):
 	course_long_name = Column('course_long_name', NTIID_COLUMN_TYPE, nullable=True)
 	start_date = Column('start_date', DateTime, nullable=True)
 	end_date = Column('end_date', DateTime, nullable=True)
+	# This interval may be represented as time since epoch (e.g. mysql)
 	duration = Column('duration', Interval, nullable=True)
 
 def _get_course_long_name( course ):

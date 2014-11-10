@@ -7,11 +7,9 @@ DATE=`date "+%Y%m%d%H%M"`
 
 BASE_OUTPUT_DIR="/home/ntibackup/capstone_analytics_dump"
 OUTPUT_FILE="$BASE_OUTPUT_DIR/capstone_analytics.sql"
+OUTPUT_RESOURCES_FILE="$BASE_OUTPUT_DIR/capstone_resources_analytics.sql"
 OUTPUT_TAR="$BASE_OUTPUT_DIR/capstone_mysql_export-$DATE.tar.gz"
 OUTPUT_GPG="$OUTPUT_TAR.gpg"
-
-# TODO Set this up for capstone...
-#SFTP_LOCATION="sftp -b - ou-001@sftp.nextthought.com:outgoing/"
 
 mysql_cmd="mysql -h **** -P **** -u **** -p**** -D Analytics"
 mysqldmp_cmd="mysqldump -h **** -P **** -u **** -p**** Analytics "
@@ -45,9 +43,10 @@ done
 mysqldmp_filter_cmd_final="$mysqldmp_cmd ${filter_tables_array[@]}"
 #echo "Dumping user tables with: $mysqldmp_filter_cmd_final"
 $mysqldmp_filter_cmd_final --single-transaction --where="$COURSE_FILTER" > $OUTPUT_FILE
+$mysqldmp_cmd --single-transaction Resources > $OUTPUT_RESOURCES_FILE
 
 echo "Generating tarball at $OUTPUT_TAR"
-tar -czf $OUTPUT_TAR $OUTPUT_FILE
+tar -czf $OUTPUT_TAR $OUTPUT_FILE $OUTPUT_RESOURCES_FILE
 gpg2 --passphrase ****** --symmetric --batch --output $OUTPUT_GPG $OUTPUT_TAR
 rm -rf $OUTPUT_FILE
 rm -rf $OUTPUT_TAR
