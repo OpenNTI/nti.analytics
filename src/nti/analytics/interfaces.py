@@ -37,7 +37,7 @@ VIDEO_WATCH = u'WATCH'
 VIDEO_EVENTS = (VIDEO_SKIP, VIDEO_WATCH)
 VIDEO_EVENTS_VOCABULARY = \
 	vocabulary.SimpleVocabulary([vocabulary.SimpleTerm(_x) for _x in VIDEO_EVENTS])
-	
+
 class IAnalyticsQueueFactory(interface.Interface):
 	"""
 	A factory for analytics processing queues.
@@ -56,6 +56,7 @@ class IAnalyticsObjectBase(interface.Interface):
 						required=True )
 
 	user = ValidTextLine(title='User who created the event', required=False)
+	SessionID = Number( title=u"The analytics session id.", required=False )
 
 class ITimeLength(interface.Interface):
 
@@ -107,7 +108,7 @@ class IVideoEvent(IResourceEvent):
 	Describes a video event.
 	"""
 	event_type = Choice(vocabulary=VIDEO_EVENTS_VOCABULARY,
-					    title='The type of video event', required=True) 
+					    title='The type of video event', required=True)
 
 	video_start_time = Number(title=u"The point in the video that starts playing, in seconds.",
 							default=0)

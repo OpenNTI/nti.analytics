@@ -22,7 +22,7 @@ from nti.analytics import get_factory
 from nti.analytics import SESSIONS_ANALYTICS
 
 ANALYTICS_SESSION_COOKIE_NAME = str( 'nti.da_session' )
-ANALYTICS_SESSION_HEADER = str( 'x-nti-da-session')
+ANALYTICS_SESSION_HEADER = str( 'x-nti-da-session' )
 
 def _get_session_id_from_val( val ):
 	if val is None:
@@ -127,11 +127,18 @@ def update_session( session, user, user_agent=None, ip_addr=None ):
 								getattr( session_record, 'start_time', None ) ) )
 	return session
 
-def get_current_session_id( user ):
-	# We look for the header first, it takes precedence (and is probably from the iPad).
-	# If not, we check for cookie, which should be from webapp, that we can
-	# validate.
+def get_current_session_id( user, event=None ):
+	# Here is what we look for, in order:
+	# 1. A session id attached to the incoming event (probably ipad only)
+	# 2. A header on the request, (also ipad)
+	# 3. A cookie, which should be from webapp, that we can also validate.
+
+	given_session_id = getattr( event, 'SessionID', None )
+	if given_session_id is not None:
+		return given_session_id
+
 	request = get_current_request()
+
 	if request is None:
 		return None
 
