@@ -176,6 +176,7 @@ def _get_duration( submission ):
 	return int( time_length )
 
 def _get_response(part):
+	"For a submission part, return the user-provided response."
 	if IQUploadedFile.providedBy( part ):
 		part = '<FILE_UPLOADED>'
 	elif IQModeledContentResponse.providedBy( part ):
@@ -195,6 +196,7 @@ def _get_response(part):
 	return result
 
 def _load_response( value ):
+	"For a database response value, transform it into a useable state."
 	response = json.loads( value )
 	if isinstance( response, dict ):
 		# Map
@@ -208,7 +210,7 @@ def _load_response( value ):
 
 
 def _get_grade_val( grade_value ):
-	# Convert the webapp's "number - letter" scheme to a number, or None.
+	"""Convert the webapp's "number - letter" scheme to a number, or None."""
 	result = None
 	if grade_value and isinstance(grade_value, string_types):
 		try:
@@ -593,6 +595,23 @@ def get_self_assessments_for_user(user, course):
 																SelfAssessmentsTaken.course_id == course_id ).all()
 
 	return resolve_objects( _resolve_self_assessment, results )
+
+def get_self_assessments_for_user_and_id(user, assessment_id):
+	db = get_analytics_db()
+	uid = get_user_db_id( user )
+	results = db.session.query(SelfAssessmentsTaken).filter( 	SelfAssessmentsTaken.user_id == uid,
+																SelfAssessmentsTaken.assignment_id == assessment_id ).all()
+
+	return resolve_objects( _resolve_self_assessment, results )
+
+def get_assignment_for_user( user, assignment_id ):
+	db = get_analytics_db()
+	uid = get_user_db_id( user )
+	results = db.session.query( AssignmentsTaken ) \
+					.filter( AssignmentsTaken.user_id == uid,
+							AssignmentsTaken.assignment_id == assignment_id ).all()
+
+	return resolve_objects( _resolve_assignment, results )
 
 def get_assignments_for_user(user, course):
 	# We may not have a grade here.

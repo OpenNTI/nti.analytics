@@ -28,7 +28,7 @@ ASSESSMENTS_ANALYTICS = QUEUE_NAME + '++assessments'
 ENROLL_ANALYTICS = QUEUE_NAME + '++enroll'
 TAGS_ANALYTICS = QUEUE_NAME + '++tags'
 
-# This one needs more buckets
+# This one perhaps needs more buckets
 RESOURCE_VIEW_ANALYTICS = QUEUE_NAME + '++resource++views'
 VIDEO_VIEW_ANALYTICS = QUEUE_NAME + '++video++views'
 CATALOG_VIEW_ANALYTICS = QUEUE_NAME + '++catalog++views'

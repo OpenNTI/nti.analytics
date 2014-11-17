@@ -10,6 +10,14 @@ __docformat__ = "restructuredtext en"
 import os
 import shutil
 import tempfile
+import unittest
+
+from fudge import patch_object
+
+from six import integer_types, string_types
+
+import zope.testing.cleanup
+from zope import component
 
 from nti.dataserver.tests.mock_dataserver import WithMockDS
 from nti.dataserver.tests.mock_dataserver import mock_db_trans
@@ -23,15 +31,12 @@ from nti.testing.layers import GCLayerMixin
 from nti.testing.layers import ZopeComponentLayer
 from nti.testing.layers import ConfiguringLayerMixin
 
+from nti.app.assessment.tests import RegisterAssignmentLayerMixin
+
 from nti.dataserver.tests.mock_dataserver import DSInjectorMixin
 
-import zope.testing.cleanup
-
-from zope import component
-
+from nti.analytics import identifier
 from nti.analytics.identifier import _Identifier
-
-from six import integer_types, string_types
 
 class SharedConfiguringTestLayer(ZopeComponentLayer,
                                  GCLayerMixin,
@@ -61,8 +66,6 @@ class SharedConfiguringTestLayer(ZopeComponentLayer,
 	@classmethod
 	def testTearDown(cls):
 		pass
-
-import unittest
 
 class NTIAnalyticsTestCase(unittest.TestCase):
 	layer = SharedConfiguringTestLayer

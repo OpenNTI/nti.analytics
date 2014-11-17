@@ -131,9 +131,13 @@
 			 for=".interfaces.ITopicViewEvent"
 			 provides="nti.externalization.interfaces.IInternalObjectUpdater" />
 
-		<adapter factory=".internalization._AnalyticsSessionUpdater"
+	<adapter factory=".internalization._AnalyticsSessionUpdater"
 			 for=".interfaces.IAnalyticsSession"
 			 provides="nti.externalization.interfaces.IInternalObjectUpdater" />
+
+	<!-- Progress adapters -->
+	<adapter factory=".adapters._assignment_progress_for_user" />
+	<adapter factory=".adapters._assessment_progress_for_user" />
 
 	<configure zcml:condition="have devmode">
 

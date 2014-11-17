@@ -217,3 +217,17 @@ class IAnalyticsSessions(interface.Interface):
 	"""
 	sessions = TypedIterable(title="The analytics sessions.",
 							 value_type=Object( IAnalyticsSession ) )
+
+
+class IProgress(interface.Interface):
+	"""
+	Indicates progress made on an underlying content unit.
+	"""
+	AbsoluteProgress = Number( title=u"A number indicating the absolute progress made on an item.",
+							default=0 )
+
+	MaxPossibleProgress = Number( title=u"A number indicating the max possible progress that could be made on an item.",
+							default=0 )
+
+	HasProgress = Bool( title=u"Indicates there was some progress made on item.",
+					default=False )
