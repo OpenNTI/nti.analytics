@@ -6,8 +6,10 @@
 DATE=`date "+%Y%m%d%H%M"`
 
 BASE_OUTPUT_DIR="/home/ntibackup/capstone_analytics_dump"
-OUTPUT_FILE="$BASE_OUTPUT_DIR/capstone_analytics.sql"
-OUTPUT_RESOURCES_FILE="$BASE_OUTPUT_DIR/capstone_resources_analytics.sql"
+OUTPUT_FILENAME="capstone_analytics.sql"
+OUTPUT_FILE="$BASE_OUTPUT_DIR/$OUTPUT_FILENAME"
+OUTPUT_RESOURCES_FILENAME="capstone_resource_analytics.sql"
+OUTPUT_RESOURCES_FILE="$BASE_OUTPUT_DIR/$OUTPUT_RESOURCES_FILENAME"
 OUTPUT_TAR="$BASE_OUTPUT_DIR/capstone_mysql_export-$DATE.tar.gz"
 OUTPUT_GPG="$OUTPUT_TAR.gpg"
 
@@ -24,19 +26,18 @@ TABLES_WITH_COLUMN_SQL="SELECT DISTINCT TABLE_NAME FROM INFORMATION_SCHEMA.COLUM
 filter_tables_array=()
 results=($($mysql_cmd --skip-column-names -e "$TABLES_WITH_COLUMN_SQL"))
 
-# Filter out tables we do not want to share
 for row in "${results[@]}"
 do
-	if [ "$row" != "AssignmentGrades" ]; then
-		if [ "$row" != "AssignmentDetailGrades" ]; then
-			if [ "$row" != "CourseEnrollments" ]; then
-				if [ "$row" != "CourseDrops" ]; then
-					echo "Found table: $row"
-					filter_tables_array+=("$row")
-				fi
-			fi
-		fi
-	fi
+        if [ "$row" != "AssignmentGrades" ]; then
+                if [ "$row" != "AssignmentDetailGrades" ]; then
+                        if [ "$row" != "CourseEnrollments" ]; then
+                                if [ "$row" != "CourseDrops" ]; then
+                                        echo "Found table: $row"
+                                        filter_tables_array+=("$row")
+                                fi
+                        fi
+                fi
+        fi
 done
 
 # Dump tables
@@ -45,14 +46,11 @@ mysqldmp_filter_cmd_final="$mysqldmp_cmd ${filter_tables_array[@]}"
 $mysqldmp_filter_cmd_final --single-transaction --where="$COURSE_FILTER" > $OUTPUT_FILE
 $mysqldmp_cmd --single-transaction Resources > $OUTPUT_RESOURCES_FILE
 
-echo "Generating tarball at $OUTPUT_TAR"
-tar -czf $OUTPUT_TAR $OUTPUT_FILE $OUTPUT_RESOURCES_FILE
-gpg2 --passphrase ****** --symmetric --batch --output $OUTPUT_GPG $OUTPUT_TAR
-rm -rf $OUTPUT_FILE
-rm -rf $OUTPUT_TAR
+cd $BASE_OUTPUT_DIR
 
-# Uploading to sftp
-echo "Uploading to $SFTP_LOCATION"
-echo "put $OUTPUT_GPG" | $SFTP_LOCATION
+echo "Generating tarball at $OUTPUT_TAR"
+tar -czf $OUTPUT_TAR $OUTPUT_FILENAME $OUTPUT_RESOURCES_FILENAME
+rm -rf $OUTPUT_FILENAME
+rm -rf $OUTPUT_RESOURCES_FILENAME
 
 echo "Finished dumping Analytics capstone export."
