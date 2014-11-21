@@ -58,6 +58,7 @@ class VideoEvents(Base,ResourceViewMixin,TimeLengthMixin):
 	video_start_time = Column('video_start_time', Integer, nullable=False )
 	video_end_time = Column('video_end_time', Integer, nullable=False )
 	with_transcript = Column('with_transcript', Boolean, nullable=False )
+	max_time_length = Column( 'max_time_length', Integer, nullable=True )
 
 	video_view_id = Column('video_view_id', Integer, Sequence( 'video_view_id_seq' ), primary_key=True )
 
@@ -129,6 +130,7 @@ def create_video_event(	user,
 						course, context_path,
 						video_resource,
 						time_length,
+						max_time_length,
 						video_event_type,
 						video_start_time,
 						video_end_time,
@@ -157,6 +159,7 @@ def create_video_event(	user,
 								context_path=context_path,
 								resource_id=vid,
 								time_length=time_length,
+								max_time_length=max_time_length,
 								video_event_type=video_event_type,
 								video_start_time=video_start_time,
 								video_end_time=video_end_time,

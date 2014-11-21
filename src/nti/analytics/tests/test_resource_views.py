@@ -12,7 +12,6 @@ from datetime import datetime
 from hamcrest import is_
 from hamcrest import none
 from hamcrest import not_none
-from hamcrest import has_length
 from hamcrest import assert_that
 
 from nti.analytics.tests import test_user_ds_id
@@ -33,6 +32,7 @@ class TestResourceViews(AnalyticsTestBase):
 
 	def _create_video_event(self, user_id, resource_val):
 		time_length = 30
+		max_time_length = None
 		video_event_type = 'WATCH'
 		video_start_time = 30
 		video_end_time = 60
@@ -41,7 +41,7 @@ class TestResourceViews(AnalyticsTestBase):
 		db_views.create_video_event( user_id,
 									test_session_id, event_time,
 									self.course_id, self.context_path,
-									resource_val, time_length,
+									resource_val, time_length, max_time_length,
 									video_event_type, video_start_time,
 									video_end_time,  with_transcript )
 

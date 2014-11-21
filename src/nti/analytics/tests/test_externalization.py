@@ -54,6 +54,7 @@ course = 'CS1300'
 context_path = ['ntiid:lesson1']
 resource_id = 'ntiid:lesson1_chapter1'
 time_length = 30
+max_time_length = 30
 
 topic_id = 'ntiid:topic1'
 blog_id = 'ntiid:blog1'
@@ -107,6 +108,7 @@ watch_video_event = WatchVideoEvent(user=user,
 				context_path=context_path,
 				resource_id=resource_id,
 				Duration=time_length,
+				MaxDuration=max_time_length,
 				video_start_time=video_start_time,
 				video_end_time=video_end_time,
 				with_transcript=with_transcript)
@@ -237,6 +239,14 @@ class TestResourceEvents(NTIAnalyticsTestCase):
 		assert_that(new_io, has_property('video_end_time', is_( video_end_time )))
 		assert_that(new_io, has_property('with_transcript', is_( with_transcript )))
 		assert_that( new_io, is_( SkipVideoEvent ) )
+
+		# With max duration
+		skip_video_event.MaxDuration = 60
+		ext_obj = toExternalObject(skip_video_event)
+		factory = internalization.find_factory_for(ext_obj)
+		new_io = factory()
+		internalization.update_from_external_object(new_io, ext_obj)
+		assert_that(new_io, has_property('MaxDuration', is_( 60 )))
 
 	def test_video_event_andrew(self):
 

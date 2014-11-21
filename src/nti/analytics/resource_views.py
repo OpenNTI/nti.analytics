@@ -129,12 +129,19 @@ def _validate_video_event( event ):
 
 	start = event.video_start_time
 	end = event.video_end_time
+
 	if 		start < 0 	\
 		or 	end < 0:
 		raise UnrecoverableAnalyticsError(
 						'Video event has invalid time values (start=%s) (end=%s) (event=%s)' %
 						( start, end, event.event_type ) )
 
+	# Be lenient if watch time is less than max duration due to the way the player events are triggered.
+	max_time_length = event.MaxDuration
+	if max_time_length and max_time_length < event.Duration:
+		event.Duration = max_time_length
+
+	event.MaxDuration = int( max_time_length ) if max_time_length else None
 	event.video_start_time = int( start )
 	event.video_end_time = int( end )
 
@@ -276,6 +283,7 @@ def _add_video_event( event, nti_session=None ):
 						event.context_path,
 						resource_id,
 						event.time_length,
+						event.MaxDuration,
 						event.event_type,
 						event.video_start_time,
 						event.video_end_time,

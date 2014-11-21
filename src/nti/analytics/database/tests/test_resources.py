@@ -133,7 +133,9 @@ class TestCourseResources(AnalyticsTestBase):
 		assert_that( results, has_length( 0 ) )
 
 		resource_val = 'ntiid:course_video'
-		time_length = 30
+		time_length = 40
+		# Note watch time is greater than max
+		max_time_length = 30
 		video_event_type = 'WATCH'
 		video_start_time = 30
 		video_end_time = 60
@@ -142,7 +144,7 @@ class TestCourseResources(AnalyticsTestBase):
 		db_views.create_video_event( test_user_ds_id,
 									test_session_id, event_time,
 									self.course_id, self.context_path,
-									resource_val, time_length,
+									resource_val, time_length, max_time_length,
 									video_event_type, video_start_time,
 									video_end_time,  with_transcript )
 		results = self.session.query(VideoEvents).all()
@@ -159,6 +161,7 @@ class TestCourseResources(AnalyticsTestBase):
 		assert_that( resource_view.video_start_time, is_( video_start_time ) )
 		assert_that( resource_view.video_end_time, is_( video_end_time ) )
 		assert_that( resource_view.time_length, is_( time_length ) )
+		assert_that( resource_view.max_time_length, is_(max_time_length) )
 		assert_that( resource_view.with_transcript )
 
 		results = db_views.get_user_video_events( test_user_ds_id, self.course_id )
@@ -178,7 +181,7 @@ class TestCourseResources(AnalyticsTestBase):
 		db_views.create_video_event( test_user_ds_id,
 									test_session_id, event_time,
 									self.course_id, self.context_path,
-									resource_val, time_length,
+									resource_val, time_length, max_time_length,
 									video_event_type, video_start_time,
 									video_end_time,  with_transcript )
 

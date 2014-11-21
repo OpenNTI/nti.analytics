@@ -116,6 +116,9 @@ class IVideoEvent(IResourceEvent):
 	video_end_time = Number(title=u"The point at which the video stops playing, in seconds.",
 							default=0)
 
+	MaxDuration = Number(title=u"The maximum length of the video, in seconds.",
+							required=False)
+
 	with_transcript = Bool(title=u"Whether the video was viewed with a transcript or not.")
 
 class ICourseCatalogViewEvent(IAnalyticsViewEvent, ICourseEvent):
