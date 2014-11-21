@@ -372,11 +372,17 @@ def update_friends_list( user, nti_session, timestamp, friends_list ):
 	db = get_analytics_db()
 	friends_list_ds_id = FriendsListId.get_id( friends_list )
 	friends_list_id = _get_friends_list_id( db, friends_list_ds_id )
+
+	if not friends_list_id:
+		create_friends_list(user, nti_session, timestamp, friends_list)
+		logger.info( 'Creating friends list (user=%s) (friends_list=%s)',
+					user, friends_list )
+
 	members = _get_friends_list_members( db, friends_list_id )
 	members_to_add, members_to_remove \
 		= _find_friends_list_members( friends_list, members )
 
-	user = get_or_create_user(user )
+	user = get_or_create_user( user )
 	uid = user.user_id
 	sid = SessionId.get_id( nti_session )
 	timestamp = timestamp_type( timestamp )
