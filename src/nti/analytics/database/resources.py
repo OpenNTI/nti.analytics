@@ -24,7 +24,7 @@ class Resources(Base):
 	__tablename__ = 'Resources'
 
 	resource_id = Column( 'resource_id', Integer, Sequence( 'resource_id_seq' ), index=True, nullable=False, primary_key=True )
-	resource_ds_id = Column( 'resource_ds_id', NTIID_COLUMN_TYPE, nullable=False  )
+	resource_ds_id = Column( 'resource_ds_id', NTIID_COLUMN_TYPE, index=True, nullable=False  )
 	resource_display_name = Column( 'resource_display_name', String( 128 ), unique=False, nullable=True )
 
 def _get_resource_display_name( resource_val ):
