@@ -50,10 +50,13 @@ def _get_or_create_resource( db, resource_val ):
 			found_resource.resource_display_name = _get_resource_display_name( resource_val )
 	return found_resource or _create_resource( db, resource_val )
 
-def get_resource_id( db, resource_id ):
-	""" Returns the db id for the given ds resource id (probably ntiid). """
-	resource = _get_or_create_resource( db, resource_id )
-	return resource.resource_id
+def get_resource_id( db, resource_val, create=False ):
+	""" Returns the db id for the given ds resource ntiid. """
+	if create:
+		resource = _get_or_create_resource( db, resource_val )
+	else:
+		resource = db.session.query(Resources).filter( Resources.resource_ds_id == resource_val ).first()
+	return resource.resource_id if resource is not None else None
 
 def get_resource_val( resource_id ):
 	""" Returns the ds resource id (probably ntiid) for the given db id. """

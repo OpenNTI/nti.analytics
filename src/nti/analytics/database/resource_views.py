@@ -95,7 +95,7 @@ def create_course_resource_view(user, nti_session, timestamp, course, context_pa
 	uid = user_record.user_id
 	sid = SessionId.get_id( nti_session )
 	rid = ResourceId.get_id( resource )
-	rid = get_resource_id( db, rid )
+	rid = get_resource_id( db, rid, create=True )
 
 	course_id = get_course_id( db, course, create=True )
 	timestamp = timestamp_type( timestamp )
@@ -138,7 +138,7 @@ def create_video_event(	user,
 	uid = user.user_id
 	sid = SessionId.get_id( nti_session )
 	vid = ResourceId.get_id( video_resource )
-	vid = get_resource_id( db, vid )
+	vid = get_resource_id( db, vid, create=True )
 
 	course_id = get_course_id( db, course, create=True )
 	timestamp = timestamp_type( timestamp )
@@ -218,6 +218,22 @@ def _resolve_video_view( record, course=None, user=None ):
 				video_end_time=video_end_time,
 				with_transcript=with_transcript)
 	return video_event
+
+def get_user_resource_views_for_ntiid( user, resource_ntiid ):
+	db = get_analytics_db()
+	user_id = get_user_db_id( user )
+	resource_id = get_resource_id( db, resource_ntiid )
+	results = db.session.query( CourseResourceViews ).filter( CourseResourceViews.user_id == user_id,
+															CourseResourceViews.resource_id == resource_id ).all()
+	return resolve_objects( _resolve_resource_view, results, user=user )
+
+def get_user_video_views_for_ntiid( user, resource_ntiid ):
+	db = get_analytics_db()
+	user_id = get_user_db_id( user )
+	resource_id = get_resource_id( db, resource_ntiid )
+	results = db.session.query( VideoEvents ).filter( VideoEvents.user_id == user_id,
+													VideoEvents.resource_id == resource_id ).all()
+	return resolve_objects( _resolve_video_view, results, user=user )
 
 def get_user_resource_views( user, course ):
 	db = get_analytics_db()

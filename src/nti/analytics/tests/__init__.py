@@ -10,6 +10,7 @@ __docformat__ = "restructuredtext en"
 import os
 import shutil
 import tempfile
+import time
 import unittest
 
 from fudge import patch_object
@@ -30,6 +31,12 @@ from nti.testing.layers import find_test
 from nti.testing.layers import GCLayerMixin
 from nti.testing.layers import ZopeComponentLayer
 from nti.testing.layers import ConfiguringLayerMixin
+
+from nti.analytics.database.interfaces import IAnalyticsDB
+from nti.analytics.database.database import AnalyticsDB
+from nti.analytics.database import users as db_users
+from nti.analytics.database import sessions as db_sessions
+from nti.analytics.database import courses as db_courses
 
 from nti.app.assessment.tests import RegisterAssignmentLayerMixin
 
@@ -133,3 +140,33 @@ class TestIdentifier(_Identifier):
 
 		return result
 
+test_user_ds_id = 78
+test_session_id = 1
+
+class AnalyticsTestBase(unittest.TestCase):
+	""" A base class that simply creates a user and session"""
+
+	def setUp(self):
+		self.db = AnalyticsDB( dburi='sqlite://' )
+		component.getGlobalSiteManager().registerUtility( self.db, IAnalyticsDB )
+		self.session = self.db.session
+
+		self.patches = [
+				patch_object( identifier.SessionId, 'get_id', TestIdentifier.get_id ),
+				patch_object( identifier._DSIdentifier, 'get_id', TestIdentifier.get_id ),
+				patch_object( identifier._NtiidIdentifier, 'get_id', TestIdentifier.get_id ),
+				patch_object( identifier._DSIdentifier, 'get_object', TestIdentifier.get_object ),
+				patch_object( identifier._NtiidIdentifier, 'get_object', TestIdentifier.get_object ) ]
+
+		db_users.create_user( test_user_ds_id )
+		user_agent = 'webapp-1.9'
+		ip_addr = '0.1.2.3.4'
+		db_sessions.create_session( test_user_ds_id, user_agent, time.time(), ip_addr )
+		self.course_id = 1
+		db_courses.get_course_id( self.db, self.course_id, create=True )
+
+	def tearDown(self):
+		component.getGlobalSiteManager().unregisterUtility( self.db )
+		self.session.close()
+		for patch in self.patches:
+			patch.restore()

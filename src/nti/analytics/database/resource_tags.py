@@ -102,7 +102,7 @@ def create_note(user, nti_session, course, note):
 	uid = user_record.user_id
 	sid = SessionId.get_id( nti_session )
 	rid = ResourceId.get_id( note.containerId )
-	rid = get_resource_id( db, rid )
+	rid = get_resource_id( db, rid, create=True )
 
 	note_ds_id = NoteId.get_id( note )
 
@@ -180,7 +180,7 @@ def create_note_view(user, nti_session, timestamp, course, note):
 	uid = user_record.user_id
 	sid = SessionId.get_id( nti_session )
 	rid = ResourceId.get_id( note.containerId )
-	rid = get_resource_id( db, rid )
+	rid = get_resource_id( db, rid, create=True )
 
 	note_ds_id = NoteId.get_id( note )
 	note_id = _get_note_id( db, note_ds_id )
@@ -215,7 +215,7 @@ def create_highlight(user, nti_session, course, highlight):
 	uid = user_record.user_id
 	sid = SessionId.get_id( nti_session )
 	rid = ResourceId.get_id( highlight.containerId )
-	rid = get_resource_id( db, rid )
+	rid = get_resource_id( db, rid, create=True )
 
 	highlight_ds_id = HighlightId.get_id( highlight )
 

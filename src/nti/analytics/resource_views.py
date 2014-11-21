@@ -32,6 +32,9 @@ from nti.analytics.database import enrollments as db_enrollments
 from nti.analytics.database import resource_tags as db_resource_tags
 from nti.analytics.database import resource_views as db_resource_views
 
+from nti.analytics.progress import get_progress_for_resource_views
+from nti.analytics.progress import get_progress_for_video_views
+
 from nti.analytics.recorded.interfaces import VideoSkipRecordedEvent
 from nti.analytics.recorded.interfaces import BlogViewedRecordedEvent
 from nti.analytics.recorded.interfaces import NoteViewedRecordedEvent
@@ -42,7 +45,6 @@ from nti.analytics.recorded.interfaces import ResourceViewedRecordedEvent
 
 from nti.analytics import get_factory
 from nti.analytics import get_current_username
-
 from nti.analytics import BLOG_VIEW_ANALYTICS
 from nti.analytics import NOTE_VIEW_ANALYTICS
 from nti.analytics import TOPIC_VIEW_ANALYTICS
@@ -51,10 +53,24 @@ from nti.analytics import CATALOG_VIEW_ANALYTICS
 from nti.analytics import RESOURCE_VIEW_ANALYTICS
 
 def get_user_resource_views( *args, **kwargs ):
-	return db_resource_views.get_user_resource_views( *args, **kwargs  )
+	return db_resource_views.get_user_resource_views_for_ntiid( *args, **kwargs  )
 
 def get_user_video_events( *args, **kwargs  ):
 	return db_resource_views.get_user_video_events( *args, **kwargs  )
+
+def get_progress_for_ntiid( user, resource_ntiid ):
+	# Not sure if one of these is more expensive than the other.  Perhaps
+	# the caller would be able to specify video or other?
+	resource_views = db_resource_views.get_user_resource_views_for_ntiid( user, resource_ntiid )
+
+	if resource_views:
+		result = get_progress_for_resource_views( resource_ntiid, resource_views )
+
+	else:
+		resource_views = db_resource_views.get_user_video_views_for_ntiid( user, resource_ntiid )
+		result = get_progress_for_video_views( resource_ntiid, resource_views )
+
+	return result
 
 def _get_object( ntiid ):
 	return ntiids.find_object_with_ntiid( ntiid )
@@ -340,7 +356,6 @@ def handle_events( batch_events ):
 	# events. The nti.async.processor does this and at least drops the bad
 	# events in a failed queue.
 	return len( batch_events )
-
 
 class UnrecoverableAnalyticsError( Exception ):
 	"""

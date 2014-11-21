@@ -24,9 +24,10 @@ from nti.analytics.assessments import get_assignment_for_user
 from nti.analytics.assessments import get_self_assessments_for_user_and_id
 
 @interface.implementer( IProgress )
-class _Progress( object ):
+class DefaultProgress( object ):
 
-	def __init__(self, progress, max_progress, has_progress=False ):
+	def __init__(self, progress_id, progress, max_progress, has_progress=False ):
+		self.progress_id = progress_id
 		self.AbsoluteProgress = progress
 		self.MaxProgressPossible = max_progress
 		self.HasProgress = has_progress
@@ -51,7 +52,7 @@ def _assignment_progress_for_user( user, assignment ):
 	result = None
 	if assignment_record:
 		# Simplistic implementation
-		result = _Progress( 1, 1, True )
+		result = DefaultProgress( assignment_id, 1, 1, True )
 	return result
 
 @interface.implementer( IProgress )
@@ -77,6 +78,6 @@ def _assessment_progress_for_user( user, assessment ):
 	result = None
 	if assessment_record:
 		# Simplistic implementation
-		result = _Progress( 1, 1, True )
+		result = DefaultProgress( assessment_id, 1, 1, True )
 	return result
 
