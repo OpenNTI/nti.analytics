@@ -377,8 +377,9 @@ def update_friends_list( user, nti_session, timestamp, friends_list ):
 
 	if not friends_list_id:
 		create_friends_list(user, nti_session, timestamp, friends_list)
-		logger.info( 'Creating friends list (user=%s) (friends_list=%s)',
-					user, friends_list )
+		logger.info( 'Creating friends list (user=%s) (friends_list=%s) (ds_id=%s)',
+					user, friends_list, friends_list_ds_id )
+		friends_list_id = _get_friends_list_id( db, friends_list_ds_id )
 
 	members = _get_friends_list_members( db, friends_list_id )
 	members_to_add, members_to_remove \
