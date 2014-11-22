@@ -191,6 +191,7 @@ def _resolve_resource_view( record, course=None, user=None ):
 
 def _resolve_video_view( record, course=None, user=None ):
 	time_length = record.time_length
+	max_time_length = record.max_time_length
 
 	if time_length < 1:
 		# Ignore inconsequential events
@@ -217,6 +218,7 @@ def _resolve_video_view( record, course=None, user=None ):
 				context_path=context_path,
 				resource_id=resource_ntiid,
 				Duration=time_length,
+				MaxDuration=max_time_length,
 				video_start_time=video_start_time,
 				video_end_time=video_end_time,
 				with_transcript=with_transcript)

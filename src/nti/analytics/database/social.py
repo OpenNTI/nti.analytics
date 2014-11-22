@@ -369,6 +369,8 @@ def update_contacts( user, nti_session, timestamp, friends_list ):
 	return len( members_to_add ) - len( members_to_remove )
 
 def update_friends_list( user, nti_session, timestamp, friends_list ):
+	"""For the given friends list, update the members information.  This
+	includes both adding and removing members."""
 	db = get_analytics_db()
 	friends_list_ds_id = FriendsListId.get_id( friends_list )
 	friends_list_id = _get_friends_list_id( db, friends_list_ds_id )

@@ -20,11 +20,14 @@ def get_progress_for_resource_views( resource_ntiid, resource_views ):
 def get_progress_for_video_views( resource_ntiid, video_events  ):
 	"""
 	Simplistic; looking at a resource constitutes progress.
-
-	#TODO We want to do more, but it seems
-	unlikely that we can do better unless we know the max length of the video.
 	"""
 	result = None
+	video_events = list( video_events )
+
 	if video_events:
-		result = DefaultProgress( resource_ntiid, 1, 1, True )
+		# It may be enough to grab the first MaxDuration we find.  max
+		# time may be null.
+		max_time = max( (x.MaxDuration for x in video_events) )
+		total_time = sum( (x.time_length for x in video_events) )
+		result = DefaultProgress( resource_ntiid, total_time, max_time, True )
 	return result
