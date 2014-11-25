@@ -8,7 +8,22 @@ __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
-from nti.analytics.adapters import DefaultProgress
+from zope import interface
+
+from nti.analytics.interfaces import IProgress
+
+from nti.externalization.representation import WithRepr
+
+@interface.implementer( IProgress )
+@WithRepr
+class DefaultProgress( object ):
+
+	def __init__(self, progress_id, progress, max_progress, has_progress=False, last_modified=None ):
+		self.progress_id = progress_id
+		self.AbsoluteProgress = progress
+		self.MaxPossibleProgress = max_progress
+		self.HasProgress = has_progress
+		self.last_modified = last_modified
 
 def get_progress_for_resource_views( resource_ntiid, resource_views ):
 	"""Simplistic; looking at a resource constitutes progress."""

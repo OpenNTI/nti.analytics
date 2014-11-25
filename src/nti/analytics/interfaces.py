@@ -208,11 +208,11 @@ class IAnalyticsSession(interface.Interface):
 	"""
 	SessionID = Number( title=u"The analytics session id.", required=False )
 
-	SessionStartTime = Number(title=u"The timestamp when this sessiom started, in seconds since epoch.",
-						required=False )
+	SessionStartTime = Number( title=u"The timestamp when this sessiom started, in seconds since epoch.",
+							required=False )
 
-	SessionEndTime = Number(title=u"The timestamp when this session ended, in seconds since epoch.",
-						required=False )
+	SessionEndTime = Number( title=u"The timestamp when this session ended, in seconds since epoch.",
+							required=False )
 
 class IAnalyticsSessions(interface.Interface):
 	"""

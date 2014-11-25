@@ -39,8 +39,10 @@ from nti.analytics.interfaces import INoteViewEvent
 from nti.analytics.interfaces import ITopicViewEvent
 from nti.analytics.interfaces import IAnalyticsSessions
 from nti.analytics.interfaces import IBatchResourceEvents
-
 from nti.analytics.interfaces import ICourseCatalogViewEvent
+from nti.analytics.interfaces import IProgress
+
+from nti.analytics.progress import DefaultProgress
 
 from nti.externalization.tests import assert_does_not_pickle
 
@@ -346,3 +348,15 @@ class TestResourceEvents(NTIAnalyticsTestCase):
 		f_new = pickle.loads(f_string)
 		assert_that(f_new, has_property('Duration', 10))
 		assert_that(f_new, has_property('RootContextID', 'foo'))
+
+class TestProgress(NTIAnalyticsTestCase):
+
+	def test_progress(self):
+
+		progress = DefaultProgress( 'tag:nt_ntiid1', 10, 20, True, time.time() )
+		assert_that( progress, verifiably_provides( IProgress ) )
+
+		ext_obj = toExternalObject( progress )
+		assert_that(ext_obj, has_entry( 'AbsoluteProgress', 10 ))
+		assert_that(ext_obj, has_entry( 'MaxPossibleProgress', 20 ))
+		assert_that(ext_obj, has_entry( 'HasProgress', True ))

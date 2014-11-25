@@ -23,14 +23,7 @@ from nti.analytics.interfaces import IProgress
 from nti.analytics.assessments import get_assignment_for_user
 from nti.analytics.assessments import get_self_assessments_for_user_and_id
 
-@interface.implementer( IProgress )
-class DefaultProgress( object ):
-
-	def __init__(self, progress_id, progress, max_progress, has_progress=False ):
-		self.progress_id = progress_id
-		self.AbsoluteProgress = progress
-		self.MaxProgressPossible = max_progress
-		self.HasProgress = has_progress
+from nti.analytics.progress import DefaultProgress
 
 @interface.implementer( IProgress )
 @component.adapter( IUser, IQAssignment )
@@ -48,9 +41,9 @@ def _assignment_progress_for_user( user, assignment ):
 
 	# Is this property always valid?
 	assignment_id = getattr( assignment, 'ntiid', None )
-	assignment_record = get_assignment_for_user( user, assignment_id )
+	assignment_records = get_assignment_for_user( user, assignment_id )
 	result = None
-	if assignment_record:
+	if assignment_records:
 		# Simplistic implementation
 		result = DefaultProgress( assignment_id, 1, 1, True )
 	return result
@@ -74,9 +67,9 @@ def _assessment_progress_for_user( user, assessment ):
 	# great, else we do not return anything.
 
 	assessment_id = getattr( assessment, 'ntiid', None )
-	assessment_record = get_self_assessments_for_user_and_id( user, assessment_id )
+	assessment_records = get_self_assessments_for_user_and_id( user, assessment_id )
 	result = None
-	if assessment_record:
+	if assessment_records:
 		# Simplistic implementation
 		result = DefaultProgress( assessment_id, 1, 1, True )
 	return result

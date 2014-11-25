@@ -104,7 +104,8 @@
 						 .interfaces.ITopicViewEvent
 						 .interfaces.IBatchResourceEvents
 						 .interfaces.IAnalyticsSession
-						 .interfaces.IAnalyticsSessions"
+						 .interfaces.IAnalyticsSessions
+						 .interfaces.IProgress"
 		modules=".model" />
 
 	<adapter factory=".internalization._ResourceEventUpdater"
