@@ -82,7 +82,7 @@ class TestResourceViews(AnalyticsTestBase):
 		assert_that( progress, not_none() )
 		assert_that( progress.HasProgress, is_( True ) )
 		assert_that( progress.AbsoluteProgress, is_( 30 ) )
-		assert_that( progress.MaxProgressPossible, none() )
+		assert_that( progress.MaxPossibleProgress, none() )
 
 		# Dupe does not change anything
 		# Specify max time length.
@@ -97,5 +97,5 @@ class TestResourceViews(AnalyticsTestBase):
 		assert_that( progress, not_none() )
 		assert_that( progress.HasProgress, is_( True ) )
 		assert_that( progress.AbsoluteProgress, is_( 60 ) )
-		assert_that( progress.MaxProgressPossible, is_( 60 ) )
+		assert_that( progress.MaxPossibleProgress, is_( 60 ) )
 

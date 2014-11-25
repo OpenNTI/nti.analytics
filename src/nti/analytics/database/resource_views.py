@@ -22,6 +22,8 @@ from nti.analytics.common import timestamp_type
 from nti.analytics.identifier import SessionId
 from nti.analytics.identifier import ResourceId
 
+from nti.analytics.interfaces import VIDEO_WATCH
+
 from nti.analytics.model import ResourceEvent
 from nti.analytics.model import WatchVideoEvent
 from nti.analytics.model import SkipVideoEvent
@@ -237,7 +239,8 @@ def get_user_video_views_for_ntiid( user, resource_ntiid ):
 	user_id = get_user_db_id( user )
 	resource_id = get_resource_id( db, resource_ntiid )
 	results = db.session.query( VideoEvents ).filter( VideoEvents.user_id == user_id,
-													VideoEvents.resource_id == resource_id ).all()
+													VideoEvents.resource_id == resource_id,
+													VideoEvents.video_event_type == VIDEO_WATCH ).all()
 	return resolve_objects( _resolve_video_view, results, user=user )
 
 def get_user_resource_views( user, course ):
