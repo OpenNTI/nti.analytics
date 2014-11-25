@@ -29,7 +29,11 @@ def get_progress_for_resource_views( resource_ntiid, resource_views ):
 	"""Simplistic; looking at a resource constitutes progress."""
 	result = None
 	if resource_views:
-		result = DefaultProgress( resource_ntiid, 1, 1, True )
+		# Grabbing the first timestamp we see for last mod.
+		last_mod = next( ts for ts in
+						(x.timestamp for x in resource_views)
+						if ts is not None )
+		result = DefaultProgress( resource_ntiid, 1, 1, True, last_modified=last_mod )
 	return result
 
 def get_progress_for_video_views( resource_ntiid, video_events  ):
@@ -40,9 +44,10 @@ def get_progress_for_video_views( resource_ntiid, video_events  ):
 	video_events = list( video_events )
 
 	if video_events:
-		# It may be enough to grab the first MaxDuration we find.  max
-		# time may be null.
+		# TODO Perhaps we want the most recent max time.
+		# max time may be null.
 		max_time = max( (x.MaxDuration for x in video_events) )
+		last_mod = max( (x.timestamp for x in video_events))
 		total_time = sum( (x.time_length for x in video_events) )
-		result = DefaultProgress( resource_ntiid, total_time, max_time, True )
+		result = DefaultProgress( resource_ntiid, total_time, max_time, True, last_modified=last_mod )
 	return result
