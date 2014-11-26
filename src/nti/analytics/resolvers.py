@@ -110,6 +110,7 @@ def recur_children_ntiid_for_unit( node, accum=None ):
 	result = set() if accum is None else accum
 
 	def _recur( node, accum ):
+		accum.add( node.ntiid )
 		for iface in CONTAINER_IFACES:
 			_indexed_data( node, iface, accum )
 
@@ -121,6 +122,8 @@ def recur_children_ntiid( node, accum=None ):
 	result = set() if accum is None else accum
 
 	def _recur( node, accum ):
+		accum.add( node.ntiid )
+
 		for iface in CONTAINER_IFACES:
 			_indexed_data( node, iface, accum )
 		# parse children
