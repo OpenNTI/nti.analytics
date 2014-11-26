@@ -21,14 +21,26 @@ from nti.contenttypes.courses.interfaces import ICourseCatalog
 from nti.contenttypes.courses.interfaces import ICourseInstance
 
 from nti.contentlibrary.interfaces import IContentPackageLibraryModifiedOnSyncEvent
+from nti.contentlibrary.indexed_data.interfaces import IAudioIndexedDataContainer
+from nti.contentlibrary.indexed_data.interfaces import IVideoIndexedDataContainer
+from nti.contentlibrary.indexed_data.interfaces import IRelatedContentIndexedDataContainer
 
 from nti.externalization.externalization import to_external_ntiid_oid
+
 from nti.ntiids.ntiids import find_object_with_ntiid
+from nti.ntiids.ntiids import TYPE_OID
+from nti.ntiids.ntiids import TYPE_UUID
+from nti.ntiids.ntiids import TYPE_INTID
+from nti.ntiids.ntiids import is_ntiid_of_types
 
 from nti.analytics import get_factory
 from nti.analytics import SESSIONS_ANALYTICS
 
 from nti.analytics.common import process_event
+
+CONTAINER_IFACES = (IRelatedContentIndexedDataContainer,
+					IVideoIndexedDataContainer,
+					IAudioIndexedDataContainer)
 
 def _get_job_queue():
 	factory = get_factory()
@@ -73,15 +85,49 @@ def _get_self_assessments_for_course(course):
 	result = [x for x in result if x.ntiid not in qsids_to_strip]
 	return result
 
-# Ok, this node is a 'ContentPackage'
-def recur_children_ntiid( node, accum ):
-	#Get our embedded ntiids and recursively fetch our children's ntiids
-	ntiid = node.ntiid
-	accum.update( node.embeddedContainerNTIIDs )
-	if ntiid:
+def _check_ntiid(ntiid):
+	result = ntiid and not is_ntiid_of_types(ntiid, (TYPE_OID, TYPE_UUID, TYPE_INTID))
+	return bool(result)
+
+def _indexed_data( unit, iface, accum ):
+	container = iface(unit, None)
+	if not container:
+		return
+	for item in container.get_data_items():
+		ntiid = None
+		for name in ('target-ntiid', 'ntiid'):
+			t_ntiid = item.get(name)
+			if _check_ntiid(t_ntiid):
+				ntiid = t_ntiid
+				break
+		if not ntiid:
+			continue
 		accum.add( ntiid )
-	for n in node.children:
-		recur_children_ntiid( n, accum )
+
+def recur_children_ntiid_for_unit( node, accum=None ):
+	# ContentUnits only
+	# TODO Do we not have to check children?
+	result = set() if accum is None else accum
+
+	def _recur( node, accum ):
+		for iface in CONTAINER_IFACES:
+			_indexed_data( node, iface, accum )
+
+	_recur( node, result )
+	return result
+
+def recur_children_ntiid( node, accum=None ):
+	# Content packages only
+	result = set() if accum is None else accum
+
+	def _recur( node, accum ):
+		for iface in CONTAINER_IFACES:
+			_indexed_data( node, iface, accum )
+		# parse children
+		for child in node.children:
+			_recur( child, accum )
+	_recur( node, result )
+	return result
 
 def _do_get_containers_in_course( course ):
 	try:
