@@ -155,28 +155,33 @@ def _do_get_containers_in_course( course ):
 
 	#Add in our assignments
 	assignment_catalog = ICourseAssignmentCatalog( course )
-	containers_in_course = containers_in_course.union( ( asg.ntiid for asg in assignment_catalog.iter_assignments() ) )
+	assignment_ids = {asg.ntiid for asg in assignment_catalog.iter_assignments()}
+	containers_in_course = containers_in_course.union( assignment_ids )
 	containers_in_course.discard( None )
 
-	return containers_in_course, self_assessment_qsids
+	return containers_in_course, self_assessment_qsids, assignment_ids
 
 def _build_ntiid_map():
 	course_dict = dict()
 	self_assessment_dict = dict()
+	assignment_dict = dict()
+
 	start_time = time.time()
 	logger.info( 'Initializing course ntiid resolver' )
+
 	catalog = component.getUtility( ICourseCatalog )
 	for entry in catalog.iterCatalogEntries():
 		course = ICourseInstance( entry )
-		containers, self_assessment_ids = _do_get_containers_in_course( course )
+		containers, self_assessment_ids, assignment_ids = _do_get_containers_in_course( course )
 		course_key = to_external_ntiid_oid( course )
 		course_dict[course_key] = containers
 		self_assessment_dict[course_key] = self_assessment_ids
+		assignment_dict[course_key] = assignment_ids
 
 	logger.info( 'Finished initializing course ntiid resolver (%ss) (course_count=%s)',
 				time.time() - start_time,
 				len( course_dict ) )
-	return course_dict, self_assessment_dict
+	return course_dict, self_assessment_dict, assignment_dict
 
 class _CourseFromChildNTIIDResolver(object):
 
@@ -194,12 +199,27 @@ class _CourseFromChildNTIIDResolver(object):
 			logger.info( 'Resetting analytics course resolver' )
 		self.course_to_containers = None
 		self.course_to_self_assessments = None
+		self.course_to_assignments = None
+
+	def _rebuild(self):
+		self.course_to_containers, self.course_to_self_assessments, self.course_to_assignments = _build_ntiid_map()
+
+	def get_assignments_for_course(self, course):
+		course_to_assignments = self.course_to_assignments
+
+		if course_to_assignments is None:
+			self._rebuild()
+			course_to_assignments = self.course_to_assignments
+
+		course_key = to_external_ntiid_oid( course )
+		assignment_ids = course_to_assignments.get( course_key )
+		return assignment_ids
 
 	def get_self_assessments_for_course(self, course):
 		course_to_self_assessments = self.course_to_self_assessments
 
 		if course_to_self_assessments is None:
-			self.course_to_containers, self.course_to_self_assessments = _build_ntiid_map()
+			self._rebuild()
 			course_to_self_assessments = self.course_to_self_assessments
 
 		course_key = to_external_ntiid_oid( course )
@@ -210,7 +230,7 @@ class _CourseFromChildNTIIDResolver(object):
 		course_to_containers = self.course_to_containers
 
 		if course_to_containers is None:
-			self.course_to_containers, self.course_to_self_assessments = _build_ntiid_map()
+			self._rebuild()
 			course_to_containers = self.course_to_containers
 
 		# This is about 4x faster in the worst case than dynamically iterating
@@ -257,4 +277,9 @@ def get_course_by_container_id( container_id ):
 def get_self_assessments_for_course(course):
 	""" For a course, return the ntiids of all the contained self_assessments. """
 	result = _get_course_from_ntiid_resolver().get_self_assessments_for_course( course )
+	return result
+
+def get_assignments_for_course(course):
+	""" For a course, return the ntiids of all the contained assignments. """
+	result = _get_course_from_ntiid_resolver().get_assignments_for_course( course )
 	return result
