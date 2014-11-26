@@ -45,7 +45,8 @@ def _assignment_progress_for_user( user, assignment ):
 	result = None
 	if assignment_records:
 		# Simplistic implementation
-		result = DefaultProgress( assignment_id, 1, 1, True )
+		last_mod = max( (x.timestamp for x in assignment_records) )
+		result = DefaultProgress( assignment_id, 1, 1, True, last_modified=last_mod )
 	return result
 
 @interface.implementer( IProgress )
@@ -71,6 +72,7 @@ def _assessment_progress_for_user( user, assessment ):
 	result = None
 	if assessment_records:
 		# Simplistic implementation
-		result = DefaultProgress( assessment_id, 1, 1, True )
+		last_mod = max( (x.timestamp for x in assessment_records) )
+		result = DefaultProgress( assessment_id, 1, 1, True, last_modified=last_mod )
 	return result
 
