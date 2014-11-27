@@ -16,6 +16,7 @@ from datetime import datetime
 
 from zope import component
 
+import fudge
 from fudge import patch_object
 
 from nti.dataserver.users.users import User
@@ -23,6 +24,7 @@ from nti.dataserver.users.users import User
 from nti.analytics import identifier
 
 from nti.analytics.database import get_analytics_db
+from nti.analytics.database.courses import _create_course
 from nti.analytics.database.users import create_user
 from nti.analytics.database.assessments import AssignmentsTaken
 from nti.analytics.database.assessments import SelfAssessmentsTaken
@@ -66,6 +68,9 @@ class TestAnalyticAdapters( NTIAnalyticsTestCase ):
 		self.user_id = create_user( self.user ).user_id
 		return self.user
 
+	def _install_course(self):
+		_create_course( self.analytics_db, 1, 1 )
+
 	def _install_assignment(self, db):
 		new_object = AssignmentsTaken( 	user_id=self.user_id,
 									session_id=2,
@@ -89,8 +94,11 @@ class TestAnalyticAdapters( NTIAnalyticsTestCase ):
 		db.session.flush()
 
 	@WithMockDSTrans
-	def test_progress_adapter(self):
+	@fudge.patch( 'dm.zope.schema.schema.Object._validate' )
+	def test_progress_adapter(self, mock_validate):
+		mock_validate.is_callable().returns( True )
 		user = self._install_user()
+		self._install_course()
 		assignment = self._get_assignment()
 		question_set = self._get_self_assessment()
 

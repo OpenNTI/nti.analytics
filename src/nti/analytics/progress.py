@@ -47,7 +47,7 @@ def get_progress_for_video_views( resource_ntiid, video_events  ):
 		# TODO Perhaps we want the most recent max time.
 		# max time may be null.
 		max_time = max( (x.MaxDuration for x in video_events) )
-		last_mod = max( (x.timestamp for x in video_events))
+		last_mod = max( (x.timestamp for x in video_events) )
 		total_time = sum( (x.time_length for x in video_events) )
 		result = DefaultProgress( resource_ntiid, total_time, max_time, True, last_modified=last_mod )
 	return result

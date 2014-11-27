@@ -30,7 +30,7 @@ def resolve_objects( to_call, rows, **kwargs ):
 	result = ()
 	if rows:
 		# Resolve the objects, filtering out Nones
-		result = (x for x in
+		result = [x for x in
 					( to_call( row, **kwargs ) for row in rows )
-					if x is not None)
+					if x is not None]
 	return result
