@@ -16,8 +16,7 @@ from sqlalchemy import DateTime
 
 from sqlalchemy.schema import Sequence
 
-from nti.app.products.ou.interfaces import IUserResearchStatus
-from nti.app.products.ou.interfaces import IOUUserProfile
+from nti.analytics.interfaces import IUserResearchStatus
 
 from nti.analytics.identifier import UserId
 
@@ -26,6 +25,8 @@ from nti.analytics.common import get_created_timestamp
 from nti.analytics.database import INTID_COLUMN_TYPE
 from nti.analytics.database import Base
 from nti.analytics.database import get_analytics_db
+
+from nti.dataserver.users.interfaces import IEmailRequiredUserProfile
 
 class Users(Base):
 	__tablename__ = 'Users'
@@ -37,9 +38,8 @@ class Users(Base):
 	create_date = Column('create_date', DateTime, nullable=True)
 
 def _get_username2( user ):
-	# TODO OU Specific; probably needs subscriber.
-	# Currently just used for OU's 4x4
-	profile  = IOUUserProfile( user, None )
+	# Currently just used for OU's 4x4; if it's on the profile.
+	profile = IEmailRequiredUserProfile( user, None )
 	username2 = getattr( profile, 'OU4x4', None )
 	return username2
 
@@ -51,7 +51,6 @@ def create_user(user):
 	uid = UserId.get_id( user )
 
 	allow_research = None
-	# TODO OU specific
 	user_research = IUserResearchStatus( user, None )
 	if user_research is not None:
 		allow_research = user_research.allow_research
@@ -64,6 +63,7 @@ def create_user(user):
 					username=username,
 					username2=username2,
 					create_date=create_date )
+
 	# For race conditions, let's just throw since we cannot really handle retrying
 	# gracefully at this level. A job-level retry should work though.
 	db.session.add( user )

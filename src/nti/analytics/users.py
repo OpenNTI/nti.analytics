@@ -10,7 +10,7 @@ logger = __import__('logging').getLogger(__name__)
 
 from zope import component
 
-from nti.app.products.ou.interfaces import IUserResearchStatusEvent
+from nti.analytics.interfaces import IUserResearchStatusEvent
 
 from nti.dataserver.interfaces import IEntity
 from nti.intid.interfaces import IIntIdRemovedEvent
@@ -44,7 +44,6 @@ def _entity_removed( entity, event ):
 	entity_id = UserId.get_id( entity )
 	process_event( _get_delete_queue, _delete_entity, entity_id=entity_id )
 
-# TODO OU specific event...probably need to generalize this eventually.
 @component.adapter( IUserResearchStatusEvent )
 def _user_research( event ):
 	user = event.user

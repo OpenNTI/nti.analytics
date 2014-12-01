@@ -9,6 +9,9 @@ __docformat__ = "restructuredtext en"
 from zope import interface
 from zope.schema import vocabulary
 
+from zope.dublincore.interfaces import IDCTimes
+from zope.interface.interfaces import IObjectEvent
+
 from dolmen.builtins.interfaces import IDict
 from dolmen.builtins.interfaces import IList
 from dolmen.builtins.interfaces import IString
@@ -22,6 +25,8 @@ from nti.assessment.interfaces import IQAssessedQuestionSet
 
 from nti.dataserver.contenttypes.forums.interfaces import IPost
 from nti.dataserver.contenttypes.forums.interfaces import ITopic
+
+from nti.dataserver.interfaces import IUser
 
 from nti.schema.field import Bool
 from nti.schema.field import List
@@ -234,3 +239,19 @@ class IProgress(interface.Interface):
 
 	HasProgress = Bool( title=u"Indicates there was some progress made on item.",
 					default=False )
+
+class IUserResearchStatus(IDCTimes):
+	"""
+	Holds whether the user has accepted that data that they generate may be
+	used for research.
+	"""
+	allow_research = Bool(title="Allow research on user's activity.",
+						  required=False,
+						  default=False )
+
+class IUserResearchStatusEvent(IObjectEvent):
+	"""
+	Sent when a user updates their research status.
+	"""
+	user = Object(IUser, title="The user")
+	allow_research = Bool( title="User allow_research status" )
