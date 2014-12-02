@@ -240,10 +240,11 @@ class UserResearchStatusEvent(ObjectEvent):
 class _Researchable(PersistentCreatedAndModifiedTimeObject):
 
 	_SET_CREATED_MODTIME_ON_INIT = False
-
+	
+	lastModified = None
+	allow_research = False
+	
 	def __init__(self):
 		PersistentCreatedAndModifiedTimeObject.__init__(self)
-		self.allow_research = False
-		self.lastModified = None
 
 _UserResearchStatus = an_factory( _Researchable, 'research_status' )
