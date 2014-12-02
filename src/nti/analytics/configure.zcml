@@ -136,6 +136,9 @@
 			 for=".interfaces.IAnalyticsSession"
 			 provides="nti.externalization.interfaces.IInternalObjectUpdater" />
 
+	<!-- Research -->
+	<adapter factory=".model._UserResearchStatus" />
+
 	<!-- Progress adapters -->
 	<adapter factory=".adapters._assignment_progress_for_user" />
 	<adapter factory=".adapters._assessment_progress_for_user" />

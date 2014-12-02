@@ -8,7 +8,10 @@ __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
+from zope import component
 from zope import interface
+from zope.annotation.factory import factory as an_factory
+from zope.interface.interfaces import ObjectEvent
 
 from nti.externalization.persistence import NoPickle
 from nti.externalization.representation import WithRepr
@@ -35,6 +38,12 @@ from nti.analytics.interfaces import IBatchResourceEvents
 from nti.analytics.interfaces import IAnalyticsForumComment
 from nti.analytics.interfaces import ICourseCatalogViewEvent
 from nti.analytics.interfaces import IAnalyticsAssignmentDetail
+from nti.analytics.interfaces import IUserResearchStatus
+from nti.analytics.interfaces import IUserResearchStatusEvent
+
+from nti.dataserver.interfaces import IUser
+
+from nti.dublincore.time_mixins import PersistentCreatedAndModifiedTimeObject
 
 def _replace_state(obj, old, new):
 	if old in obj.__dict__:
@@ -214,3 +223,27 @@ class AnalyticsSession(SchemaConfigured):
 
 	def __init__(self, *args, **kwargs):
 		SchemaConfigured.__init__(self, *args, **kwargs)
+
+@interface.implementer(IUserResearchStatusEvent)
+class UserResearchStatusEvent(ObjectEvent):
+
+	def __init__(self, user, allow_research):
+		super(UserResearchStatusEvent, self).__init__(user)
+		self.allow_research = allow_research
+
+	@property
+	def user(self):
+		return self.object
+
+@component.adapter(IUser)
+@interface.implementer(IUserResearchStatus)
+class _Researchable(PersistentCreatedAndModifiedTimeObject):
+
+	_SET_CREATED_MODTIME_ON_INIT = False
+
+	def __init__(self):
+		PersistentCreatedAndModifiedTimeObject.__init__(self)
+		self.allow_research = False
+		self.lastModified = None
+
+_UserResearchStatus = an_factory( _Researchable, 'research_status' )
