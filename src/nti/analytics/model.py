@@ -248,3 +248,10 @@ class _Researchable(PersistentCreatedAndModifiedTimeObject):
 		PersistentCreatedAndModifiedTimeObject.__init__(self)
 
 _UserResearchStatus = an_factory( _Researchable, 'research_status' )
+
+def delete_research_status(user):
+	try:
+		annotations = user.__annotations__
+		annotations.pop('research_status', None)
+	except AttributeError:
+		pass
