@@ -33,8 +33,7 @@ def do_evolve():
 
 	db = get_analytics_db()
 
-	if db.defaultSQLite and db.dburi == "sqlite://":
-		# In-memory mode for dev
+	if db.defaultSQLite:
 		return
 
 	# Cannot use transaction with alter table scripts and mysql
