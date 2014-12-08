@@ -105,7 +105,8 @@
 						 .interfaces.IBatchResourceEvents
 						 .interfaces.IAnalyticsSession
 						 .interfaces.IAnalyticsSessions
-						 .interfaces.IProgress"
+						 .interfaces.IProgress
+						 .interfaces.IAnalyticsClientParams"
 		modules=".model" />
 
 	<adapter factory=".internalization._ResourceEventUpdater"

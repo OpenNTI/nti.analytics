@@ -40,6 +40,7 @@ from nti.analytics.interfaces import ICourseCatalogViewEvent
 from nti.analytics.interfaces import IAnalyticsAssignmentDetail
 from nti.analytics.interfaces import IUserResearchStatus
 from nti.analytics.interfaces import IUserResearchStatusEvent
+from nti.analytics.interfaces import IAnalyticsClientParams
 
 from nti.dataserver.interfaces import IUser
 
@@ -240,7 +241,7 @@ class UserResearchStatusEvent(ObjectEvent):
 class _Researchable(PersistentCreatedAndModifiedTimeObject):
 
 	_SET_CREATED_MODTIME_ON_INIT = False
-	
+
 	def __init__(self):
 		PersistentCreatedAndModifiedTimeObject.__init__(self)
 		self.allow_research = False
@@ -254,3 +255,15 @@ def delete_research_status(user):
 		annotations.pop('research_status', None)
 	except AttributeError:
 		pass
+
+@interface.implementer(IAnalyticsClientParams)
+@WithRepr
+class AnalyticsClientParams(SchemaConfigured):
+	createDirectFieldProperties(IAnalyticsClientParams)
+
+	__external_can_create__ = True
+	__external_class_name__ = "AnalyticsClientParams"
+	mime_type = mimeType = 'application/vnd.nextthought.analytics.analytics_client_params'
+
+	def __init__(self, *args, **kwargs):
+		SchemaConfigured.__init__(self, *args, **kwargs)

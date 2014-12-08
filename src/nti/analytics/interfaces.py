@@ -255,3 +255,31 @@ class IUserResearchStatusEvent(IObjectEvent):
 	"""
 	user = Object(IUser, title="The user")
 	allow_research = Bool( title="User allow_research status" )
+
+DEFAULT_ANALYTICS_FREQUENCY = 60
+DEFAULT_ANALYTICS_BATCH_SIZE = 100
+
+class IAnalyticsClientParams(interface.Interface):
+	"""
+	Defines parameters clients may use when deciding how often
+	to PUT data to analytics.
+	"""
+	RecommendedBatchEventsSize = Number( title=u"How many events the client should send in a single batch_events call",
+										required=False,
+										default=DEFAULT_ANALYTICS_BATCH_SIZE )
+
+	RecommendedBatchEventsSendFrequency = Number( title=u"How often the client should send batch events, in seconds.",
+							required=False,
+							default=DEFAULT_ANALYTICS_FREQUENCY )
+
+	RecommendedBatchSessionsSize = Number( title=u"How many sessions the client should send in a single batch_events call",
+										required=False,
+										default=DEFAULT_ANALYTICS_BATCH_SIZE )
+
+	RecommendedBatchSessionsSendFrequency = Number( title=u"How often the client should send session events, in seconds.",
+							required=False,
+							default=DEFAULT_ANALYTICS_FREQUENCY )
+
+	RecommendedAnalyticsSyncInterval = Number( title=u"How often the client should sync sessions and events, in seconds.",
+							required=False,
+							default=DEFAULT_ANALYTICS_FREQUENCY )
