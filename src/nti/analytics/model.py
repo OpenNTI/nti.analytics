@@ -263,7 +263,7 @@ class AnalyticsClientParams(SchemaConfigured):
 
 	__external_can_create__ = True
 	__external_class_name__ = "AnalyticsClientParams"
-	mime_type = mimeType = 'application/vnd.nextthought.analytics.analytics_client_params'
+	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticsclientparams'
 
 	def __init__(self, *args, **kwargs):
 		SchemaConfigured.__init__(self, *args, **kwargs)
