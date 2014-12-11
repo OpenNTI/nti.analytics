@@ -152,11 +152,12 @@ class AnalyticsTestBase(unittest.TestCase):
 		self.session = self.db.session
 
 		self.patches = [
-				patch_object( identifier.SessionId, 'get_id', TestIdentifier.get_id ),
-				patch_object( identifier._DSIdentifier, 'get_id', TestIdentifier.get_id ),
-				patch_object( identifier._NtiidIdentifier, 'get_id', TestIdentifier.get_id ),
-				patch_object( identifier._DSIdentifier, 'get_object', TestIdentifier.get_object ),
-				patch_object( identifier._NtiidIdentifier, 'get_object', TestIdentifier.get_object ) ]
+			patch_object( identifier.RootContextId, 'get_id', TestIdentifier.get_id ),
+			patch_object( identifier._DSIdentifier, 'get_id', TestIdentifier.get_id ),
+			patch_object( identifier._NtiidIdentifier, 'get_id', TestIdentifier.get_id ),
+			patch_object( identifier.RootContextId, 'get_object', TestIdentifier.get_object ),
+			patch_object( identifier._DSIdentifier, 'get_object', TestIdentifier.get_object ),
+			patch_object( identifier._NtiidIdentifier, 'get_object', TestIdentifier.get_object ) ]
 
 		db_users.create_user( test_user_ds_id )
 		user_agent = 'webapp-1.9'

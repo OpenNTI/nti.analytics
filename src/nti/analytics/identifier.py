@@ -71,8 +71,7 @@ class SessionId(_Identifier):
 		# We're are getting session_ids here, which we will just return.
 		return nti_session
 
-# TODO Rename
-class CourseId(_NtiidIdentifier):
+class RootContextId(_NtiidIdentifier):
 
 	@classmethod
 	def get_id( cls, root_context ):
@@ -90,7 +89,7 @@ class CourseId(_NtiidIdentifier):
 	def get_object( cls, ntiid ):
 		obj = ntiids.find_object_with_ntiid( ntiid )
 		# We may have:
-		# 1. contentpackages -> legacy course
+		# 1. content package -> legacy course
 		# 2. catalog entry -> new course
 		# 3. content package / book
 		# Adapt for 1,2; return 3.

@@ -21,7 +21,7 @@ from sqlalchemy.exc import DatabaseError
 from nti.analytics.database import get_analytics_db
 from nti.analytics.database.root_context import Courses
 
-from nti.analytics.identifier import CourseId
+from nti.analytics.identifier import RootContextId
 
 def _drop_index( op, table, column_name ):
 	try:
@@ -58,7 +58,7 @@ def do_evolve(context):
 
 		course_obj = intids.queryObject( course_ds_intid, default=None )
 		if course_obj is not None:
-			course_ntiid = CourseId.get_id( course_obj )
+			course_ntiid = RootContextId.get_id( course_obj )
 			if course_ntiid:
 				course.context_ds_id = course_ntiid
 		else:

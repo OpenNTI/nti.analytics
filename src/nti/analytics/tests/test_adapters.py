@@ -45,10 +45,10 @@ class TestAnalyticAdapters( NTIAnalyticsTestCase ):
 		self.analytics_db = get_analytics_db()
 
 		self.patches = [
-			patch_object( identifier.CourseId, 'get_id', TestIdentifier.get_id ),
+			patch_object( identifier.RootContextId, 'get_id', TestIdentifier.get_id ),
 			patch_object( identifier._DSIdentifier, 'get_id', TestIdentifier.get_id ),
 			patch_object( identifier._NtiidIdentifier, 'get_id', TestIdentifier.get_id ),
-			patch_object( identifier.CourseId, 'get_object', TestIdentifier.get_object ),
+			patch_object( identifier.RootContextId, 'get_object', TestIdentifier.get_object ),
 			patch_object( identifier._DSIdentifier, 'get_object', TestIdentifier.get_object ),
 			patch_object( identifier._NtiidIdentifier, 'get_object', TestIdentifier.get_object ) ]
 

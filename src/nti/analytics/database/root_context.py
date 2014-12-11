@@ -21,7 +21,7 @@ from nti.contenttypes.courses.interfaces import ICourseInstance
 
 from nti.analytics.common import get_root_context_name
 
-from nti.analytics.identifier import CourseId
+from nti.analytics.identifier import RootContextId
 
 from nti.analytics.database import Base
 from nti.analytics.database import get_analytics_db
@@ -151,7 +151,7 @@ def get_root_context_id( db, context_object, create=False ):
 	Retrieves the db id for the given root context object (e.g. course, book),
 	optionally creating the context object if it does not exist.
 	"""
-	context_ds_id = CourseId.get_id( context_object )
+	context_ds_id = RootContextId.get_id( context_object )
 	if create:
 		if ICourseInstance.providedBy( context_object ):
 			root_context_object = _get_or_create_course( db, context_object, context_ds_id )
@@ -187,5 +187,5 @@ def get_root_context( context_id ):
 
 	if found_course is not None:
 		context_ds_id = found_course.context_ds_id
-		result = CourseId.get_object( context_ds_id )
+		result = RootContextId.get_object( context_ds_id )
 	return result

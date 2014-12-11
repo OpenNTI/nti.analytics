@@ -44,48 +44,19 @@ from nti.analytics.database import root_context as db_courses
 
 from nti.analytics.tests import DEFAULT_INTID
 from nti.analytics.tests import TestIdentifier
+from nti.analytics.tests import AnalyticsTestBase
+from nti.analytics.tests import SharedConfiguringTestLayer
+from nti.analytics.tests import NTIAnalyticsTestCase
+from nti.analytics.tests import NTIAnalyticsApplicationTestLayer
+from nti.analytics.tests import test_user_ds_id
+from nti.analytics.tests import test_session_id
 
-class SharedConfiguringTestLayer(ZopeComponentLayer,
-                                 GCLayerMixin,
-                                 ConfiguringLayerMixin,
-                                 DSInjectorMixin):
-
-	set_up_packages = ('nti.dataserver', 'nti.analytics')
-
-	@classmethod
-	def setUp(cls):
-		cls.setUpPackages()
-		cls.old_data_dir = os.getenv('DATASERVER_DATA_DIR')
-		cls.new_data_dir = tempfile.mkdtemp(dir="/tmp")
-		os.environ['DATASERVER_DATA_DIR'] = cls.new_data_dir
-
-	@classmethod
-	def tearDown(cls):
-		cls.tearDownPackages()
-		zope.testing.cleanup.cleanUp()
-
-	@classmethod
-	def testSetUp(cls, test=None):
-		cls.setUpTestDS(test)
-		shutil.rmtree(cls.new_data_dir, True)
-		os.environ['DATASERVER_DATA_DIR'] = cls.old_data_dir or '/tmp'
-
-	@classmethod
-	def testTearDown(cls):
-		pass
-
-class NTIAnalyticsTestCase(unittest.TestCase):
-	layer = SharedConfiguringTestLayer
-
-class NTIAnalyticsApplicationTestLayer(ApplicationTestLayer):
-
-	@classmethod
-	def setUp(cls):
-		pass
-
-	@classmethod
-	def tearDown(cls):
-		pass
+AnalyticsTestBase = AnalyticsTestBase
+SharedConfiguringTestLayer = SharedConfiguringTestLayer
+NTIAnalyticsTestCase = NTIAnalyticsTestCase
+NTIAnalyticsApplicationTestLayer = NTIAnalyticsApplicationTestLayer
+test_user_ds_id = test_user_ds_id
+test_session_id = test_session_id
 
 class MockParent(object):
 
@@ -104,35 +75,3 @@ class MockParent(object):
 
 	def __iter__(self):
 		return iter(self.vals)
-
-test_user_ds_id = 78
-test_session_id = 1
-
-class AnalyticsTestBase(unittest.TestCase):
-	""" A base class that simply creates a user and session"""
-
-	def setUp(self):
-		self.db = AnalyticsDB( dburi='sqlite://' )
-		component.getGlobalSiteManager().registerUtility( self.db, IAnalyticsDB )
-		self.session = self.db.session
-
-		self.patches = [
-			patch_object( identifier.CourseId, 'get_id', TestIdentifier.get_id ),
-			patch_object( identifier._DSIdentifier, 'get_id', TestIdentifier.get_id ),
-			patch_object( identifier._NtiidIdentifier, 'get_id', TestIdentifier.get_id ),
-			patch_object( identifier.CourseId, 'get_object', TestIdentifier.get_object ),
-			patch_object( identifier._DSIdentifier, 'get_object', TestIdentifier.get_object ),
-			patch_object( identifier._NtiidIdentifier, 'get_object', TestIdentifier.get_object ) ]
-
-		db_users.create_user( test_user_ds_id )
-		user_agent = 'webapp-1.9'
-		ip_addr = '0.1.2.3.4'
-		db_sessions.create_session( test_user_ds_id, user_agent, time.time(), ip_addr )
-		self.course_id = 1
-		db_courses.get_root_context_id( self.db, self.course_id, create=True )
-
-	def tearDown(self):
-		component.getGlobalSiteManager().unregisterUtility( self.db )
-		self.session.close()
-		for patch in self.patches:
-			patch.restore()
