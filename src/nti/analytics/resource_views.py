@@ -52,11 +52,8 @@ from nti.analytics import VIDEO_VIEW_ANALYTICS
 from nti.analytics import CATALOG_VIEW_ANALYTICS
 from nti.analytics import RESOURCE_VIEW_ANALYTICS
 
-def get_user_resource_views( *args, **kwargs ):
-	return db_resource_views.get_user_resource_views_for_ntiid( *args, **kwargs  )
-
-def get_user_video_events( *args, **kwargs  ):
-	return db_resource_views.get_user_video_events( *args, **kwargs  )
+get_user_resource_views = db_resource_views.get_user_resource_views_for_ntiid
+get_user_video_events = db_resource_views.get_user_video_events
 
 def get_progress_for_ntiid( user, resource_ntiid ):
 	# Not sure if one of these is more expensive than the other.  Perhaps

@@ -52,21 +52,10 @@ def _get_job_queue():
 	factory = get_factory()
 	return factory.get_queue(ASSESSMENTS_ANALYTICS)
 
-def get_self_assessments_for_user( *args, **kwargs ):
-	"Retrieves all self-assessments for the given user and course."
-	return db_assessments.get_self_assessments_for_user( *args, **kwargs  )
-
-def get_assignments_for_user( *args, **kwargs  ):
-	"Retrieves all assignments for the given user and course."
-	return db_assessments.get_assignments_for_user( *args, **kwargs )
-
-def get_assignment_for_user( *args, **kwargs  ):
-	"Pulls all assignment records for the given user matching the passed in assignment id."
-	return db_assessments.get_assignment_for_user( *args, **kwargs )
-
-def get_self_assessments_for_user_and_id( *args, **kwargs  ):
-	"Pulls all assessment records for the given user matching the passed in assessment id."
-	return db_assessments.get_self_assessments_for_user_and_id( *args, **kwargs )
+get_self_assessments_for_user = db_assessments.get_self_assessments_for_user
+get_assignments_for_user = db_assessments.get_assignments_for_user
+get_assignment_for_user = db_assessments.get_assignment_for_user
+get_self_assessments_for_user_and_id = db_assessments.get_self_assessments_for_user_and_id
 
 def _self_assessment_taken( oid, nti_session=None ):
 	submission = find_object_with_ntiid( oid )

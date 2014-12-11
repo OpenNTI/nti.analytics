@@ -55,11 +55,8 @@ def _get_comments_queue():
 	factory = get_factory()
 	return factory.get_queue( COMMENTS_ANALYTICS )
 
-def get_topics_created_for_user( *args, **kwargs ):
-	return db_boards.get_topics_created_for_user( *args, **kwargs  )
-
-def get_forum_comments_for_user( *args, **kwargs  ):
-	return db_boards.get_forum_comments_for_user( *args, **kwargs  )
+get_topics_created_for_user = db_boards.get_topics_created_for_user
+get_forum_comments_for_user = db_boards.get_forum_comments_for_user
 
 
 def _is_topic( obj ):
