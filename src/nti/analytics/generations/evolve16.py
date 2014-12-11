@@ -16,26 +16,10 @@ import zope.intid
 from zope import component
 from zope.component.hooks import site, setHooks
 
-from sqlalchemy.exc import DatabaseError
-
 from nti.analytics.database import get_analytics_db
 from nti.analytics.database.root_context import Courses
 
 from nti.analytics.identifier import RootContextId
-
-def _drop_index( op, table, column_name ):
-	try:
-		op.drop_index( 'ix_%s_%s' % ( table, column_name ), table_name=table )
-	except DatabaseError:
-		# Already dropped
-		pass
-
-def _add_index( op, table, column_name ):
-	try:
-		op.create_index( 'ix_%s_%s' % ( table, column_name ), table, [column_name] )
-	except DatabaseError:
-		# Already added
-		pass
 
 def do_evolve(context):
 	setHooks()
@@ -69,6 +53,6 @@ def do_evolve(context):
 
 def evolve(context):
 	"""
-	Just
+	Converts course ids from ds_intids to ntiids.
 	"""
 	do_evolve(context)
