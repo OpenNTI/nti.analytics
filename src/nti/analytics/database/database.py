@@ -74,7 +74,7 @@ class AnalyticsDB(object):
 				result = create_engine(self.dburi,
 							   	   pool_size=self.pool_size,
 							   	   max_overflow=self.max_overflow,
-							   	   pool_recycle=self.pool_recycle)
+							   	   pool_recycle=self.pool_recycle )
 		except TypeError:
 			# SQLite does not use pooling anymore.
 			result = create_engine( self.dburi )

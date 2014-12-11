@@ -37,7 +37,7 @@ from nti.analytics.database.meta_mixins import TimeLengthMixin
 from nti.analytics.database import resolve_objects
 from nti.analytics.database.users import get_or_create_user
 from nti.analytics.database.users import get_user_db_id
-from nti.analytics.database.courses import get_course_id
+from nti.analytics.database.root_context import get_root_context_id
 from nti.analytics.database.resources import get_resource_id
 from nti.analytics.database.resources import get_resource_val
 
@@ -100,7 +100,7 @@ def create_course_resource_view(user, nti_session, timestamp, course, context_pa
 	rid = ResourceId.get_id( resource )
 	rid = get_resource_id( db, rid, create=True )
 
-	course_id = get_course_id( db, course, create=True )
+	course_id = get_root_context_id( db, course, create=True )
 	timestamp = timestamp_type( timestamp )
 
 	if _resource_view_exists( db, uid, rid, timestamp ):
@@ -144,7 +144,7 @@ def create_video_event(	user,
 	vid = ResourceId.get_id( video_resource )
 	vid = get_resource_id( db, vid, create=True )
 
-	course_id = get_course_id( db, course, create=True )
+	course_id = get_root_context_id( db, course, create=True )
 	timestamp = timestamp_type( timestamp )
 
 	if _video_view_exists( db, uid, vid, timestamp, video_event_type ):
@@ -246,7 +246,7 @@ def get_user_video_views_for_ntiid( user, resource_ntiid ):
 def get_user_resource_views( user, course ):
 	db = get_analytics_db()
 	user_id = get_user_db_id( user )
-	course_id = get_course_id( db, course )
+	course_id = get_root_context_id( db, course )
 	results = db.session.query( CourseResourceViews ).filter( CourseResourceViews.user_id == user_id,
 															CourseResourceViews.course_id == course_id ).all()
 	return resolve_objects( _resolve_resource_view, results, user=user, course=course )
@@ -254,7 +254,7 @@ def get_user_resource_views( user, course ):
 def get_user_video_events( user, course ):
 	db = get_analytics_db()
 	user_id = get_user_db_id( user )
-	course_id = get_course_id( db, course )
+	course_id = get_root_context_id( db, course )
 	results = db.session.query( VideoEvents ).filter( VideoEvents.user_id == user_id,
 													VideoEvents.course_id == course_id ).all()
 	return resolve_objects( _resolve_video_view, results, user=user, course=course )

@@ -28,7 +28,7 @@ from nti.analytics.sessions import get_nti_session_id
 
 from nti.analytics.database import enrollments as db_enrollments
 
-from .common import get_course_name
+from .common import get_root_context_name
 from .common import process_event
 from .common import get_entity
 
@@ -48,7 +48,7 @@ def _add_drop( oid, username, scope, nti_session=None, timestamp=None ):
 	if 		user is not None \
 		and course is not None:
 
-		course_name = get_course_name( course )
+		course_name = get_root_context_name( course )
 		db_enrollments.create_course_drop( user, nti_session, timestamp, course )
 		logger.debug( "User dropped (user=%s) (course=%s)",
 					user,
@@ -62,7 +62,7 @@ def _add_enrollment( oid, username, scope, nti_session=None, timestamp=None ):
 
 		user = get_entity( username )
 		enrollment_type = scope
-		course_name = get_course_name( course )
+		course_name = get_root_context_name( course )
 		db_enrollments.create_course_enrollment( user, nti_session, timestamp, course, enrollment_type )
 		logger.debug( "User enrollment (user=%s) (course=%s) (type=%s)",
 					user,

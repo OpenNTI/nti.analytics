@@ -8,7 +8,21 @@ __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
+from datetime import datetime
+
+from pyramid.location import lineage
+
+from six import integer_types
+
+from zope import component
+
+from zc.blist import BList
+
 from ZODB.POSException import POSKeyError
+
+from nti.async import create_job
+
+from nti.analytics.database import get_analytics_db
 
 from nti.dataserver import interfaces as nti_interfaces
 from nti.dataserver import rating
@@ -22,19 +36,6 @@ from nti.contenttypes.courses.interfaces import ICourseCatalogEntry
 from nti.contenttypes.courses.interfaces import ICourseInstance
 
 from nti.externalization import externalization
-
-from datetime import datetime
-
-from pyramid.location import lineage
-
-from zope import component
-
-from zc.blist import BList
-
-from nti.async import create_job
-from six import integer_types
-
-from nti.analytics.database import get_analytics_db
 
 def get_rating_from_event( event ):
 	delta = -1 if IObjectUnratedEvent.providedBy( event ) else 1
@@ -100,6 +101,11 @@ def to_external_ntiid_oid(obj):
 	return ntiid
 
 def get_course( obj ):
+	"""
+	Attempt to get the course of an object by traversing up the given
+	object's lineage.
+	"""
+	# TODO Would we call this for books? Topics in books?
 	result = get_object_root( obj, ICourseInstance )
 	__traceback_info__ = result, obj
 	return ICourseInstance( result )
@@ -144,7 +150,9 @@ def timestamp_type(timestamp):
 		result = result.replace( microsecond = 0 )
 	return result
 
-def get_course_name(course):
+def get_root_context_name(course):
 	cat_entry = ICourseCatalogEntry( course, None )
-	course_name = getattr( cat_entry, 'ProviderUniqueID', getattr( course, '__name__', None ) )
+	course_name = getattr( cat_entry, 'ProviderUniqueID',
+						getattr( course, '__name__', None ) )
 	return course_name
+

@@ -46,8 +46,8 @@ from nti.analytics.database.meta_mixins import RatingsMixin
 from nti.analytics.database.users import get_or_create_user
 from nti.analytics.database.users import get_user
 from nti.analytics.database.users import get_user_db_id
-from nti.analytics.database.courses import get_course_id
-from nti.analytics.database.courses import get_course
+from nti.analytics.database.root_context import get_root_context_id
+from nti.analytics.database.root_context import get_root_context
 
 class ForumMixin(CourseMixin):
 	@declared_attr
@@ -124,7 +124,7 @@ def create_forum(user, nti_session, course, forum):
 		logger.warn( 'Forum already exists (ds_id=%s) (user=%s)', forum_ds_id, user )
 		return
 
-	course_id = get_course_id( db, course, create=True )
+	course_id = get_root_context_id( db, course, create=True )
 
 	timestamp = get_created_timestamp( forum )
 
@@ -184,7 +184,7 @@ def create_topic(user, nti_session, course, topic):
 					forum, user, course )
 		fid = new_forum.forum_id
 
-	course_id = get_course_id( db, course, create=True )
+	course_id = get_root_context_id( db, course, create=True )
 
 	timestamp = get_created_timestamp( topic )
 	like_count, favorite_count, is_flagged = get_ratings( topic )
@@ -261,7 +261,7 @@ def create_topic_view(user, nti_session, timestamp, course, topic, time_length):
 					topic, user, course )
 		did = new_topic.topic_id
 
-	course_id = get_course_id( db, course, create=True )
+	course_id = get_root_context_id( db, course, create=True )
 	timestamp = timestamp_type( timestamp )
 
 	if _topic_view_exists( db, uid, did, timestamp ):
@@ -297,7 +297,7 @@ def create_forum_comment(user, nti_session, course, topic, comment):
 					user, cid )
 		return
 
-	course_id = get_course_id( db, course, create=True )
+	course_id = get_root_context_id( db, course, create=True )
 	pid = None
 	timestamp = get_created_timestamp( comment )
 	like_count, favorite_count, is_flagged = get_ratings( comment )
@@ -354,7 +354,7 @@ def _resolve_comment( row ):
 	# Detach this from the db, resolving objects as we go.
 	make_transient( row )
 	comment = CommentId.get_object( row.comment_id )
-	course = get_course( row.course_id )
+	course = get_root_context( row.course_id )
 	user = get_user( row.user_id )
 	result = None
 	if 		comment is not None \
@@ -373,7 +373,7 @@ def _resolve_comment( row ):
 def _resolve_topic( row ):
 	make_transient( row )
 	topic = TopicId.get_object( row.topic_ds_id )
-	course = get_course( row.course_id )
+	course = get_root_context( row.course_id )
 	user = get_user( row.user_id )
 	result = None
 	if 		topic is not None \
@@ -389,7 +389,7 @@ def _resolve_topic( row ):
 def get_forum_comments_for_user(user, course):
 	db = get_analytics_db()
 	uid = get_user_db_id( user )
-	course_id = get_course_id( db, course )
+	course_id = get_root_context_id( db, course )
 	results = db.session.query(ForumCommentsCreated).filter( ForumCommentsCreated.user_id == uid,
 															ForumCommentsCreated.course_id == course_id,
 															ForumCommentsCreated.deleted == None ).all()
@@ -399,7 +399,7 @@ def get_forum_comments_for_user(user, course):
 def get_topics_created_for_user(user, course):
 	db = get_analytics_db()
 	uid = get_user_db_id( user )
-	course_id = get_course_id( db, course )
+	course_id = get_root_context_id( db, course )
 	results = db.session.query(TopicsCreated).filter( TopicsCreated.user_id == uid,
 														TopicsCreated.course_id == course_id,
 														TopicsCreated.deleted == None  ).all()
@@ -434,14 +434,14 @@ def get_topics_created_for_forum(forum):
 #CourseReport
 def get_forum_comments_for_course(course):
 	db = get_analytics_db()
-	course_id = get_course_id( db, course )
+	course_id = get_root_context_id( db, course )
 	results = db.session.query(ForumCommentsCreated).filter( 	ForumCommentsCreated.course_id == course_id,
 																ForumCommentsCreated.deleted == None  ).all()
 	return resolve_objects( _resolve_comment, results )
 
 def get_topics_created_for_course(course):
 	db = get_analytics_db()
-	course_id = get_course_id( db, course )
+	course_id = get_root_context_id( db, course )
 	results = db.session.query(TopicsCreated).filter( 	TopicsCreated.course_id == course_id,
 														TopicsCreated.deleted == None  ).all()
 	return resolve_objects( _resolve_topic, results )

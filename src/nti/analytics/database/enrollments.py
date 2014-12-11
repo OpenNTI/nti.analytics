@@ -29,7 +29,7 @@ from nti.analytics.database.meta_mixins import CourseMixin
 from nti.analytics.database.meta_mixins import TimeLengthMixin
 
 from nti.analytics.database.users import get_or_create_user
-from nti.analytics.database.courses import get_course_id
+from nti.analytics.database.root_context import get_root_context_id
 
 class CourseCatalogViews(Base,BaseViewMixin,CourseMixin,TimeLengthMixin):
 	__tablename__ = 'CourseCatalogViews'
@@ -70,7 +70,7 @@ def create_course_catalog_view( user, nti_session, timestamp, course, time_lengt
 	user = get_or_create_user(user )
 	uid = user.user_id
 	sid = SessionId.get_id( nti_session )
-	course_id = get_course_id( db, course, create=True )
+	course_id = get_root_context_id( db, course, create=True )
 	timestamp = timestamp_type( timestamp )
 
 	if _course_catalog_view_exists( db, uid, course_id, timestamp ):
@@ -106,7 +106,7 @@ def create_course_enrollment(user, nti_session, timestamp, course, enrollment_ty
 	user_record = get_or_create_user( user )
 	uid = user_record.user_id
 	sid = SessionId.get_id( nti_session )
-	course_id = get_course_id( db, course, create=True )
+	course_id = get_root_context_id( db, course, create=True )
 
 	if _enrollment_exists( db, uid, course_id ):
 		logger.warn( 'Enrollment already exists (user=%s) (course=%s)',
@@ -136,7 +136,7 @@ def create_course_drop(user, nti_session, timestamp, course):
 	user_record = get_or_create_user( user )
 	uid = user_record.user_id
 	sid = SessionId.get_id( nti_session )
-	course_id = get_course_id( db, course, create=True )
+	course_id = get_root_context_id( db, course, create=True )
 	timestamp = timestamp_type( timestamp )
 
 	if _course_drop_exists( db, uid, course_id, timestamp ):
@@ -156,6 +156,6 @@ def create_course_drop(user, nti_session, timestamp, course):
 
 def get_enrollments_for_course( course ):
 	db = get_analytics_db()
-	course_id = get_course_id( db, course )
+	course_id = get_root_context_id( db, course )
 	enrollments = db.session.query( CourseEnrollments ).filter( CourseEnrollments.course_id == course_id ).all()
 	return enrollments

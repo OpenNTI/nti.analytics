@@ -37,7 +37,7 @@ from nti.analytics.database.meta_mixins import ResourceMixin
 from nti.analytics.database.meta_mixins import RatingsMixin
 
 from nti.analytics.database.users import get_or_create_user
-from nti.analytics.database.courses import get_course_id
+from nti.analytics.database.root_context import get_root_context_id
 from nti.analytics.database.resources import get_resource_id
 
 class NoteMixin(ResourceMixin):
@@ -73,12 +73,18 @@ class HighlightsCreated(Base,BaseTableMixin,ResourceMixin,DeletedMixin):
 def _get_sharing_enum( note, course ):
 	# Logic duped in coursewarereports.views.admin_views
 	# We may have many values here (course subinstance + parent)
-	public_scopes = course.SharingScopes.getAllScopesImpliedbyScope('Public')
-	other_scopes = [x for x in course.SharingScopes.values() if x not in public_scopes]
 
 	# Note: we could also do private if not shared at all
 	# or perhaps we want to store who we're sharing to.
 	result = 'OTHER'
+
+	sharing_scopes = getattr( course, 'SharingScopes', None )
+	if sharing_scopes is None:
+		# Content package
+		return result
+
+	public_scopes = sharing_scopes.getAllScopesImpliedbyScope('Public')
+	other_scopes = [x for x in sharing_scopes.values() if x not in public_scopes]
 
 	def _intersect( set1, set2 ):
 		return any( x in set1 for x in set2 )
@@ -111,7 +117,7 @@ def create_note(user, nti_session, course, note):
 					note_ds_id, user )
 		return
 
-	course_id = get_course_id( db, course, create=True )
+	course_id = get_root_context_id( db, course, create=True )
 	timestamp = get_created_timestamp( note )
 	sharing = _get_sharing_enum( note, course )
 	like_count, favorite_count, is_flagged = get_ratings( note )
@@ -189,7 +195,7 @@ def create_note_view(user, nti_session, timestamp, course, note):
 		logger.info( 'Created note (user=%s) (note=%s)', user, note_id )
 		note_id = _get_note_id( db, note_ds_id )
 
-	course_id = get_course_id( db, course, create=True )
+	course_id = get_root_context_id( db, course, create=True )
 	timestamp = timestamp_type( timestamp )
 
 	if _note_view_exists( db, note_id, uid, timestamp ):
@@ -224,7 +230,7 @@ def create_highlight(user, nti_session, course, highlight):
 					highlight_ds_id, user )
 		return
 
-	course_id = get_course_id( db, course, create=True )
+	course_id = get_root_context_id( db, course, create=True )
 	timestamp = get_created_timestamp( highlight )
 
 	new_object = HighlightsCreated( user_id=uid,
@@ -247,14 +253,14 @@ def delete_highlight(timestamp, highlight_ds_id):
 
 def get_notes_created_for_course(course):
 	db = get_analytics_db()
-	course_id = get_course_id( db, course )
+	course_id = get_root_context_id( db, course )
 	results = db.session.query(NotesCreated).filter( 	NotesCreated.course_id == course_id,
 														NotesCreated.deleted == None  ).all()
 	return results
 
 def get_highlights_created_for_course(course):
 	db = get_analytics_db()
-	course_id = get_course_id( db, course )
+	course_id = get_root_context_id( db, course )
 	results = db.session.query(HighlightsCreated).filter( HighlightsCreated.course_id == course_id,
 															HighlightsCreated.deleted == None  ).all()
 	return results

@@ -20,6 +20,7 @@ from nti.assessment.interfaces import IQuestionSet
 from nti.contenttypes.courses.interfaces import ICourseCatalog
 from nti.contenttypes.courses.interfaces import ICourseInstance
 
+from nti.contentlibrary.interfaces import IContentPackage
 from nti.contentlibrary.interfaces import IContentPackageLibraryModifiedOnSyncEvent
 from nti.contentlibrary.indexed_data.interfaces import IAudioIndexedDataContainer
 from nti.contentlibrary.indexed_data.interfaces import IVideoIndexedDataContainer
@@ -265,13 +266,9 @@ def get_course_by_container_id( container_id ):
 	# check there first, before falling back to checking our current
 	# site.  Once the migration is complete, we should default to
 	# our current site in the fast lane.
-	# This is expensive if we do not find our course.
 
 	# Update: JZ: TODO do we still need to check our global site for site packages?
 	result = _get_course_from_ntiid_resolver().get_course( container_id )
-
-	if result is None:
-		raise TypeError( "No course found for container (%s)" % container_id )
 	return result
 
 def get_self_assessments_for_course(course):
@@ -282,4 +279,29 @@ def get_self_assessments_for_course(course):
 def get_assignments_for_course(course):
 	""" For a course, return the ntiids of all the contained assignments. """
 	result = _get_course_from_ntiid_resolver().get_assignments_for_course( course )
+	return result
+
+def get_root_context( obj ):
+	"""
+	Given a object with a 'containerId' or 'ntiid', find the root context of the object.
+	This will *attempt* to find the course container for the
+	given ntiid.  If none found, the root context package will
+	be returned.
+	"""
+	ntiid = getattr( obj, 'containerId',
+					getattr( obj, 'ntiid', None ))
+	if not ntiid:
+		# Should not happen.
+		raise TypeError( "No containerId,ntiid found for obj (%s)" % obj )
+
+	result = get_course_by_container_id( ntiid )
+
+	if result is None:
+		# Ok, not a course (apparently), see if we're a content package.
+		result = find_object_with_ntiid( ntiid )
+
+		if 		result is None \
+			or 	not IContentPackage.providedBy( result ):
+			raise TypeError( "No course/content-package found for ntiid (%s)" % ntiid )
+
 	return result

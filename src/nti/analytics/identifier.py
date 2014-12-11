@@ -13,6 +13,9 @@ from zope import component
 
 from nti.ntiids import ntiids
 
+from nti.contenttypes.courses.interfaces import ICourseCatalogEntry
+from nti.contenttypes.courses.interfaces import ICourseInstance
+
 from six import string_types
 
 class _Identifier(object):
@@ -68,8 +71,31 @@ class SessionId(_Identifier):
 		# We're are getting session_ids here, which we will just return.
 		return nti_session
 
-class CourseId(_DSIdentifier):
-	pass
+# TODO Rename
+class CourseId(_NtiidIdentifier):
+
+	@classmethod
+	def get_id( cls, root_context ):
+		""" Could be a course or content-package."""
+		catalog_entry = ICourseCatalogEntry( root_context, None )
+		result = getattr( catalog_entry, 'ntiid', None )
+
+		if result is None:
+			# Legacy course or content
+			result = getattr( root_context, 'ContentPackageNTIID',
+						getattr( root_context, 'ntiid', None ) )
+		return result
+
+	@classmethod
+	def get_object( cls, ntiid ):
+		obj = ntiids.find_object_with_ntiid( ntiid )
+		# We may have:
+		# 1. contentpackages -> legacy course
+		# 2. catalog entry -> new course
+		# 3. content package / book
+		# Adapt for 1,2; return 3.
+		obj = ICourseInstance( obj, obj )
+		return obj
 
 class CommentId(_DSIdentifier):
 	pass

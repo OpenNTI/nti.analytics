@@ -12,7 +12,7 @@ from nti.analytics.database import Base
 
 class AnalyticsMetadata(object):
 
-	def __init__(self,engine):
+	def __init__(self, engine):
 		logger.info( "Initializing database" )
 		Base.metadata.create_all(engine)
 

@@ -40,7 +40,7 @@ from nti.analytics.database.interfaces import IAnalyticsDB
 from nti.analytics.database.database import AnalyticsDB
 from nti.analytics.database import users as db_users
 from nti.analytics.database import sessions as db_sessions
-from nti.analytics.database import courses as db_courses
+from nti.analytics.database import root_context as db_courses
 
 from nti.analytics.tests import DEFAULT_INTID
 from nti.analytics.tests import TestIdentifier
@@ -117,18 +117,19 @@ class AnalyticsTestBase(unittest.TestCase):
 		self.session = self.db.session
 
 		self.patches = [
-				patch_object( identifier.SessionId, 'get_id', TestIdentifier.get_id ),
-				patch_object( identifier._DSIdentifier, 'get_id', TestIdentifier.get_id ),
-				patch_object( identifier._NtiidIdentifier, 'get_id', TestIdentifier.get_id ),
-				patch_object( identifier._DSIdentifier, 'get_object', TestIdentifier.get_object ),
-				patch_object( identifier._NtiidIdentifier, 'get_object', TestIdentifier.get_object ) ]
+			patch_object( identifier.CourseId, 'get_id', TestIdentifier.get_id ),
+			patch_object( identifier._DSIdentifier, 'get_id', TestIdentifier.get_id ),
+			patch_object( identifier._NtiidIdentifier, 'get_id', TestIdentifier.get_id ),
+			patch_object( identifier.CourseId, 'get_object', TestIdentifier.get_object ),
+			patch_object( identifier._DSIdentifier, 'get_object', TestIdentifier.get_object ),
+			patch_object( identifier._NtiidIdentifier, 'get_object', TestIdentifier.get_object ) ]
 
 		db_users.create_user( test_user_ds_id )
 		user_agent = 'webapp-1.9'
 		ip_addr = '0.1.2.3.4'
 		db_sessions.create_session( test_user_ds_id, user_agent, time.time(), ip_addr )
 		self.course_id = 1
-		db_courses.get_course_id( self.db, self.course_id, create=True )
+		db_courses.get_root_context_id( self.db, self.course_id, create=True )
 
 	def tearDown(self):
 		component.getGlobalSiteManager().unregisterUtility( self.db )

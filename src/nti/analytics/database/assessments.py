@@ -48,8 +48,8 @@ from nti.analytics.identifier import FeedbackId
 from nti.analytics.database.users import get_or_create_user
 from nti.analytics.database.users import get_user
 from nti.analytics.database.users import get_user_db_id
-from nti.analytics.database.courses import get_course_id
-from nti.analytics.database.courses import get_course
+from nti.analytics.database.root_context import get_root_context_id
+from nti.analytics.database.root_context import get_root_context
 
 from nti.analytics.database import resolve_objects
 from nti.analytics.database import NTIID_COLUMN_TYPE
@@ -236,7 +236,7 @@ def create_self_assessment_taken(user, nti_session, timestamp, course, submissio
 	user_record = get_or_create_user( user )
 	uid = user_record.user_id
 	sid = SessionId.get_id( nti_session )
-	course_id = get_course_id( db, course, create=True )
+	course_id = get_root_context_id( db, course, create=True )
 	timestamp = timestamp_type( timestamp )
 	submission_id = SubmissionId.get_id( submission )
 
@@ -309,12 +309,12 @@ def _get_assignment_taken_id( db, submission_id ):
 
 _assignment_taken_exists = _get_assignment_taken_id
 
-def create_assignment_taken(user, nti_session, timestamp, course, submission ):
+def create_assignment_taken( user, nti_session, timestamp, course, submission ):
 	db = get_analytics_db()
 	user_record = get_or_create_user( user )
 	uid = user_record.user_id
 	sid = SessionId.get_id( nti_session )
-	course_id = get_course_id( db, course, create=True )
+	course_id = get_root_context_id( db, course, create=True )
 	timestamp = timestamp_type( timestamp )
 	submission_id = SubmissionId.get_id( submission )
 
@@ -512,7 +512,7 @@ def delete_feedback( timestamp, feedback_ds_id ):
 def _resolve_self_assessment( row ):
 	make_transient( row )
 	submission = SubmissionId.get_object( row.submission_id )
-	course = get_course( row.course_id )
+	course = get_root_context( row.course_id )
 	user = get_user( row.user_id )
 	result = None
 	if 		submission is not None \
@@ -539,7 +539,7 @@ def _resolve_assignment( row, details=None ):
 		grader = grade_record.grader
 
 	submission = SubmissionId.get_object( submission_record.submission_id )
-	course = get_course( submission_record.course_id )
+	course = get_root_context( submission_record.course_id )
 	user = get_user( submission_record.user_id )
 	result = None
 	if 		submission is not None \
@@ -590,7 +590,7 @@ def _resolve_assignment_details( row ):
 def get_self_assessments_for_user(user, course):
 	db = get_analytics_db()
 	uid = get_user_db_id( user )
-	course_id = get_course_id( db, course )
+	course_id = get_root_context_id( db, course )
 	results = db.session.query(SelfAssessmentsTaken).filter( 	SelfAssessmentsTaken.user_id == uid,
 																SelfAssessmentsTaken.course_id == course_id ).all()
 
@@ -617,7 +617,7 @@ def get_assignments_for_user(user, course):
 	# We may not have a grade here.
 	db = get_analytics_db()
 	uid = get_user_db_id( user )
-	course_id = get_course_id( db, course )
+	course_id = get_root_context_id( db, course )
 	results = db.session.query( AssignmentsTaken ) \
 					.filter( AssignmentsTaken.user_id == uid,
 							AssignmentsTaken.course_id == course_id ).all()
@@ -626,7 +626,7 @@ def get_assignments_for_user(user, course):
 
 def get_self_assessments_for_course(course):
 	db = get_analytics_db()
-	course_id = get_course_id( db, course )
+	course_id = get_root_context_id( db, course )
 	results = db.session.query(SelfAssessmentsTaken).filter(
 							SelfAssessmentsTaken.course_id == course_id ).all()
 
@@ -634,7 +634,7 @@ def get_self_assessments_for_course(course):
 
 def get_assignments_for_course(course):
 	db = get_analytics_db()
-	course_id = get_course_id( db, course )
+	course_id = get_root_context_id( db, course )
 	results = db.session.query(AssignmentsTaken) \
 						.filter( AssignmentsTaken.course_id == course_id ).all()
 
@@ -643,7 +643,7 @@ def get_assignments_for_course(course):
 # AssignmentReport
 def get_assignment_grades_for_course(course, assignment_id):
 	db = get_analytics_db()
-	course_id = get_course_id( db, course )
+	course_id = get_root_context_id( db, course )
 	results = db.session.query(AssignmentsTaken) \
 						.filter( AssignmentsTaken.course_id == course_id,
 								 AssignmentsTaken.assignment_id == assignment_id ).all()
@@ -652,7 +652,7 @@ def get_assignment_grades_for_course(course, assignment_id):
 
 def get_assignment_details_for_course(course, assignment_id):
 	db = get_analytics_db()
-	course_id = get_course_id( db, course )
+	course_id = get_root_context_id( db, course )
 	results = db.session.query( AssignmentsTaken, AssignmentDetails ) \
 						.join( AssignmentDetails ) \
 						.filter( AssignmentsTaken.course_id == course_id,

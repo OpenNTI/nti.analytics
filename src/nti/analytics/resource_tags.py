@@ -28,7 +28,7 @@ from .common import get_creator
 from .common import process_event
 from .common import get_rating_from_event
 
-from nti.analytics.resolvers import get_course_by_container_id
+from nti.analytics.resolvers import get_root_context
 
 from nti.analytics.database import resource_tags as db_resource_tags
 
@@ -42,10 +42,9 @@ def _get_job_queue():
 	factory = get_factory()
 	return factory.get_queue( TAGS_ANALYTICS )
 
-
 def _get_course( obj ):
 	__traceback_info__ = obj.containerId
-	result = get_course_by_container_id( obj.containerId )
+	result = get_root_context( obj )
 	return result
 
 # Notes

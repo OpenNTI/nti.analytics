@@ -31,6 +31,7 @@ from nti.analytics.model import AnalyticsSession
 from nti.analytics.model import AnalyticsSessions
 from nti.analytics.model import BatchResourceEvents
 from nti.analytics.model import CourseCatalogViewEvent
+from nti.analytics.model import AnalyticsClientParams
 
 from nti.analytics.interfaces import IVideoEvent
 from nti.analytics.interfaces import IResourceEvent
@@ -41,6 +42,9 @@ from nti.analytics.interfaces import IAnalyticsSessions
 from nti.analytics.interfaces import IBatchResourceEvents
 from nti.analytics.interfaces import ICourseCatalogViewEvent
 from nti.analytics.interfaces import IProgress
+from nti.analytics.interfaces import IAnalyticsClientParams
+from nti.analytics.interfaces import DEFAULT_ANALYTICS_BATCH_SIZE
+from nti.analytics.interfaces import DEFAULT_ANALYTICS_FREQUENCY
 
 from nti.analytics.progress import DefaultProgress
 
@@ -360,3 +364,17 @@ class TestProgress(NTIAnalyticsTestCase):
 		assert_that(ext_obj, has_entry( 'AbsoluteProgress', 10 ))
 		assert_that(ext_obj, has_entry( 'MaxPossibleProgress', 20 ))
 		assert_that(ext_obj, has_entry( 'HasProgress', True ))
+
+class TestClientParams(NTIAnalyticsTestCase):
+
+	def test_progress(self):
+
+		client_params = AnalyticsClientParams()
+		assert_that( client_params, verifiably_provides( IAnalyticsClientParams ) )
+
+		ext_obj = toExternalObject( client_params )
+		assert_that(ext_obj, has_entry( 'RecommendedBatchEventsSize', DEFAULT_ANALYTICS_BATCH_SIZE ))
+		assert_that(ext_obj, has_entry( 'RecommendedBatchEventsSendFrequency', DEFAULT_ANALYTICS_FREQUENCY ))
+		assert_that(ext_obj, has_entry( 'RecommendedBatchSessionsSize', DEFAULT_ANALYTICS_BATCH_SIZE ))
+		assert_that(ext_obj, has_entry( 'RecommendedBatchSessionsSendFrequency', DEFAULT_ANALYTICS_FREQUENCY ))
+		assert_that(ext_obj, has_entry( 'RecommendedAnalyticsSyncInterval', DEFAULT_ANALYTICS_FREQUENCY ))

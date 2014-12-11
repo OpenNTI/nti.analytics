@@ -16,6 +16,7 @@ from zope import component
 
 from hamcrest import has_length
 from hamcrest import assert_that
+from hamcrest import greater_than
 from hamcrest import not_none
 
 from nti.contenttypes.courses.courses import CourseInstance
@@ -23,15 +24,16 @@ from nti.contenttypes.courses.courses import CourseInstance
 from nti.analytics.database.interfaces import IAnalyticsDB
 from nti.analytics.database.database import AnalyticsDB
 
-from nti.analytics.database.courses import Courses
-from nti.analytics.database.courses import _create_course
+from nti.analytics.database.root_context import Courses
+from nti.analytics.database.root_context import _create_course
+from nti.analytics.database.root_context import _get_next_id
 
 class MockCatalog(object):
 
 	def __init__( self, duration ):
 		self.Duration = duration
 
-class TestCourses(unittest.TestCase):
+class TestRootContext(unittest.TestCase):
 
 	def setUp(self):
 		self.db = AnalyticsDB( dburi='sqlite://', testmode=True )
@@ -42,7 +44,7 @@ class TestCourses(unittest.TestCase):
 		component.getGlobalSiteManager().unregisterUtility( self.db )
 		self.session.close()
 
-	@fudge.patch('nti.analytics.database.courses._course_catalog')
+	@fudge.patch('nti.analytics.database.root_context._course_catalog')
 	def test_courses(self, mock_course_catalog):
 		mock_catalog = MockCatalog( timedelta( weeks=16 ))
 		mock_course_catalog.is_callable().returns( mock_catalog )
@@ -57,7 +59,20 @@ class TestCourses(unittest.TestCase):
 
 		results = self.session.query(Courses).all()
 		assert_that( results, has_length( 1 ) )
+		assert_that( results[0].context_id, not_none() )
 		assert_that( results[0].duration, not_none() )
+
+	def test_next_id(self):
+		id1 = _get_next_id( self.db )
+		assert_that( id1, not_none() )
+
+		id2 = _get_next_id( self.db )
+		assert_that( id2, not_none() )
+		assert_that( id2, greater_than( id1 ))
+
+		id3 = _get_next_id( self.db )
+		assert_that( id3, not_none() )
+		assert_that( id3, greater_than( id2 ))
 
 
 

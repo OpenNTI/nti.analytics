@@ -28,7 +28,7 @@ from nti.ntiids.ntiids import find_object_with_ntiid
 
 from nti.analytics.sessions import get_nti_session_id
 
-from nti.analytics.resolvers import get_course_by_container_id
+from nti.analytics.resolvers import get_root_context
 
 from . import get_factory
 from . import ASSESSMENTS_ANALYTICS
@@ -75,7 +75,7 @@ def _self_assessment_taken( oid, nti_session=None ):
 		timestamp = get_created_timestamp( submission )
 
 		__traceback_info__ = submission.containerId
-		course = get_course_by_container_id( submission.containerId )
+		course = get_root_context( submission )
 		db_assessments.create_self_assessment_taken(user, nti_session,
 													timestamp, course, submission)
 		logger.debug("Self-assessment submitted (user=%s) (assignment=%s)",

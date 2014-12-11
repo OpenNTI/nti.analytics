@@ -15,7 +15,7 @@ from nti.intid.interfaces import IIntIdRemovedEvent
 
 from nti.analytics.common import process_event
 
-from nti.analytics.database import courses as db_courses
+from nti.analytics.database import root_context as db_courses
 
 from nti.analytics.identifier import CourseId
 

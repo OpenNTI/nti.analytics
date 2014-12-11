@@ -20,7 +20,7 @@ from nti.analytics.generations.evolve11 import _delete_zero_length_records
 from nti.analytics.database import get_analytics_db
 from nti.analytics.database.enrollments import CourseCatalogViews
 from nti.analytics.database.users import Users
-from nti.analytics.database.courses import Courses
+from nti.analytics.database.root_context import Courses
 
 import nti.dataserver.tests.mock_dataserver as mock_dataserver
 from nti.dataserver.tests.mock_dataserver import WithMockDSTrans
@@ -40,9 +40,11 @@ class TestEvolve11(NTIAnalyticsTestCase):
 						username='robert',
 						username2='paulson' )
 
-			course = Courses( 	course_ds_id=1,
-							course_name='hard',
-							course_long_name='knocks' )
+			course = Courses(
+							context_id=1,
+							context_ds_id=1,
+							context_name='hard',
+							context_long_name='knocks' )
 
 			db.session.add( user )
 			db.session.add( course )

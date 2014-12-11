@@ -24,7 +24,7 @@ from nti.dataserver.users.users import User
 from nti.analytics import identifier
 
 from nti.analytics.database import get_analytics_db
-from nti.analytics.database.courses import _create_course
+from nti.analytics.database.root_context import _create_course
 from nti.analytics.database.users import create_user
 from nti.analytics.database.assessments import AssignmentsTaken
 from nti.analytics.database.assessments import SelfAssessmentsTaken
@@ -45,9 +45,12 @@ class TestAnalyticAdapters( NTIAnalyticsTestCase ):
 		self.analytics_db = get_analytics_db()
 
 		self.patches = [
-			patch_object( identifier.SessionId, 'get_id', TestIdentifier.get_id ),
+			patch_object( identifier.CourseId, 'get_id', TestIdentifier.get_id ),
 			patch_object( identifier._DSIdentifier, 'get_id', TestIdentifier.get_id ),
-			patch_object( identifier._NtiidIdentifier, 'get_id', TestIdentifier.get_id ) ]
+			patch_object( identifier._NtiidIdentifier, 'get_id', TestIdentifier.get_id ),
+			patch_object( identifier.CourseId, 'get_object', TestIdentifier.get_object ),
+			patch_object( identifier._DSIdentifier, 'get_object', TestIdentifier.get_object ),
+			patch_object( identifier._NtiidIdentifier, 'get_object', TestIdentifier.get_object ) ]
 
 	def tearDown(self):
 		for patch in self.patches:

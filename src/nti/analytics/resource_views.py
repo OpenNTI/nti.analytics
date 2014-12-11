@@ -79,7 +79,8 @@ def _get_course( event ):
 	__traceback_info__ = event.RootContextID
 	result = _get_object( event.RootContextID )
 	# Course catalog views may resolve to catalog entries
-	return ICourseInstance( result )
+	# If not a course, return what we have (e.g. ContentPackage)
+	return ICourseInstance( result, result )
 
 def _validate_analytics_event( event ):
 	""" Validate our events, sanitizing as we go. """
@@ -162,6 +163,7 @@ def _add_note_event( event, nti_session=None ):
 								event.timestamp,
 								course,
 								note )
+
 	logger.debug( 	"Course note view event (user=%s) (course=%s)",
 					user,
 					getattr( course, '__name__', course ) )
