@@ -189,6 +189,7 @@ class _CourseFromChildNTIIDResolver(object):
 	def __init__(self):
 		self.course_to_containers = None
 		self.course_to_self_assessments = None
+		self.course_to_assignments = None
 
 	def reset(self):
 		# We may have a few of these come in at once, one
@@ -256,6 +257,7 @@ def _get_course_from_ntiid_resolver():
 def _reset():
 	_get_course_from_ntiid_resolver().reset()
 
+# FIXME Don't think this would work across multiple dataservers.
 @component.adapter( IContentPackageLibraryModifiedOnSyncEvent )
 def _library_sync(event):
 	process_event( _get_job_queue, _reset )
@@ -292,7 +294,7 @@ def get_root_context( obj ):
 					getattr( obj, 'ntiid', None ))
 	if not ntiid:
 		# Should not happen.
-		raise TypeError( "No containerId,ntiid found for obj (%s)" % obj )
+		raise TypeError( "No containerId or ntiid found for obj (%s)" % obj )
 
 	result = get_course_by_container_id( ntiid )
 
