@@ -21,7 +21,7 @@ cd $BASE_OUTPUT_DIR
 
 echo "Generating tarball at $OUTPUT_TAR"
 tar -czf $OUTPUT_TAR $OUTPUT_FILENAME
-gpg2 --passphrase ***** --symmetric --batch --output $OUTPUT_GPG $OUTPUT_TAR
+gpg-agent --daemon gpg2 --passphrase ***** --symmetric --batch --output $OUTPUT_GPG $OUTPUT_TAR
 rm -rf $OUTPUT_FILE
 rm -rf $OUTPUT_TAR
 
