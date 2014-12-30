@@ -109,7 +109,6 @@ def recur_children_ntiid_for_unit( node, accum=None ):
 	# ContentUnits only
 	# TODO Do we not have to check children?
 	result = set() if accum is None else accum
-
 	def _recur( node, accum ):
 		accum.add( node.ntiid )
 		for iface in CONTAINER_IFACES:
@@ -133,6 +132,16 @@ def recur_children_ntiid( node, accum=None ):
 	_recur( node, result )
 	return result
 
+def _get_self_assessment_ids_for_course( course ):
+	self_assessments = _get_self_assessments_for_course(course)
+	self_assessment_qsids = {x.ntiid: x for x in self_assessments}
+	return self_assessment_qsids
+
+def _get_assignment_ids_for_course( course ):
+	assignment_catalog = ICourseAssignmentCatalog( course )
+	assignment_ids = {asg.ntiid for asg in assignment_catalog.iter_assignments()}
+	return assignment_ids
+
 def _do_get_containers_in_course( course ):
 	try:
 		packages = course.ContentPackageBundle.ContentPackages
@@ -155,17 +164,14 @@ def _do_get_containers_in_course( course ):
 	containers_in_course = containers_in_course.union( self_assessment_qsids )
 
 	#Add in our assignments
-	assignment_catalog = ICourseAssignmentCatalog( course )
-	assignment_ids = {asg.ntiid for asg in assignment_catalog.iter_assignments()}
+	assignment_ids = _get_assignment_ids_for_course( course )
 	containers_in_course = containers_in_course.union( assignment_ids )
 	containers_in_course.discard( None )
 
-	return containers_in_course, self_assessment_qsids, assignment_ids
+	return containers_in_course, self_assessment_qsids
 
 def _build_ntiid_map():
 	course_dict = dict()
-	self_assessment_dict = dict()
-	assignment_dict = dict()
 
 	start_time = time.time()
 	logger.info( 'Initializing course ntiid resolver' )
@@ -173,23 +179,40 @@ def _build_ntiid_map():
 	catalog = component.getUtility( ICourseCatalog )
 	for entry in catalog.iterCatalogEntries():
 		course = ICourseInstance( entry )
-		containers, self_assessment_ids, assignment_ids = _do_get_containers_in_course( course )
+		containers = _do_get_containers_in_course( course )
 		course_key = to_external_ntiid_oid( course )
 		course_dict[course_key] = containers
-		self_assessment_dict[course_key] = self_assessment_ids
-		assignment_dict[course_key] = assignment_ids
 
 	logger.info( 'Finished initializing course ntiid resolver (%ss) (course_count=%s)',
 				time.time() - start_time,
 				len( course_dict ) )
-	return course_dict, self_assessment_dict, assignment_dict
+	return course_dict
+
+def _build_assessment_maps():
+	self_assessment_dict = dict()
+	assignment_dict = dict()
+
+	start_time = time.time()
+	logger.info( 'Initializing course assessment resolver' )
+
+	catalog = component.getUtility( ICourseCatalog )
+	for entry in catalog.iterCatalogEntries():
+		course = ICourseInstance( entry )
+		assignment_ids = _get_assignment_ids_for_course( course )
+		self_assessment_ids = _get_self_assessment_ids_for_course( course )
+		course_key = to_external_ntiid_oid( course )
+		self_assessment_dict[course_key] = self_assessment_ids
+		assignment_dict[course_key] = assignment_ids
+
+	logger.info( 'Finished initializing course assessment resolver (%ss) (course_count=%s)',
+				time.time() - start_time,
+				len( assignment_dict ) )
+	return self_assessment_dict, assignment_dict
 
 class _CourseFromChildNTIIDResolver(object):
 
 	def __init__(self):
 		self.course_to_containers = None
-		self.course_to_self_assessments = None
-		self.course_to_assignments = None
 
 	def reset(self):
 		# We may have a few of these come in at once, one
@@ -200,11 +223,42 @@ class _CourseFromChildNTIIDResolver(object):
 		if self.course_to_containers is not None:
 			logger.info( 'Resetting analytics course resolver' )
 		self.course_to_containers = None
+
+	def _rebuild(self):
+		self.course_to_containers = _build_ntiid_map()
+
+	def get_course(self, container_id):
+		course_to_containers = self.course_to_containers
+
+		if course_to_containers is None:
+			self._rebuild()
+			course_to_containers = self.course_to_containers
+
+		# This is about 4x faster in the worst case than dynamically iterating
+		# through children and searching for contained objects (but costs in other ways).
+		for course_key, containers in course_to_containers.items():
+
+			# We can no longer check the catalog due to timing issues,
+			# but this may be a proper solution anyways.
+			if container_id in containers:
+				course = find_object_with_ntiid( course_key )
+				return course
+		return None
+
+class _CourseAssessmentResolver(object):
+
+	def __init__(self):
+		self.course_to_self_assessments = None
+		self.course_to_assignments = None
+
+	def reset(self):
+		if self.course_to_containers is not None:
+			logger.info( 'Resetting analytics course assessment resolver' )
 		self.course_to_self_assessments = None
 		self.course_to_assignments = None
 
 	def _rebuild(self):
-		self.course_to_containers, self.course_to_self_assessments, self.course_to_assignments = _build_ntiid_map()
+		self.course_to_self_assessments, self.course_to_assignments = _build_assessment_maps()
 
 	def get_assignments_for_course(self, course):
 		course_to_assignments = self.course_to_assignments
@@ -228,25 +282,8 @@ class _CourseFromChildNTIIDResolver(object):
 		self_assessment_ids = course_to_self_assessments.get( course_key )
 		return self_assessment_ids
 
-	def get_course(self, container_id):
-		course_to_containers = self.course_to_containers
-
-		if course_to_containers is None:
-			self._rebuild()
-			course_to_containers = self.course_to_containers
-
-		# This is about 4x faster in the worst case than dynamically iterating
-		# through children and searching for contained objects (but costs in other ways).
-		for course_key, containers in course_to_containers.items():
-
-			# We can no longer check the catalog due to timing issues,
-			# but this may be a proper solution anyways.
-			if container_id in containers:
-				course = find_object_with_ntiid( course_key )
-				return course
-		return None
-
 _course_from_ntiid_resolver = None
+_course_assessment_resolver = None
 
 def _get_course_from_ntiid_resolver():
 	global _course_from_ntiid_resolver
@@ -254,8 +291,15 @@ def _get_course_from_ntiid_resolver():
 		_course_from_ntiid_resolver = _CourseFromChildNTIIDResolver()
 	return _course_from_ntiid_resolver
 
+def _get_course_assessment_resolver():
+	global _course_assessment_resolver
+	if _course_assessment_resolver is None:
+		_course_assessment_resolver = _CourseAssessmentResolver()
+	return _course_assessment_resolver
+
 def _reset():
 	_get_course_from_ntiid_resolver().reset()
+	_get_course_assessment_resolver().reset()
 
 # FIXME Don't think this would work across multiple dataservers.
 @component.adapter( IContentPackageLibraryModifiedOnSyncEvent )
@@ -263,6 +307,12 @@ def _library_sync(event):
 	process_event( _get_job_queue, _reset )
 
 def get_course_by_container_id( container_id ):
+	"""
+	Given a container id, returns the first course found that contains this id.
+	This can be fairly expensive if the cache is not built, and is mainly used
+	in the standalone analytics process.
+	"""
+
 	# Some content is only accessible from the global content
 	# package.  During migration, we'll need to (in most cases)
 	# check there first, before falling back to checking our current
@@ -275,12 +325,12 @@ def get_course_by_container_id( container_id ):
 
 def get_self_assessments_for_course(course):
 	""" For a course, return the ntiids of all the contained self_assessments. """
-	result = _get_course_from_ntiid_resolver().get_self_assessments_for_course( course )
+	result = _get_course_assessment_resolver().get_self_assessments_for_course( course )
 	return result
 
 def get_assignments_for_course(course):
 	""" For a course, return the ntiids of all the contained assignments. """
-	result = _get_course_from_ntiid_resolver().get_assignments_for_course( course )
+	result = _get_course_assessment_resolver().get_assignments_for_course( course )
 	return result
 
 def get_root_context( obj ):
