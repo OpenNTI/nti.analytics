@@ -252,8 +252,6 @@ class _CourseAssessmentResolver(object):
 		self.course_to_assignments = None
 
 	def reset(self):
-		if self.course_to_containers is not None:
-			logger.info( 'Resetting analytics course assessment resolver' )
 		self.course_to_self_assessments = None
 		self.course_to_assignments = None
 
