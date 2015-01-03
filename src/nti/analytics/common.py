@@ -11,10 +11,13 @@ logger = __import__('logging').getLogger(__name__)
 from datetime import datetime
 
 from pyramid.location import lineage
+from pyramid.threadlocal import get_current_request
 
 from six import integer_types
 
 from zope import component
+from zope.component.hooks import site as current_site
+from zope.component.hooks import getSite
 
 from zc.blist import BList
 
@@ -30,12 +33,16 @@ from nti.dataserver import liking
 from nti.dataserver.rating import IObjectUnratedEvent
 from nti.dataserver.users import Entity
 
+from nti.dataserver.interfaces import IDataserver
 from nti.dataserver.interfaces import IGlobalFlagStorage
 
 from nti.contenttypes.courses.interfaces import ICourseCatalogEntry
 from nti.contenttypes.courses.interfaces import ICourseInstance
 
 from nti.externalization import externalization
+
+from nti.site.site import get_site_for_site_names
+from nti.site.transient import TrivialSite
 
 def get_rating_from_event( event ):
 	delta = -1 if IObjectUnratedEvent.providedBy( event ) else 1
@@ -78,16 +85,6 @@ def get_creator(obj):
 	except (TypeError, POSKeyError):
 		return None
 
-def get_object_root( obj, type_to_find ):
-	""" Work up the parent tree looking for 'type_to_find', returning None if not found. """
-	result = None
-	for location in lineage( obj ):
-		candidate = type_to_find( location, None )
-		if candidate is not None:
-			result = candidate
-			break
-	return result
-
 def get_deleted_time( obj ):
 	# Try for last modified, otherwise take whatever time we have now
 	deleted_time = getattr( obj, 'lastModified', datetime.utcnow() )
@@ -100,35 +97,91 @@ def to_external_ntiid_oid(obj):
 		ntiid = ':'.join(parts[:4])
 	return ntiid
 
+def get_object_root( obj, type_to_find ):
+	""" Work up the parent tree looking for 'type_to_find', returning None if not found. """
+	result = None
+	for location in lineage( obj ):
+		candidate = type_to_find( location, None )
+		if candidate is not None:
+			result = candidate
+			break
+	return result
+
 def get_course( obj ):
 	"""
 	Attempt to get the course of an object by traversing up the given
 	object's lineage.
 	"""
-	# TODO Would we call this for books? Topics in books?
+	# TODO We call this for topics; will topics exist in books?
+	# If so, this needs to change.
 	result = get_object_root( obj, ICourseInstance )
 	__traceback_info__ = result, obj
 	return ICourseInstance( result )
 
 def _execute_job( *args, **kwargs ):
-	db = get_analytics_db()
+	"""
+	Performs the actual execution of a job.  We'll attempt to do
+	so in the site the event occurred in, otherwise, we'll run in
+	whatever site we are currently in.
+	"""
+	event_site_name = kwargs.pop( 'site_name', None )
+	old_site = getSite()
 
-	args = BList( args )
-	func = args.pop( 0 )
+	# Find the site to run in
+	if event_site_name is None:
+		logger.warn( 'Event does not have site_name, will run in default site' )
+		event_site = old_site
+	else:
+		# Need to use root site to access the given site.
+		# TODO This does not seem to occur in other code paths
+		# that pull a site by name.
+		dataserver = component.getUtility( IDataserver )
+		ds_folder = dataserver.root_folder['dataserver2']
 
-	func( *args, **kwargs )
-	# Must flush to verify integrity.  If we hit any race
-	# conditions below, this will raise and the job can
-	# be re-run.
-	db.session.flush()
+		with current_site( ds_folder ):
+			event_site = get_site_for_site_names( (event_site_name,) )
+
+		if 		event_site is None \
+			or 	isinstance( event_site, TrivialSite ):
+			# We could get a trival site, which is unlikely to be
+			# useful.
+			raise ValueError( 'No site found for (%s)' % event_site_name )
+
+	with current_site( event_site ):
+		# We bail if our site does not have a db.
+		db = get_analytics_db()
+		if db is None:
+			logger.info( 'No analytics db found for site (%s), will drop event',
+						event_site_name )
+			return
+
+		args = BList( args )
+		func = args.pop( 0 )
+
+		result = func( *args, **kwargs )
+		# Must flush to verify integrity.  If we hit any race
+		# conditions below, this will raise and the job can
+		# be re-run.
+		db.session.flush()
+		return result
 
 def process_event( get_job_queue, object_op, obj=None, **kwargs ):
-	effective_kwargs = kwargs
+	"""
+	Processes the event, which may not occur synchronously.
+	"""
+	effective_kwargs = dict( kwargs )
 	if obj is not None:
 		# If we have an object, grab its ID by default.
 		oid = to_external_ntiid_oid( obj )
-		effective_kwargs = dict( kwargs )
 		effective_kwargs['oid'] = oid
+
+	# Now tag our event with the current site
+	cur_site = getSite()
+	if cur_site is not None:
+		effective_kwargs['site_name'] = cur_site.__name__
+	else:
+		request = get_current_request()
+		logger.warn( 'Request did not have site (%s)', request )
 
 	queue = get_job_queue()
 	job = create_job( _execute_job, object_op, **effective_kwargs )
