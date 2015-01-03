@@ -168,7 +168,7 @@ def _do_get_containers_in_course( course ):
 	containers_in_course = containers_in_course.union( assignment_ids )
 	containers_in_course.discard( None )
 
-	return containers_in_course, self_assessment_qsids
+	return containers_in_course
 
 def _build_ntiid_map():
 	course_dict = dict()
@@ -176,9 +176,11 @@ def _build_ntiid_map():
 	start_time = time.time()
 	logger.info( 'Initializing course ntiid resolver' )
 
+	# TODO We need books here.
 	catalog = component.getUtility( ICourseCatalog )
 	for entry in catalog.iterCatalogEntries():
 		course = ICourseInstance( entry )
+
 		containers = _do_get_containers_in_course( course )
 		course_key = to_external_ntiid_oid( course )
 		course_dict[course_key] = containers
