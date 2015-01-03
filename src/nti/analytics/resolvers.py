@@ -39,6 +39,8 @@ from nti.analytics import SESSIONS_ANALYTICS
 
 from nti.analytics.common import process_event
 
+## FIXME Need tests
+
 CONTAINER_IFACES = (IRelatedContentIndexedDataContainer,
 					IVideoIndexedDataContainer,
 					IAudioIndexedDataContainer)
