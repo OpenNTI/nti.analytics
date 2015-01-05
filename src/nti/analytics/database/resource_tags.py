@@ -178,7 +178,7 @@ def _note_view_exists( db, note_id, user_id, timestamp ):
 	return db.session.query( NotesViewed ).filter(
 							NotesViewed.note_id == note_id,
 							NotesViewed.user_id == user_id,
-							NotesViewed.timestamp == timestamp ).count()
+							NotesViewed.timestamp == timestamp ).first()
 
 def create_note_view(user, nti_session, timestamp, course, note):
 	db = get_analytics_db()

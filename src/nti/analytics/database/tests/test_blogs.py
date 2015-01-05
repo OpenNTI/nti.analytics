@@ -99,19 +99,25 @@ class TestBlog(AnalyticsTestBase):
 		results = self.session.query( BlogsViewed ).all()
 		assert_that( results, has_length( 0 ) )
 
+		time_length = 18
+		new_time_length = time_length + 1
+
 		event_time = datetime.now()
 		new_blog_ds_id = 999
 		new_blog = MockParent( None, intid=new_blog_ds_id )
 		db_blogs.create_blog( test_user_ds_id, test_session_id, new_blog )
-		db_blogs.create_blog_view( test_user_ds_id, test_session_id, event_time, new_blog, 18 )
+		db_blogs.create_blog_view( test_user_ds_id, test_session_id, event_time, new_blog, time_length )
 
 		results = self.session.query( BlogsViewed ).all()
 		assert_that( results, has_length( 1 ) )
 
-		db_blogs.create_blog_view( test_user_ds_id, test_session_id, event_time, new_blog, 18 )
+		db_blogs.create_blog_view( test_user_ds_id, test_session_id, event_time, new_blog, new_time_length )
 
 		results = self.session.query( BlogsViewed ).all()
 		assert_that( results, has_length( 1 ) )
+
+		blog_view = results[0]
+		assert_that( blog_view.time_length, is_( new_time_length ) )
 
 class TestBlogComments(AnalyticsTestBase):
 

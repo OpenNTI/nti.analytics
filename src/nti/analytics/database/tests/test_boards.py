@@ -244,6 +244,7 @@ class TestTopics(AnalyticsTestBase):
 
 		event_time = datetime.now()
 		time_length = 30
+		new_time_length = time_length + 1
 		db_boards.create_topic_view( test_user_ds_id,
 										test_session_id, event_time,
 										self.course_id, my_topic,
@@ -255,10 +256,13 @@ class TestTopics(AnalyticsTestBase):
 		db_boards.create_topic_view( test_user_ds_id,
 										test_session_id, event_time,
 										self.course_id, my_topic,
-										time_length )
+										new_time_length )
 
 		results = self.session.query( TopicsViewed ).all()
 		assert_that( results, has_length( 1 ) )
+
+		topic_view = results[0]
+		assert_that( topic_view.time_length, new_time_length )
 
 class TestForumComments(AnalyticsTestBase):
 

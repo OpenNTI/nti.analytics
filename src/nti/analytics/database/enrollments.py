@@ -22,6 +22,7 @@ from nti.analytics.identifier import SessionId
 
 from nti.analytics.database import Base
 from nti.analytics.database import get_analytics_db
+from nti.analytics.database import should_update_event
 
 from nti.analytics.database.meta_mixins import BaseTableMixin
 from nti.analytics.database.meta_mixins import BaseViewMixin
@@ -63,7 +64,7 @@ def _course_catalog_view_exists( db, user_id, course_id, timestamp ):
 	return db.session.query( CourseCatalogViews ).filter(
 							CourseCatalogViews.user_id == user_id,
 							CourseCatalogViews.course_id == course_id,
-							CourseCatalogViews.timestamp == timestamp ).count()
+							CourseCatalogViews.timestamp == timestamp ).first()
 
 def create_course_catalog_view( user, nti_session, timestamp, course, time_length ):
 	db = get_analytics_db()
@@ -73,10 +74,16 @@ def create_course_catalog_view( user, nti_session, timestamp, course, time_lengt
 	course_id = get_root_context_id( db, course, create=True )
 	timestamp = timestamp_type( timestamp )
 
-	if _course_catalog_view_exists( db, uid, course_id, timestamp ):
-		logger.warn( 'Course catalog view already exists (user=%s) (catalog=%s)',
-					uid, course_id )
-		return
+	existing_record = _course_catalog_view_exists( db, uid, course_id, timestamp )
+
+	if existing_record is not None:
+		if should_update_event( existing_record, time_length ):
+			existing_record.time_length = time_length
+			return
+		else:
+			logger.warn( 'Course catalog view already exists (user=%s) (catalog=%s)',
+						uid, course_id )
+			return
 
 	new_object = CourseCatalogViews( 	user_id=uid,
 										session_id=sid,

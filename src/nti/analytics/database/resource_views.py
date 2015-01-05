@@ -34,6 +34,7 @@ from nti.analytics.database import get_analytics_db
 from nti.analytics.database.meta_mixins import ResourceViewMixin
 from nti.analytics.database.meta_mixins import TimeLengthMixin
 
+from nti.analytics.database import should_update_event
 from nti.analytics.database import resolve_objects
 from nti.analytics.database.users import get_or_create_user
 from nti.analytics.database.users import get_user_db_id
@@ -90,7 +91,7 @@ def _resource_view_exists( db, user_id, resource_id, timestamp ):
 	return db.session.query( CourseResourceViews ).filter(
 							CourseResourceViews.user_id == user_id,
 							CourseResourceViews.resource_id == resource_id,
-							CourseResourceViews.timestamp == timestamp ).count()
+							CourseResourceViews.timestamp == timestamp ).first()
 
 def create_course_resource_view(user, nti_session, timestamp, course, context_path, resource, time_length):
 	db = get_analytics_db()
@@ -103,11 +104,15 @@ def create_course_resource_view(user, nti_session, timestamp, course, context_pa
 	course_id = get_root_context_id( db, course, create=True )
 	timestamp = timestamp_type( timestamp )
 
-	if _resource_view_exists( db, uid, rid, timestamp ):
-		logger.warn( 'Resource view already exists (user=%s) (resource_id=%s) (timestamp=%s)',
-					user, rid, timestamp )
-		return
-
+	existing_record = _resource_view_exists( db, uid, rid, timestamp )
+	if existing_record is not None:
+		if should_update_event( existing_record, time_length ):
+			existing_record.time_length = time_length
+			return
+		else:
+			logger.warn( 'Resource view already exists (user=%s) (resource_id=%s) (timestamp=%s)',
+						user, rid, timestamp )
+			return
 
 	context_path = _get_context_path( context_path )
 
@@ -125,7 +130,7 @@ def _video_view_exists( db, user_id, resource_id, timestamp, event_type ):
 							VideoEvents.user_id == user_id,
 							VideoEvents.resource_id == resource_id,
 							VideoEvents.timestamp == timestamp,
-							VideoEvents.video_event_type == event_type ).count()
+							VideoEvents.video_event_type == event_type ).first()
 
 def create_video_event(	user,
 						nti_session, timestamp,
@@ -147,10 +152,19 @@ def create_video_event(	user,
 	course_id = get_root_context_id( db, course, create=True )
 	timestamp = timestamp_type( timestamp )
 
-	if _video_view_exists( db, uid, vid, timestamp, video_event_type ):
-		logger.warn( 'Video view already exists (user=%s) (resource_id=%s) (timestamp=%s)',
-					user, vid, timestamp )
-		return
+	existing_record = _video_view_exists( db, uid, vid, timestamp, video_event_type )
+
+	if existing_record is not None:
+		if should_update_event( existing_record, time_length ):
+			existing_record.time_length = time_length
+			existing_record.video_start_time = video_start_time
+			existing_record.video_end_time = video_end_time
+			return
+		else:
+			# Ok, duplicate event received, apparently.
+			logger.warn( 'Video view already exists (user=%s) (resource_id=%s) (timestamp=%s)',
+						user, vid, timestamp )
+			return
 
 	context_path = _get_context_path( context_path )
 

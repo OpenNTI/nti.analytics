@@ -27,6 +27,7 @@ from nti.analytics.identifier import CommentId
 from nti.analytics.database import INTID_COLUMN_TYPE
 from nti.analytics.database import Base
 from nti.analytics.database import get_analytics_db
+from nti.analytics.database import should_update_event
 
 from nti.analytics.database.meta_mixins import BaseTableMixin
 from nti.analytics.database.meta_mixins import BaseViewMixin
@@ -144,7 +145,7 @@ def _blog_view_exists( db, user_id, blog_id, timestamp ):
 	return db.session.query( BlogsViewed ).filter(
 							BlogsViewed.user_id == user_id,
 							BlogsViewed.blog_id == blog_id,
-							BlogsViewed.timestamp == timestamp ).count()
+							BlogsViewed.timestamp == timestamp ).first()
 
 def create_blog_view(user, nti_session, timestamp, blog_entry, time_length):
 	db = get_analytics_db()
@@ -155,10 +156,16 @@ def create_blog_view(user, nti_session, timestamp, blog_entry, time_length):
 	blog_id = _get_blog_id( db, blog_ds_id )
 	timestamp = timestamp_type( timestamp )
 
-	if _blog_view_exists( db, uid, blog_id, timestamp ):
-		logger.warn( 'Blog view already exists (user=%s) (blog_id=%s)',
-					user, blog_id )
-		return
+	existing_record = _blog_view_exists( db, uid, blog_id, timestamp )
+
+	if existing_record is not None:
+		if should_update_event( existing_record, time_length ):
+			existing_record.time_length = time_length
+			return
+		else:
+			logger.warn( 'Blog view already exists (user=%s) (blog_id=%s)',
+						user, blog_id )
+			return
 
 	new_object = BlogsViewed( 	user_id=uid,
 								session_id=sid,

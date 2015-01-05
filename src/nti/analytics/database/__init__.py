@@ -34,3 +34,11 @@ def resolve_objects( to_call, rows, **kwargs ):
 					( to_call( row, **kwargs ) for row in rows )
 					if x is not None]
 	return result
+
+def should_update_event( old_record, new_time_length ):
+	"""
+	For a record with a 'time_length' field, decide whether the
+	event should be updated based on the new time_length given.
+	"""
+	# We want to update if our new time_length is greater than the old.
+	return old_record.time_length < new_time_length

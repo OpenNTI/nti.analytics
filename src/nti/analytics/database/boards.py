@@ -34,6 +34,7 @@ from nti.analytics.database import resolve_objects
 from nti.analytics.database import INTID_COLUMN_TYPE
 from nti.analytics.database import Base
 from nti.analytics.database import get_analytics_db
+from nti.analytics.database import should_update_event
 
 from nti.analytics.database.meta_mixins import BaseTableMixin
 from nti.analytics.database.meta_mixins import BaseViewMixin
@@ -243,7 +244,7 @@ def _topic_view_exists( db, user_id, topic_id, timestamp ):
 	return db.session.query( TopicsViewed ).filter(
 							TopicsViewed.user_id == user_id,
 							TopicsViewed.topic_id == topic_id,
-							TopicsViewed.timestamp == timestamp ).count()
+							TopicsViewed.timestamp == timestamp ).first()
 
 def create_topic_view(user, nti_session, timestamp, course, topic, time_length):
 	db = get_analytics_db()
@@ -264,10 +265,16 @@ def create_topic_view(user, nti_session, timestamp, course, topic, time_length):
 	course_id = get_root_context_id( db, course, create=True )
 	timestamp = timestamp_type( timestamp )
 
-	if _topic_view_exists( db, uid, did, timestamp ):
-		logger.warn( 'Topic view already exists (user=%s) (topic=%s)',
-					user, did )
-		return
+	existing_record = _topic_view_exists( db, uid, did, timestamp )
+
+	if existing_record is not None:
+		if should_update_event( existing_record, time_length ):
+			existing_record.time_length = time_length
+			return
+		else:
+			logger.warn( 'Topic view already exists (user=%s) (topic=%s)',
+						user, did )
+			return
 
 	new_object = TopicsViewed( user_id=uid,
 								session_id=sid,
