@@ -19,6 +19,7 @@ from calendar import timegm as _calendar_timegm
 from nti.analytics.database import sessions as db_sessions
 
 from nti.analytics import get_factory
+from nti.analytics import has_analytics
 from nti.analytics import SESSIONS_ANALYTICS
 
 ANALYTICS_SESSION_COOKIE_NAME = str( 'nti.da_session' )
@@ -139,7 +140,8 @@ def get_current_session_id( user, event=None ):
 
 	request = get_current_request()
 
-	if request is None:
+	if 		request is None \
+		or 	not has_analytics():
 		return None
 
 	result = header_id = _get_header_id( request )

@@ -169,6 +169,9 @@ def process_event( get_job_queue, object_op, obj=None, **kwargs ):
 	"""
 	Processes the event, which may not occur synchronously.
 	"""
+	# TODO Do we want to check if we have analytics
+	# for this site before queuing the event?
+
 	effective_kwargs = dict( kwargs )
 	if obj is not None:
 		# If we have an object, grab its ID by default.

@@ -15,6 +15,8 @@ from zope.security.management import queryInteraction
 from nti.dataserver.users import User
 from nti.dataserver.interfaces import IUser
 
+from nti.analytics.database import get_analytics_db
+
 from .interfaces import IAnalyticsQueueFactory
 
 QUEUE_NAME = '++etc++analytics++queue'
@@ -61,6 +63,10 @@ QUEUE_NAMES = [ SESSIONS_ANALYTICS,
 				NOTE_VIEW_ANALYTICS,
 				BLOG_VIEW_ANALYTICS,
 				DELETE_ANALYTICS ]
+
+def has_analytics():
+	"Determines whether our current site is configured for analytics."
+	return get_analytics_db( strict=False ) is not None
 
 def get_factory():
 	return component.getUtility(IAnalyticsQueueFactory)

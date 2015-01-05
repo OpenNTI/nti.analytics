@@ -23,8 +23,11 @@ SESSION_COLUMN_TYPE = Integer
 NTIID_COLUMN_TYPE = String( 256 )
 INTID_COLUMN_TYPE = BigInteger
 
-def get_analytics_db():
-	return component.getUtility( IAnalyticsDB )
+def get_analytics_db( strict=True ):
+	if strict:
+		return component.getUtility( IAnalyticsDB )
+	else:
+		return component.queryUtility( IAnalyticsDB )
 
 def resolve_objects( to_call, rows, **kwargs ):
 	result = ()

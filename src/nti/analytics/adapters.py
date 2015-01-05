@@ -58,7 +58,6 @@ def _assessment_progress_for_user( user, assessment ):
 	has made on the assignment.  If we have nothing in which to
 	gauge progress, we return None.
 	"""
-	# TODO Check overhead
 	# TODO Caching?
 	# To properly check for assignment, we need the course to see
 	# what the assignment ntiids are versus the possible self-assessment ids.
