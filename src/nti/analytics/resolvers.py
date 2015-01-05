@@ -25,6 +25,7 @@ from nti.contentlibrary.interfaces import IContentPackageLibraryModifiedOnSyncEv
 from nti.contentlibrary.indexed_data.interfaces import IAudioIndexedDataContainer
 from nti.contentlibrary.indexed_data.interfaces import IVideoIndexedDataContainer
 from nti.contentlibrary.indexed_data.interfaces import IRelatedContentIndexedDataContainer
+from nti.contentlibrary.indexed_data.interfaces import ITimelineIndexedDataContainer
 
 from nti.externalization.externalization import to_external_ntiid_oid
 
@@ -43,7 +44,8 @@ from nti.analytics.common import process_event
 
 CONTAINER_IFACES = (IRelatedContentIndexedDataContainer,
 					IVideoIndexedDataContainer,
-					IAudioIndexedDataContainer)
+					IAudioIndexedDataContainer,
+					ITimelineIndexedDataContainer)
 
 def _get_job_queue():
 	factory = get_factory()
@@ -178,7 +180,6 @@ def _build_ntiid_map():
 	start_time = time.time()
 	logger.info( 'Initializing course ntiid resolver' )
 
-	# TODO We need books here.
 	catalog = component.getUtility( ICourseCatalog )
 	for entry in catalog.iterCatalogEntries():
 		course = ICourseInstance( entry )
