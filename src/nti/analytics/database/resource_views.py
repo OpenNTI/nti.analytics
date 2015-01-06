@@ -185,9 +185,9 @@ def create_video_event(	user,
 def _resolve_resource_view( record, course=None, user=None ):
 	time_length = record.time_length
 
-	if time_length < 1:
-		# Ignore inconsequential events
-		return None
+	# We could filter out time_length = 0 events, but they
+	# may be useful to determine if 'some' progress has possibly made.
+	# We also store 0s events at event start time.
 
 	timestamp = record.timestamp
 	context_path = record.context_path
@@ -209,9 +209,9 @@ def _resolve_video_view( record, course=None, user=None ):
 	time_length = record.time_length
 	max_time_length = record.max_time_length
 
-	if time_length < 1:
-		# Ignore inconsequential events
-		return None
+	# We could filter out time_length = 0 events, but they
+	# may be useful to determine if 'some' progress has possibly made.
+	# We also store 0s events at event start time.
 
 	timestamp = record.timestamp
 	context_path = record.context_path
