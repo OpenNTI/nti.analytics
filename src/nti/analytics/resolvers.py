@@ -193,26 +193,11 @@ def _build_ntiid_map():
 				len( course_dict ) )
 	return course_dict
 
-def _build_assessment_maps():
-	self_assessment_dict = dict()
-	assignment_dict = dict()
-
-	start_time = time.time()
-	logger.info( 'Initializing course assessment resolver' )
-
-	catalog = component.getUtility( ICourseCatalog )
-	for entry in catalog.iterCatalogEntries():
-		course = ICourseInstance( entry )
-		assignment_ids = _get_assignment_ids_for_course( course )
-		self_assessment_ids = _get_self_assessment_ids_for_course( course )
-		course_key = to_external_ntiid_oid( course )
-		self_assessment_dict[course_key] = self_assessment_ids
-		assignment_dict[course_key] = assignment_ids
-
-	logger.info( 'Finished initializing course assessment resolver (%ss) (course_count=%s)',
-				time.time() - start_time,
-				len( assignment_dict ) )
-	return self_assessment_dict, assignment_dict
+def _get_assessments_for_course( course ):
+	logger.info( 'Getting assessments for course' )
+	assignment_ids = _get_assignment_ids_for_course( course )
+	self_assessment_ids = _get_self_assessment_ids_for_course( course )
+	return self_assessment_ids, assignment_ids
 
 class _CourseFromChildNTIIDResolver(object):
 
@@ -226,7 +211,7 @@ class _CourseFromChildNTIIDResolver(object):
 		# relatively cheaply (6s locally, 9.2014), and the sync
 		# events probably only occur during lulls.
 		if self.course_to_containers is not None:
-			logger.info( 'Resetting analytics course resolver' )
+			logger.info( 'Resetting analytics course resolver.' )
 		self.course_to_containers = None
 
 	def _rebuild(self):
@@ -253,36 +238,43 @@ class _CourseFromChildNTIIDResolver(object):
 class _CourseAssessmentResolver(object):
 
 	def __init__(self):
-		self.course_to_self_assessments = None
-		self.course_to_assignments = None
+		self.course_to_self_assessments = {}
+		self.course_to_assignments = {}
 
 	def reset(self):
-		self.course_to_self_assessments = None
-		self.course_to_assignments = None
+		self.course_to_self_assessments = {}
+		self.course_to_assignments = {}
 
-	def _rebuild(self):
-		self.course_to_self_assessments, self.course_to_assignments = _build_assessment_maps()
+	def _get_for_course(self, course):
+		"""
+		Get assessments for course and cache them; returning a tuple of results.
+		"""
+		course_to_self_assessments = self.course_to_self_assessments
+		course_to_assignments = self.course_to_assignments
+
+		self_assessment_ids, assignment_ids = _get_assessments_for_course( course )
+		course_key = to_external_ntiid_oid( course )
+		course_to_self_assessments[course_key] = self_assessment_ids
+		course_to_assignments[course_key] = assignment_ids
+		return self_assessment_ids, assignment_ids
 
 	def get_assignments_for_course(self, course):
 		course_to_assignments = self.course_to_assignments
-
-		if course_to_assignments is None:
-			self._rebuild()
-			course_to_assignments = self.course_to_assignments
-
 		course_key = to_external_ntiid_oid( course )
 		assignment_ids = course_to_assignments.get( course_key )
+
+		if assignment_ids is None:
+			assignment_ids = self._get_for_course(course)[1]
+
 		return assignment_ids
 
 	def get_self_assessments_for_course(self, course):
 		course_to_self_assessments = self.course_to_self_assessments
-
-		if course_to_self_assessments is None:
-			self._rebuild()
-			course_to_self_assessments = self.course_to_self_assessments
-
 		course_key = to_external_ntiid_oid( course )
 		self_assessment_ids = course_to_self_assessments.get( course_key )
+
+		if self_assessment_ids is None:
+			self_assessment_ids = self._get_for_course(course)[0]
 		return self_assessment_ids
 
 _course_from_ntiid_resolver = None
