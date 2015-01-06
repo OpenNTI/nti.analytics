@@ -201,6 +201,28 @@ class TestCourseResources(AnalyticsTestBase):
 		assert_that( resource_view.video_end_time, is_( new_video_end_time ) )
 		assert_that( resource_view.time_length, is_( new_time_length ) )
 
+	def test_video_start_view(self):
+		"""
+		Validate video start events (with missing data) can be entered.
+		"""
+		results = db_views.get_user_video_events( test_user_ds_id, self.course_id )
+		results = [x for x in results]
+		assert_that( results, has_length( 0 ) )
+		results = self.session.query( VideoEvents ).all()
+		assert_that( results, has_length( 0 ) )
+
+		resource_val = 'ntiid:course_video'
+		time_length = max_time_length = video_start_time = video_end_time = None
+		video_event_type = 'WATCH'
+		with_transcript = True
+		event_time = datetime.now()
+		db_views.create_video_event( test_user_ds_id,
+									test_session_id, event_time,
+									self.course_id, self.context_path,
+									resource_val, time_length, max_time_length,
+									video_event_type, video_start_time,
+									video_end_time,  with_transcript )
+
 	@fudge.patch( 'nti.analytics.database.resource_tags._get_sharing_enum' )
 	def test_note(self, mock_sharing_enum):
 		mock_sharing_enum.is_callable().returns( 'UNKNOWN' )

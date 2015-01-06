@@ -88,15 +88,16 @@ def _validate_analytics_event( event ):
 							'Event received with non-existent user (user=%s) (event=%s)' %
 							( event.user, event ) )
 
-	time_length = getattr( event, 'Duration', 0 )
-	# Zero second events may indicate an event start. So we keep them.
-	if time_length < 0:
+	time_length = getattr( event, 'Duration', None )
+	# None durations may indicate an event start. So we keep them.
+	# If we have zero second events, we ignore them.
+	if time_length and time_length <= 0:
 		raise UnrecoverableAnalyticsError(
 							"""Event received with negative time_length
 							(user=%s) (time_length=%s) (event=%s)""" %
 							( event.user, time_length, event ) )
 
-	event.time_length = int( time_length )
+	event.time_length = time_length and int( time_length )
 
 def _validate_course_event( event ):
 	""" Validate our events, sanitizing as we go. """

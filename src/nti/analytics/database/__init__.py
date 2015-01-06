@@ -43,5 +43,7 @@ def should_update_event( old_record, new_time_length ):
 	For a record with a 'time_length' field, decide whether the
 	event should be updated based on the new time_length given.
 	"""
-	# We want to update if our new time_length is greater than the old.
-	return old_record.time_length < new_time_length
+	# We want to update if our new time_length is greater than the old,
+	# or if our old time_length is none.
+	return old_record.time_length is None \
+		or old_record.time_length < new_time_length

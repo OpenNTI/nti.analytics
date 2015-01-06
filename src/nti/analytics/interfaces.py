@@ -65,7 +65,7 @@ class IAnalyticsObjectBase(interface.Interface):
 
 class ITimeLength(interface.Interface):
 
-	Duration = Number(title=u"The time length of the event, in seconds", default=0)
+	Duration = Number(title=u"The time length of the event, in seconds", required=False)
 
 class IAnalyticsViewEvent(IAnalyticsObjectBase, ITimeLength):
 	"""
