@@ -55,6 +55,9 @@ def get_progress_for_video_views( resource_ntiid, video_events  ):
 	result = None
 	video_events = list( video_events )
 
+	# Note: currently, 'None' time_lengths (placeholders for video starts)
+	# are considered progress.
+
 	if video_events:
 		# TODO Perhaps we want the most recent max time.
 		# max time may be null.
