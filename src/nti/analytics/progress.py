@@ -14,12 +14,17 @@ from nti.analytics.interfaces import IProgress
 
 from nti.externalization.representation import WithRepr
 
+from nti.utils.property import alias
+
 @interface.implementer( IProgress )
 @WithRepr
 class DefaultProgress( object ):
 
+	progress_id = alias('ResourceID')
+	__external_class_name__ = "Progress"
+
 	def __init__(self, progress_id, progress, max_progress, has_progress=False, last_modified=None ):
-		self.progress_id = progress_id
+		self.ResourceID = progress_id
 		self.AbsoluteProgress = progress
 		self.MaxPossibleProgress = max_progress
 		self.HasProgress = has_progress

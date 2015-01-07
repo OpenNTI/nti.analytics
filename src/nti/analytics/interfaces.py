@@ -240,6 +240,8 @@ class IProgress(interface.Interface):
 	HasProgress = Bool( title=u"Indicates there was some progress made on item.",
 					default=False )
 
+	ResourceID = ValidTextLine( title=u"The ntiid of the object who's progress this object represents.", required=True )
+
 class IUserResearchStatus(IDCTimes):
 	"""
 	Holds whether the user has accepted that data that they generate may be

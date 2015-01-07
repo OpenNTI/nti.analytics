@@ -356,14 +356,16 @@ class TestResourceEvents(NTIAnalyticsTestCase):
 class TestProgress(NTIAnalyticsTestCase):
 
 	def test_progress(self):
-
-		progress = DefaultProgress( 'tag:nt_ntiid1', 10, 20, True, time.time() )
+		resource_id = 'tag:nt_ntiid1'
+		progress = DefaultProgress( resource_id, 10, 20, True, time.time() )
 		assert_that( progress, verifiably_provides( IProgress ) )
 
 		ext_obj = toExternalObject( progress )
 		assert_that(ext_obj, has_entry( 'AbsoluteProgress', 10 ))
 		assert_that(ext_obj, has_entry( 'MaxPossibleProgress', 20 ))
 		assert_that(ext_obj, has_entry( 'HasProgress', True ))
+		assert_that(ext_obj, has_entry( 'ResourceID', resource_id ))
+		assert_that(ext_obj, has_entry( 'Class', 'Progress' ))
 
 class TestClientParams(NTIAnalyticsTestCase):
 
