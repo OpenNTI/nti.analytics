@@ -38,8 +38,6 @@ def _assignment_progress_for_user( user, assignment ):
 	# this is in UCOL with a lot of assignments but few assessments.
 
 	# TODO Caching?
-
-	# Is this property always valid?
 	assignment_id = getattr( assignment, 'ntiid', None )
 	assignment_records = get_assignment_for_user( user, assignment_id )
 	result = None
@@ -65,7 +63,6 @@ def _assessment_progress_for_user( user, assessment ):
 	# If we have a cache, the cost is trivial.
 	# Or we only care about possible self-assessments here; if we have a record
 	# great, else we do not return anything.
-
 	assessment_id = getattr( assessment, 'ntiid', None )
 	assessment_records = get_self_assessments_for_user_and_id( user, assessment_id )
 	result = None

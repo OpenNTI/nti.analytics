@@ -522,7 +522,8 @@ def _resolve_self_assessment( row ):
 										user=user,
 										timestamp=row.timestamp,
 										RootContextID=course,
-										Duration=row.time_length )
+										Duration=row.time_length,
+										AssessmentId=row.assignment_id )
 	return result
 
 def _resolve_assignment( row, details=None ):

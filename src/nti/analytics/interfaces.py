@@ -168,6 +168,8 @@ class IAnalyticsAssessment(IAnalyticsObjectBase, ITimeLength, ICourseEvent):
 	Submission = Object( IQAssessedQuestionSet, title=u"The underlying submission for this object.",
 						required=True )
 
+	AssessmentId = ValidTextLine( title=u"The assessment identifier.", required=True )
+
 class IAssessmentGrade(interface.Interface):
 	"""
 	The analytics grade information.
