@@ -193,12 +193,6 @@ def _build_ntiid_map():
 				len( course_dict ) )
 	return course_dict
 
-def _get_assessments_for_course( course ):
-	logger.info( 'Getting assessments for course' )
-	assignment_ids = _get_assignment_ids_for_course( course )
-	self_assessment_ids = _get_self_assessment_ids_for_course( course )
-	return self_assessment_ids, assignment_ids
-
 class _CourseFromChildNTIIDResolver(object):
 
 	def __init__(self):
@@ -235,50 +229,7 @@ class _CourseFromChildNTIIDResolver(object):
 				return course
 		return None
 
-class _CourseAssessmentResolver(object):
-
-	def __init__(self):
-		self.course_to_self_assessments = {}
-		self.course_to_assignments = {}
-
-	def reset(self):
-		self.course_to_self_assessments = {}
-		self.course_to_assignments = {}
-
-	def _get_for_course(self, course):
-		"""
-		Get assessments for course and cache them; returning a tuple of results.
-		"""
-		course_to_self_assessments = self.course_to_self_assessments
-		course_to_assignments = self.course_to_assignments
-
-		self_assessment_ids, assignment_ids = _get_assessments_for_course( course )
-		course_key = to_external_ntiid_oid( course )
-		course_to_self_assessments[course_key] = self_assessment_ids
-		course_to_assignments[course_key] = assignment_ids
-		return self_assessment_ids, assignment_ids
-
-	def get_assignments_for_course(self, course):
-		course_to_assignments = self.course_to_assignments
-		course_key = to_external_ntiid_oid( course )
-		assignment_ids = course_to_assignments.get( course_key )
-
-		if assignment_ids is None:
-			assignment_ids = self._get_for_course(course)[1]
-
-		return assignment_ids
-
-	def get_self_assessments_for_course(self, course):
-		course_to_self_assessments = self.course_to_self_assessments
-		course_key = to_external_ntiid_oid( course )
-		self_assessment_ids = course_to_self_assessments.get( course_key )
-
-		if self_assessment_ids is None:
-			self_assessment_ids = self._get_for_course(course)[0]
-		return self_assessment_ids
-
 _course_from_ntiid_resolver = None
-_course_assessment_resolver = None
 
 def _get_course_from_ntiid_resolver():
 	global _course_from_ntiid_resolver
@@ -286,17 +237,9 @@ def _get_course_from_ntiid_resolver():
 		_course_from_ntiid_resolver = _CourseFromChildNTIIDResolver()
 	return _course_from_ntiid_resolver
 
-def _get_course_assessment_resolver():
-	global _course_assessment_resolver
-	if _course_assessment_resolver is None:
-		_course_assessment_resolver = _CourseAssessmentResolver()
-	return _course_assessment_resolver
-
 def _reset():
 	_get_course_from_ntiid_resolver().reset()
-	_get_course_assessment_resolver().reset()
 
-# FIXME Don't think this would work across multiple dataservers.
 @component.adapter( IContentPackageLibraryModifiedOnSyncEvent )
 def _library_sync(event):
 	process_event( _get_job_queue, _reset )
@@ -316,16 +259,6 @@ def get_course_by_container_id( container_id ):
 
 	# Update: JZ: TODO do we still need to check our global site for site packages?
 	result = _get_course_from_ntiid_resolver().get_course( container_id )
-	return result
-
-def get_self_assessments_for_course(course):
-	""" For a course, return the ntiids of all the contained self_assessments. """
-	result = _get_course_assessment_resolver().get_self_assessments_for_course( course )
-	return result
-
-def get_assignments_for_course(course):
-	""" For a course, return the ntiids of all the contained assignments. """
-	result = _get_course_assessment_resolver().get_assignments_for_course( course )
 	return result
 
 def get_root_context( obj ):
