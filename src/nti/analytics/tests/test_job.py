@@ -16,8 +16,10 @@ from nti.analytics.tests import NTIAnalyticsTestCase
 
 from nti.dataserver.tests.mock_dataserver import WithMockDSTrans
 
-#class TestJob( ConfiguringTestBase ):'
 class TestJob( NTIAnalyticsTestCase ):
+	"""
+	Tests that a job can be executed.
+	"""
 
 	def _call( self, arg1 ):
 		return arg1

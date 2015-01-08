@@ -158,7 +158,10 @@ class TestTopics(AnalyticsTestBase):
 		db_boards.create_forum( test_user_ds_id,
 								test_session_id, self.course_id, self.forum )
 
-	def test_topics(self):
+	@fudge.patch( 'dm.zope.schema.schema.Object._validate' )
+	def test_topics(self, mock_validate):
+		mock_validate.is_callable().returns( True )
+
 		results = self.session.query( TopicsCreated ).all()
 		assert_that( results, has_length( 0 ) )
 		results = self.session.query( TopicsViewed ).all()
@@ -201,6 +204,15 @@ class TestTopics(AnalyticsTestBase):
 		assert_that( topic.topic_id, is_( topic_id ) )
 		assert_that( topic.timestamp, not_none() )
 		assert_that( topic.time_length, is_( 30 ) )
+
+		# Now our call
+		results = db_boards.get_topic_views( test_user_ds_id, my_topic )
+		assert_that( results, has_length( 1 ) )
+
+		topic = results[0]
+		assert_that( topic.user, is_( test_user_ds_id ) )
+		assert_that( topic.RootContextID, not_none())
+		assert_that( topic.Duration, is_( time_length ) )
 
 		# Delete topic
 		db_boards.delete_topic( datetime.now(), topic_ds_id )

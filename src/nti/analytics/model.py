@@ -29,6 +29,7 @@ from nti.analytics.interfaces import IBlogViewEvent
 from nti.analytics.interfaces import INoteViewEvent
 from nti.analytics.interfaces import IResourceEvent
 from nti.analytics.interfaces import IAnalyticsTopic
+from nti.analytics.interfaces import IAnalyticsTopicView
 from nti.analytics.interfaces import ITopicViewEvent
 from nti.analytics.interfaces import IAnalyticsSession
 from nti.analytics.interfaces import IAnalyticsSessions
@@ -149,6 +150,17 @@ class AnalyticsTopic(SchemaConfigured):
 
 	__external_can_create__ = False
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticstopic'
+
+	def __init__(self, *args, **kwargs):
+		SchemaConfigured.__init__(self, *args, **kwargs)
+
+@interface.implementer(IAnalyticsTopicView)
+@WithRepr
+class AnalyticsTopicView(SchemaConfigured):
+	createDirectFieldProperties(IAnalyticsTopicView)
+
+	__external_can_create__ = False
+	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticstopicview'
 
 	def __init__(self, *args, **kwargs):
 		SchemaConfigured.__init__(self, *args, **kwargs)

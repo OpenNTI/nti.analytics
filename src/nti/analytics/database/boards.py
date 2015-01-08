@@ -24,6 +24,7 @@ from nti.analytics.common import get_ratings
 
 from nti.analytics.model import AnalyticsForumComment
 from nti.analytics.model import AnalyticsTopic
+from nti.analytics.model import AnalyticsTopicView
 
 from nti.analytics.identifier import SessionId
 from nti.analytics.identifier import CommentId
@@ -113,6 +114,13 @@ _topic_exists = _get_topic_id
 def _get_topic_id_from_topic( db, topic ):
 	topic_ds_id = TopicId.get_id( topic )
 	return _get_topic_id( db, topic_ds_id )
+
+def _get_topic_from_db_id( topic_id ):
+	"Return the actual topic object represented by the given db id."
+	db = get_analytics_db()
+	topic = db.session.query(TopicsCreated).filter( TopicsCreated.topic_id == topic_id ).first()
+	topic = TopicId.get_object( topic.topic_ds_id )
+	return topic
 
 def create_forum(user, nti_session, course, forum):
 	db = get_analytics_db()
@@ -379,7 +387,7 @@ def _resolve_comment( row ):
 
 def _resolve_topic( row ):
 	make_transient( row )
-	topic = TopicId.get_object( row.topic_ds_id )
+	topic = TopicId.get_object( row.topic_id )
 	course = get_root_context( row.course_id )
 	user = get_user( row.user_id )
 	result = None
@@ -387,9 +395,26 @@ def _resolve_topic( row ):
 		and user is not None \
 		and course is not None:
 		result = AnalyticsTopic( Topic=topic,
-								user = user,
+								user=user,
 								timestamp=row.timestamp,
 								RootContextID=course )
+	return result
+
+def _resolve_topic_view( row ):
+	make_transient( row )
+	topic = _get_topic_from_db_id( row.topic_id )
+	course = get_root_context( row.course_id )
+	user = get_user( row.user_id )
+	result = None
+
+	if 		topic is not None \
+		and user is not None \
+		and course is not None:
+		result = AnalyticsTopicView( Topic=topic,
+								user=user,
+								timestamp=row.timestamp,
+								RootContextID=course,
+								Duration=row.time_length )
 	return result
 
 # StudentParticipationReport
@@ -413,10 +438,19 @@ def get_topics_created_for_user(user, course):
 
 	return resolve_objects( _resolve_topic, results )
 
+def get_topic_views(user, topic):
+	db = get_analytics_db()
+	uid = get_user_db_id( user )
+	topic_id = _get_topic_id_from_topic( db, topic )
+	results = db.session.query(TopicsViewed).filter( TopicsViewed.user_id == uid,
+													TopicsViewed.topic_id == topic_id ).all()
+
+	return resolve_objects( _resolve_topic_view, results )
+
 #TopicReport
 def get_comments_for_topic( topic ):
 	db = get_analytics_db()
-	topic_id = _get_topic_id_from_topic( topic )
+	topic_id = _get_topic_id_from_topic( db, topic )
 	results = db.session.query(ForumCommentsCreated).filter( ForumCommentsCreated.topic_id == topic_id,
 															ForumCommentsCreated.deleted == None ).all()
 	return resolve_objects( _resolve_comment, results )

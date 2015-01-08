@@ -94,6 +94,7 @@ def get_user_db_id( user ):
 	return found_user and found_user.user_id
 
 def get_user( user_id ):
+	"Retrieves user with given db id."
 	result = None
 	db = get_analytics_db()
 	found_user = db.session.query(Users).filter( Users.user_id == user_id,

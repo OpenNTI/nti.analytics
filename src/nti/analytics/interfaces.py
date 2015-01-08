@@ -153,6 +153,12 @@ class IAnalyticsTopic(IAnalyticsObjectBase, ICourseEvent):
 	"""
 	Topic = Object( ITopic, title='The underlying topic object.', required=True )
 
+class IAnalyticsTopicView(IAnalyticsViewEvent, ICourseEvent):
+	"""
+	An analytics topic view.
+	"""
+	Topic = Object( ITopic, title='The underlying topic object.', required=True )
+
 class IAnalyticsForumComment(IAnalyticsObjectBase, ICourseEvent, IAnalyticsRatings):
 	"""
 	An analytics forum comment.
