@@ -24,11 +24,12 @@ from nti.schema.schema import EqHash
 from nti.utils.property import alias
 
 @WithRepr
-@EqHash( 'ResourceID', 'AbsoluteProgress', 'MaxPossibleProgress', 'HasProgress', 'last_modified' )
+@EqHash( 'ResourceID', 'AbsoluteProgress', 'MaxPossibleProgress', 'HasProgress', 'LastModified' )
 @interface.implementer( IProgress )
 class DefaultProgress( object ):
 
 	progress_id = alias('ResourceID')
+	last_modified = alias('LastModified')
 	__external_class_name__ = "Progress"
 
 	def __init__(self, progress_id, progress, max_progress, has_progress=False, last_modified=None ):
@@ -36,7 +37,7 @@ class DefaultProgress( object ):
 		self.AbsoluteProgress = progress
 		self.MaxPossibleProgress = max_progress
 		self.HasProgress = has_progress
-		self.last_modified = last_modified
+		self.LastModified = last_modified
 
 def get_progress_for_resource_views( resource_ntiid, resource_views ):
 	"""Simplistic; looking at a resource constitutes progress."""

@@ -67,6 +67,7 @@ class TestProgress( TestCase ):
 		result = _get_last_mod_progress( [record, record2, record3], 'test')
 		assert_that( result.HasProgress, is_( True ))
 		assert_that( result.last_modified, is_( 10 ))
+		assert_that( result.LastModified, is_( 10 ))
 		assert_that( result.ResourceID, is_( 'test' ))
 
 class TestTopicProgress( AnalyticsTestBase ):

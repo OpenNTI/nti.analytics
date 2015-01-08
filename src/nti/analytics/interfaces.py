@@ -31,6 +31,7 @@ from nti.dataserver.interfaces import IUser
 from nti.schema.field import Bool
 from nti.schema.field import List
 from nti.schema.field import Choice
+from nti.schema.field import DateTime
 from nti.schema.field import Number
 from nti.schema.field import Object
 from nti.schema.field import Variant
@@ -249,6 +250,9 @@ class IProgress(interface.Interface):
 					default=False )
 
 	ResourceID = ValidTextLine( title=u"The ntiid of the object who's progress this object represents.", required=True )
+
+	LastModified = DateTime(title=u"The timestamp when this event occurred.",
+						required=False )
 
 class IUserResearchStatus(IDCTimes):
 	"""
