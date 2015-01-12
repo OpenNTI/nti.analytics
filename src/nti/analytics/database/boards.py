@@ -209,6 +209,8 @@ def create_topic(user, nti_session, course, topic):
 									favorite_count=favorite_count,
 									is_flagged=is_flagged )
 	db.session.add( new_object )
+	db.session.flush()
+	return new_object
 
 def delete_topic(timestamp, topic_ds_id):
 	db = get_analytics_db()
@@ -261,7 +263,6 @@ def create_topic_view(user, nti_session, timestamp, course, topic, time_length):
 	uid = user_record.user_id
 	sid = SessionId.get_id( nti_session )
 	__traceback_info__ = topic, topic.__parent__
-	fid = _get_forum_id_from_forum( db, topic.__parent__ )
 	did = _get_topic_id_from_topic( db, topic )
 
 	if not did:
@@ -270,6 +271,8 @@ def create_topic_view(user, nti_session, timestamp, course, topic, time_length):
 		logger.info( 'Created topic (topic=%s) (user=%s) (course=%s)',
 					topic, user, course )
 		did = new_topic.topic_id
+
+	fid = _get_forum_id_from_forum( db, topic.__parent__ )
 
 	course_id = get_root_context_id( db, course, create=True )
 	timestamp = timestamp_type( timestamp )
@@ -304,9 +307,17 @@ def create_forum_comment(user, nti_session, course, topic, comment):
 	uid = user_record.user_id
 	sid = SessionId.get_id( nti_session )
 	forum = topic.__parent__
-	fid = _get_forum_id_from_forum( db, forum )
 	topic_id = _get_topic_id_from_topic( db, topic )
 	cid = CommentId.get_id(comment)
+
+	if not topic_id:
+		# Create our topic (and forum) if necessary.
+		new_topic = create_topic( user, nti_session, course, topic )
+		logger.info( 'Created topic (topic=%s) (user=%s) (course=%s)',
+					topic, user, course )
+		topic_id = new_topic.topic_id
+
+	fid = _get_forum_id_from_forum( db, forum )
 
 	if _comment_exists( db, cid ):
 		logger.warn( 'Forum comment already exists (user=%s) (comment_id=%s)',

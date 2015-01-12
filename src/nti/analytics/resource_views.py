@@ -79,8 +79,19 @@ def _get_course( event ):
 	# If not a course, return what we have (e.g. ContentPackage)
 	return ICourseInstance( result, result )
 
-def _validate_analytics_event( event ):
+def _validate_analytics_event( event, object_id ):
 	""" Validate our events, sanitizing as we go. """
+	if object_id:
+		# Cannot do much without an object; probably deleted.
+		# Ideally, we need to capture all id related data
+		# before the event is queued, but that is no guarantee
+		# that the event gets to us in time.
+		obj = _get_object( object_id )
+		if obj is None:
+			raise UnrecoverableAnalyticsError(
+						'Event received for deleted object (id=%s) (event=%s)' %
+						( object_id, event ) )
+
 	# I think nti.externalization handles encoding.
 	user = get_entity( event.user )
 	if user is None:
@@ -99,9 +110,9 @@ def _validate_analytics_event( event ):
 
 	event.time_length = time_length and int( time_length )
 
-def _validate_course_event( event ):
+def _validate_course_event( event, object_id=None ):
 	""" Validate our events, sanitizing as we go. """
-	_validate_analytics_event( event )
+	_validate_analytics_event( event, object_id )
 
 	course = _get_course( event )
 	if course is None:
@@ -147,7 +158,7 @@ def _validate_video_event( event ):
 
 def _add_note_event( event, nti_session=None ):
 	try:
-		_validate_course_event( event )
+		_validate_course_event( event, object_id=event.note_id )
 	except UnrecoverableAnalyticsError as e:
 		logger.warn( 'Error while validating event (%s)', e )
 		return
@@ -172,7 +183,7 @@ def _add_note_event( event, nti_session=None ):
 
 def _add_topic_event( event, nti_session=None ):
 	try:
-		_validate_course_event( event )
+		_validate_course_event( event, object_id=event.topic_id )
 	except UnrecoverableAnalyticsError as e:
 		logger.warn( 'Error while validating event (%s)', e )
 		return
@@ -198,7 +209,7 @@ def _add_topic_event( event, nti_session=None ):
 
 def _add_blog_event( event, nti_session=None ):
 	try:
-		_validate_analytics_event( event )
+		_validate_analytics_event( event, object_id=event.blog_id )
 	except UnrecoverableAnalyticsError as e:
 		logger.warn( 'Error while validating event (%s)', e )
 		return
