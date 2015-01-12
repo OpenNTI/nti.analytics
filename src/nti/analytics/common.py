@@ -165,12 +165,26 @@ def _execute_job( *args, **kwargs ):
 		db.session.flush()
 		return result
 
+def _should_create_analytics( request ):
+	"Decides if this request should create analytics data."
+	# Is our user impersonating?
+	environ = getattr( request, 'environ', () )
+	if 'REMOTE_USER_DATA' in environ and environ['REMOTE_USER_DATA']:
+		logger.info( 'Not creating analytics data for impersonating user (%s)',
+					request.remote_user )
+		return False
+	return True
+
 def process_event( get_job_queue, object_op, obj=None, **kwargs ):
 	"""
 	Processes the event, which may not occur synchronously.
 	"""
 	# TODO Do we want to check if we have analytics
 	# for this site before queuing the event?
+
+	request = get_current_request()
+	if not _should_create_analytics( request ):
+		return
 
 	effective_kwargs = dict( kwargs )
 	if obj is not None:
@@ -183,7 +197,6 @@ def process_event( get_job_queue, object_op, obj=None, **kwargs ):
 	if cur_site is not None:
 		effective_kwargs['site_name'] = cur_site.__name__
 	else:
-		request = get_current_request()
 		logger.warn( 'Request did not have site (%s)', request )
 
 	queue = get_job_queue()
@@ -203,7 +216,7 @@ def timestamp_type(timestamp):
 
 	if result:
 		# Mysql drops milliseconds
-		result = result.replace( microsecond = 0 )
+		result = result.replace( microsecond=0 )
 	return result
 
 def get_root_context_name(course):

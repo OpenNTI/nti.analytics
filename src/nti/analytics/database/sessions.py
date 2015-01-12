@@ -110,7 +110,7 @@ def create_session( user, user_agent, start_time, ip_addr, end_time=None ):
 def get_current_session_ids( user ):
 	"""
 	Returns all 'live' sessions for a user.  Primarily used for validation.
-	Empty list is return if sessions not found.
+	Empty list is returned if sessions not found.
 	"""
 	result = []
 	db = get_analytics_db()
