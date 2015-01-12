@@ -41,6 +41,9 @@ from nti.contenttypes.courses.interfaces import ICourseInstance
 
 from nti.externalization import externalization
 
+from nti.intid.interfaces import IntIdMissingError
+from nti.intid.interfaces import ObjectMissingError
+
 from nti.site.site import get_site_for_site_names
 from nti.site.transient import TrivialSite
 
@@ -118,6 +121,26 @@ def get_course( obj ):
 	__traceback_info__ = result, obj
 	return ICourseInstance( result )
 
+def _do_execute_job( db, *args, **kwargs ):
+	args = BList( args )
+	func = args.pop( 0 )
+
+	try:
+		result = func( *args, **kwargs )
+	except ( IntIdMissingError, ObjectMissingError ) as e:
+		# Nothing we can do with these events; leave them on the floor.
+		logger.info(
+				'Object missing (deleted) before event could be processed; event dropped. (%s) (%s)',
+				e,
+				func )
+		result = None
+	else:
+		# Must flush to verify integrity.  If we hit any race
+		# conditions below, this will raise and the job can
+		# be re-run.
+		db.session.flush()
+	return result
+
 def _execute_job( *args, **kwargs ):
 	"""
 	Performs the actual execution of a job.  We'll attempt to do
@@ -153,17 +176,9 @@ def _execute_job( *args, **kwargs ):
 		if db is None:
 			logger.info( 'No analytics db found for site (%s), will drop event',
 						event_site_name )
-			return
+			return None
 
-		args = BList( args )
-		func = args.pop( 0 )
-
-		result = func( *args, **kwargs )
-		# Must flush to verify integrity.  If we hit any race
-		# conditions below, this will raise and the job can
-		# be re-run.
-		db.session.flush()
-		return result
+		return _do_execute_job( db, *args, **kwargs )
 
 def _should_create_analytics( request ):
 	"Decides if this request should create analytics data."
