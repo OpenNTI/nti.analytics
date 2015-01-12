@@ -11,6 +11,9 @@ logger = __import__('logging').getLogger(__name__)
 import zope.intid
 from zope import component
 
+from ZODB.interfaces import IBroken
+from ZODB.POSException import POSError
+
 from nti.ntiids import ntiids
 
 from nti.contenttypes.courses.interfaces import ICourseCatalogEntry
@@ -42,8 +45,15 @@ class _DSIdentifier(_Identifier):
 		return result or _get_intid_utility().getId( obj )
 
 	@classmethod
-	def get_object( cls, id ):
-		return _get_intid_utility().queryObject( id, default=None )
+	def get_object( cls, uid ):
+		result = None
+		try:
+			obj = _get_intid_utility().queryObject( uid, default=None )
+			if not IBroken.providedBy( obj ):
+				result = obj
+		except (TypeError, POSError):
+			logger.warn( 'Broken object missing from course stream (id=%s)', uid )
+		return result
 
 class _NtiidIdentifier(_Identifier):
 
@@ -57,9 +67,9 @@ class _NtiidIdentifier(_Identifier):
 		return result
 
 	@classmethod
-	def get_object( cls, id ):
+	def get_object( cls, uid ):
 		# TODO We may have to decode here.  Add tests.
-		return ntiids.find_object_with_ntiid( id )
+		return ntiids.find_object_with_ntiid( uid )
 
 class UserId(_DSIdentifier):
 	pass
