@@ -52,7 +52,7 @@ class _DSIdentifier(_Identifier):
 			if not IBroken.providedBy( obj ):
 				result = obj
 		except (TypeError, POSError):
-			logger.warn( 'Broken object missing from course stream (id=%s)', uid )
+			logger.warn( 'Broken object missing (id=%s)', uid )
 		return result
 
 class _NtiidIdentifier(_Identifier):
