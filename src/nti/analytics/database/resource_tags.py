@@ -143,6 +143,8 @@ def create_note(user, nti_session, course, note):
 								favorite_count=favorite_count,
 								is_flagged=is_flagged )
 	db.session.add( new_object )
+	db.session.flush()
+	return new_object
 
 def delete_note(timestamp, note_ds_id):
 	db = get_analytics_db()
