@@ -153,7 +153,8 @@ def delete_forum(timestamp, forum_ds_id):
 	if db_forum is None:
 		# This only occurs in tests (e.g nti.app.products.ou) when tearing down layers.
 		# Not really much we can do about it anyway; so log and forget.
-		logger.warn( 'Attempted to delete forum (%s) that does not exist', forum_ds_id )
+		# Could also happen with race conditions (the forum was never created in db).
+		logger.info( 'Attempted to delete forum (%s) that does not exist', forum_ds_id )
 		return
 
 	db_forum.deleted=timestamp
@@ -214,7 +215,7 @@ def delete_topic(timestamp, topic_ds_id):
 	timestamp = timestamp_type( timestamp )
 	db_topic = db.session.query(TopicsCreated).filter( TopicsCreated.topic_ds_id == topic_ds_id ).first()
 	if db_topic is None:
-		logger.warn( 'Attempted to delete topic (%s) that does not exist', topic_ds_id )
+		logger.info( 'Attempted to delete topic (%s) that does not exist', topic_ds_id )
 		return
 
 	db_topic.deleted = timestamp
@@ -340,7 +341,10 @@ def create_forum_comment(user, nti_session, course, topic, comment):
 def delete_forum_comment(timestamp, comment_id):
 	db = get_analytics_db()
 	timestamp = timestamp_type( timestamp )
-	comment = db.session.query(ForumCommentsCreated).filter( ForumCommentsCreated.comment_id==comment_id ).one()
+	comment = db.session.query(ForumCommentsCreated).filter( ForumCommentsCreated.comment_id==comment_id ).first()
+	if not comment:
+		logger.info( 'Comment never created (%s)', comment_id )
+		return
 	comment.deleted=timestamp
 	db.session.flush()
 

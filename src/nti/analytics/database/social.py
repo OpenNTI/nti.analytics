@@ -218,7 +218,10 @@ def create_dynamic_friends_list(user, nti_session, dynamic_friends_list):
 def remove_dynamic_friends_list(timestamp, dfl_ds_id):
 	db = get_analytics_db()
 	timestamp = timestamp_type( timestamp )
-	db_dfl = db.session.query(DynamicFriendsListsCreated).filter( DynamicFriendsListsCreated.dfl_ds_id==dfl_ds_id ).one()
+	db_dfl = db.session.query(DynamicFriendsListsCreated).filter( DynamicFriendsListsCreated.dfl_ds_id==dfl_ds_id ).first()
+	if not db_dfl:
+		logger.info( 'DFL never created (%s)', dfl_ds_id )
+		return
 	db_dfl.deleted=timestamp
 	db_dfl.dfl_ds_id = None
 	db.session.flush()
@@ -299,7 +302,12 @@ def create_friends_list(user, nti_session, timestamp, friends_list):
 def remove_friends_list(timestamp, friends_list_ds_id):
 	db = get_analytics_db()
 	timestamp = timestamp_type( timestamp )
-	db_friends_list = db.session.query(FriendsListsCreated).filter( FriendsListsCreated.friends_list_ds_id==friends_list_ds_id ).one()
+	db_friends_list = db.session.query(FriendsListsCreated).filter(
+									FriendsListsCreated.friends_list_ds_id==friends_list_ds_id ).first()
+	if not db_friends_list:
+		logger.info( 'FriendsList never created (%s)', friends_list_ds_id )
+		return
+
 	db_friends_list.deleted=timestamp
 	db_friends_list.friends_list_ds_id = None
 	db.session.flush()

@@ -148,7 +148,10 @@ def delete_note(timestamp, note_ds_id):
 	db = get_analytics_db()
 	timestamp = timestamp_type( timestamp )
 	note = db.session.query(NotesCreated).filter(
-							NotesCreated.note_ds_id == note_ds_id ).one()
+							NotesCreated.note_ds_id == note_ds_id ).first()
+	if not note:
+		logger.info( 'Note never created (%s)', note_ds_id )
+		return
 	note.deleted=timestamp
 	note.note_ds_id = None
 	db.session.flush()
@@ -245,7 +248,10 @@ def delete_highlight(timestamp, highlight_ds_id):
 	db = get_analytics_db()
 	timestamp = timestamp_type( timestamp )
 	highlight = db.session.query(HighlightsCreated).filter(
-								HighlightsCreated.highlight_ds_id == highlight_ds_id ).one()
+								HighlightsCreated.highlight_ds_id == highlight_ds_id ).first()
+	if not highlight:
+		logger.info( 'Highlight never created (%s)', highlight_ds_id )
+		return
 	highlight.deleted=timestamp
 	highlight.highlight_ds_id = None
 	db.session.flush()

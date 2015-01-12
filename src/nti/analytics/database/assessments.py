@@ -504,7 +504,10 @@ def delete_feedback( timestamp, feedback_ds_id ):
 	db = get_analytics_db()
 	timestamp = timestamp_type( timestamp )
 	feedback = db.session.query(AssignmentFeedback).filter(
-							AssignmentFeedback.feedback_ds_id == feedback_ds_id ).one()
+							AssignmentFeedback.feedback_ds_id == feedback_ds_id ).first()
+	if not feedback:
+		logger.info( 'Feedback never created (%s)', feedback_ds_id )
+		return
 	feedback.deleted=timestamp
 	feedback.feedback_ds_id = None
 	db.session.flush()

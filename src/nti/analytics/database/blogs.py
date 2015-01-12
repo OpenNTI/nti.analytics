@@ -110,7 +110,10 @@ def create_blog( user, nti_session, blog_entry ):
 def delete_blog( timestamp, blog_ds_id ):
 	db = get_analytics_db()
 	blog = db.session.query(BlogsCreated).filter(
-									BlogsCreated.blog_ds_id == blog_ds_id ).one()
+									BlogsCreated.blog_ds_id == blog_ds_id ).first()
+	if not blog:
+		logger.info( 'Blog never created (%s)', blog_ds_id )
+		return
 	blog.deleted = timestamp
 	blog.blog_ds_id = None
 	blog_id = blog.blog_id
@@ -217,7 +220,10 @@ def delete_blog_comment(timestamp, comment_id):
 	db = get_analytics_db()
 	timestamp = timestamp_type( timestamp )
 	comment = db.session.query(BlogCommentsCreated).filter(
-										BlogCommentsCreated.comment_id == comment_id ).one()
+										BlogCommentsCreated.comment_id == comment_id ).first()
+	if not comment:
+		logger.info( 'Blog comment never created (%s)', comment_id )
+		return
 	comment.deleted=timestamp
 	db.session.flush()
 
