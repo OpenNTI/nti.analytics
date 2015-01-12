@@ -23,6 +23,7 @@ from nti.analytics.database import SESSION_COLUMN_TYPE
 from nti.analytics.database import Base
 from nti.analytics.database import get_analytics_db
 from nti.analytics.database.users import get_or_create_user
+from nti.analytics.database.users import get_user_db_id
 
 class Sessions(Base):
 	__tablename__ = 'Sessions'
@@ -109,12 +110,14 @@ def create_session( user, user_agent, start_time, ip_addr, end_time=None ):
 def get_current_session_ids( user ):
 	"""
 	Returns all 'live' sessions for a user.  Primarily used for validation.
+	Empty list is return if sessions not found.
 	"""
+	result = []
 	db = get_analytics_db()
-	user = get_or_create_user( user )
-	uid = user.user_id
-	all_sessions = db.session.query( CurrentSessions ).filter( CurrentSessions.user_id == uid ).all()
-	result = [x.session_id for x in all_sessions]
+	user_id = get_user_db_id( user )
+	if user_id is not None:
+		all_sessions = db.session.query( CurrentSessions ).filter( CurrentSessions.user_id == user_id ).all()
+		result = [x.session_id for x in all_sessions]
 	return result
 
 def get_session_by_id( session_id ):
