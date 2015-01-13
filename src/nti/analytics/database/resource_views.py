@@ -59,7 +59,7 @@ class VideoEvents(Base,ResourceViewMixin,TimeLengthMixin):
 	video_event_type = Column('video_event_type', Enum( 'WATCH', 'SKIP' ), nullable=False )
 	# seconds from beginning of video (time 0s)
 	video_start_time = Column('video_start_time', Integer, nullable=False )
-	video_end_time = Column('video_end_time', Integer, nullable=False )
+	video_end_time = Column('video_end_time', Integer, nullable=True )
 	with_transcript = Column('with_transcript', Boolean, nullable=False )
 	max_time_length = Column( 'max_time_length', Integer, nullable=True )
 

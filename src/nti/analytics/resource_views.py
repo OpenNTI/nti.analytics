@@ -154,7 +154,7 @@ def _validate_video_event( event ):
 
 	event.MaxDuration = int( max_time_length ) if max_time_length else None
 	event.video_start_time = int( start )
-	event.video_end_time = int( end )
+	event.video_end_time = int( end ) if end is not None else None
 
 def _add_note_event( event, nti_session=None ):
 	try:
