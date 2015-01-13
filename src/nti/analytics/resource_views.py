@@ -142,7 +142,7 @@ def _validate_video_event( event ):
 	end = event.video_end_time
 
 	if 		start < 0 	\
-		or 	end < 0:
+		or 	(end is not None and end < 0):
 		raise UnrecoverableAnalyticsError(
 						'Video event has invalid time values (start=%s) (end=%s) (event=%s)' %
 						( start, end, event.event_type ) )

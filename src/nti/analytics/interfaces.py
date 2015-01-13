@@ -120,7 +120,7 @@ class IVideoEvent(IResourceEvent):
 							default=0)
 
 	video_end_time = Number(title=u"The point at which the video stops playing, in seconds.",
-							default=0)
+							default=0, required=False )
 
 	MaxDuration = Number(title=u"The maximum length of the video, in seconds.",
 							required=False)
