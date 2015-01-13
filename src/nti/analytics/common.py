@@ -121,6 +121,28 @@ def get_course( obj ):
 	__traceback_info__ = result, obj
 	return ICourseInstance( result )
 
+def get_created_timestamp(obj):
+	result = getattr( obj, 'createdTime', None )
+	result = result or datetime.utcnow()
+	result = timestamp_type( result )
+	return result
+
+def timestamp_type(timestamp):
+	result = timestamp
+	if isinstance( timestamp, ( float, integer_types ) ):
+		result = datetime.utcfromtimestamp( timestamp )
+
+	if result:
+		# Mysql drops milliseconds
+		result = result.replace( microsecond=0 )
+	return result
+
+def get_root_context_name(course):
+	cat_entry = ICourseCatalogEntry( course, None )
+	course_name = getattr( cat_entry, 'ProviderUniqueID',
+						getattr( course, '__name__', None ) )
+	return course_name
+
 def _do_execute_job( db, *args, **kwargs ):
 	args = BList( args )
 	func = args.pop( 0 )
@@ -217,26 +239,4 @@ def process_event( get_job_queue, object_op, obj=None, **kwargs ):
 	queue = get_job_queue()
 	job = create_job( _execute_job, object_op, **effective_kwargs )
 	queue.put( job )
-
-def get_created_timestamp(obj):
-	result = getattr( obj, 'createdTime', None )
-	result = result or datetime.utcnow()
-	result = timestamp_type( result )
-	return result
-
-def timestamp_type(timestamp):
-	result = timestamp
-	if isinstance( timestamp, ( float, integer_types ) ):
-		result = datetime.utcfromtimestamp( timestamp )
-
-	if result:
-		# Mysql drops milliseconds
-		result = result.replace( microsecond=0 )
-	return result
-
-def get_root_context_name(course):
-	cat_entry = ICourseCatalogEntry( course, None )
-	course_name = getattr( cat_entry, 'ProviderUniqueID',
-						getattr( course, '__name__', None ) )
-	return course_name
 

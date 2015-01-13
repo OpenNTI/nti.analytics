@@ -8,6 +8,7 @@ __docformat__ = "restructuredtext en"
 # pylint: disable=W0212,R0904
 
 from hamcrest import is_
+from hamcrest import none
 from hamcrest import not_none
 from hamcrest import has_entry
 from hamcrest import has_length
@@ -117,6 +118,17 @@ watch_video_event = WatchVideoEvent(user=user,
 				MaxDuration=max_time_length,
 				video_start_time=video_start_time,
 				video_end_time=video_end_time,
+				with_transcript=with_transcript)
+
+start_video_event = WatchVideoEvent(user=user,
+				timestamp=timestamp,
+				RootContextID=course,
+				context_path=context_path,
+				resource_id=resource_id,
+				Duration=None,
+				MaxDuration=max_time_length,
+				video_start_time=video_start_time,
+				video_end_time=None,
 				with_transcript=with_transcript)
 
 session = AnalyticsSession( SessionStartTime=timestamp, SessionEndTime=timestamp+1 )
@@ -253,6 +265,26 @@ class TestResourceEvents(NTIAnalyticsTestCase):
 		new_io = factory()
 		internalization.update_from_external_object(new_io, ext_obj)
 		assert_that(new_io, has_property('MaxDuration', is_( 60 )))
+
+	def test_video_start_event(self):
+		assert_that(start_video_event, verifiably_provides( IVideoEvent ) )
+		ext_obj = toExternalObject(start_video_event)
+
+		factory = internalization.find_factory_for(ext_obj)
+		assert_that(factory, is_(not_none()))
+
+		new_io = factory()
+		internalization.update_from_external_object(new_io, ext_obj)
+		assert_that(new_io, has_property('user', is_( user )))
+		assert_that(new_io, has_property('timestamp', is_( timestamp )))
+		assert_that(new_io, has_property( 'RootContextID', is_( course )))
+		assert_that(new_io, has_property('context_path', is_( context_path )))
+		assert_that(new_io, has_property('resource_id', is_( resource_id )))
+		assert_that(new_io, has_property( 'Duration', none()))
+		assert_that(new_io, has_property('event_type', is_( WatchVideoEvent.event_type )))
+		assert_that(new_io, has_property('video_start_time', is_( video_start_time )))
+		assert_that(new_io, has_property('video_end_time', none()))
+		assert_that(new_io, has_property('with_transcript', is_( with_transcript )))
 
 	def test_video_event_andrew(self):
 
