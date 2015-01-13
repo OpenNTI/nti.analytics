@@ -25,7 +25,7 @@
 
 		<configure zcml:condition="not-have testmode">
 			<adb:registerAnalyticsDB defaultSQLite="True" />
-		</configure>z
+		</configure>
 	</configure>
 
 </configure>

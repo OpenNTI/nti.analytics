@@ -32,8 +32,6 @@ from nti.analytics.database.boards import TopicsCreated
 from nti.analytics.database.boards import TopicsViewed
 from nti.analytics.database.boards import ForumCommentsCreated
 
-# For new objects, this is the default intid stored in the database.
-# For subsequent objects, this will increase by one.
 from . import DEFAULT_INTID
 
 class TestForums(AnalyticsTestBase):
@@ -47,6 +45,10 @@ class TestForums(AnalyticsTestBase):
 		results = self.session.query( ForumsCreated ).all()
 		assert_that( results, has_length( 0 ) )
 		my_forum = MockForum( None, intid=self.forum_ds_id )
+
+		# Pre-emptive delete is ok
+		db_boards.delete_forum( datetime.now(), self.forum_ds_id )
+
 		# Create forum
 		db_boards.create_forum( test_user_ds_id,
 								test_session_id, self.course_id, my_forum )
@@ -166,6 +168,9 @@ class TestTopics(AnalyticsTestBase):
 		assert_that( results, has_length( 0 ) )
 		results = self.session.query( TopicsViewed ).all()
 		assert_that( results, has_length( 0 ) )
+
+		# Pre-emptive delete is ok
+		db_boards.delete_topic( datetime.now(), DEFAULT_INTID )
 
 		topic_id = 1
 		topic_ds_id = DEFAULT_INTID
@@ -298,6 +303,9 @@ class TestForumComments(AnalyticsTestBase):
 		results = db_boards.get_forum_comments_for_user( test_user_ds_id, self.course_id )
 		results = [x for x in results]
 		assert_that( results, has_length( 0 ) )
+
+		# Pre-emptive delete is ok
+		db_boards.delete_forum_comment( datetime.now(), DEFAULT_INTID )
 
 		# Topic parent
 		comment_id = DEFAULT_INTID
@@ -478,4 +486,55 @@ class TestForumComments(AnalyticsTestBase):
 		results = [x.Comment for x in results]
 		assert_that( results, has_items( new_comment1, new_comment2 ) )
 
+class TestLazyCreate(AnalyticsTestBase):
+	"""
+	Validate that board objects can be auto-created.
+	"""
 
+	def setUp(self):
+		super( TestLazyCreate, self ).setUp()
+		self.course_id = 1
+		self.forum_id = 1
+		self.forum_ds_id = 999
+		self.topic_id = 1
+		self.topic_ds_id = DEFAULT_INTID
+		self.forum = MockForum( None, intid=self.forum_ds_id )
+		self.topic = MockTopic( self.forum, intid=self.topic_ds_id  )
+
+	@fudge.patch( 'dm.zope.schema.schema.Object._validate' )
+	def test_comments(self, mock_validate):
+		mock_validate.is_callable().returns( True )
+		results = db_boards.get_forum_comments_for_user( test_user_ds_id, self.course_id )
+		results = [x for x in results]
+		assert_that( results, has_length( 0 ) )
+
+		results = self.session.query( ForumsCreated ).all()
+		assert_that( results, has_length( 0 ) )
+
+		results = self.session.query( TopicsCreated ).all()
+		assert_that( results, has_length( 0 ) )
+
+		# Topic parent
+		comment_id = DEFAULT_INTID
+		my_comment = MockComment( self.topic, intid=comment_id )
+
+		# Will create our forum, topic, and comment: in order.
+		db_boards.create_forum_comment( test_user_ds_id, test_session_id, self.course_id,
+										self.topic, my_comment )
+
+		results = db_boards.get_forum_comments_for_user( test_user_ds_id, self.course_id )
+		results = [x for x in results]
+		assert_that( results, has_length( 1 ) )
+
+		results = db_boards.get_forum_comments_for_course( self.course_id )
+		results = [x for x in results]
+		assert_that( results, has_length( 1 ) )
+
+		results = self.session.query( ForumCommentsCreated ).all()
+		assert_that( results, has_length( 1 ) )
+
+		results = self.session.query( ForumsCreated ).all()
+		assert_that( results, has_length( 1 ) )
+
+		results = self.session.query( TopicsCreated ).all()
+		assert_that( results, has_length( 1 ) )

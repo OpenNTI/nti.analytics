@@ -232,6 +232,9 @@ class TestCourseResources(AnalyticsTestBase):
 		results = self.session.query( NotesViewed ).all()
 		assert_that( results, has_length( 0 ) )
 
+		# Pre-emptive delete is ok
+		db_tags.delete_note( datetime.now(), DEFAULT_INTID )
+
 		resource_id = 'ntiid:course_resource'
 		note_ds_id = DEFAULT_INTID
 		note_id = 1
@@ -325,9 +328,38 @@ class TestCourseResources(AnalyticsTestBase):
 		results = self.session.query( NotesViewed ).all()
 		assert_that( results, has_length( 1 ) )
 
+	@fudge.patch( 'nti.analytics.database.resource_tags._get_sharing_enum' )
+	def test_lazy_note_create(self, mock_sharing_enum):
+		mock_sharing_enum.is_callable().returns( 'UNKNOWN' )
+
+		results = self.session.query( NotesCreated ).all()
+		assert_that( results, has_length( 0 ) )
+		results = self.session.query( NotesViewed ).all()
+		assert_that( results, has_length( 0 ) )
+
+		resource_id = 'ntiid:course_resource'
+		note_ds_id = DEFAULT_INTID
+		my_note = MockNote( resource_id, containerId=resource_id, intid=note_ds_id )
+
+		# Note view will create our Note record
+		db_tags.create_note_view( 	test_user_ds_id,
+									test_session_id, datetime.now(),
+									self.course_id, my_note )
+		results = self.session.query( NotesViewed ).all()
+		assert_that( results, has_length( 1 ) )
+
+		results = db_tags.get_notes_created_for_course( self.course_id )
+		assert_that( results, has_length( 1 ) )
+
+		results = self.session.query(NotesCreated).all()
+		assert_that( results, has_length( 1 ) )
+
 	def test_highlight(self):
 		results = self.session.query( HighlightsCreated ).all()
 		assert_that( results, has_length( 0 ) )
+
+		# Pre-emptive delete is ok
+		db_tags.delete_highlight( datetime.now(), DEFAULT_INTID )
 
 		resource_id = 'ntiid:course_resource'
 		highlight_ds_id = DEFAULT_INTID
