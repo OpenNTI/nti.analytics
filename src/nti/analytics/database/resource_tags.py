@@ -20,6 +20,7 @@ from sqlalchemy.ext.declarative import declared_attr
 from nti.analytics.common import get_created_timestamp
 from nti.analytics.common import timestamp_type
 from nti.analytics.common import get_ratings
+from nti.analytics.common import get_creator
 
 from nti.analytics.identifier import SessionId
 from nti.analytics.identifier import NoteId
@@ -130,6 +131,12 @@ def create_note(user, nti_session, course, note):
 		pid = NoteId.get_id( parent_note )
 		pid = _get_note_id( db, pid )
 
+		if pid is None:
+			note_creator = get_creator( parent_note )
+			new_note = create_note( note_creator, None, course, parent_note )
+			pid = new_note.note_id
+			logger.info( 'Created parent note (user=%s) (note=%s)', note_creator, parent_note )
+
 	new_object = NotesCreated( 	user_id=uid,
 								session_id=sid,
 								timestamp=timestamp,
@@ -196,9 +203,10 @@ def create_note_view(user, nti_session, timestamp, course, note):
 	note_ds_id = NoteId.get_id( note )
 	note_id = _get_note_id( db, note_ds_id )
 	if note_id is None:
-		create_note( user, nti_session, course, note )
-		logger.info( 'Created note (user=%s) (note=%s)', user, note_id )
-		note_id = _get_note_id( db, note_ds_id )
+		note_creator = get_creator( note )
+		new_note = create_note( note_creator, None, course, note )
+		note_id = new_note.note_id
+		logger.info( 'Created note (user=%s) (note=%s)', note_creator, note_id )
 
 	course_id = get_root_context_id( db, course, create=True )
 	timestamp = timestamp_type( timestamp )

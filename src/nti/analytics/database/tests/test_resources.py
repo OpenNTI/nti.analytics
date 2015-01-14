@@ -17,12 +17,15 @@ from hamcrest import none
 from hamcrest import not_none
 from hamcrest import has_length
 from hamcrest import assert_that
+from hamcrest import contains_inanyorder
 
 from nti.analytics.database.tests import test_user_ds_id
 from nti.analytics.database.tests import test_session_id
 from nti.analytics.database.tests import AnalyticsTestBase
 from nti.analytics.database.tests import MockParent
 MockFL = MockNote = MockHighlight = MockTopic = MockComment = MockThought = MockForum = MockParent
+
+from nti.analytics.database.users import get_user_db_id
 
 from nti.analytics.database import resource_tags as db_tags
 from nti.analytics.database import resource_views as db_views
@@ -36,7 +39,9 @@ from nti.analytics.database.resource_tags import NotesCreated
 from nti.analytics.database.resource_tags import NotesViewed
 from nti.analytics.database.resource_tags import HighlightsCreated
 
-from . import DEFAULT_INTID
+from nti.dataserver.users.users import Principal
+
+from nti.analytics.database.tests import DEFAULT_INTID
 
 class TestCourseResources(AnalyticsTestBase):
 
@@ -340,19 +345,65 @@ class TestCourseResources(AnalyticsTestBase):
 		resource_id = 'ntiid:course_resource'
 		note_ds_id = DEFAULT_INTID
 		my_note = MockNote( resource_id, containerId=resource_id, intid=note_ds_id )
+		note_creator = Principal( username=str( test_user_ds_id ) )
+		note_creator.__dict__['_ds_intid'] = test_user_ds_id
+		my_note.creator = note_creator
 
 		# Note view will create our Note record
-		db_tags.create_note_view( 	test_user_ds_id,
+		db_tags.create_note_view( 	'9999',
 									test_session_id, datetime.now(),
 									self.course_id, my_note )
 		results = self.session.query( NotesViewed ).all()
 		assert_that( results, has_length( 1 ) )
 
+		note_db_id = get_user_db_id( note_creator )
+
 		results = db_tags.get_notes_created_for_course( self.course_id )
 		assert_that( results, has_length( 1 ) )
+		assert_that( results[0].user_id, is_( note_db_id ))
 
 		results = self.session.query(NotesCreated).all()
 		assert_that( results, has_length( 1 ) )
+		assert_that( results[0].user_id, is_( note_db_id ))
+
+	@fudge.patch( 'nti.analytics.database.resource_tags._get_sharing_enum' )
+	def test_lazy_note_create_parent(self, mock_sharing_enum):
+		mock_sharing_enum.is_callable().returns( 'UNKNOWN' )
+
+		results = self.session.query( NotesCreated ).all()
+		assert_that( results, has_length( 0 ) )
+
+		resource_id = 'ntiid:course_resource'
+		note_ds_id = DEFAULT_INTID
+		my_note = MockNote( resource_id, containerId=resource_id, intid=note_ds_id )
+
+		# Our parent note
+		parent_note = MockNote( resource_id, containerId=resource_id, intid=1111 )
+		parent_note_creator = Principal( username=str( test_user_ds_id ) )
+		parent_note_creator.__dict__['_ds_intid'] = test_user_ds_id
+		parent_note.creator = parent_note_creator
+		my_note.__dict__['inReplyTo'] = parent_note
+
+		# Note view will create our Note record
+		db_tags.create_note( '9999',
+							test_session_id, self.course_id, my_note )
+
+		results = self.session.query( NotesCreated ).all()
+		assert_that( results, has_length( 2 ) )
+
+		# Get id
+		note_db_id = get_user_db_id( '9999' )
+		parent_note_db_id = get_user_db_id( parent_note_creator )
+
+		results = db_tags.get_notes_created_for_course( self.course_id )
+		assert_that( results, has_length( 2 ) )
+		result_owners = [x.user_id for x in results]
+		assert_that( result_owners, contains_inanyorder( note_db_id, parent_note_db_id ))
+
+		results = self.session.query(NotesCreated).all()
+		assert_that( results, has_length( 2 ) )
+		result_owners = [x.user_id for x in results]
+		assert_that( result_owners, contains_inanyorder( note_db_id, parent_note_db_id ))
 
 	def test_highlight(self):
 		results = self.session.query( HighlightsCreated ).all()
