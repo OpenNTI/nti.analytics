@@ -18,6 +18,7 @@ from sqlalchemy.schema import Sequence
 from sqlalchemy.schema import PrimaryKeyConstraint
 from sqlalchemy.ext.declarative import declared_attr
 
+from nti.analytics.common import get_creator
 from nti.analytics.common import get_created_timestamp
 from nti.analytics.common import timestamp_type
 from nti.analytics.common import get_ratings
@@ -189,9 +190,10 @@ def create_topic(user, nti_session, course, topic):
 	if not fid:
 		# Ok, create our forum.
 		forum = topic.__parent__
-		new_forum = create_forum( user, nti_session, course, forum )
+		forum_creator = get_creator( forum )
+		new_forum = create_forum( forum_creator, None, course, forum )
 		logger.info( 'Created forum (forum=%s) (user=%s) (course=%s)',
-					forum, user, course )
+					forum, forum_creator, course )
 		fid = new_forum.forum_id
 
 	course_id = get_root_context_id( db, course, create=True )
@@ -266,10 +268,11 @@ def create_topic_view(user, nti_session, timestamp, course, topic, time_length):
 	did = _get_topic_id_from_topic( db, topic )
 
 	if not did:
-		# Ok, create our topic.
-		new_topic = create_topic( user, nti_session, course, topic )
+		# Create our topic (and forum) if necessary.
+		topic_creator = get_creator( topic )
+		new_topic = create_topic( topic_creator, None, course, topic )
 		logger.info( 'Created topic (topic=%s) (user=%s) (course=%s)',
-					topic, user, course )
+					topic, topic_creator, course )
 		did = new_topic.topic_id
 
 	fid = _get_forum_id_from_forum( db, topic.__parent__ )
@@ -312,9 +315,10 @@ def create_forum_comment(user, nti_session, course, topic, comment):
 
 	if not topic_id:
 		# Create our topic (and forum) if necessary.
-		new_topic = create_topic( user, nti_session, course, topic )
+		topic_creator = get_creator( topic )
+		new_topic = create_topic( topic_creator, None, course, topic )
 		logger.info( 'Created topic (topic=%s) (user=%s) (course=%s)',
-					topic, user, course )
+					topic, topic_creator, course )
 		topic_id = new_topic.topic_id
 
 	fid = _get_forum_id_from_forum( db, forum )

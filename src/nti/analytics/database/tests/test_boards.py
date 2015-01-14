@@ -17,6 +17,7 @@ from hamcrest import has_length
 from hamcrest import assert_that
 from hamcrest import has_items
 
+from nti.dataserver.users.users import Principal
 from nti.dataserver.contenttypes.forums.post import CommentPost
 
 from nti.analytics.database.tests import test_user_ds_id
@@ -27,6 +28,7 @@ MockFL = MockNote = MockHighlight = MockTopic = MockComment = MockThought = Mock
 
 from nti.analytics.database import boards as db_boards
 
+from nti.analytics.database.users import get_user_db_id
 from nti.analytics.database.boards import ForumsCreated
 from nti.analytics.database.boards import TopicsCreated
 from nti.analytics.database.boards import TopicsViewed
@@ -499,7 +501,11 @@ class TestLazyCreate(AnalyticsTestBase):
 		self.topic_id = 1
 		self.topic_ds_id = DEFAULT_INTID
 		self.forum = MockForum( None, intid=self.forum_ds_id )
+		self.forum.creator = self.forum_creator = Principal( username='1979' )
+		self.forum_creator.__dict__['_ds_intid']  = '1979'
 		self.topic = MockTopic( self.forum, intid=self.topic_ds_id  )
+		self.topic.creator = self.topic_creator = Principal( username='1968' )
+		self.topic_creator.__dict__['_ds_intid']  = '1968'
 
 	@fudge.patch( 'dm.zope.schema.schema.Object._validate' )
 	def test_comments(self, mock_validate):
@@ -530,11 +536,18 @@ class TestLazyCreate(AnalyticsTestBase):
 		results = [x for x in results]
 		assert_that( results, has_length( 1 ) )
 
+		comment_creator_db_id = get_user_db_id( test_user_ds_id )
+		forum_creator_db_id = get_user_db_id( self.forum_creator )
+		topic_creator_db_id = get_user_db_id( self.topic_creator )
+
 		results = self.session.query( ForumCommentsCreated ).all()
 		assert_that( results, has_length( 1 ) )
+		assert_that( results[0].user_id, is_( comment_creator_db_id ) )
 
 		results = self.session.query( ForumsCreated ).all()
 		assert_that( results, has_length( 1 ) )
+		assert_that( results[0].user_id, is_( forum_creator_db_id ) )
 
 		results = self.session.query( TopicsCreated ).all()
 		assert_that( results, has_length( 1 ) )
+		assert_that( results[0].user_id, is_( topic_creator_db_id ) )

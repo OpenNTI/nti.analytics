@@ -398,10 +398,12 @@ class TestAssignments(AnalyticsTestBase):
 
 		# Create object
 		new_assignment = _get_history_item()
-		new_assignment.__parent__.__parent__ = CourseInstance()
+		course = CourseInstance()
+		course['_ds_intid'] = self.course_id
+		new_assignment.__parent__.__parent__ = course
 		feedback = UsersCourseAssignmentHistoryItemFeedback()
 		feedback.creator = feedback_creator = '9999'
-		feedback.__dict__['body'] = feedback_body = 'blehblehbleh'
+		feedback.__dict__['body'] = 'blehblehbleh'
 		feedback.__parent__ = new_assignment
 
 		# Create feedback without assignment record
@@ -411,13 +413,10 @@ class TestAssignments(AnalyticsTestBase):
 		assignment_feedback = self.db.session.query( AssignmentFeedback ).all()
 		assert_that( assignment_feedback, has_length( 1 ))
 
-		feedback_record = assignment_feedback[0]
-		assert_that( feedback_record.user_id, is_( 2 ))
-		assert_that( feedback_record.timestamp, not_none() )
-		assert_that( feedback_record.assignment_taken_id, is_( 1 ) )
-		assert_that( feedback_record.feedback_ds_id, not_none() )
-		assert_that( feedback_record.feedback_length, is_( len( feedback_body ) ) )
-		assert_that( feedback_record.grade_id, is_( grade_id ) )
+		# Assignments created
+		assignment_records = db_assessments.get_assignments_for_course( course )
+		assignment_records = [x for x in assignment_records]
+		assert_that( assignment_records, has_length( 1 ))
 
 
 	def test_idempotent(self):
