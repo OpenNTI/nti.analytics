@@ -130,6 +130,14 @@ def get_created_timestamp(obj):
 def timestamp_type(timestamp):
 	result = timestamp
 	if isinstance( timestamp, ( float, integer_types ) ):
+
+		# We fully expect fractional seconds; if not, a
+		# we attempt to handle it.
+		ts_string = str( int( timestamp ) )
+		if len( ts_string ) > 12:
+			logger.warn( 'Timestamp received in ms, converting to seconds (%s)',
+							timestamp )
+			timestamp = timestamp / 1000.0
 		result = datetime.utcfromtimestamp( timestamp )
 
 	if result:
