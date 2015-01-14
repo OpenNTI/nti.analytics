@@ -82,9 +82,7 @@ def create_blog( user, nti_session, blog_entry ):
 		return
 
 	like_count, favorite_count, is_flagged = get_ratings( blog_entry )
-
 	timestamp = get_created_timestamp( blog_entry )
-
 	blog_length = None
 
 	try:
@@ -191,7 +189,7 @@ def _blog_comment_exists( db, cid ):
 
 def create_blog_comment(user, nti_session, blog, comment ):
 	db = get_analytics_db()
-	user = get_or_create_user(user )
+	user = get_or_create_user( user )
 	uid = user.user_id
 	sid = SessionId.get_id( nti_session )
 	blog_ds_id = BlogId.get_id( blog )
@@ -228,6 +226,8 @@ def create_blog_comment(user, nti_session, blog, comment ):
 										favorite_count=favorite_count,
 										is_flagged=is_flagged )
 	db.session.add( new_object )
+	db.session.flush()
+	return new_object
 
 def delete_blog_comment(timestamp, comment_id):
 	db = get_analytics_db()
@@ -243,21 +243,24 @@ def delete_blog_comment(timestamp, comment_id):
 def like_comment( comment, delta ):
 	db = get_analytics_db()
 	comment_id = CommentId.get_id( comment )
-	db_comment = db.session.query(BlogCommentsCreated).filter( BlogCommentsCreated.comment_id == comment_id ).one()
+	db_comment = db.session.query(BlogCommentsCreated).filter(
+								BlogCommentsCreated.comment_id == comment_id ).one()
 	db_comment.like_count += delta
 	db.session.flush()
 
 def favorite_comment( comment, delta ):
 	db = get_analytics_db()
 	comment_id = CommentId.get_id( comment )
-	db_comment = db.session.query(BlogCommentsCreated).filter( BlogCommentsCreated.comment_id == comment_id ).one()
+	db_comment = db.session.query(BlogCommentsCreated).filter(
+									BlogCommentsCreated.comment_id == comment_id ).one()
 	db_comment.favorite_count += delta
 	db.session.flush()
 
 def flag_comment( comment, state ):
 	db = get_analytics_db()
 	comment_id = CommentId.get_id( comment )
-	db_comment = db.session.query(BlogCommentsCreated).filter( BlogCommentsCreated.comment_id == comment_id ).one()
+	db_comment = db.session.query(BlogCommentsCreated).filter(
+									BlogCommentsCreated.comment_id == comment_id ).one()
 	db_comment.is_flagged = state
 	db.session.flush()
 

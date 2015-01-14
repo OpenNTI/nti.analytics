@@ -35,6 +35,7 @@ from nti.assessment.interfaces import IQModeledContentResponse
 from nti.analytics.common import timestamp_type
 from nti.analytics.common import get_creator
 from nti.analytics.common import get_course as get_course_from_object
+from nti.analytics.common import get_created_timestamp
 
 from nti.analytics.model import AnalyticsAssessment
 from nti.analytics.model import AnalyticsAssignment
@@ -408,6 +409,7 @@ def create_assignment_taken( user, nti_session, timestamp, course, submission ):
 															grade=grade,
 															grader=grader )
 					db.session.add( grade_details )
+	return new_object
 
 def grade_submission( user, nti_session, timestamp, grader, graded_val, submission ):
 	# The server creates an assignment placeholder if a grade
@@ -487,6 +489,15 @@ def create_submission_feedback( user, nti_session, timestamp, submission, feedba
 
 	submission_id = SubmissionId.get_id( submission )
 	assignment_taken_id = _get_assignment_taken_id( db, submission_id )
+
+	if assignment_taken_id is None:
+		user = get_creator( submission )
+		timestamp = get_created_timestamp( submission )
+		course = get_course_from_object( submission )
+		new_assignment = create_assignment_taken( user, None, timestamp, course, submission )
+		logger.info( 'Assignment created (%s) (%s)', user, submission )
+		assignment_taken_id = new_assignment.assignment_taken_id
+
 	# Do we need to handle any of these being None?
 	# That's an error condition, right?
 	grade_id = _get_grade_id( db, assignment_taken_id )

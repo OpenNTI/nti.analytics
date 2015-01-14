@@ -5,6 +5,7 @@ from __future__ import print_function, unicode_literals, absolute_import, divisi
 __docformat__ = "restructuredtext en"
 
 import fudge
+import time
 
 from datetime import datetime
 
@@ -16,6 +17,10 @@ from hamcrest import assert_that
 from hamcrest import not_none
 from hamcrest import has_length
 
+from nti.app.assessment.feedback import UsersCourseAssignmentHistoryItemFeedback
+from nti.app.assessment.history import UsersCourseAssignmentHistory
+from nti.contenttypes.courses.courses import CourseInstance
+
 from nti.assessment.assignment import QAssignmentSubmissionPendingAssessment
 
 from nti.assessment.submission import AssignmentSubmission
@@ -24,8 +29,6 @@ from nti.assessment.submission import QuestionSubmission
 from nti.assessment.assessed import QAssessedQuestionSet
 from nti.assessment.assessed import QAssessedQuestion
 from nti.assessment.assessed import QAssessedPart
-
-from nti.app.assessment.history import UsersCourseAssignmentHistory
 
 from nti.app.products.gradebook.grades import Grade
 
@@ -68,8 +71,10 @@ def _get_history_item():
 	submission = AssignmentSubmission(assignmentId=_assignment_id, parts=(qs_submission,))
 	pending =  QAssignmentSubmissionPendingAssessment( assignmentId=_assignment_id,
 													   parts=(question_set,) )
-
-	return history.recordSubmission( submission, pending )
+	result =  history.recordSubmission( submission, pending )
+	result.creator = test_user_ds_id
+	result.createdTime = time.time()
+	return result
 
 class TestAssessments(AnalyticsTestBase):
 
@@ -350,6 +355,70 @@ class TestAssignments(AnalyticsTestBase):
 		assert_that( assignment_detail.question_part_id, is_( 0 ) )
 		assert_that( assignment_detail.is_correct, is_( 1 ) )
 		assert_that( assignment_detail.grade, is_( '1.0' ) )
+
+	@fudge.patch( 'nti.analytics.database.assessments._get_grade_id' )
+	def test_feedback(self, mock_get_grade):
+		grade_id = 1
+		mock_get_grade.is_callable().returns( grade_id )
+
+		assignment_feedback = self.db.session.query( AssignmentFeedback ).all()
+		assert_that( assignment_feedback, has_length( 0 ))
+
+		# Create object
+		new_assignment = _get_history_item()
+		feedback = UsersCourseAssignmentHistoryItemFeedback()
+		feedback.creator = feedback_creator = '9999'
+		feedback.__dict__['body'] = feedback_body = 'blehblehbleh'
+		feedback.__parent__ = new_assignment
+
+		db_assessments.create_assignment_taken(
+						test_user_ds_id, test_session_id, datetime.now(), self.course_id, new_assignment )
+
+		db_assessments.create_submission_feedback(
+						feedback_creator, test_session_id, datetime.now(), new_assignment, feedback )
+
+		assignment_feedback = self.db.session.query( AssignmentFeedback ).all()
+		assert_that( assignment_feedback, has_length( 1 ))
+
+		feedback_record = assignment_feedback[0]
+		assert_that( feedback_record.user_id, is_( 2 ))
+		assert_that( feedback_record.timestamp, not_none() )
+		assert_that( feedback_record.assignment_taken_id, is_( 1 ) )
+		assert_that( feedback_record.feedback_ds_id, not_none() )
+		assert_that( feedback_record.feedback_length, is_( len( feedback_body ) ) )
+		assert_that( feedback_record.grade_id, is_( grade_id ) )
+
+	@fudge.patch( 'nti.analytics.database.assessments._get_grade_id' )
+	def test_feedback_lazy_creates_assignment_record(self, mock_get_grade):
+		grade_id = 1
+		mock_get_grade.is_callable().returns( grade_id )
+
+		assignment_feedback = self.db.session.query( AssignmentFeedback ).all()
+		assert_that( assignment_feedback, has_length( 0 ))
+
+		# Create object
+		new_assignment = _get_history_item()
+		new_assignment.__parent__.__parent__ = CourseInstance()
+		feedback = UsersCourseAssignmentHistoryItemFeedback()
+		feedback.creator = feedback_creator = '9999'
+		feedback.__dict__['body'] = feedback_body = 'blehblehbleh'
+		feedback.__parent__ = new_assignment
+
+		# Create feedback without assignment record
+		db_assessments.create_submission_feedback(
+						feedback_creator, test_session_id, datetime.now(), new_assignment, feedback )
+
+		assignment_feedback = self.db.session.query( AssignmentFeedback ).all()
+		assert_that( assignment_feedback, has_length( 1 ))
+
+		feedback_record = assignment_feedback[0]
+		assert_that( feedback_record.user_id, is_( 2 ))
+		assert_that( feedback_record.timestamp, not_none() )
+		assert_that( feedback_record.assignment_taken_id, is_( 1 ) )
+		assert_that( feedback_record.feedback_ds_id, not_none() )
+		assert_that( feedback_record.feedback_length, is_( len( feedback_body ) ) )
+		assert_that( feedback_record.grade_id, is_( grade_id ) )
+
 
 	def test_idempotent(self):
 		assignment_records = db_assessments.get_assignments_for_user( test_user_ds_id, self.course_id )
