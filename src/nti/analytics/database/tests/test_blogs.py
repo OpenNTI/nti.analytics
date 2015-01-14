@@ -42,6 +42,9 @@ class TestBlog(AnalyticsTestBase):
 		results = self.session.query( BlogsCreated ).all()
 		assert_that( results, has_length( 0 ) )
 
+		# Pre-emptive delete is ok
+		db_blogs.delete_blog( datetime.now(), 999 )
+
 		# Add blog
 		new_blog_id = 1
 		new_blog_ds_id = 999
@@ -216,3 +219,48 @@ class TestBlogComments(AnalyticsTestBase):
 		assert_that( blog_comment.blog_id, is_( self.blog_id ) )
 		assert_that( blog_comment.comment_id, is_( comment_id ) )
 		assert_that( blog_comment.deleted, not_none() )
+
+class TestBlogLazyCreate(AnalyticsTestBase):
+	"""
+	Blog comments and views will auto create blog.
+	"""
+
+	def setUp(self):
+		super( TestBlogLazyCreate, self ).setUp()
+		self.blog_ds_id = 999
+		self.blog_id = 1
+		self.new_blog = MockParent( None, intid=self.blog_ds_id )
+
+	def tearDown(self):
+		self.session.close()
+
+	def test_comments(self):
+		results = self.session.query( BlogsCreated ).all()
+		assert_that( results, has_length( 0 ) )
+		results = self.session.query( BlogCommentsCreated ).all()
+		assert_that( results, has_length( 0 ) )
+
+		# Create comment
+		comment_id = DEFAULT_INTID
+		my_comment = MockComment( MockThought( None ), intid=comment_id )
+		db_blogs.create_blog_comment( test_user_ds_id, test_session_id, self.new_blog, my_comment )
+
+		results = self.session.query( BlogCommentsCreated ).all()
+		assert_that( results, has_length( 1 ) )
+
+		results = self.session.query( BlogsCreated ).all()
+		assert_that( results, has_length( 1 ) )
+
+	def test_views(self):
+		results = self.session.query( BlogsCreated ).all()
+		assert_that( results, has_length( 0 ) )
+		results = self.session.query( BlogsViewed ).all()
+		assert_that( results, has_length( 0 ) )
+
+		# Create blog
+		db_blogs.create_blog_view( test_user_ds_id, test_session_id, datetime.now(), self.new_blog, 18 )
+
+		results = self.session.query( BlogsViewed ).all()
+		assert_that( results, has_length( 1 ) )
+		results = self.session.query( BlogsCreated ).all()
+		assert_that( results, has_length( 1 ) )

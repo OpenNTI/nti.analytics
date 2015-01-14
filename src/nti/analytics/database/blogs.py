@@ -106,6 +106,8 @@ def create_blog( user, nti_session, blog_entry ):
 								favorite_count=favorite_count,
 								is_flagged=is_flagged )
 	db.session.add( new_object )
+	db.session.flush()
+	return new_object
 
 def delete_blog( timestamp, blog_ds_id ):
 	db = get_analytics_db()
@@ -157,6 +159,12 @@ def create_blog_view(user, nti_session, timestamp, blog_entry, time_length):
 	sid = SessionId.get_id( nti_session )
 	blog_ds_id = BlogId.get_id( blog_entry )
 	blog_id = _get_blog_id( db, blog_ds_id )
+
+	if blog_id is None:
+		new_blog = create_blog( user, nti_session, blog_entry )
+		logger.info( 'Created new blog (%s) (%s)', user, blog_entry )
+		blog_id = new_blog.blog_id
+
 	timestamp = timestamp_type( timestamp )
 
 	existing_record = _blog_view_exists( db, uid, blog_id, timestamp )
@@ -189,6 +197,11 @@ def create_blog_comment(user, nti_session, blog, comment ):
 	blog_ds_id = BlogId.get_id( blog )
 	bid = _get_blog_id( db, blog_ds_id )
 	cid = CommentId.get_id( comment )
+
+	if bid is None:
+		new_blog = create_blog( user, nti_session, blog )
+		logger.info( 'Created new blog (%s) (%s)', user, blog )
+		bid = new_blog.blog_id
 
 	if _blog_comment_exists( db, cid ):
 		logger.warn( 'Blog comment already exists (comment_id=%s)', cid )
