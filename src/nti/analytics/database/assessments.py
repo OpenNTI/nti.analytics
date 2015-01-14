@@ -491,11 +491,11 @@ def create_submission_feedback( user, nti_session, timestamp, submission, feedba
 	assignment_taken_id = _get_assignment_taken_id( db, submission_id )
 
 	if assignment_taken_id is None:
-		user = get_creator( submission )
+		assignment_creator = get_creator( submission )
 		timestamp = get_created_timestamp( submission )
 		course = get_course_from_object( submission )
-		new_assignment = create_assignment_taken( user, None, timestamp, course, submission )
-		logger.info( 'Assignment created (%s) (%s)', user, submission )
+		new_assignment = create_assignment_taken( assignment_creator, None, timestamp, course, submission )
+		logger.info( 'Assignment created (%s) (%s)', assignment_creator, submission )
 		assignment_taken_id = new_assignment.assignment_taken_id
 
 	# Do we need to handle any of these being None?

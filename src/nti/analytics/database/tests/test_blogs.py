@@ -17,6 +17,8 @@ from hamcrest import assert_that
 
 from nti.dataserver.contenttypes.forums.post import CommentPost
 
+from nti.dataserver.users.users import Principal
+
 from nti.analytics.database.tests import test_user_ds_id
 from nti.analytics.database.tests import test_session_id
 from nti.analytics.database.tests import AnalyticsTestBase
@@ -29,9 +31,11 @@ from nti.analytics.database.blogs import BlogsCreated
 from nti.analytics.database.blogs import BlogsViewed
 from nti.analytics.database.blogs import BlogCommentsCreated
 
+from nti.analytics.database.users import get_user_db_id
+
 # For new objects, this is the default intid stored in the database.
 # For subsequent objects, this will increase by one.
-from . import DEFAULT_INTID
+from nti.analytics.database.tests import DEFAULT_INTID
 
 class TestBlog(AnalyticsTestBase):
 
@@ -230,6 +234,9 @@ class TestBlogLazyCreate(AnalyticsTestBase):
 		self.blog_ds_id = 999
 		self.blog_id = 1
 		self.new_blog = MockParent( None, intid=self.blog_ds_id )
+		self.blog_creator = Principal( username=str( test_user_ds_id ) )
+		self.blog_creator.__dict__['_ds_intid'] = test_user_ds_id
+		self.new_blog.creator = self.blog_creator
 
 	def tearDown(self):
 		self.session.close()
@@ -242,14 +249,17 @@ class TestBlogLazyCreate(AnalyticsTestBase):
 
 		# Create comment
 		comment_id = DEFAULT_INTID
-		my_comment = MockComment( MockThought( None ), intid=comment_id )
-		db_blogs.create_blog_comment( test_user_ds_id, test_session_id, self.new_blog, my_comment )
+		my_comment = MockComment( self.new_blog, intid=comment_id )
+		db_blogs.create_blog_comment( '9999', test_session_id, self.new_blog, my_comment )
 
 		results = self.session.query( BlogCommentsCreated ).all()
 		assert_that( results, has_length( 1 ) )
 
+		blog_creator_db_id = get_user_db_id( self.blog_creator )
+
 		results = self.session.query( BlogsCreated ).all()
 		assert_that( results, has_length( 1 ) )
+		assert_that( results[0].user_id, is_( blog_creator_db_id ))
 
 	def test_views(self):
 		results = self.session.query( BlogsCreated ).all()
@@ -258,9 +268,12 @@ class TestBlogLazyCreate(AnalyticsTestBase):
 		assert_that( results, has_length( 0 ) )
 
 		# Create blog
-		db_blogs.create_blog_view( test_user_ds_id, test_session_id, datetime.now(), self.new_blog, 18 )
+		db_blogs.create_blog_view( '9999', test_session_id, datetime.now(), self.new_blog, 18 )
+
+		blog_creator_db_id = get_user_db_id( self.blog_creator )
 
 		results = self.session.query( BlogsViewed ).all()
 		assert_that( results, has_length( 1 ) )
 		results = self.session.query( BlogsCreated ).all()
 		assert_that( results, has_length( 1 ) )
+		assert_that( results[0].user_id, is_( blog_creator_db_id ))

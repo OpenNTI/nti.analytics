@@ -16,6 +16,7 @@ from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.schema import PrimaryKeyConstraint
 from sqlalchemy.schema import Sequence
 
+from nti.analytics.common import get_creator
 from nti.analytics.common import get_created_timestamp
 from nti.analytics.common import timestamp_type
 from nti.analytics.common import get_ratings
@@ -159,8 +160,9 @@ def create_blog_view(user, nti_session, timestamp, blog_entry, time_length):
 	blog_id = _get_blog_id( db, blog_ds_id )
 
 	if blog_id is None:
-		new_blog = create_blog( user, nti_session, blog_entry )
-		logger.info( 'Created new blog (%s) (%s)', user, blog_entry )
+		blog_creator = get_creator( blog_entry )
+		new_blog = create_blog( blog_creator, None, blog_entry )
+		logger.info( 'Created new blog (%s) (%s)', blog_creator, blog_entry )
 		blog_id = new_blog.blog_id
 
 	timestamp = timestamp_type( timestamp )
@@ -197,8 +199,9 @@ def create_blog_comment(user, nti_session, blog, comment ):
 	cid = CommentId.get_id( comment )
 
 	if bid is None:
-		new_blog = create_blog( user, nti_session, blog )
-		logger.info( 'Created new blog (%s) (%s)', user, blog )
+		blog_creator = get_creator( blog )
+		new_blog = create_blog( blog_creator, None, blog )
+		logger.info( 'Created new blog (%s) (%s)', blog_creator, blog )
 		bid = new_blog.blog_id
 
 	if _blog_comment_exists( db, cid ):

@@ -6,6 +6,7 @@ __docformat__ = "restructuredtext en"
 
 import fudge
 import time
+import weakref
 
 from datetime import datetime
 
@@ -16,6 +17,8 @@ from hamcrest import none
 from hamcrest import assert_that
 from hamcrest import not_none
 from hamcrest import has_length
+
+from zope.interface import directlyProvides
 
 from nti.app.assessment.feedback import UsersCourseAssignmentHistoryItemFeedback
 from nti.app.assessment.history import UsersCourseAssignmentHistory
@@ -49,6 +52,9 @@ from nti.analytics.database.assessments import AssignmentDetailGrades
 from nti.analytics.database.assessments import SelfAssessmentsTaken
 from nti.analytics.database.assessments import SelfAssessmentDetails
 
+from nti.dataserver.interfaces import IUser
+from nti.dataserver.users.users import Principal
+
 _question_id = '1968'
 _question_set_id = '2'
 _assignment_id = 'b'
@@ -69,12 +75,18 @@ def _get_history_item():
 						questionSetId=_question_set_id,
 						questions=(QuestionSubmission(questionId=_question_id, parts=(_response,)),))
 	submission = AssignmentSubmission(assignmentId=_assignment_id, parts=(qs_submission,))
-	pending =  QAssignmentSubmissionPendingAssessment( assignmentId=_assignment_id,
+	pending = QAssignmentSubmissionPendingAssessment( assignmentId=_assignment_id,
 													   parts=(question_set,) )
-	result =  history.recordSubmission( submission, pending )
-	result.creator = test_user_ds_id
+	result = history.recordSubmission( submission, pending )
+
+	# Need a weak ref for owner.
+	result_creator = Principal( username=str( test_user_ds_id ) )
+	directlyProvides( result_creator, IUser )
+	result_creator.__dict__['_ds_intid'] = test_user_ds_id
+	history.owner = weakref.ref( result_creator )
+
 	result.createdTime = time.time()
-	return result
+	return result, result_creator
 
 class TestAssessments(AnalyticsTestBase):
 
@@ -224,7 +236,7 @@ class TestAssignments(AnalyticsTestBase):
 		assignment_records = [x for x in assignment_records]
 		assert_that( assignment_records, has_length( 0 ) )
 
-		new_assignment = _get_history_item()
+		new_assignment, _ = _get_history_item()
 		db_assessments.create_assignment_taken(
 								test_user_ds_id, test_session_id, datetime.now(), self.course_id, new_assignment )
 
@@ -288,7 +300,7 @@ class TestAssignments(AnalyticsTestBase):
 		assignment_records = [x for x in assignment_records]
 		assert_that( assignment_records, has_length( 0 ) )
 
-		new_assignment = _get_history_item()
+		new_assignment, _ = _get_history_item()
 		db_assessments.create_assignment_taken(
 								test_user_ds_id, test_session_id, datetime.now(), self.course_id, new_assignment )
 
@@ -365,7 +377,7 @@ class TestAssignments(AnalyticsTestBase):
 		assert_that( assignment_feedback, has_length( 0 ))
 
 		# Create object
-		new_assignment = _get_history_item()
+		new_assignment, _ = _get_history_item()
 		feedback = UsersCourseAssignmentHistoryItemFeedback()
 		feedback.creator = feedback_creator = '9999'
 		feedback.__dict__['body'] = feedback_body = 'blehblehbleh'
@@ -397,12 +409,13 @@ class TestAssignments(AnalyticsTestBase):
 		assert_that( assignment_feedback, has_length( 0 ))
 
 		# Create object
-		new_assignment = _get_history_item()
+		new_assignment, result_creator = _get_history_item()
 		course = CourseInstance()
 		course['_ds_intid'] = self.course_id
 		new_assignment.__parent__.__parent__ = course
 		feedback = UsersCourseAssignmentHistoryItemFeedback()
-		feedback.creator = feedback_creator = '9999'
+		feedback.__dict__['creator'] = feedback_creator = Principal( username='9999' )
+		feedback_creator.__dict__['_ds_intid'] = 9999
 		feedback.__dict__['body'] = 'blehblehbleh'
 		feedback.__parent__ = new_assignment
 
@@ -412,6 +425,13 @@ class TestAssignments(AnalyticsTestBase):
 
 		assignment_feedback = self.db.session.query( AssignmentFeedback ).all()
 		assert_that( assignment_feedback, has_length( 1 ))
+
+		# By course/user
+		assignment_records = db_assessments.get_assignments_for_user(
+										result_creator,
+										course )
+		assignment_records = [x for x in assignment_records]
+		assert_that( assignment_records, has_length( 1 ))
 
 		# Assignments created
 		assignment_records = db_assessments.get_assignments_for_course( course )
@@ -425,7 +445,7 @@ class TestAssignments(AnalyticsTestBase):
 		assert_that( assignment_records, has_length( 0 ) )
 
 		assignment_time = datetime.now()
-		new_assignment = _get_history_item()
+		new_assignment, _ = _get_history_item()
 		db_assessments.create_assignment_taken(
 					test_user_ds_id, test_session_id, assignment_time, self.course_id, new_assignment )
 
