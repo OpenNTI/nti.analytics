@@ -21,6 +21,10 @@ from nti.contenttypes.courses.interfaces import ICourseInstance
 
 from six import string_types
 
+def _get_intid_utility(self):
+	intids = component.getUtility( zope.intid.IIntIds )
+	return intids
+
 class _Identifier(object):
 	"""
 	Defines a unique identifier for objects that can be used for storage.
@@ -29,13 +33,6 @@ class _Identifier(object):
 	in the app or in reports.
 	"""
 	pass
-
-intids = None
-def _get_intid_utility():
-	global intids
-	if intids is None:
-		intids = component.getUtility( zope.intid.IIntIds )
-	return intids
 
 class _DSIdentifier(_Identifier):
 
