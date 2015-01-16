@@ -195,26 +195,30 @@ class TestAssignments(AnalyticsTestBase):
 		grade_num = _get_grade_val( '90 A' )
 		assert_that( grade_num, none() )
 
+	def __get_response(self, answer):
+		# No user or question part needed unless we're testing randomized.
+		return _get_response( None, None, answer )
+
 	def test_answer(self):
 		answer = 'booya'
-		answer1 = _load_response( _get_response( answer ))
+		answer1 = _load_response( self.__get_response( answer ))
 		assert_that( answer1, is_( answer ))
 
 		answer = 1984
-		answer1 = _load_response( _get_response( answer ))
+		answer1 = _load_response( self.__get_response( answer ))
 		assert_that( answer1, is_( answer ))
 
 		answer = [10, 9, 8, 7]
-		answer1 = _load_response( _get_response( answer ))
+		answer1 = _load_response( self.__get_response( answer ))
 		assert_that( answer1, is_( answer ))
 
 		answer = {1:2, 3:4, 9:10}
-		answer1 = _load_response( _get_response( answer ))
+		answer1 = _load_response( self.__get_response( answer ))
 		assert_that( answer1, is_( answer ))
 
 		# We don't handle mixed key types.
 		answer = {'1':2, '3':4, 'why':10, 'how':18}
-		answer1 = _load_response( _get_response( answer ))
+		answer1 = _load_response( self.__get_response( answer ))
 		assert_that( answer1, is_( answer ))
 
 	def test_assignments(self):

@@ -28,9 +28,14 @@ from sqlalchemy.ext.declarative import declared_attr
 
 from nti.app.products.gradebook.interfaces import IGrade
 
+from nti.assessment.__init__ import grader_for_response
 from nti.assessment.interfaces import IQAssessedQuestionSet
 from nti.assessment.interfaces import IQUploadedFile
 from nti.assessment.interfaces import IQModeledContentResponse
+
+from nti.assessment.randomized.interfaces import IQRandomizedPart
+
+from nti.ntiids.ntiids import find_object_with_ntiid
 
 from nti.analytics.common import timestamp_type
 from nti.analytics.common import get_creator
@@ -176,12 +181,24 @@ def _get_duration( submission ):
 	time_length = time_length or -1
 	return int( time_length )
 
-def _get_response(part):
+def _get_response( user, question_part, response ):
 	"For a submission part, return the user-provided response."
-	if IQUploadedFile.providedBy( part ):
-		part = '<FILE_UPLOADED>'
-	elif IQModeledContentResponse.providedBy( part ):
-		part = ''.join( part.value )
+	# Part should only be None for unit tests.
+	if 		question_part is not None \
+		and IQRandomizedPart.providedBy( question_part ) \
+		and response is not None:
+		# XXX Need a migration for these in the db.
+
+		# First de-randomize our question part, if necessary.
+		grader = grader_for_response( question_part, response )
+		response = grader.unshuffle(response,
+									user=user,
+									context=question_part)
+
+	if IQUploadedFile.providedBy( response ):
+		response = '<FILE_UPLOADED>'
+	elif IQModeledContentResponse.providedBy( question_part ):
+		response = ''.join( response.value )
 
 	result = ''
 	try:
@@ -190,9 +207,9 @@ def _get_response(part):
 		# I think, most importantly, we need to compare responses between users
 		# (which this will handle) and to know if the answer was correct.
 		# We may be fine as-is with json.
-		result = json.dumps( part )
+		result = json.dumps( response )
 	except TypeError:
-		logger.exception( 'Submission response is not serializable (type=%s)', type( part ) )
+		logger.exception( 'Submission response is not serializable (type=%s)', type( response ) )
 
 	return result
 
@@ -232,7 +249,7 @@ def _get_self_assessment_id( db, submission_id ):
 
 _self_assessment_exists = _get_self_assessment_id
 
-def create_self_assessment_taken(user, nti_session, timestamp, course, submission ):
+def create_self_assessment_taken( user, nti_session, timestamp, course, submission ):
 	db = get_analytics_db()
 	user_record = get_or_create_user( user )
 	uid = user_record.user_id
@@ -267,11 +284,13 @@ def create_self_assessment_taken(user, nti_session, timestamp, course, submissio
 
 	for assessed_question in submission.questions:
 		question_id = assessed_question.questionId
+		question = find_object_with_ntiid( question_id )
 
 		for idx, part in enumerate( assessed_question.parts ):
 			grade = part.assessedValue
 			is_correct = grade == 1
-			response = _get_response( part.submittedResponse )
+			question_part = question.parts[idx] if question is not None else None
+			response = _get_response( user, question_part, part.submittedResponse )
 			grade_details = SelfAssessmentDetails( user_id=uid,
 													session_id=sid,
 													timestamp=timestamp,
@@ -346,13 +365,15 @@ def create_assignment_taken( user, nti_session, timestamp, course, submission ):
 		for question_submission in set_submission.questions:
 			# Questions don't have ds_intids, just use ntiid.
 			question_id = question_submission.questionId
+			question = find_object_with_ntiid( question_id )
 			# We'd like this by part, but will accept by question for now;
 			# it's only an estimate anyway.
 			time_length = _get_duration( question_submission )
 
-			for idx, part in enumerate( question_submission.parts ):
+			for idx, response in enumerate( question_submission.parts ):
 				# Serialize our response
-				response = _get_response( part )
+				question_part = question.parts[idx] if question is not None else None
+				response = _get_response( user, question_part, response )
 				parts = AssignmentDetails( 	user_id=uid,
 											session_id=sid,
 											timestamp=timestamp,
