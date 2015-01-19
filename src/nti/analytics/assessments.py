@@ -164,7 +164,7 @@ def _grade_added(grade, event):
 	# and is not something useful to persist.
 	# TODO Oof, a placeholder submission is created. See if we can tell when that occurs.
 	# (it also appears in the Grade modified path).
-	if submission is None:
+	if submission is None or not grade.creator:
 		return
 	_grade_submission( grade, submission )
 
