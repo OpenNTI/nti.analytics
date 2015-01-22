@@ -14,6 +14,8 @@ from sqlalchemy import String
 from sqlalchemy import Boolean
 from sqlalchemy import DateTime
 
+from zope import component
+
 from sqlalchemy.schema import Sequence
 
 from nti.analytics.interfaces import IUserResearchStatus
@@ -26,7 +28,7 @@ from nti.analytics.database import INTID_COLUMN_TYPE
 from nti.analytics.database import Base
 from nti.analytics.database import get_analytics_db
 
-from nti.dataserver.users.interfaces import IEmailRequiredUserProfile
+from nti.dataserver.interfaces import IUsernameSubstitutionPolicy
 
 class Users(Base):
 	__tablename__ = 'Users'
@@ -38,10 +40,13 @@ class Users(Base):
 	create_date = Column('create_date', DateTime, nullable=True)
 
 def _get_username2( user ):
-	# Currently just used for OU's 4x4; if it's on the profile.
-	profile = IEmailRequiredUserProfile( user, None )
-	username2 = getattr( profile, 'OU4x4', None )
-	return username2
+	"Return the applicable alternate username, if we have a policy for it."
+	username = user.username
+	policy = component.queryUtility( IUsernameSubstitutionPolicy )
+	result = policy.replace( username ) if policy else ''
+	if username == result:
+		result = ''
+	return result
 
 def create_user(user):
 	db = get_analytics_db()
