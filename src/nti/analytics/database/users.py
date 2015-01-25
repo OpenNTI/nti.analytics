@@ -28,6 +28,7 @@ from nti.analytics.database import INTID_COLUMN_TYPE
 from nti.analytics.database import Base
 from nti.analytics.database import get_analytics_db
 
+from nti.dataserver.interfaces import IUser
 from nti.dataserver.interfaces import IUsernameSubstitutionPolicy
 
 class Users(Base):
@@ -41,7 +42,7 @@ class Users(Base):
 
 def _get_username2( user ):
 	"Return the applicable alternate username, if we have a policy for it."
-	username = user.username
+	username = user.username if IUser.providedBy(user) else ''
 	policy = component.queryUtility( IUsernameSubstitutionPolicy )
 	result = policy.replace( username ) if policy else ''
 	if username == result:
@@ -60,7 +61,7 @@ def create_user(user):
 	if user_research is not None:
 		allow_research = user_research.allow_research
 
-	username2 = _get_username2( user )
+	username2 = _get_username2( user ) or username
 	create_date = get_created_timestamp( user )
 
 	user = Users( 	user_ds_id=uid,
@@ -102,13 +103,12 @@ def get_user( user_id ):
 	"Retrieves user with given db id."
 	result = None
 	db = get_analytics_db()
-	found_user = db.session.query(Users).filter( Users.user_id == user_id,
+	found_user = db.session.query(Users).filter(Users.user_id == user_id,
 												Users.user_ds_id != None ).first()
 	if found_user is not None:
 		result = UserId.get_object( found_user.user_ds_id )
 
 	return result
-
 
 def delete_entity( entity_ds_id ):
 	db = get_analytics_db()
