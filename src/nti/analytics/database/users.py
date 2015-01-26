@@ -28,7 +28,6 @@ from nti.analytics.database import INTID_COLUMN_TYPE
 from nti.analytics.database import Base
 from nti.analytics.database import get_analytics_db
 
-from nti.dataserver.interfaces import IUser
 from nti.dataserver.interfaces import IUsernameSubstitutionPolicy
 
 class Users(Base):
@@ -42,7 +41,7 @@ class Users(Base):
 
 def _get_username2( user ):
 	"Return the applicable alternate username, if we have a policy for it."
-	username = user.username if IUser.providedBy(user) else ''
+	username = getattr(user, 'username', None) or ''
 	policy = component.queryUtility( IUsernameSubstitutionPolicy )
 	result = policy.replace( username ) if policy else ''
 	if username == result:
