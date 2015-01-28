@@ -157,9 +157,8 @@ def create_course_drop(user, nti_session, timestamp, course):
 								course_id=course_id )
 	db.session.add( new_object )
 
-	enrollment = db.session.query(CourseEnrollments).filter( 	CourseEnrollments.user_id == uid,
-															CourseEnrollments.course_id == course_id ).one()
-	db.session.delete( enrollment )
+	db.session.query(CourseEnrollments).filter( CourseEnrollments.user_id == uid,
+												CourseEnrollments.course_id == course_id ).delete()
 
 def get_enrollments_for_course( course ):
 	db = get_analytics_db()
