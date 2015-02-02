@@ -48,6 +48,10 @@ class BaseViewMixin(object):
 
 	timestamp = Column('timestamp', DateTime)
 
+	# RHP/username/
+	# Dashboard/lesson_ntiid
+	context_path = Column('context_path', String(1048), nullable=True)
+
 class DeletedMixin(object):
 	deleted = Column('deleted', DateTime)
 
@@ -65,9 +69,7 @@ class ResourceMixin(CourseMixin):
 		return Column('resource_id', Integer, ForeignKey("Resources.resource_id"), nullable=False, index=True)
 
 class ResourceViewMixin(ResourceMixin,BaseViewMixin):
-	# RHP/username/
-	# Dashboard/lesson_ntiid
-	context_path = Column('context_path', String(1048), nullable=False)
+	pass
 
 class FavoriteMixin(object):
 	favorite_count = Column('favorite_count', Integer, nullable=True)

@@ -72,7 +72,12 @@ class IAnalyticsViewEvent(IAnalyticsObjectBase, ITimeLength):
 	"""
 	A basic analytics viewing event.
 	"""
-	pass
+	context_path = List(title='Context path',
+						description='List of ntiid locations describing where the event occurred.',
+						min_length=0,
+						default=None,
+						required=False,
+						value_type=ValidTextLine( title='The ntiid context segment'))
 
 class IBlogViewEvent(IAnalyticsViewEvent):
 	"""
@@ -96,11 +101,6 @@ class IResourceEvent(IAnalyticsViewEvent, ICourseEvent):
 	"""
 	Describes a resource viewing event.
 	"""
-	context_path = List(title='Context path',
-						description='List of ntiid locations describing where the event occurred.',
-						min_length=0,
-						value_type=ValidTextLine( title='The ntiid context segment'))
-
 	resource_id = ValidTextLine(title="The resource ntiid.")
 
 class INoteViewEvent(IAnalyticsViewEvent, ICourseEvent):
