@@ -45,6 +45,7 @@ class TestBlog(AnalyticsTestBase):
 	def test_create_blog(self):
 		results = self.session.query( BlogsCreated ).all()
 		assert_that( results, has_length( 0 ) )
+		context_path = None
 
 		# Pre-emptive delete is ok
 		db_blogs.delete_blog( datetime.now(), 999 )
@@ -68,7 +69,7 @@ class TestBlog(AnalyticsTestBase):
 		results = self.session.query( BlogsViewed ).all()
 		assert_that( results, has_length( 0 ) )
 
-		db_blogs.create_blog_view( test_user_ds_id, test_session_id, datetime.now(), new_blog, 18 )
+		db_blogs.create_blog_view( test_user_ds_id, test_session_id, datetime.now(), context_path, new_blog, 18 )
 		results = self.session.query( BlogsViewed ).all()
 		assert_that( results, has_length( 1 ) )
 
@@ -105,6 +106,7 @@ class TestBlog(AnalyticsTestBase):
 	def test_idempotent_views(self):
 		results = self.session.query( BlogsViewed ).all()
 		assert_that( results, has_length( 0 ) )
+		context_path = None
 
 		time_length = 18
 		new_time_length = time_length + 1
@@ -113,12 +115,12 @@ class TestBlog(AnalyticsTestBase):
 		new_blog_ds_id = 999
 		new_blog = MockParent( None, intid=new_blog_ds_id )
 		db_blogs.create_blog( test_user_ds_id, test_session_id, new_blog )
-		db_blogs.create_blog_view( test_user_ds_id, test_session_id, event_time, new_blog, time_length )
+		db_blogs.create_blog_view( test_user_ds_id, test_session_id, event_time, context_path, new_blog, time_length )
 
 		results = self.session.query( BlogsViewed ).all()
 		assert_that( results, has_length( 1 ) )
 
-		db_blogs.create_blog_view( test_user_ds_id, test_session_id, event_time, new_blog, new_time_length )
+		db_blogs.create_blog_view( test_user_ds_id, test_session_id, event_time, context_path, new_blog, new_time_length )
 
 		results = self.session.query( BlogsViewed ).all()
 		assert_that( results, has_length( 1 ) )
@@ -266,9 +268,10 @@ class TestBlogLazyCreate(AnalyticsTestBase):
 		assert_that( results, has_length( 0 ) )
 		results = self.session.query( BlogsViewed ).all()
 		assert_that( results, has_length( 0 ) )
+		context_path = None
 
 		# Create blog
-		db_blogs.create_blog_view( '9999', test_session_id, datetime.now(), self.new_blog, 18 )
+		db_blogs.create_blog_view( '9999', test_session_id, datetime.now(), context_path, self.new_blog, 18 )
 
 		blog_creator_db_id = get_user_db_id( self.blog_creator )
 

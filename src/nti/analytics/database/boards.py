@@ -52,6 +52,8 @@ from nti.analytics.database.users import get_user_db_id
 from nti.analytics.database.root_context import get_root_context_id
 from nti.analytics.database.root_context import get_root_context
 
+from nti.analytics.database._utils import get_context_path
+
 class ForumMixin(CourseMixin):
 	@declared_attr
 	def forum_id(cls):
@@ -259,7 +261,7 @@ def _topic_view_exists( db, user_id, topic_id, timestamp ):
 							TopicsViewed.topic_id == topic_id,
 							TopicsViewed.timestamp == timestamp ).first()
 
-def create_topic_view(user, nti_session, timestamp, course, topic, time_length):
+def create_topic_view(user, nti_session, timestamp, course, context_path, topic, time_length):
 	db = get_analytics_db()
 	user_record = get_or_create_user( user )
 	uid = user_record.user_id
@@ -291,10 +293,13 @@ def create_topic_view(user, nti_session, timestamp, course, topic, time_length):
 						user, did )
 			return
 
+	context_path = get_context_path( context_path )
+
 	new_object = TopicsViewed( user_id=uid,
 								session_id=sid,
 								timestamp=timestamp,
 								course_id=course_id,
+								context_path=context_path,
 								forum_id=fid,
 								topic_id=did,
 								time_length=time_length )

@@ -165,6 +165,7 @@ class TestTopics(AnalyticsTestBase):
 	@fudge.patch( 'dm.zope.schema.schema.Object._validate' )
 	def test_topics(self, mock_validate):
 		mock_validate.is_callable().returns( True )
+		context_path = None
 
 		results = self.session.query( TopicsCreated ).all()
 		assert_that( results, has_length( 0 ) )
@@ -197,7 +198,7 @@ class TestTopics(AnalyticsTestBase):
 		time_length = 30
 		db_boards.create_topic_view( test_user_ds_id,
 										test_session_id, datetime.now(),
-										self.course_id, my_topic,
+										self.course_id, context_path, my_topic,
 										time_length )
 
 		results = self.session.query( TopicsViewed ).all()
@@ -254,6 +255,7 @@ class TestTopics(AnalyticsTestBase):
 	def test_idempotent_views(self):
 		results = self.session.query( TopicsViewed ).all()
 		assert_that( results, has_length( 0 ) )
+		context_path = None
 
 		topic_ds_id = DEFAULT_INTID
 		my_topic = MockTopic( self.forum, intid=topic_ds_id )
@@ -266,7 +268,7 @@ class TestTopics(AnalyticsTestBase):
 		new_time_length = time_length + 1
 		db_boards.create_topic_view( test_user_ds_id,
 										test_session_id, event_time,
-										self.course_id, my_topic,
+										self.course_id, context_path, my_topic,
 										time_length )
 
 		results = self.session.query( TopicsViewed ).all()
@@ -274,7 +276,7 @@ class TestTopics(AnalyticsTestBase):
 
 		db_boards.create_topic_view( test_user_ds_id,
 										test_session_id, event_time,
-										self.course_id, my_topic,
+										self.course_id, context_path, my_topic,
 										new_time_length )
 
 		results = self.session.query( TopicsViewed ).all()

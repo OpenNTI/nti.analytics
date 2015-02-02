@@ -39,6 +39,8 @@ from nti.analytics.database.meta_mixins import RatingsMixin
 
 from nti.analytics.database.users import get_or_create_user
 
+from nti.analytics.database._utils import get_context_path
+
 class BlogMixin(object):
 
 	@declared_attr
@@ -151,7 +153,7 @@ def _blog_view_exists( db, user_id, blog_id, timestamp ):
 							BlogsViewed.blog_id == blog_id,
 							BlogsViewed.timestamp == timestamp ).first()
 
-def create_blog_view(user, nti_session, timestamp, blog_entry, time_length):
+def create_blog_view(user, nti_session, timestamp, context_path, blog_entry, time_length):
 	db = get_analytics_db()
 	user_record = get_or_create_user( user )
 	uid = user_record.user_id
@@ -178,9 +180,12 @@ def create_blog_view(user, nti_session, timestamp, blog_entry, time_length):
 						user, blog_id )
 			return
 
+	context_path = get_context_path( context_path )
+
 	new_object = BlogsViewed( 	user_id=uid,
 								session_id=sid,
 								timestamp=timestamp,
+								context_path=context_path,
 								blog_id=blog_id,
 								time_length=time_length )
 	db.session.add( new_object )

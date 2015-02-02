@@ -96,7 +96,7 @@ class TestTopicProgress( AnalyticsTestBase ):
 		create_topic( self.user, None, self.course, self.topic)
 
 	def _install_event(self, timestamp, time_length=None):
-		create_topic_view(self.user, None, timestamp, self.course, self.topic, time_length)
+		create_topic_view(self.user, None, timestamp, self.course, None, self.topic, time_length)
 
 	@time_monotonically_increases
 	def test_topic_progress(self):

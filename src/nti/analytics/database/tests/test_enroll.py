@@ -35,9 +35,11 @@ class TestCourseViews(AnalyticsTestBase):
 	def test_course_catalog_views(self):
 		results = self.session.query( CourseCatalogViews ).all()
 		assert_that( results, has_length( 0 ) )
+		context_path = None
 
 		time_length = 30
 		db_enrollments.create_course_catalog_view( test_user_ds_id, test_session_id, datetime.now(),
+													context_path,
 													self.course_id, time_length )
 
 		results = self.session.query( CourseCatalogViews ).all()
@@ -132,17 +134,18 @@ class TestCourseViews(AnalyticsTestBase):
 	def test_idempotent_views(self):
 		results = self.session.query( CourseCatalogViews ).all()
 		assert_that( results, has_length( 0 ) )
+		context_path = None
 
 		event_time = datetime.now()
 		time_length = 30
 		db_enrollments.create_course_catalog_view( test_user_ds_id, test_session_id, event_time,
-													self.course_id, time_length )
+													context_path, self.course_id, time_length )
 
 		results = self.session.query( CourseCatalogViews ).all()
 		assert_that( results, has_length( 1 ) )
 
 		db_enrollments.create_course_catalog_view( test_user_ds_id, test_session_id, event_time,
-													self.course_id, time_length )
+													context_path, self.course_id, time_length )
 
 		results = self.session.query( CourseCatalogViews ).all()
 		assert_that( results, has_length( 1 ) )

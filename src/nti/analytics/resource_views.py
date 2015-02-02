@@ -171,6 +171,7 @@ def _add_note_event( event, nti_session=None ):
 								user,
 								nti_session,
 								event.timestamp,
+								event.context_path,
 								course,
 								note )
 
@@ -196,6 +197,7 @@ def _add_topic_event( event, nti_session=None ):
 								nti_session,
 								event.timestamp,
 								course,
+								event.context_path,
 								topic,
 								event.time_length )
 	logger.debug( 	"Course topic view event (user=%s) (course=%s) (topic=%s) (time_length=%s)",
@@ -220,6 +222,7 @@ def _add_blog_event( event, nti_session=None ):
 	db_blogs.create_blog_view(	user,
 								nti_session,
 								event.timestamp,
+								event.context_path,
 								blog,
 								event.time_length )
 	logger.debug( 	"Blog view event (user=%s) (blog=%s) (time_length=%s)",
@@ -241,6 +244,7 @@ def _add_catalog_event( event, nti_session=None ):
 	db_enrollments.create_course_catalog_view( user,
 								nti_session,
 								event.timestamp,
+								event.context_path,
 								course,
 								event.time_length )
 	logger.debug( 	"Course catalog view event (user=%s) (course=%s) (time_length=%s)",

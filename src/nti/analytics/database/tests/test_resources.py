@@ -34,10 +34,10 @@ from nti.analytics.database.resources import Resources
 
 from nti.analytics.database.resource_views import CourseResourceViews
 from nti.analytics.database.resource_views import VideoEvents
-from nti.analytics.database.resource_views import _get_context_path
 from nti.analytics.database.resource_tags import NotesCreated
 from nti.analytics.database.resource_tags import NotesViewed
 from nti.analytics.database.resource_tags import HighlightsCreated
+from nti.analytics.database._utils import get_context_path
 
 from nti.dataserver.users.users import Principal
 
@@ -231,6 +231,7 @@ class TestCourseResources(AnalyticsTestBase):
 	@fudge.patch( 'nti.analytics.database.resource_tags._get_sharing_enum' )
 	def test_note(self, mock_sharing_enum):
 		mock_sharing_enum.is_callable().returns( 'UNKNOWN' )
+		context_path = None
 
 		results = self.session.query( NotesCreated ).all()
 		assert_that( results, has_length( 0 ) )
@@ -266,6 +267,7 @@ class TestCourseResources(AnalyticsTestBase):
 		# Note view
 		db_tags.create_note_view( 	test_user_ds_id,
 									test_session_id, datetime.now(),
+									context_path,
 									self.course_id, my_note )
 		results = self.session.query( NotesViewed ).all()
 		assert_that( results, has_length( 1 ) )
@@ -294,6 +296,7 @@ class TestCourseResources(AnalyticsTestBase):
 	@fudge.patch( 'nti.analytics.database.resource_tags._get_sharing_enum' )
 	def test_idempotent_note(self, mock_sharing_enum):
 		mock_sharing_enum.is_callable().returns( 'UNKNOWN' )
+		context_path = None
 
 		results = self.session.query( NotesCreated ).all()
 		assert_that( results, has_length( 0 ) )
@@ -321,6 +324,7 @@ class TestCourseResources(AnalyticsTestBase):
 		event_time = datetime.now()
 		db_tags.create_note_view( 	test_user_ds_id,
 									test_session_id, event_time,
+									context_path,
 									self.course_id, my_note )
 
 		results = self.session.query( NotesViewed ).all()
@@ -328,6 +332,7 @@ class TestCourseResources(AnalyticsTestBase):
 
 		db_tags.create_note_view( 	test_user_ds_id,
 									test_session_id, event_time,
+									context_path,
 									self.course_id, my_note )
 
 		results = self.session.query( NotesViewed ).all()
@@ -336,6 +341,7 @@ class TestCourseResources(AnalyticsTestBase):
 	@fudge.patch( 'nti.analytics.database.resource_tags._get_sharing_enum' )
 	def test_lazy_note_create(self, mock_sharing_enum):
 		mock_sharing_enum.is_callable().returns( 'UNKNOWN' )
+		context_path = None
 
 		results = self.session.query( NotesCreated ).all()
 		assert_that( results, has_length( 0 ) )
@@ -352,6 +358,7 @@ class TestCourseResources(AnalyticsTestBase):
 		# Note view will create our Note record
 		db_tags.create_note_view( 	'9999',
 									test_session_id, datetime.now(),
+									context_path,
 									self.course_id, my_note )
 		results = self.session.query( NotesViewed ).all()
 		assert_that( results, has_length( 1 ) )
@@ -470,22 +477,22 @@ class TestCourseResources(AnalyticsTestBase):
 
 	def test_context_path(self):
 		path = ['dashboard']
-		result = _get_context_path( path )
+		result = get_context_path( path )
 		assert_that( result, is_( 'dashboard' ))
 
 		path = None
-		result = _get_context_path( path )
+		result = get_context_path( path )
 		assert_that( result, is_( '' ))
 
 		path = [ 'ntiid:lesson1', 'ntiid:overview' ]
-		result = _get_context_path( path )
+		result = get_context_path( path )
 		assert_that( result, is_( 'ntiid:lesson1/ntiid:overview' ))
 
 		path = [ 'ntiid:lesson1', 'ntiid:lesson1', 'ntiid:lesson1', 'ntiid:lesson1', 'ntiid:overview' ]
-		result = _get_context_path( path )
+		result = get_context_path( path )
 		assert_that( result, is_( 'ntiid:lesson1/ntiid:overview' ))
 
 		path = [ 'ntiid:overview', 'ntiid:lesson1', 'ntiid:lesson1', 'ntiid:lesson1', 'ntiid:lesson1', 'ntiid:reading1' ]
-		result = _get_context_path( path )
+		result = get_context_path( path )
 		assert_that( result, is_( 'ntiid:overview/ntiid:lesson1/ntiid:reading1' ))
 

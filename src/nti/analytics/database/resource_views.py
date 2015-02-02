@@ -8,8 +8,6 @@ __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
-from collections import OrderedDict
-
 from sqlalchemy import Column
 from sqlalchemy import Integer
 from sqlalchemy import Boolean
@@ -42,6 +40,9 @@ from nti.analytics.database.root_context import get_root_context_id
 from nti.analytics.database.resources import get_resource_id
 from nti.analytics.database.resources import get_resource_val
 
+from nti.analytics.database._utils import expand_context_path
+from nti.analytics.database._utils import get_context_path
+
 # For meta-views into synthetic course info, we can special type the resource_id:
 #	(about|instructors|tech_support)
 class CourseResourceViews(Base,ResourceViewMixin,TimeLengthMixin):
@@ -64,25 +65,6 @@ class VideoEvents(Base,ResourceViewMixin,TimeLengthMixin):
 	max_time_length = Column( 'max_time_length', Integer, nullable=True )
 
 	video_view_id = Column('video_view_id', Integer, Sequence( 'video_view_id_seq' ), primary_key=True )
-
-def _get_context_path( context_path ):
-	# Note: we could also sub these resource_ids for the actual
-	# ids off of the Resources table.  That would be a bit tricky, because
-	# we sometimes have courses and client specific strings (e.g. 'overview')
-	# in this collection.
-
-	result = ''
-	if context_path:
-		# This will remove all duplicate elements. Hopefully we do
-		# not have scattered duplicates, which would be an error condition.
-		context_path = list( OrderedDict.fromkeys( context_path ) )
-		# '/' is illegal in ntiid strings
-		result = '/'.join( context_path )
-
-	return result
-
-def _expand_context_path( context_path ):
-	return context_path.split( '/' )
 
 def _resource_view_exists( db, user_id, resource_id, timestamp ):
 	# TODO Need to clean up these dupe events
@@ -114,7 +96,7 @@ def create_course_resource_view(user, nti_session, timestamp, course, context_pa
 						user, rid, timestamp )
 			return
 
-	context_path = _get_context_path( context_path )
+	context_path = get_context_path( context_path )
 
 	new_object = CourseResourceViews( 	user_id=uid,
 										session_id=sid,
@@ -166,7 +148,7 @@ def create_video_event(	user,
 						user, vid, timestamp )
 			return
 
-	context_path = _get_context_path( context_path )
+	context_path = get_context_path( context_path )
 
 	new_object = VideoEvents(	user_id=uid,
 								session_id=sid,
@@ -191,7 +173,7 @@ def _resolve_resource_view( record, course=None, user=None ):
 
 	timestamp = record.timestamp
 	context_path = record.context_path
-	context_path = _expand_context_path( context_path )
+	context_path = expand_context_path( context_path )
 
 	resource_id = record.resource_id
 	resource_ntiid = get_resource_val( resource_id )
@@ -215,7 +197,7 @@ def _resolve_video_view( record, course=None, user=None ):
 
 	timestamp = record.timestamp
 	context_path = record.context_path
-	context_path = _expand_context_path( context_path )
+	context_path = expand_context_path( context_path )
 
 	resource_id = record.resource_id
 	resource_ntiid = get_resource_val( resource_id )

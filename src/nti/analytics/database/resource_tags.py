@@ -41,6 +41,8 @@ from nti.analytics.database.users import get_or_create_user
 from nti.analytics.database.root_context import get_root_context_id
 from nti.analytics.database.resources import get_resource_id
 
+from nti.analytics.database._utils import get_context_path
+
 class NoteMixin(ResourceMixin):
 
 	@declared_attr
@@ -192,7 +194,7 @@ def _note_view_exists( db, note_id, user_id, timestamp ):
 							NotesViewed.user_id == user_id,
 							NotesViewed.timestamp == timestamp ).first()
 
-def create_note_view(user, nti_session, timestamp, course, note):
+def create_note_view(user, nti_session, timestamp, context_path, course, note):
 	db = get_analytics_db()
 	user_record = get_or_create_user( user )
 	uid = user_record.user_id
@@ -216,10 +218,13 @@ def create_note_view(user, nti_session, timestamp, course, note):
 					user, note_id )
 		return
 
+	context_path = get_context_path( context_path )
+
 	new_object = NotesViewed( 	user_id=uid,
 								session_id=sid,
 								timestamp=timestamp,
 								course_id=course_id,
+								context_path=context_path,
 								resource_id=rid,
 								note_id=note_id )
 	db.session.add( new_object )

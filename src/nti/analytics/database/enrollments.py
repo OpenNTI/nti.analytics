@@ -32,6 +32,8 @@ from nti.analytics.database.meta_mixins import TimeLengthMixin
 from nti.analytics.database.users import get_or_create_user
 from nti.analytics.database.root_context import get_root_context_id
 
+from nti.analytics.database._utils import get_context_path
+
 class CourseCatalogViews(Base,BaseViewMixin,CourseMixin,TimeLengthMixin):
 	__tablename__ = 'CourseCatalogViews'
 
@@ -66,7 +68,7 @@ def _course_catalog_view_exists( db, user_id, course_id, timestamp ):
 							CourseCatalogViews.course_id == course_id,
 							CourseCatalogViews.timestamp == timestamp ).first()
 
-def create_course_catalog_view( user, nti_session, timestamp, course, time_length ):
+def create_course_catalog_view( user, nti_session, timestamp, context_path, course, time_length ):
 	db = get_analytics_db()
 	user = get_or_create_user(user )
 	uid = user.user_id
@@ -85,9 +87,12 @@ def create_course_catalog_view( user, nti_session, timestamp, course, time_lengt
 						uid, course_id )
 			return
 
+	context_path = get_context_path( context_path )
+
 	new_object = CourseCatalogViews( 	user_id=uid,
 										session_id=sid,
 										timestamp=timestamp,
+										context_path=context_path,
 										course_id=course_id,
 										time_length=time_length )
 	db.session.add( new_object )
