@@ -16,6 +16,8 @@ from sqlalchemy import Interval
 
 from sqlalchemy.schema import Sequence
 
+from nti.app.products.courseware_ims import get_course_sourcedid
+
 from nti.contenttypes.courses.interfaces import ICourseCatalogEntry
 from nti.contenttypes.courses.interfaces import ICourseInstance
 
@@ -42,6 +44,9 @@ class RootContext(object):
 
 class Courses( Base, RootContext ):
 	__tablename__ = 'Courses'
+
+	term = Column('term', String(32), nullable=True, unique=False)
+	crn = Column('crn', String(32), nullable=True, unique=False)
 
 class Books( Base, RootContext ):
 	__tablename__ = 'Books'
@@ -86,11 +91,17 @@ def _create_course( db, course, course_ds_id ):
 	end_date = getattr( catalog, 'EndDate', None )
 	duration = getattr( catalog, 'Duration', None )
 
+	course_sid = get_course_sourcedid( course )
+	term = getattr( course_sid, 'Term', None )
+	crn = getattr( course_sid, 'CRN', None )
+
 	course = Courses( 	context_id=context_id,
 						context_ds_id=course_ds_id,
 						context_name=course_name,
  						context_long_name=course_long_name,
 					 	start_date=start_date,
+					 	term=term,
+					 	crn=crn,
 						end_date=end_date,
 						duration=duration )
 	# For race conditions, let's just throw since we cannot really handle retrying
@@ -120,23 +131,33 @@ def _create_content_package( db, content_package, context_ds_id ):
 					book.context_id, context_ds_id, context_name )
 	return book
 
+def _update_course( course_record, course ):
+	# Lazy populate new fields
+	if course_record.context_long_name is None:
+		course_record.context_long_name = _get_course_long_name( course )
+
+	if 		course_record.start_date is None \
+		and course_record.end_date is None \
+		and course_record.duration is None:
+
+		catalog = _course_catalog( course )
+		course_record.start_date = getattr( catalog, 'StartDate', None )
+		course_record.end_date = getattr( catalog, 'EndDate', None )
+		course_record.duration = getattr( catalog, 'Duration', None )
+
+	if 		course_record.term is None \
+		and course_record.crn is None:
+
+		course_sid = get_course_sourcedid( course )
+		course_record.term = getattr( course_sid, 'Term', None )
+		course_record.crn = getattr( course_sid, 'CRN', None )
+
+
 def _get_or_create_course( db, course, context_ds_id ):
 	found_course = db.session.query(Courses).filter(
 								Courses.context_ds_id == context_ds_id ).first()
 	if found_course is not None:
-
-		# Lazy populate new fields
-		if found_course.context_long_name is None:
-			found_course.context_long_name = _get_course_long_name( course )
-
-		if 		found_course.start_date is None \
-			and found_course.end_date is None \
-			and found_course.duration is None:
-
-			catalog = _course_catalog( course )
-			found_course.start_date = getattr( catalog, 'StartDate', None )
-			found_course.end_date = getattr( catalog, 'EndDate', None )
-			found_course.duration = getattr( catalog, 'Duration', None )
+		_update_course( found_course, course )
 
 	return found_course or _create_course( db, course, context_ds_id )
 
