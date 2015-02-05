@@ -40,7 +40,9 @@ class DefaultProgress( object ):
 		self.LastModified = last_modified
 
 def get_progress_for_resource_views( resource_ntiid, resource_views ):
-	"""Simplistic; looking at a resource constitutes progress."""
+	"""
+	For a set of events for a given ntiid, looking at a resource constitutes progress.
+	"""
 	result = None
 
 	if resource_views:
@@ -54,7 +56,7 @@ def get_progress_for_resource_views( resource_ntiid, resource_views ):
 
 def get_progress_for_video_views( resource_ntiid, video_events  ):
 	"""
-	Simplistic; looking at a resource constitutes progress.
+	For a set of events for a given ntiid, looking at a resource constitutes progress.
 	"""
 	result = None
 	video_events = list( video_events )

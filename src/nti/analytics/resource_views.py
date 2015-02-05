@@ -69,6 +69,19 @@ def get_progress_for_ntiid( user, resource_ntiid ):
 
 	return result
 
+def get_video_progress_for_course( user, course ):
+	"""
+	For a given user/course, return progress for all videos we have on record.
+	"""
+	resource_views = get_user_video_events( user, course )
+	view_dict = {}
+
+	for resource_view in resource_views:
+		view_dict.setdefault( resource_view.resource_id, [] ).append( resource_view )
+
+	result = [get_progress_for_video_views( ntiid, events ) for ntiid, events in view_dict.items()]
+	return result
+
 def _get_object( ntiid ):
 	return ntiids.find_object_with_ntiid( ntiid )
 
