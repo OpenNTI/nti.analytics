@@ -21,7 +21,7 @@ from nti.contenttypes.courses.interfaces import ICourseInstance
 
 from six import string_types
 
-def _get_intid_utility(self):
+def _get_intid_utility():
 	intids = component.getUtility( zope.intid.IIntIds )
 	return intids
 
@@ -65,7 +65,7 @@ class _NtiidIdentifier(_Identifier):
 
 	@classmethod
 	def get_object( cls, uid ):
-		# TODO We may have to decode here.  Add tests.
+		# TODO We may have to decode here. Add tests.
 		return ntiids.find_object_with_ntiid( uid )
 
 class UserId(_DSIdentifier):
