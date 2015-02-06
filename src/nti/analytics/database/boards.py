@@ -511,3 +511,16 @@ def get_topics_created_for_course(course):
 														TopicsCreated.deleted == None  ).all()
 	return resolve_objects( _resolve_topic, results )
 
+
+def get_topic_view_count( topic ):
+	"""
+	Return the number of times this topic has been viewed.
+	"""
+	result = 0
+	db = get_analytics_db()
+	topic_id = _get_topic_id_from_topic( db, topic )
+	if topic_id is not None:
+		result = db.session.query(TopicsViewed).filter(
+											TopicsViewed.topic_id == topic_id,
+											TopicsViewed.time_length > 0 ).count()
+	return result

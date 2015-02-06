@@ -140,6 +140,10 @@
 	<!-- Research -->
 	<adapter factory=".model._UserResearchStatus" />
 
+	<!-- View count adapters -->
+	<adapter factory=".adapters._note_view_count" />
+	<adapter factory=".adapters._topic_view_count" />
+
 	<!-- Progress adapters -->
 	<adapter factory=".adapters._assignment_progress_for_user" />
 	<adapter factory=".adapters._assessment_progress_for_user" />

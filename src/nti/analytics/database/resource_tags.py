@@ -286,3 +286,16 @@ def get_highlights_created_for_course(course):
 															HighlightsCreated.deleted == None  ).all()
 	return results
 
+def get_note_view_count( note ):
+	"""
+	Return the number of times this note has been viewed.
+	"""
+	result = 0
+	db = get_analytics_db()
+	note_ds_id = NoteId.get_id( note )
+	note_id = _get_note_id( db, note_ds_id )
+	if note_id is not None:
+		result = db.session.query(NotesViewed).filter(
+											NotesViewed.note_id == note_id ).count()
+	return result
+

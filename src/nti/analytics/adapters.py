@@ -13,15 +13,24 @@ logger = __import__('logging').getLogger(__name__)
 from zope import interface
 from zope import component
 
+from nti.app.products.courseware.interfaces import IViewCount
+from nti.dataserver.contenttypes.forums.interfaces import ITopic
+
 from nti.assessment.interfaces import IQAssignment
 from nti.assessment.interfaces import IQuestionSet
 
+from nti.dataserver.interfaces import INote
 from nti.dataserver.interfaces import IUser
 
+from nti.analytics import has_analytics
 from nti.analytics.interfaces import IProgress
 
 from nti.analytics.assessments import get_assignment_for_user
 from nti.analytics.assessments import get_self_assessments_for_user_and_id
+
+from nti.analytics.boards import get_topic_view_count
+
+from nti.analytics.resource_tags import get_note_view_count
 
 from nti.analytics.progress import DefaultProgress
 
@@ -36,8 +45,6 @@ def _assignment_progress_for_user( user, assignment ):
 	"""
 	# In local tests, about 100 objects are decorated in about 1s;
 	# this is in UCOL with a lot of assignments but few assessments.
-
-	# TODO Caching?
 	assignment_id = getattr( assignment, 'ntiid', None )
 	assignment_records = get_assignment_for_user( user, assignment_id )
 	result = None
@@ -56,7 +63,6 @@ def _assessment_progress_for_user( user, assessment ):
 	has made on the assignment.  If we have nothing in which to
 	gauge progress, we return None.
 	"""
-	# TODO Caching?
 	# To properly check for assignment, we need the course to see
 	# what the assignment ntiids are versus the possible self-assessment ids.
 	# Maybe we're better off checking for assignment or self-assessment.
@@ -72,3 +78,18 @@ def _assessment_progress_for_user( user, assessment ):
 		result = DefaultProgress( assessment_id, 1, 1, True, last_modified=last_mod )
 	return result
 
+@interface.implementer( IViewCount )
+@component.adapter( ITopic )
+def _topic_view_count( topic ):
+	result = None
+	if has_analytics():
+		result = get_topic_view_count( topic )
+	return result
+
+@interface.implementer( IViewCount )
+@component.adapter( INote )
+def _note_view_count( note ):
+	result = None
+	if has_analytics():
+		result = get_note_view_count( note )
+	return result

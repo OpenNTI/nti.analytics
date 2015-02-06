@@ -38,6 +38,8 @@ from nti.analytics.identifier import HighlightId
 from nti.analytics import get_factory
 from nti.analytics import TAGS_ANALYTICS
 
+get_note_view_count = db_resource_tags.get_note_view_count
+
 def _get_job_queue():
 	factory = get_factory()
 	return factory.get_queue( TAGS_ANALYTICS )

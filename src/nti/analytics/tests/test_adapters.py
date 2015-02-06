@@ -8,6 +8,10 @@ __docformat__ = "restructuredtext en"
 # disable: accessing protected members, too many methods
 # pylint: disable=W0212,R0904
 
+import time
+import fudge
+from fudge import patch_object
+
 from hamcrest import is_
 from hamcrest import not_none
 from hamcrest import assert_that
@@ -18,16 +22,19 @@ from datetime import datetime
 
 from zope import component
 
-import fudge
-from fudge import patch_object
+from nti.app.products.courseware.interfaces import IViewCount
 
 from nti.contenttypes.courses.courses import CourseInstance
 
 from nti.dataserver.users.users import User
+from nti.dataserver.contenttypes.note import Note
+from nti.dataserver.contenttypes.forums.topic import Topic
 
 from nti.analytics import identifier
 
 from nti.analytics.database import get_analytics_db
+from nti.analytics.database import boards as db_boards_view
+from nti.analytics.database import resource_tags as db_tags_view
 from nti.analytics.database.root_context import _create_course
 from nti.analytics.database.users import create_user
 from nti.analytics.database.assessments import AssignmentsTaken
@@ -44,6 +51,19 @@ from nti.dataserver.tests.mock_dataserver import WithMockDSTrans
 
 from nti.analytics.tests import TestIdentifier
 from nti.analytics.tests import NTIAnalyticsTestCase
+
+from nti.testing.time import time_monotonically_increases
+
+def _create_topic_view( user_id, topic ):
+	time_length = 30
+	event_time = time.time()
+	db_boards_view.create_topic_view( user_id, None, event_time,
+									1, None, topic, time_length )
+
+def _create_note_view( user_id, note ):
+	event_time = time.time()
+	db_tags_view.create_note_view( user_id, None, event_time,
+									None, 1, note )
 
 class TestAnalyticAdapters( NTIAnalyticsTestCase ):
 
@@ -168,5 +188,53 @@ class TestAnalyticAdapters( NTIAnalyticsTestCase ):
 		assert_that( progressess,
 					contains_inanyorder( assessment_progress, assignment_progress ) )
 
+class TestViewCountAdapters( NTIAnalyticsTestCase ):
 
+	def setUp(self):
+		self.patches = [
+			patch_object( identifier.RootContextId, 'get_id', TestIdentifier.get_id ),
+			patch_object( identifier._DSIdentifier, 'get_id', TestIdentifier.get_id ),
+			patch_object( identifier._NtiidIdentifier, 'get_id', TestIdentifier.get_id ),
+			patch_object( identifier.RootContextId, 'get_object', TestIdentifier.get_object ),
+			patch_object( identifier._DSIdentifier, 'get_object', TestIdentifier.get_object ),
+			patch_object( identifier._NtiidIdentifier, 'get_object', TestIdentifier.get_object ) ]
+
+	def tearDown(self):
+		for patch in self.patches:
+			patch.restore()
+
+	@time_monotonically_increases
+	def test_topic_view_counts(self):
+		topic = Topic()
+		result = IViewCount( topic )
+		assert_that( result, is_( 0 ))
+
+		_create_topic_view( 1, topic )
+		result = IViewCount( topic )
+		assert_that( result, is_( 1 ))
+
+		topic_view_count = 5
+		for _ in range( topic_view_count ):
+			_create_topic_view( 1, topic )
+
+		result = IViewCount( topic )
+		assert_that( result, is_( topic_view_count + 1 ))
+
+	@time_monotonically_increases
+	def test_note_view_counts(self):
+		note = Note()
+		note.body = ('test',)
+		result = IViewCount( note )
+		assert_that( result, is_( 0 ))
+
+		_create_note_view( 1, note )
+		result = IViewCount( note )
+		assert_that( result, is_( 1 ))
+
+		note_view_count = 5
+		for _ in range( note_view_count ):
+			_create_note_view( 1, note )
+
+		result = IViewCount( note )
+		assert_that( result, is_( note_view_count + 1 ))
 

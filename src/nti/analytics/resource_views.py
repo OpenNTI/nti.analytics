@@ -71,7 +71,7 @@ def get_progress_for_ntiid( user, resource_ntiid ):
 
 def get_video_progress_for_course( user, course ):
 	"""
-	For a given user/course, return progress for all videos we have on record.
+	For a given user/course, return a collection of progress for all videos we have on record.
 	"""
 	resource_views = get_user_video_events( user, course )
 	view_dict = {}
