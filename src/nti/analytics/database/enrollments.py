@@ -54,7 +54,7 @@ class CourseEnrollments(Base,BaseTableMixin,CourseMixin):
         PrimaryKeyConstraint('course_id', 'user_id'),
     )
 
-class CourseDrops(Base,BaseViewMixin,CourseMixin):
+class CourseDrops(Base,BaseTableMixin,CourseMixin):
 	__tablename__ = 'CourseDrops'
 
 	# Make sure we allow multiple course drops, timestamp should be non-null here.
