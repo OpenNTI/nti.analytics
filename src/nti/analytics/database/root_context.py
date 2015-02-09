@@ -193,7 +193,7 @@ def delete_course( context_ds_id ):
 	found_course = db.session.query(Courses).filter(
 								Courses.context_ds_id == context_ds_id ).first()
 	if found_course is not None:
-		found_course.course_ds_id = None
+		found_course.context_ds_id = None
 
 def get_root_context( context_id ):
 	"Given a database identifier, return the RootContext object."
