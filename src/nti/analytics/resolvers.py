@@ -25,6 +25,7 @@ from nti.contentlibrary.interfaces import IContentPackageLibraryModifiedOnSyncEv
 from nti.contentlibrary.indexed_data.interfaces import IAudioIndexedDataContainer
 from nti.contentlibrary.indexed_data.interfaces import IVideoIndexedDataContainer
 from nti.contentlibrary.indexed_data.interfaces import IRelatedContentIndexedDataContainer
+from nti.contentlibrary.indexed_data.interfaces import ISlideDeckIndexedDataContainer
 from nti.contentlibrary.indexed_data.interfaces import ITimelineIndexedDataContainer
 
 from nti.externalization.externalization import to_external_ntiid_oid
@@ -45,6 +46,7 @@ from nti.analytics.common import process_event
 CONTAINER_IFACES = (IRelatedContentIndexedDataContainer,
 					IVideoIndexedDataContainer,
 					IAudioIndexedDataContainer,
+					ISlideDeckIndexedDataContainer,
 					ITimelineIndexedDataContainer)
 
 def _get_job_queue():
