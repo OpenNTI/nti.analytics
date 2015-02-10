@@ -209,7 +209,7 @@ def _get_response( user, question_part, response ):
 		# We may be fine as-is with json.
 		result = json.dumps( response )
 	except TypeError:
-		logger.exception( 'Submission response is not serializable (type=%s)', type( response ) )
+		logger.info( 'Submission response is not serializable (type=%s)', type( response ) )
 
 	return result
 
