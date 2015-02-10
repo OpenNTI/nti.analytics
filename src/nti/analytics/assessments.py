@@ -26,9 +26,12 @@ from nti.intid.interfaces import IIntIdRemovedEvent
 
 from nti.ntiids.ntiids import find_object_with_ntiid
 
-from nti.analytics.sessions import get_nti_session_id
+from nti.analytics.identifier import FeedbackId
 
 from nti.analytics.resolvers import get_root_context
+from nti.analytics.resolvers import get_course_for_ntiid
+
+from nti.analytics.sessions import get_nti_session_id
 
 from . import get_factory
 from . import ASSESSMENTS_ANALYTICS
@@ -42,8 +45,6 @@ from .common import get_created_timestamp
 
 from .database import assessments as db_assessments
 
-from nti.analytics.identifier import FeedbackId
-
 from .interfaces import IObjectProcessor
 
 component.moduleProvides(IObjectProcessor)
@@ -56,6 +57,27 @@ get_self_assessments_for_user = db_assessments.get_self_assessments_for_user
 get_assignments_for_user = db_assessments.get_assignments_for_user
 get_assignment_for_user = db_assessments.get_assignment_for_user
 get_self_assessments_for_user_and_id = db_assessments.get_self_assessments_for_user_and_id
+
+def _get_course( history_item ):
+	course = None
+	try:
+		course = get_course( history_item )
+	except TypeError:
+		# Some assignments do not have courses in their lineage (bug?)
+		# Brute force it
+		submission = getattr( history_item, 'Submission', None )
+		assignment_id = getattr( submission, 'assignmentId', None )
+		logger.warn( 'No course in assessment lineage (%s) (parent=%s) (assignment_id=%s)',
+					history_item,
+					history_item.__parent__,
+					assignment_id )
+
+		if assignment_id is not None:
+			course = get_course_for_ntiid( assignment_id )
+	if course is None:
+		raise TypeError( 'No course found for history item (%s)', history_item )
+
+	return course
 
 def _self_assessment_taken( oid, nti_session=None ):
 	submission = find_object_with_ntiid( oid )
@@ -110,7 +132,7 @@ def _assignment_taken( oid, nti_session=None ):
 	if submission is not None:
 		user = get_creator( submission )
 		timestamp = get_created_timestamp( submission )
-		course = get_course( submission )
+		course = _get_course( submission )
 		db_assessments.create_assignment_taken( user, nti_session, timestamp, course, submission )
 		logger.debug("Assignment submitted (user=%s) (assignment=%s)", user, submission.assignmentId )
 

@@ -105,9 +105,8 @@ def _indexed_data( unit, iface, accum ):
 			if _check_ntiid(t_ntiid):
 				ntiid = t_ntiid
 				break
-		if not ntiid:
-			continue
-		accum.add( ntiid )
+		if ntiid:
+			accum.add( ntiid )
 
 def recur_children_ntiid_for_unit( node, accum=None ):
 	# ContentUnits only
@@ -260,6 +259,8 @@ def get_course_by_container_id( container_id ):
 	# Update: JZ: TODO do we still need to check our global site for site packages?
 	result = _get_course_from_ntiid_resolver().get_course( container_id )
 	return result
+
+get_course_for_ntiid = get_course_by_container_id
 
 def get_root_context( obj ):
 	"""

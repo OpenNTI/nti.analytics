@@ -12,6 +12,7 @@ from datetime import datetime
 
 from pyramid.location import lineage
 from pyramid.threadlocal import get_current_request
+from pyramid.traversal import find_interface
 
 from six import integer_types
 
@@ -102,13 +103,7 @@ def to_external_ntiid_oid(obj):
 
 def get_object_root( obj, type_to_find ):
 	""" Work up the parent tree looking for 'type_to_find', returning None if not found. """
-	result = None
-	for location in lineage( obj ):
-		candidate = type_to_find( location, None )
-		if candidate is not None:
-			result = candidate
-			break
-	return result
+	return find_interface( obj, type_to_find )
 
 def get_course( obj ):
 	"""
