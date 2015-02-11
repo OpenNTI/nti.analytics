@@ -58,6 +58,7 @@ class ViewEvent(SchemaConfigured):
 
 	__external_can_create__ = True
 	time_length = alias('Duration')
+	context_path = None # bwc
 
 	def __setstate__(self, data):
 		self.__dict__ = data
