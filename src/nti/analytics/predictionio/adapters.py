@@ -3,6 +3,7 @@
 """
 .. $Id$
 """
+
 from __future__ import print_function, unicode_literals, absolute_import, division
 __docformat__ = "restructuredtext en"
 
@@ -19,6 +20,9 @@ from nti.dataserver.interfaces import IModeledContent
 from nti.dataserver.users.interfaces import IFriendlyNamed
 from nti.dataserver.contenttypes.forums.interfaces import ITopic
 
+from nti.externalization.externalization import to_external_ntiid_oid
+
+from .interfaces import IOID
 from .interfaces import ITypes
 from .interfaces import IProperties
 
@@ -81,4 +85,10 @@ def _TopicTypesAdpater(item):
 @component.adapter(IContentUnit)
 def _ContentUnitTypesAdpater(item):
 	result = ('contentunit',)
+	return result
+
+@interface.implementer(IOID)
+@component.adapter(interface.Interface)
+def _GenericOIDAdpater(item):
+	result = to_external_ntiid_oid(item)
 	return result

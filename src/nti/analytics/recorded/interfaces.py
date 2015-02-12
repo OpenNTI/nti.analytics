@@ -3,6 +3,7 @@
 """
 .. $Id$
 """
+
 from __future__ import print_function, unicode_literals, absolute_import, division
 __docformat__ = "restructuredtext en"
 
@@ -13,14 +14,14 @@ from zope.interface.interfaces import ObjectEvent, IObjectEvent
 from dolmen.builtins import IString
 from dolmen.builtins import INumeric
 
+from nti.common.property import alias
+
 from nti.contenttypes.courses.interfaces import ICourseInstance
 from nti.contenttypes.courses.interfaces import	ICourseCatalogEntry
 
 from nti.dataserver.interfaces import INote
 from nti.dataserver.interfaces import IUser
 from nti.dataserver.contenttypes.forums.interfaces import ITopic
-
-from nti.utils.property import alias
 
 from nti.schema.field import Bool
 from nti.schema.field import Number
@@ -154,5 +155,3 @@ class VideoWatchRecordedEvent(VideoRecordedEvent):
 @interface.implementer(IVideoSkipRecordedEvent)
 class VideoSkipRecordedEvent(VideoRecordedEvent):
 	pass
-
-	

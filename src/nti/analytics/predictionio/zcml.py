@@ -3,8 +3,9 @@
 """
 Directives to be used in ZCML
 
-$Id$
+.. $Id$
 """
+
 from __future__ import print_function, unicode_literals, absolute_import, division
 __docformat__ = "restructuredtext en"
 
@@ -18,7 +19,8 @@ from zope.component.zcml import utility
 
 from .model import create_app
 from .model import DEFAULT_URL
-from . import interfaces as pio_interfaces
+
+from .interfaces import IPredictionIOApp
 
 class IRegisterPredictionIOApp(interface.Interface):
 	name = fields.TextLine(title="app name", required=False, default="")
@@ -30,5 +32,5 @@ def registerPredictionIOApp(_context, appKey, url=DEFAULT_URL, name=u""):
 	Register an PIO app
 	"""
 	factory = functools.partial(create_app, appKey=appKey, url=url)
-	utility(_context, provides=pio_interfaces.IPredictionIOApp, factory=factory,
+	utility(_context, provides=IPredictionIOApp, factory=factory,
 			name=name)

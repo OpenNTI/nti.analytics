@@ -58,6 +58,14 @@
 			 factory=".adapters._ContentUnitTypesAdpater"
 			 provides=".interfaces.ITypes" />
 	 
+	<adapter for=""
+			 factory=".adapters._GenericOIDAdpater"
+			 provides=".interfaces.IOID" />
+
+	<adapter for="*"
+			 factory=".adapters._GenericOIDAdpater"
+			 provides=".interfaces.IOID" />
+			 
 	<!-- subscribers -->
 	<subscriber handler=".ratings._topic_rated" />
 	<subscriber handler=".ratings._object_rated" />
@@ -68,9 +76,9 @@
 	<!-- predictionio app -->
 	
 	<include package="." file="meta.zcml" />
-	<configure zcml:condition="have devmode">
+	<configure zcml:condition="have alpha_env">
 		<pio:registerPredictionIOApp
-				appKey="72NRa2bQLjnTFSESX9tkISbU7oPHMNDt5yUU5P5l5SQiFeRKGJwEcHN83EBFXa6p"  />
+				appKey="Jwd3gXiwInTHcGUxU7AmMegq0soRVtiXynPkxjDEiTPp5tXQ66MIm39EWx7NI4tP" />
 	</configure>
 	
 </configure>
