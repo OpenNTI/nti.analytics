@@ -13,6 +13,7 @@ from hamcrest import is_not
 from hamcrest import has_entry
 from hamcrest import has_length
 from hamcrest import assert_that
+from hamcrest import contains_string
 
 import unittest
 
@@ -21,6 +22,7 @@ from nti.contentfragments.interfaces import IPlainTextContentFragment
 from nti.dataserver.users import User
 from nti.dataserver.contenttypes import Note
 
+from nti.analytics.predictionio.interfaces import IOID
 from nti.analytics.predictionio.interfaces import ITypes
 from nti.analytics.predictionio.interfaces import IProperties
 
@@ -46,6 +48,10 @@ class TestAdapters(PIOTestCase):
 		assert_that(adapted, has_length(2))
 		assert_that(adapted, has_entry('name', 'aizen'))
 		assert_that(adapted, has_entry('alias', 'traitor'))
+		
+		adapted = IOID(user, None)
+		assert_that(adapted, is_not(none()))
+		assert_that(adapted, contains_string('tag:nextthought.com,'))
 
 	@WithMockDSTrans
 	def test_note_adapter(self):
@@ -56,7 +62,7 @@ class TestAdapters(PIOTestCase):
 		prop = IProperties(note, None)
 		assert_that(prop, is_not(none()))
 		assert_that(prop, has_entry('title', 'Release'))
+
 		types = ITypes(note, None)
 		assert_that(types, is_not(none()))
 		assert_that(types, is_(('note', 'bankai', 'shikai')))
-

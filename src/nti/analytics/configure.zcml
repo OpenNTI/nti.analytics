@@ -8,24 +8,22 @@
 	<include package="zope.component" file="meta.zcml" />
 	<include package="zope.security" file="meta.zcml" />
 	<include package="zope.component" />
+	<include package="zope.security" 
 
 	<include package="." file="meta.zcml" />
 
 	<!-- Job runner -->
-
 	<include package="nti.async" />
 
-	<!-- generations -->
-
+	<!-- Generations -->
 	<utility factory=".generations.install._AnalyticsSchemaManager"
 			 name="nti.dataserver-analytics"
 			 provides="zope.generations.interfaces.IInstallableSchemaManager"/>
 
-	<!-- database -->
-
+	<!-- Database -->
 	<include package=".database" file="configure.zcml" />
 
-	<!-- subscribers -->
+	<!-- Subscribers -->
 	<subscriber handler=".users._entity_removed" />
 	<subscriber handler=".users._user_research" />
 
@@ -164,5 +162,8 @@
 		<ana:registerRedisProcessingQueue />
 	</configure>
 
+	<configure zcml:condition="have casc_env">
+		<include package=".predictionio" />
+	</configure>
 </configure>
 
