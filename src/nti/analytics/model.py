@@ -16,7 +16,7 @@ from zope.interface.interfaces import ObjectEvent
 from nti.externalization.persistence import NoPickle
 from nti.externalization.representation import WithRepr
 
-from nti.utils.property import alias
+from nti.common.property import alias
 
 from nti.schema.field import SchemaConfigured
 from nti.schema.fieldproperty import createDirectFieldProperties

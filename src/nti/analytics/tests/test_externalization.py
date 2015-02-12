@@ -400,6 +400,7 @@ class TestProgress(NTIAnalyticsTestCase):
 		assert_that(ext_obj, has_entry( 'Last Modified', last_modified ))
 		assert_that(ext_obj, has_entry( 'ResourceID', resource_id ))
 		assert_that(ext_obj, has_entry( 'Class', 'Progress' ))
+		assert_that(ext_obj, has_entry( 'MimeType', 'application/vnd.nextthought.progress' ))
 
 class TestClientParams(NTIAnalyticsTestCase):
 

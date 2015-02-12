@@ -21,16 +21,18 @@ from nti.externalization.representation import WithRepr
 
 from nti.schema.schema import EqHash
 
-from nti.utils.property import alias
+from nti.common.property import alias
 
 @WithRepr
 @EqHash( 'ResourceID', 'AbsoluteProgress', 'MaxPossibleProgress', 'HasProgress', 'LastModified' )
 @interface.implementer( IProgress )
 class DefaultProgress( object ):
 
+	__external_class_name__ = "Progress"
+	mime_type = mimeType = 'application/vnd.nextthought.progress'
+
 	progress_id = alias('ResourceID')
 	last_modified = alias('LastModified')
-	__external_class_name__ = "Progress"
 
 	def __init__(self, progress_id, progress, max_progress, has_progress=False, last_modified=None ):
 		self.ResourceID = progress_id
