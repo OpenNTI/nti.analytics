@@ -40,6 +40,8 @@ do
         fi
 done
 
+filter_tables_array+=("Resources")
+
 # Dump tables
 mysqldmp_filter_cmd_final="$mysqldmp_cmd ${filter_tables_array[@]}"
 #echo "Dumping user tables with: $mysqldmp_filter_cmd_final"
