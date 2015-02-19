@@ -40,12 +40,11 @@ do
         fi
 done
 
-filter_tables_array+=("Resources")
-
 # Dump tables
 mysqldmp_filter_cmd_final="$mysqldmp_cmd ${filter_tables_array[@]}"
 #echo "Dumping user tables with: $mysqldmp_filter_cmd_final"
 $mysqldmp_filter_cmd_final --single-transaction --where="$COURSE_FILTER" > $OUTPUT_FILE
+# Get our Resources table
 $mysqldmp_cmd --single-transaction Resources > $OUTPUT_RESOURCES_FILE
 
 cd $BASE_OUTPUT_DIR
