@@ -28,12 +28,11 @@ from .interfaces import IOID
 
 from .utils import create_user_event
 
+from . import LIKE_API
+from . import DISLIKE_API
+from . import LIKE_CAT_NAME
+from . import RATE_CATE_NAME
 from . import get_current_username
-
-LIKE_API = "like"
-DISLIKE_API = "dislike"
-LIKE_CAT_NAME = "likes"
-RATE_CATE_NAME = 'rating'
 
 def _process_like_pio(username, oid, api, params=None):
 	return create_user_event(event=api, 

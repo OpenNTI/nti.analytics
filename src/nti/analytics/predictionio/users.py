@@ -14,36 +14,29 @@ import transaction
 
 from zope import component
 
-from zope.lifecycleevent.interfaces import IObjectRemovedEvent
-
-from nti.dataserver.interfaces import ICreated
-
-from nti.dataserver.contenttypes.forums.interfaces import ITopic
+from nti.dataserver.interfaces import IUser
+from nti.dataserver.users.interfaces import IWillDeleteEntityEvent
 
 from .interfaces import IOID
 
 from . import get_predictionio_client
 
-def _remove_generated(oid):
+def _remove_user(userid):
 	client = get_predictionio_client()
 	if client is not None:
 		try:
-			client.delete_item(oid)
+			client.delete_user(userid)
 		finally:
 			client.close()
-		logger.debug("item '%s' was removed", oid)
+		logger.debug("User '%s' was removed", userid)
 
-def _process_removal(obj):
-	oid = IOID(obj)
+def _process_removal(user):
+	userid = IOID(user)
 	def _process_event():
-		_remove_generated(oid=oid)
+		_remove_user(userid=userid)
 	transaction.get().addAfterCommitHook(
 					lambda success: success and gevent.spawn(_process_event))
 
-@component.adapter(ICreated, IObjectRemovedEvent)
-def _created_removed(modeled, event):
-	_process_removal(modeled)
-
-@component.adapter(ITopic, IObjectRemovedEvent)
-def _topic_removed(topic, event):
-	_process_removal(topic)
+@component.adapter(IUser, IWillDeleteEntityEvent)
+def _user_removed(user, event):
+	_process_removal(user)

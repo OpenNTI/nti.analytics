@@ -9,9 +9,9 @@ __docformat__ = "restructuredtext en"
 
 import uuid
 
-from ...tests import NTIAnalyticsTestCase
-from ...tests import SharedConfiguringTestLayer
-from ...tests import NTIAnalyticsApplicationTestLayer
+from nti.analytics.tests import NTIAnalyticsTestCase
+from nti.analytics.tests import SharedConfiguringTestLayer
+from nti.analytics.tests import NTIAnalyticsApplicationTestLayer
 
 PIOTestCase = NTIAnalyticsTestCase
 PIOApplicationTestLayer = NTIAnalyticsApplicationTestLayer

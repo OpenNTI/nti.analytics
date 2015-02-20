@@ -70,6 +70,10 @@
 			 factory=".adapters._ContentUnitOIDAdpater"
 			 provides=".interfaces.IOID" />
 			
+	<adapter for="nti.contenttypes.courses.interfaces.ICourseCatalogEntry"
+			 factory=".adapters._CourseCatalogEntryOIDAdpater"
+			 provides=".interfaces.IOID" />
+
 	<adapter for="nti.dataserver.interfaces.IUser"
 			 factory=".adapters._UserOIDAdpater"
 			 provides=".interfaces.IOID" />
@@ -81,6 +85,10 @@
 	<subscriber handler=".generated._topic_removed" />
 	<subscriber handler=".generated._created_removed" />
 
+	<subscriber handler=".resources._object_viewed" />
+	
+	<subscriber handler=".users._user_removed" />
+	
 	<!-- PredictionIO -->
 	<include package="." file="meta.zcml" />
 	<configure zcml:condition="have alpha_env">

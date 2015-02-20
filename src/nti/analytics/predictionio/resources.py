@@ -61,7 +61,7 @@ def _object_viewed(event):
 	## add event properties
 	for name in ('duration', 'context_path', 'video_end_time',
 			  	 'with_transcript', 'video_start_time', 'timestamp'):
-		value = getattr(event, 'name', None)
+		value = getattr(event, name, None)
 		if value is not None:
 			params[name] = str(value)
 	_process_view_event(username=user.username, oid=oid, params=params)

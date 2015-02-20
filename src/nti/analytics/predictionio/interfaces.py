@@ -9,8 +9,8 @@ __docformat__ = "restructuredtext en"
 
 from zope import interface
 
-from dolmen.builtins import IDict
-from dolmen.builtins import IString
+from dolmen.builtins.interfaces import IDict
+from dolmen.builtins.interfaces import IString
 
 from nti.schema.field import ValidTextLine
 

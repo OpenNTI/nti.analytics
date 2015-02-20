@@ -24,6 +24,10 @@ from nti.ntiids.ntiids import find_object_with_ntiid
 from .interfaces import IPredictionIOApp
 
 VIEW_API = "view"
+LIKE_API = "like"
+DISLIKE_API = "dislike"
+LIKE_CAT_NAME = "likes"
+RATE_CATE_NAME = 'rating'
 
 def get_predictionio_app(name=''):
 	result = component.getUtility(IPredictionIOApp, name=name)

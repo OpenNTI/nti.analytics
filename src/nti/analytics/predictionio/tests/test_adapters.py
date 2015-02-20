@@ -28,7 +28,11 @@ from nti.analytics.predictionio.interfaces import IProperties
 
 from nti.dataserver.tests.mock_dataserver import WithMockDSTrans
 
+from nti.ntiids.ntiids import make_ntiid
+
 from nti.analytics.predictionio.tests import PIOTestCase
+
+import nti.dataserver.tests.mock_dataserver as mock_dataserver
 
 @unittest.SkipTest
 class TestAdapters(PIOTestCase):
@@ -51,14 +55,22 @@ class TestAdapters(PIOTestCase):
 		
 		adapted = IOID(user, None)
 		assert_that(adapted, is_not(none()))
-		assert_that(adapted, contains_string('tag:nextthought.com,'))
+		assert_that(adapted, is_('aizen@nt.com'))
 
 	@WithMockDSTrans
 	def test_note_adapter(self):
+		user = self.create_user("aizen@nt.com")
+							
 		note = Note()
 		note.title = IPlainTextContentFragment('Release')
 		note.tags = (IPlainTextContentFragment('Bankai'),
 					 IPlainTextContentFragment('Shikai'))
+		note.body = [u'It is not enough to mean well, we actually have to do well']
+		note.creator = user.username
+		note.containerId = make_ntiid(nttype='bleach', specific='manga')
+		mock_dataserver.current_transaction.add(note)
+		note = user.addContainedObject(note)
+		
 		prop = IProperties(note, None)
 		assert_that(prop, is_not(none()))
 		assert_that(prop, has_entry('title', 'Release'))
@@ -66,3 +78,7 @@ class TestAdapters(PIOTestCase):
 		types = IType(note, None)
 		assert_that(types, is_not(none()))
 		assert_that(types, is_('note'))
+		
+		adapted = IOID(note, None)
+		assert_that(adapted, is_not(none()))
+		assert_that(adapted, contains_string('tag:nextthought.com'))

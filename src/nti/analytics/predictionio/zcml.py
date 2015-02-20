@@ -11,7 +11,7 @@ __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
-import functools
+from functools import partial
 
 from zope import interface
 from zope.configuration import fields
@@ -31,6 +31,6 @@ def registerPredictionIOApp(_context, appKey, url=DEFAULT_URL, name=u""):
 	"""
 	Register an PIO app
 	"""
-	factory = functools.partial(create_app, appKey=appKey, url=url)
+	factory = partial(create_app, appKey=appKey, url=url)
 	utility(_context, provides=IPredictionIOApp, factory=factory,
 			name=name)

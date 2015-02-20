@@ -20,7 +20,7 @@ from . import get_predictionio_client
 def create_user_event(event, user, obj, params=None, client=None):
 	result = False
 	should_close = (client is None)
-	client = get_predictionio_client() if client is None else client
+	client = get_predictionio_client(client=client)
 	if client is None:
 		return result
 	try:

@@ -14,10 +14,14 @@ from zope import interface
 
 from nti.contentlibrary.interfaces import IContentUnit
 
+from nti.contenttypes.courses.interfaces import ICourseCatalogEntry
+
 from nti.dataserver.interfaces import IUser
 from nti.dataserver.interfaces import INote
 from nti.dataserver.interfaces import IModeledContent
+
 from nti.dataserver.users.interfaces import IFriendlyNamed
+
 from nti.dataserver.contenttypes.forums.interfaces import ITopic
 
 from nti.externalization.externalization import to_external_ntiid_oid
@@ -97,6 +101,12 @@ def _GenericOIDAdpater(item):
 @interface.implementer(IOID)
 @component.adapter(IContentUnit)
 def _ContentUnitOIDAdpater(item):
+	result = item.ntiid
+	return result
+
+@interface.implementer(IOID)
+@component.adapter(ICourseCatalogEntry)
+def _CourseCatalogEntryOIDAdpater(item):
 	result = item.ntiid
 	return result
 
