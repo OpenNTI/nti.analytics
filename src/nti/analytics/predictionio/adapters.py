@@ -12,6 +12,8 @@ logger = __import__('logging').getLogger(__name__)
 from zope import component
 from zope import interface
 
+from dolmen.builtins.interfaces import IString, INumeric
+
 from nti.contentlibrary.interfaces import IContentUnit
 
 from nti.contenttypes.courses.interfaces import ICourseCatalogEntry
@@ -115,3 +117,13 @@ def _CourseCatalogEntryOIDAdpater(item):
 def _UserOIDAdpater(user):
 	result = user.username
 	return result
+
+@interface.implementer(IOID)
+@component.adapter(IString)
+def _StringOIDAdpater(value):
+	return value
+
+@interface.implementer(IOID)
+@component.adapter(INumeric)
+def _NumericOIDAdpater(value):
+	return value
