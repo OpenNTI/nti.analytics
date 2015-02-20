@@ -55,10 +55,15 @@ def _object_viewed(event):
 	if context is not None:
 		params['context'] = str(context)
 		
+	# event time
+	event_time = getattr(event, 'timestamp', None)
+	
 	## add event properties
 	for name in ('duration', 'context_path', 'video_end_time',
-			  	 'with_transcript', 'video_start_time', 'timestamp'):
+			  	 'with_transcript', 'video_start_time'):
 		value = getattr(event, name, None)
 		if value is not None:
 			params[name] = str(value)
-	_process_view_event(username=user.username, oid=oid, params=params)
+
+	_process_view_event(username=user.username, oid=oid,
+						params=params, event_time=event_time)

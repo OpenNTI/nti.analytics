@@ -9,6 +9,11 @@ __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
+import six
+import isodate
+import numbers
+from datetime import datetime
+
 from .interfaces import IOID
 from .interfaces import IType
 from .interfaces import IProperties
@@ -17,7 +22,17 @@ from . import get_user
 from . import object_finder
 from . import get_predictionio_client
 
-def create_user_event(event, user, obj, params=None, client=None):
+def parse_event_time(event_time=None):
+	try:
+		if isinstance(event_time, numbers.Number):
+			event_time = datetime.utcfromtimestamp(event_time)
+		elif isinstance(event_time, six.string_types):
+			event_time = isodate.parse_datetime(event_time)
+	except (ValueError, TypeError):
+		event_time = None
+	return event_time
+
+def create_user_event(event, user, obj, params=None, event_time=None, client=None):
 	result = False
 	should_close = (client is None)
 	client = get_predictionio_client(client=client)
@@ -45,7 +60,8 @@ def create_user_event(event, user, obj, params=None, client=None):
     							entity_id=IOID(user),
 								target_entity_type=IType(obj),
 								target_entity_id=oid,
-								properties=params)
+								properties=params,
+								event_time=parse_event_time(event_time))
 			result = True
 			logger.debug("%s recorded event %s for %s", user, event, oid)
 	finally:
