@@ -12,8 +12,12 @@ logger = __import__('logging').getLogger(__name__)
 from zope import component
 from zope.security.management import queryInteraction
 
+from predictionio import EventClient
+
 from nti.dataserver.users import User
 from nti.dataserver.interfaces import IUser
+
+from nti.ntiids.ntiids import find_object_with_ntiid
 
 from .interfaces import IPredictionIOApp
 
@@ -37,3 +41,13 @@ def get_user(user=None):
 		user = User.get_user(str(user))
 	return user
 get_current_user = get_user
+
+def get_predictionio_client(client=None, name=''):
+	if client is None:
+		app = get_predictionio_app(name=name)
+		client = EventClient(app.AppKey, apiurl=app.URL) if app is not None else None
+	return client
+
+def find_object(oid):
+	return find_object_with_ntiid(oid)
+object_finder = find_object

@@ -16,11 +16,8 @@ import predictionio
 
 from zope import component
 
-
 from nti.dataserver.users import User
 from nti.dataserver.interfaces import IDataserverTransactionRunner
-
-# from nti.externalization.externalization import to_external_ntiid_oid
 
 from nti.ntiids.ntiids import find_object_with_ntiid
 
@@ -29,7 +26,7 @@ from ..recorded.interfaces import IObjectViewedRecordedEvent
 from . import get_current_username
 from . import get_predictionio_app
 
-from .interfaces import ITypes
+from .interfaces import IType
 from .interfaces import IProperties
 
 VIEW_API = "view"
@@ -41,7 +38,7 @@ def _process_like_pio(app, username, oid, api):
 		obj = find_object_with_ntiid(oid)
 		if obj is not None and user is not None:
 			client.create_user(username, params=IProperties(user))
-			client.create_item(oid, ITypes(obj), IProperties(obj))
+			client.create_item(oid, IType(obj), IProperties(obj))
 			client.identify(username)
 			client.record_action_on_item(api, oid)
 			logger.debug("%s recorded action '%s' for %s", username, api, oid)

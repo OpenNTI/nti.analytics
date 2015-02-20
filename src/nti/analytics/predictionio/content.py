@@ -9,17 +9,16 @@ __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
-import predictionio
-
 from zope import component
 
 from nti.contentlibrary.interfaces import IContentUnit
 from nti.contentlibrary.interfaces import IContentPackageLibrary
 
 from . import get_user
-from . import get_predictionio_app
+from . import get_predictionio_client
 
-from .interfaces import ITypes
+from .interfaces import IOID
+from .interfaces import IType
 from .interfaces import IProperties
 
 def get_content_unit(unit):
@@ -34,16 +33,29 @@ def get_content_unit(unit):
 def record_content_view(user, unit, params=None, request=None):
 	user = get_user(user)
 	unit = get_content_unit(unit)
-	app = get_predictionio_app()
-	if app is not None and unit is not None and user is not None:
-		ntiid = unit.ntiid
+	if unit is not None and user is not None:
+		client = get_predictionio_client()
+		if client is None:
+			return
+		oid = IOID(unit)
 		params = params or {}
-		client = predictionio.Client(app.AppKey, apiurl=app.URL)
 		try:
-			client.create_user(user.username, params=IProperties(user))
-			client.create_item(ntiid, ITypes(unit), IProperties(unit))
-			client.identify(user.username)
-			client.record_action_on_item("view", ntiid, params=params)
+			client.create_event(event="$set",
+  								entity_type="user",
+  								entity_id=user.username,
+  								properties=IProperties(user))
+			
+			client.create_event(event="$set",
+  								entity_type=IType(unit),
+    							entity_id=oid,
+    							properties=IProperties(unit))
+			
+			client.create_event(event="view",
+  								entity_type="user",
+    							entity_id=user.username,
+								target_entity_type=IType(unit),
+								target_entity_id=oid,
+								properties=params)
 		finally:
 			client.close()
-		logger.debug("item '%s' was viewed by %s", ntiid, user)
+		logger.debug("item '%s' was viewed by %s", oid, user)

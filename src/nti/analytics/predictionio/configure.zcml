@@ -32,31 +32,31 @@
 			 
 	<adapter for=""
 			 factory=".adapters._GenericTypesAdpater"
-			 provides=".interfaces.ITypes" />
+			 provides=".interfaces.IType" />
 			 			
 	<adapter for="*"
 			 factory=".adapters._GenericTypesAdpater"
-			 provides=".interfaces.ITypes" />
+			 provides=".interfaces.IType" />
 			 		 
 	<adapter for="nti.dataserver.interfaces.IModeledContent"
 			 factory=".adapters._ModeledTypesAdpater"
-			 provides=".interfaces.ITypes" />
+			 provides=".interfaces.IType" />
 
 	<adapter for="nti.dataserver.contenttypes.forums.interfaces.IGeneralForumComment"
 			 factory=".adapters._CommentTypesAdpater"
-			 provides=".interfaces.ITypes" />
+			 provides=".interfaces.IType" />
 
 	<adapter for="nti.dataserver.contenttypes.forums.interfaces.IPersonalBlogComment"
 			 factory=".adapters._CommentTypesAdpater"
-			 provides=".interfaces.ITypes" />
+			 provides=".interfaces.IType" />
 			 
 	<adapter for="nti.dataserver.contenttypes.forums.interfaces.ITopic"
 			 factory=".adapters._TopicTypesAdpater"
-			 provides=".interfaces.ITypes" />
+			 provides=".interfaces.IType" />
 			 
 	<adapter for="nti.contentlibrary.interfaces.IContentUnit"
 			 factory=".adapters._ContentUnitTypesAdpater"
-			 provides=".interfaces.ITypes" />
+			 provides=".interfaces.IType" />
 	 
 	<adapter for=""
 			 factory=".adapters._GenericOIDAdpater"
@@ -64,6 +64,10 @@
 
 	<adapter for="*"
 			 factory=".adapters._GenericOIDAdpater"
+			 provides=".interfaces.IOID" />
+			 
+	<adapter for="nti.contentlibrary.interfaces.IContentUnit"
+			 factory=".adapters._ContentUnitOIDAdpater"
 			 provides=".interfaces.IOID" />
 			 
 	<!-- Subscribers -->

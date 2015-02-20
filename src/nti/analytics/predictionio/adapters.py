@@ -23,8 +23,15 @@ from nti.dataserver.contenttypes.forums.interfaces import ITopic
 from nti.externalization.externalization import to_external_ntiid_oid
 
 from .interfaces import IOID
-from .interfaces import ITypes
+from .interfaces import IType
 from .interfaces import IProperties
+
+def get_tag_types(item):
+	result = []
+	for name in ('tags', 'AutoTags'):
+		tpl = getattr(item, name, None) or ()
+		result.extend(t.lower() for  t in tpl)
+	return result
 
 @interface.implementer(IProperties)
 @component.adapter(interface.Interface)
@@ -41,7 +48,8 @@ def _UserPropertyAdpater(user):
 @interface.implementer(IProperties)
 @component.adapter(INote)
 def _NotePropertyAdpater(note):
-	result = {'title':note.title}
+	result = {'title':note.title,
+			  'tags': '%s' % get_tag_types(note)}
 	return result
 
 @interface.implementer(IProperties)
@@ -50,45 +58,44 @@ def _ContentUnitPropertyAdpater(item):
 	result = {'title':item.title}
 	return result
 
-@interface.implementer(ITypes)
+@interface.implementer(IType)
 @component.adapter(interface.Interface)
 def _GenericTypesAdpater(item):
 	name = item.__class__.__name__
-	return (name.lower(),)
+	return name.lower(),
 
-def get_tag_types(item):
-	result =()
-	for name in ('tags', 'AutoTags'):
-		tpl = getattr(item, name, None) or ()
-		result += tuple((t.lower() for  t in tpl))
-	return result
-
-@interface.implementer(ITypes)
+@interface.implementer(IType)
 @component.adapter(IModeledContent)
 def _ModeledTypesAdpater(item):
 	name = item.__class__.__name__
-	result = (name.lower(),) + get_tag_types(item)
+	result = name.lower()
 	return result
 
-@interface.implementer(ITypes)
+@interface.implementer(IType)
 def _CommentTypesAdpater(item):
-	result = ('comment',) + get_tag_types(item)
+	result = 'comment'
 	return result
 
-@interface.implementer(ITypes)
+@interface.implementer(IType)
 @component.adapter(ITopic)
 def _TopicTypesAdpater(item):
-	result = ('topic',) + get_tag_types(item)
+	result = 'topic'
 	return result
 
-@interface.implementer(ITypes)
+@interface.implementer(IType)
 @component.adapter(IContentUnit)
 def _ContentUnitTypesAdpater(item):
-	result = ('contentunit',)
+	result = 'contentunit'
 	return result
 
 @interface.implementer(IOID)
 @component.adapter(interface.Interface)
 def _GenericOIDAdpater(item):
 	result = to_external_ntiid_oid(item)
+	return result
+
+@interface.implementer(IOID)
+@component.adapter(IContentUnit)
+def _ContentUnitOIDAdpater(item):
+	result = item.ntiid
 	return result

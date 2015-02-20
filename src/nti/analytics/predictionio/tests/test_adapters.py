@@ -23,7 +23,7 @@ from nti.dataserver.users import User
 from nti.dataserver.contenttypes import Note
 
 from nti.analytics.predictionio.interfaces import IOID
-from nti.analytics.predictionio.interfaces import ITypes
+from nti.analytics.predictionio.interfaces import IType
 from nti.analytics.predictionio.interfaces import IProperties
 
 from nti.dataserver.tests.mock_dataserver import WithMockDSTrans
@@ -63,6 +63,6 @@ class TestAdapters(PIOTestCase):
 		assert_that(prop, is_not(none()))
 		assert_that(prop, has_entry('title', 'Release'))
 
-		types = ITypes(note, None)
+		types = IType(note, None)
 		assert_that(types, is_not(none()))
-		assert_that(types, is_(('note', 'bankai', 'shikai')))
+		assert_that(types, is_('note'))

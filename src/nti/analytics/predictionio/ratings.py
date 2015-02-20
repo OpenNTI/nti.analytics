@@ -12,7 +12,6 @@ logger = __import__('logging').getLogger(__name__)
 import gevent
 import functools
 import transaction
-import predictionio
 
 from zope import component
 
@@ -24,14 +23,12 @@ from nti.dataserver.rating import IObjectUnratedEvent
 from nti.dataserver.contenttypes.forums.interfaces import ITopic
 from nti.dataserver.interfaces import IDataserverTransactionRunner
 
-from nti.externalization.externalization import to_external_ntiid_oid
-
-from nti.ntiids.ntiids import find_object_with_ntiid
-
+from . import object_finder
 from . import get_current_username
-from . import get_predictionio_app
+from . import get_predictionio_client
 
-from .interfaces import ITypes
+from .interfaces import IOID
+from .interfaces import IType
 from .interfaces import IProperties
 
 LIKE_API = "like"
@@ -39,16 +36,31 @@ DISLIKE_API = "dislike"
 LIKE_CAT_NAME = "likes"
 RATE_CATE_NAME = 'rating'
 
-def _process_like_pio(app, username, oid, api):
-	client = predictionio.Client(app.AppKey, apiurl=app.URL)
+def _process_like_pio(username, oid, api, params=None):
+	client = get_predictionio_client()
+	if client is None:
+		return
 	try:
+		params = params or {}
+		obj = object_finder(oid)
 		user = User.get_user(username)
-		obj = find_object_with_ntiid(oid)
 		if obj is not None and user is not None:
-			client.create_user(username, params=IProperties(user))
-			client.create_item(oid, ITypes(obj), IProperties(obj))
-			client.identify(username)
-			client.record_action_on_item(api, oid)
+			client.create_event(event="$set",
+  								entity_type="user",
+  								entity_id=user.username,
+  								properties=IProperties(user))
+			
+			client.create_event(event="$set",
+  								entity_type=IType(obj),
+    							entity_id=oid,
+    							properties=IProperties(obj))
+			
+			client.create_event(event=api,
+  								entity_type="user",
+    							entity_id=user.username,
+								target_entity_type=IType(obj),
+								target_entity_id=oid,
+								properties=params)
 			logger.debug("%s recorded action '%s' for %s", username, api, oid)
 	finally:
 		client.close()
@@ -56,42 +68,59 @@ def _process_like_pio(app, username, oid, api):
 def record_like(app, username, oid):
 	_process_like_pio(app, username, oid, LIKE_API)
 
-def record_unlike(app, username, oid):
-	_process_like_pio(app, username, oid, DISLIKE_API)
+def record_unlike(username, oid):
+	_process_like_pio(username, oid, DISLIKE_API)
 
-def _process_like_event(app, username, oid, like=True):
+def _process_like_event(username, oid, like=True):
 
 	def _process_event():
 		transaction_runner = component.getUtility(IDataserverTransactionRunner)
 		if like:
-			func = functools.partial(record_like, app=app, username=username, oid=oid)
+			func = functools.partial(record_like, username=username, oid=oid)
 		else:
-			func = functools.partial(record_unlike, app=app, username=username, oid=oid)
+			func = functools.partial(record_unlike, username=username, oid=oid)
 		transaction_runner(func)
 
 	transaction.get().addAfterCommitHook(
 						lambda success: success and gevent.spawn(_process_event))
 
-def record_rating(app, username, oid, rating):
-	client = predictionio.Client(app.AppKey, apiurl=app.URL)
+def record_rating(username, oid, rating, params=None):
+	client = get_predictionio_client()
+	if client is None:
+		return
 	try:
+		params = params or {}
+		obj = object_finder(oid)
 		user = User.get_user(username)
-		modeled = find_object_with_ntiid(oid)
-		if modeled is not None and user is not None:
-			client.create_user(username, params=IProperties(user))
-			client.create_item(oid, ITypes(modeled), IProperties(modeled))
-			client.identify(username)
-			client.record_action_on_item("rate", oid, {'pio_rate':int(rating)})
+		if obj is not None and user is not None:
+			client.create_event(event="$set",
+  								entity_type="user",
+  								entity_id=user.username,
+  								properties=IProperties(user))
+			
+			client.create_event(event="$set",
+  								entity_type=IType(obj),
+    							entity_id=oid,
+    							properties=IProperties(obj))
+			
+			params['pio_rate'] = int(rating)
+			client.create_event(event="rate",
+  								entity_type="user",
+    							entity_id=user.username,
+								target_entity_type=IType(obj),
+								target_entity_id=oid,
+								properties=params)
+
 			logger.debug("%s recorded rate action for %s", username, oid)
 	finally:
 		client.close()
 
-def _process_rating_event(app, username, oid, rating):
+def _process_rating_event(username, oid, rating):
 
 	def _process_event():
 		transaction_runner = \
 				component.getUtility(IDataserverTransactionRunner)
-		func = functools.partial(record_rating, app=app, username=username,
+		func = functools.partial(record_rating, username=username,
 								 rating=rating, oid=oid)
 		transaction_runner(func)
 
@@ -100,17 +129,16 @@ def _process_rating_event(app, username, oid, rating):
 
 @component.adapter(IRatable, IObjectRatedEvent)
 def _object_rated(modeled, event):
-	app = get_predictionio_app()
 	username = get_current_username()
-	if app is not None and username:
-		oid = to_external_ntiid_oid(modeled)
+	if username:
+		oid = IOID(modeled)
 		if event.category == LIKE_CAT_NAME:
 			like = event.rating != 0
-			_process_like_event(app, username, oid, like)
+			_process_like_event(username, oid, like)
 		elif event.category == RATE_CATE_NAME and \
 			 not IObjectUnratedEvent.providedBy(event):
 			rating = getattr(event, 'rating', None)
-			_process_rating_event(app, username, oid, rating)
+			_process_rating_event(username, oid, rating)
 
 @component.adapter(ITopic, IObjectRatedEvent)
 def _topic_rated(topic, event):

@@ -10,7 +10,6 @@ __docformat__ = "restructuredtext en"
 from zope import interface
 
 from dolmen.builtins import IDict
-from dolmen.builtins import ITuple
 from dolmen.builtins import IString
 
 from nti.schema.field import ValidTextLine
@@ -22,7 +21,7 @@ class IPredictionIOApp(interface.Interface):
 class IProperties(IDict):
 	pass
 
-class ITypes(ITuple):
+class IType(IString):
 	pass
 
 class IOID(IString):
