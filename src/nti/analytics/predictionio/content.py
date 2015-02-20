@@ -14,12 +14,9 @@ from zope import component
 from nti.contentlibrary.interfaces import IContentUnit
 from nti.contentlibrary.interfaces import IContentPackageLibrary
 
-from . import get_user
-from . import get_predictionio_client
+from .utils import create_user_event
 
-from .interfaces import IOID
-from .interfaces import IType
-from .interfaces import IProperties
+from . import VIEW_API
 
 def get_content_unit(unit):
 	if not IContentUnit.providedBy(unit):
@@ -31,31 +28,8 @@ def get_content_unit(unit):
 	return result
 
 def record_content_view(user, unit, params=None, request=None):
-	user = get_user(user)
 	unit = get_content_unit(unit)
-	if unit is not None and user is not None:
-		client = get_predictionio_client()
-		if client is None:
-			return
-		oid = IOID(unit)
-		params = params or {}
-		try:
-			client.create_event(event="$set",
-  								entity_type="user",
-  								entity_id=IOID(user),
-  								properties=IProperties(user))
-			
-			client.create_event(event="$set",
-  								entity_type=IType(unit),
-    							entity_id=oid,
-    							properties=IProperties(unit))
-			
-			client.create_event(event="view",
-  								entity_type="user",
-    							entity_id=IOID(user),
-								target_entity_type=IType(unit),
-								target_entity_id=oid,
-								properties=params)
-		finally:
-			client.close()
-		logger.debug("%s recorded view action for %s", user, oid)
+	return create_user_event(event=VIEW_API, 
+					  		 user=user,
+					  		 obj=unit,
+					  		 params=params)

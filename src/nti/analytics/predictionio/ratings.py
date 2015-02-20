@@ -10,8 +10,8 @@ __docformat__ = "restructuredtext en"
 logger = __import__('logging').getLogger(__name__)
 
 import gevent
-import functools
 import transaction
+from functools import partial
 
 from zope import component
 
@@ -25,13 +25,10 @@ from nti.dataserver.interfaces import IDataserverTransactionRunner
 from nti.dataserver.rating import IObjectUnratedEvent
 
 from .interfaces import IOID
-from .interfaces import IType
-from .interfaces import IProperties
 
-from . import get_user
-from . import object_finder
+from .utils import create_user_event
+
 from . import get_current_username
-from . import get_predictionio_client
 
 LIKE_API = "like"
 DISLIKE_API = "dislike"
@@ -39,36 +36,13 @@ LIKE_CAT_NAME = "likes"
 RATE_CATE_NAME = 'rating'
 
 def _process_like_pio(username, oid, api, params=None):
-	client = get_predictionio_client()
-	if client is None:
-		return
-	try:
-		params = params or {}
-		obj = object_finder(oid)
-		user = get_user(username)
-		if obj is not None and user is not None:
-			client.create_event(event="$set",
-  								entity_type="user",
-  								entity_id=IOID(user),
-  								properties=IProperties(user))
-			
-			client.create_event(event="$set",
-  								entity_type=IType(obj),
-    							entity_id=oid,
-    							properties=IProperties(obj))
-			
-			client.create_event(event=api,
-  								entity_type="user",
-    							entity_id=IOID(user),
-								target_entity_type=IType(obj),
-								target_entity_id=oid,
-								properties=params)
-			logger.debug("%s recorded action '%s' for %s", username, api, oid)
-	finally:
-		client.close()
+	return create_user_event(event=api, 
+				  		 	 user=username,
+				  		 	 obj=oid,
+				  			 params=params)
 
-def record_like(app, username, oid):
-	_process_like_pio(app, username, oid, LIKE_API)
+def record_like(username, oid):
+	_process_like_pio(username, oid, LIKE_API)
 
 def record_unlike(username, oid):
 	_process_like_pio(username, oid, DISLIKE_API)
@@ -78,52 +52,27 @@ def _process_like_event(username, oid, like=True):
 	def _process_event():
 		transaction_runner = component.getUtility(IDataserverTransactionRunner)
 		if like:
-			func = functools.partial(record_like, username=username, oid=oid)
+			func = partial(record_like, username=username, oid=oid)
 		else:
-			func = functools.partial(record_unlike, username=username, oid=oid)
+			func = partial(record_unlike, username=username, oid=oid)
 		transaction_runner(func)
 
 	transaction.get().addAfterCommitHook(
 						lambda success: success and gevent.spawn(_process_event))
 
 def record_rating(username, oid, rating, params=None):
-	client = get_predictionio_client()
-	if client is None:
-		return
-	try:
-		params = params or {}
-		obj = object_finder(oid)
-		user = get_user(username)
-		if obj is not None and user is not None:
-			client.create_event(event="$set",
-  								entity_type="user",
-  								entity_id=IOID(user),
-  								properties=IProperties(user))
-			
-			client.create_event(event="$set",
-								entity_id=oid,
-  								entity_type=IType(obj),
-    							properties=IProperties(obj))
-			
-			params['pio_rate'] = int(rating)
-			client.create_event(event="rate",
-  								entity_type="user",
-    							entity_id=IOID(user),
-								target_entity_type=IType(obj),
-								target_entity_id=oid,
-								properties=params)
-
-			logger.debug("%s recorded rate action for %s", username, oid)
-	finally:
-		client.close()
+	params = params or {}
+	params['pio_rate'] = int(rating)
+	return create_user_event(event="rate", 
+			  		 	 	 user=username,
+			  		 	 	 obj=oid,
+			  			 	 params=params)
 
 def _process_rating_event(username, oid, rating):
 
 	def _process_event():
-		transaction_runner = \
-				component.getUtility(IDataserverTransactionRunner)
-		func = functools.partial(record_rating, username=username,
-								 rating=rating, oid=oid)
+		transaction_runner = component.getUtility(IDataserverTransactionRunner)
+		func = partial(record_rating, username=username, rating=rating, oid=oid)
 		transaction_runner(func)
 
 	transaction.get().addAfterCommitHook(

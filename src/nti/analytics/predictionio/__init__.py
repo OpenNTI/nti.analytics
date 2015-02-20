@@ -9,6 +9,8 @@ __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
+import six
+
 from zope import component
 from zope.security.management import queryInteraction
 
@@ -48,6 +50,8 @@ def get_predictionio_client(client=None, name=''):
 		client = EventClient(app.AppKey, apiurl=app.URL) if app is not None else None
 	return client
 
-def find_object(oid):
-	return find_object_with_ntiid(oid) if oid else None
-object_finder = find_object
+def object_finder(obj):
+	if isinstance(obj, six.string_types):
+		return find_object_with_ntiid(obj)
+	return obj
+find_object = object_finder
