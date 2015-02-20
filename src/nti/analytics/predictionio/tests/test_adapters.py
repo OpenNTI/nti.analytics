@@ -75,10 +75,34 @@ class TestAdapters(PIOTestCase):
 		assert_that(prop, is_not(none()))
 		assert_that(prop, has_entry('title', 'Release'))
 
-		types = IType(note, None)
-		assert_that(types, is_not(none()))
-		assert_that(types, is_('note'))
+		adapted = IType(note, None)
+		assert_that(adapted, is_not(none()))
+		assert_that(adapted, is_('note'))
 		
 		adapted = IOID(note, None)
 		assert_that(adapted, is_not(none()))
 		assert_that(adapted, contains_string('tag:nextthought.com'))
+		
+	def test_primitive_adapter(self):
+		s = "tag:nextthought.com,2011-10:OU-NTIVideo-LSTD1153_S_2015_History_United_States_1865_to_Present.ntivideo.video_Thesis"
+		adapted = IType(s, None)
+		assert_that(adapted, is_not(none()))
+		assert_that(adapted, is_('NTIVideo'))
+		
+		adapted = IOID(s, None)
+		assert_that(adapted, is_not(none()))
+		assert_that(adapted, is_(s))
+		
+		s = "ichigo"
+		adapted = IType(s, None)
+		assert_that(adapted, is_not(none()))
+		assert_that(adapted, is_(s))
+		
+		adapted = IOID(s, None)
+		assert_that(adapted, is_not(none()))
+		assert_that(adapted, is_(s))
+		
+		s = 50
+		adapted = IOID(s, None)
+		assert_that(adapted, is_not(none()))
+		assert_that(adapted, is_(s))

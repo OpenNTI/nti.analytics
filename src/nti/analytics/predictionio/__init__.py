@@ -10,6 +10,7 @@ __docformat__ = "restructuredtext en"
 logger = __import__('logging').getLogger(__name__)
 
 import six
+import numbers
 
 from zope import component
 from zope.security.management import queryInteraction
@@ -28,6 +29,8 @@ LIKE_API = "like"
 DISLIKE_API = "dislike"
 LIKE_CAT_NAME = "likes"
 RATE_CATE_NAME = 'rating'
+
+primitives = six.string_types + (numbers.Number, bool)
 
 def get_predictionio_app(name=''):
 	result = component.getUtility(IPredictionIOApp, name=name)

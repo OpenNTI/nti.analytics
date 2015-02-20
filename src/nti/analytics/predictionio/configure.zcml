@@ -31,33 +31,37 @@
 			 provides=".interfaces.IProperties" />
 			 
 	<adapter for=""
-			 factory=".adapters._GenericTypesAdpater"
+			 factory=".adapters._GenericTypeAdpater"
 			 provides=".interfaces.IType" />
 			 			
 	<adapter for="*"
-			 factory=".adapters._GenericTypesAdpater"
+			 factory=".adapters._GenericTypeAdpater"
 			 provides=".interfaces.IType" />
 			 		 
 	<adapter for="nti.dataserver.interfaces.IModeledContent"
-			 factory=".adapters._ModeledTypesAdpater"
+			 factory=".adapters._ModeledTypeAdpater"
 			 provides=".interfaces.IType" />
 
 	<adapter for="nti.dataserver.contenttypes.forums.interfaces.IGeneralForumComment"
-			 factory=".adapters._CommentTypesAdpater"
+			 factory=".adapters._CommentTypeAdpater"
 			 provides=".interfaces.IType" />
 
 	<adapter for="nti.dataserver.contenttypes.forums.interfaces.IPersonalBlogComment"
-			 factory=".adapters._CommentTypesAdpater"
+			 factory=".adapters._CommentTypeAdpater"
 			 provides=".interfaces.IType" />
 			 
 	<adapter for="nti.dataserver.contenttypes.forums.interfaces.ITopic"
-			 factory=".adapters._TopicTypesAdpater"
+			 factory=".adapters._TopicTypeAdpater"
 			 provides=".interfaces.IType" />
 			 
 	<adapter for="nti.contentlibrary.interfaces.IContentUnit"
-			 factory=".adapters._ContentUnitTypesAdpater"
+			 factory=".adapters._ContentUnitTypeAdpater"
 			 provides=".interfaces.IType" />
 	 
+	<adapter for="dolmen.builtins.interfaces.IString"
+			 factory=".adapters._StringTypeAdpater"
+			 provides=".interfaces.IType" />
+
 	<adapter for=""
 			 factory=".adapters._GenericOIDAdpater"
 			 provides=".interfaces.IOID" />

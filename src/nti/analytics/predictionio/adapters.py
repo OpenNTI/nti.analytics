@@ -9,6 +9,9 @@ __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
+import six
+import numbers
+
 from zope import component
 from zope import interface
 
@@ -27,6 +30,9 @@ from nti.dataserver.users.interfaces import IFriendlyNamed
 from nti.dataserver.contenttypes.forums.interfaces import ITopic
 
 from nti.externalization.externalization import to_external_ntiid_oid
+
+from nti.ntiids.ntiids import get_type
+from nti.ntiids.ntiids import is_valid_ntiid_string
 
 from .interfaces import IOID
 from .interfaces import IType
@@ -65,39 +71,67 @@ def _ContentUnitPropertyAdpater(item):
 	return result
 
 @interface.implementer(IType)
+@component.adapter(IString)
+def _StringTypeAdpater(item):
+	if is_valid_ntiid_string(item):
+		result = get_type(item)
+	else:
+		result = item
+	return result
+
+@interface.implementer(IType)
 @component.adapter(interface.Interface)
-def _GenericTypesAdpater(item):
-	name = item.__class__.__name__
-	return name.lower(),
+def _GenericTypeAdpater(item):
+	if isinstance(item, six.string_types):
+		result = _StringTypeAdpater(item)
+	else:
+		result = item.__class__.__name__
+		result = result.lower()
+	return result
 
 @interface.implementer(IType)
 @component.adapter(IModeledContent)
-def _ModeledTypesAdpater(item):
+def _ModeledTypeAdpater(item):
 	name = item.__class__.__name__
 	result = name.lower()
 	return result
 
 @interface.implementer(IType)
-def _CommentTypesAdpater(item):
+def _CommentTypeAdpater(item):
 	result = 'comment'
 	return result
 
 @interface.implementer(IType)
 @component.adapter(ITopic)
-def _TopicTypesAdpater(item):
+def _TopicTypeAdpater(item):
 	result = 'topic'
 	return result
 
 @interface.implementer(IType)
 @component.adapter(IContentUnit)
-def _ContentUnitTypesAdpater(item):
+def _ContentUnitTypeAdpater(item):
 	result = 'contentunit'
 	return result
 
 @interface.implementer(IOID)
+@component.adapter(IString)
+def _StringOIDAdpater(value):
+	return value
+
+@interface.implementer(IOID)
+@component.adapter(INumeric)
+def _NumericOIDAdpater(value):
+	return value
+
+@interface.implementer(IOID)
 @component.adapter(interface.Interface)
 def _GenericOIDAdpater(item):
-	result = to_external_ntiid_oid(item)
+	if isinstance(item, six.string_types):
+		result = _StringOIDAdpater(item)
+	elif isinstance(item, numbers.Number):
+		result = _NumericOIDAdpater(item)
+	else:
+		result = to_external_ntiid_oid(item)
 	return result
 
 @interface.implementer(IOID)
@@ -117,13 +151,3 @@ def _CourseCatalogEntryOIDAdpater(item):
 def _UserOIDAdpater(user):
 	result = user.username
 	return result
-
-@interface.implementer(IOID)
-@component.adapter(IString)
-def _StringOIDAdpater(value):
-	return value
-
-@interface.implementer(IOID)
-@component.adapter(INumeric)
-def _NumericOIDAdpater(value):
-	return value

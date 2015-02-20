@@ -9,9 +9,7 @@ __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
-import six
 import gevent
-import numbers
 import transaction
 from functools import partial
 
@@ -26,8 +24,7 @@ from .utils import create_user_event
 from .interfaces import IOID
 
 from . import VIEW_API
-
-_primitives = six.string_types + (numbers.Number, bool)
+from . import primitives as _primitives
 
 def _process_view(username, oid, params=None):
 	return create_user_event(event=VIEW_API, 
