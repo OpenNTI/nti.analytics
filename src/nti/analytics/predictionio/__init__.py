@@ -49,5 +49,5 @@ def get_predictionio_client(client=None, name=''):
 	return client
 
 def find_object(oid):
-	return find_object_with_ntiid(oid)
+	return find_object_with_ntiid(oid) if oid else None
 object_finder = find_object

@@ -42,7 +42,7 @@ def record_content_view(user, unit, params=None, request=None):
 		try:
 			client.create_event(event="$set",
   								entity_type="user",
-  								entity_id=user.username,
+  								entity_id=IOID(user),
   								properties=IProperties(user))
 			
 			client.create_event(event="$set",
@@ -52,10 +52,10 @@ def record_content_view(user, unit, params=None, request=None):
 			
 			client.create_event(event="view",
   								entity_type="user",
-    							entity_id=user.username,
+    							entity_id=IOID(user),
 								target_entity_type=IType(unit),
 								target_entity_id=oid,
 								properties=params)
 		finally:
 			client.close()
-		logger.debug("item '%s' was viewed by %s", oid, user)
+		logger.debug("%s recorded view action for %s", user, oid)

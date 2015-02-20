@@ -99,3 +99,9 @@ def _GenericOIDAdpater(item):
 def _ContentUnitOIDAdpater(item):
 	result = item.ntiid
 	return result
+
+@interface.implementer(IOID)
+@component.adapter(IUser)
+def _UserOIDAdpater(user):
+	result = user.username
+	return result

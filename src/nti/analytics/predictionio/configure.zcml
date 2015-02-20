@@ -69,6 +69,10 @@
 	<adapter for="nti.contentlibrary.interfaces.IContentUnit"
 			 factory=".adapters._ContentUnitOIDAdpater"
 			 provides=".interfaces.IOID" />
+			
+	<adapter for="nti.dataserver.interfaces.IUser"
+			 factory=".adapters._UserOIDAdpater"
+			 provides=".interfaces.IOID" />
 			 
 	<!-- Subscribers -->
 	<subscriber handler=".ratings._topic_rated" />

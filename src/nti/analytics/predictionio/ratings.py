@@ -17,19 +17,21 @@ from zope import component
 
 from contentratings.interfaces import IObjectRatedEvent
 
-from nti.dataserver.users import User
-from nti.dataserver.interfaces import IRatable
-from nti.dataserver.rating import IObjectUnratedEvent
 from nti.dataserver.contenttypes.forums.interfaces import ITopic
+
+from nti.dataserver.interfaces import IRatable
 from nti.dataserver.interfaces import IDataserverTransactionRunner
 
-from . import object_finder
-from . import get_current_username
-from . import get_predictionio_client
+from nti.dataserver.rating import IObjectUnratedEvent
 
 from .interfaces import IOID
 from .interfaces import IType
 from .interfaces import IProperties
+
+from . import get_user
+from . import object_finder
+from . import get_current_username
+from . import get_predictionio_client
 
 LIKE_API = "like"
 DISLIKE_API = "dislike"
@@ -43,11 +45,11 @@ def _process_like_pio(username, oid, api, params=None):
 	try:
 		params = params or {}
 		obj = object_finder(oid)
-		user = User.get_user(username)
+		user = get_user(username)
 		if obj is not None and user is not None:
 			client.create_event(event="$set",
   								entity_type="user",
-  								entity_id=user.username,
+  								entity_id=IOID(user),
   								properties=IProperties(user))
 			
 			client.create_event(event="$set",
@@ -57,7 +59,7 @@ def _process_like_pio(username, oid, api, params=None):
 			
 			client.create_event(event=api,
   								entity_type="user",
-    							entity_id=user.username,
+    							entity_id=IOID(user),
 								target_entity_type=IType(obj),
 								target_entity_id=oid,
 								properties=params)
@@ -91,22 +93,22 @@ def record_rating(username, oid, rating, params=None):
 	try:
 		params = params or {}
 		obj = object_finder(oid)
-		user = User.get_user(username)
+		user = get_user(username)
 		if obj is not None and user is not None:
 			client.create_event(event="$set",
   								entity_type="user",
-  								entity_id=user.username,
+  								entity_id=IOID(user),
   								properties=IProperties(user))
 			
 			client.create_event(event="$set",
+								entity_id=oid,
   								entity_type=IType(obj),
-    							entity_id=oid,
     							properties=IProperties(obj))
 			
 			params['pio_rate'] = int(rating)
 			client.create_event(event="rate",
   								entity_type="user",
-    							entity_id=user.username,
+    							entity_id=IOID(user),
 								target_entity_type=IType(obj),
 								target_entity_id=oid,
 								properties=params)
