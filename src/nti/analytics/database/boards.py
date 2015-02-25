@@ -424,9 +424,10 @@ def _resolve_topic( row ):
 								RootContextID=course )
 	return result
 
-def _resolve_topic_view( row ):
+def _resolve_topic_view( row, topic=None ):
 	make_transient( row )
-	topic = _get_topic_from_db_id( row.topic_id )
+	if topic is None:
+		topic = _get_topic_from_db_id( row.topic_id )
 	course = get_root_context( row.course_id )
 	user = get_user( row.user_id )
 	result = None
@@ -469,7 +470,7 @@ def get_topic_views(user, topic):
 	results = db.session.query(TopicsViewed).filter( TopicsViewed.user_id == uid,
 													TopicsViewed.topic_id == topic_id ).all()
 
-	return resolve_objects( _resolve_topic_view, results )
+	return resolve_objects( _resolve_topic_view, results, topic=topic )
 
 #TopicReport
 def get_comments_for_topic( topic ):

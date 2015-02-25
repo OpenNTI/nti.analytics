@@ -53,6 +53,7 @@ def _get_job_queue():
 	factory = get_factory()
 	return factory.get_queue(ASSESSMENTS_ANALYTICS)
 
+get_self_assessments_for_course = db_assessments.get_self_assessments_for_course
 get_self_assessments_for_user = db_assessments.get_self_assessments_for_user
 get_assignments_for_user = db_assessments.get_assignments_for_user
 get_assignment_for_user = db_assessments.get_assignment_for_user
