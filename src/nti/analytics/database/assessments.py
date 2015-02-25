@@ -544,11 +544,13 @@ def delete_feedback( timestamp, feedback_ds_id ):
 	feedback.feedback_ds_id = None
 	db.session.flush()
 
-def _resolve_self_assessment( row ):
+def _resolve_self_assessment( row, course=None ):
 	make_transient( row )
 	submission = SubmissionId.get_object( row.submission_id )
-	course = get_root_context( row.course_id )
+	if course is None:
+		course = get_root_context( row.course_id )
 	user = get_user( row.user_id )
+
 	result = None
 	if 		submission is not None \
 		and user is not None \
@@ -670,7 +672,7 @@ def get_self_assessments_for_course(course):
 	results = db.session.query(SelfAssessmentsTaken).filter(
 							SelfAssessmentsTaken.course_id == course_id ).all()
 
-	return resolve_objects( _resolve_self_assessment, results )
+	return resolve_objects( _resolve_self_assessment, results, course=course )
 
 def get_assignments_for_course(course):
 	db = get_analytics_db()
