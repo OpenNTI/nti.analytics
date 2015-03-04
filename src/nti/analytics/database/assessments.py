@@ -28,9 +28,10 @@ from sqlalchemy.ext.declarative import declared_attr
 
 from nti.app.products.gradebook.interfaces import IGrade
 
-from nti.assessment.__init__ import grader_for_response
-from nti.assessment.interfaces import IQAssessedQuestionSet
+from nti.assessment.common import grader_for_response
+
 from nti.assessment.interfaces import IQUploadedFile
+from nti.assessment.interfaces import IQAssessedQuestionSet
 from nti.assessment.interfaces import IQModeledContentResponse
 
 from nti.assessment.randomized.interfaces import IQRandomizedPart
