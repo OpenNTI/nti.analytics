@@ -9,18 +9,18 @@ logger = __import__('logging').getLogger(__name__)
 
 from datetime import datetime
 
-from .common import get_entity
-from .common import process_event
-
-from pyramid.threadlocal import get_current_request
-
 from calendar import timegm as _calendar_timegm
 
-from nti.analytics.database import sessions as db_sessions
+from pyramid.threadlocal import get_current_request
 
 from nti.analytics import get_factory
 from nti.analytics import has_analytics
 from nti.analytics import SESSIONS_ANALYTICS
+
+from nti.analytics.common import get_entity
+from nti.analytics.common import process_event
+
+from nti.analytics.database import sessions as db_sessions
 
 ANALYTICS_SESSION_COOKIE_NAME = str( 'nti.da_session' )
 ANALYTICS_SESSION_HEADER = str( 'x-nti-da-session' )
@@ -46,12 +46,14 @@ def _get_cookie_id( request ):
 	return _get_session_id_from_val( val )
 
 def _set_cookie( request, new_session ):
-	# If we have current session, let's end it.
+	# If we have current session, fire an event to kill it.
+	# TODO: Is this what we want?  What about multiple tabs?
+	# Will we inadvertantly kill open sessions?
 	old_id = _get_cookie_id( request )
 	if old_id is not None:
 		user = get_entity( request.remote_user )
 		if user is not None:
-			db_sessions.end_session( user, old_id, datetime.utcnow() )
+			_process_end_session( user.username, old_id, datetime.utcnow() )
 
 	request.response.set_cookie( ANALYTICS_SESSION_COOKIE_NAME,
 								value=str( new_session.session_id ),
