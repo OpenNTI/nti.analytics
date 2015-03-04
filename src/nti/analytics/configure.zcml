@@ -27,6 +27,8 @@
 	<subscriber handler=".users._entity_removed" />
 	<subscriber handler=".users._user_research" />
 
+	<subscriber handler=".sessions._user_logout_event" />
+
 	<subscriber handler=".courses._course_removed" />
 
 	<subscriber handler=".boards._topic_added" />

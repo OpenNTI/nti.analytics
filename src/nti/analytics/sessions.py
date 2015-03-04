@@ -13,6 +13,10 @@ from calendar import timegm as _calendar_timegm
 
 from pyramid.threadlocal import get_current_request
 
+from zope import component
+
+from nti.appserver.interfaces import IUserLogoutEvent
+
 from nti.analytics import get_factory
 from nti.analytics import has_analytics
 from nti.analytics import SESSIONS_ANALYTICS
@@ -99,6 +103,21 @@ def _process_end_session( username, session_id, timestamp ):
 						session_id=session_id,
 						timestamp=timestamp )
 
+
+@component.adapter( IUserLogoutEvent )
+def _user_logout_event( event ):
+	"""
+	When a user logs out, terminate any sessions tied to the request.
+	We only do this for cookies (e.g. webapp/mobile) since other clients
+	manage their own sessions explicitly.
+	"""
+	cookie_id = _get_cookie_id( event.request )
+
+	if cookie_id is not None:
+		username = event.user.username
+		timestamp = datetime.utcnow()
+		_process_end_session( username, cookie_id, timestamp )
+
 def handle_end_session( username, request ):
 	# This could be done synchronously, to be consistent, but we don't have to currently.
 	session_id = _get_cookie_id( request )
@@ -130,7 +149,7 @@ def update_session( session, user, user_agent=None, ip_addr=None ):
 								getattr( session_record, 'start_time', None ) ) )
 	return session
 
-def get_current_session_id( user, event=None ):
+def get_current_session_id( user=None, event=None ):
 	# Here is what we look for, in order:
 	# 1. A session id attached to the incoming event (probably ipad only)
 	# 2. A header on the request, (also ipad)
