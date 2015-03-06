@@ -23,7 +23,6 @@ from nti.analytics.database import SESSION_COLUMN_TYPE
 from nti.analytics.database import Base
 from nti.analytics.database import get_analytics_db
 from nti.analytics.database.users import get_or_create_user
-from nti.analytics.database.users import get_user_db_id
 
 class Sessions(Base):
 	__tablename__ = 'Sessions'
@@ -33,11 +32,6 @@ class Sessions(Base):
 	user_agent_id = Column('user_agent_id', Integer)
 	start_time = Column('start_time', DateTime)
 	end_time = Column('end_time', DateTime)
-
-class CurrentSessions(Base):
-	__tablename__ = 'CurrentSessions'
-	session_id = Column('session_id', SESSION_COLUMN_TYPE, ForeignKey('Sessions.session_id'), index=True, primary_key=True )
-	user_id = Column('user_id', Integer, ForeignKey("Users.user_id"), index=True, nullable=False )
 
 class UserAgents(Base):
 	__tablename__ = 'UserAgents'
@@ -60,11 +54,6 @@ def _get_user_agent_id( db, user_agent ):
 		user_agent_record = _create_user_agent( db, user_agent )
 	return user_agent_record.user_agent_id
 
-def _update_current_session( db, new_session, uid ):
-	# Add our new session.
-	new_current_session = CurrentSessions( user_id=uid, session_id=new_session.session_id )
-	db.session.add( new_current_session )
-
 def _get_user_agent( user_agent ):
 	# We have a 512 limit on user agent, truncate if we have to.
 	return user_agent[:512] if len( user_agent ) > 512 else user_agent
@@ -75,11 +64,7 @@ def end_session( user, session_id, timestamp ):
 	uid = user.user_id
 	timestamp = timestamp_type( timestamp )
 
-	# Empty our current sessions
 	db = get_analytics_db()
-	db.session.query( CurrentSessions ).filter( CurrentSessions.session_id == session_id,
-												CurrentSessions.user_id == uid ).delete()
-
 	old_session = db.session.query( Sessions ).filter( Sessions.session_id == session_id,
 														Sessions.user_id == uid ).first()
 
@@ -103,22 +88,8 @@ def create_session( user, user_agent, start_time, ip_addr, end_time=None ):
 	db.session.add( new_session )
 	db.session.flush()
 
-	_update_current_session( db, new_session, uid )
 	make_transient( new_session )
 	return new_session
-
-def get_current_session_ids( user ):
-	"""
-	Returns all 'live' sessions for a user.  Primarily used for validation.
-	Empty list is returned if sessions not found.
-	"""
-	result = []
-	db = get_analytics_db()
-	user_id = get_user_db_id( user )
-	if user_id is not None:
-		all_sessions = db.session.query( CurrentSessions ).filter( CurrentSessions.user_id == user_id ).all()
-		result = [x.session_id for x in all_sessions]
-	return result
 
 def get_session_by_id( session_id ):
 	db = get_analytics_db()

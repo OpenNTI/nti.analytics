@@ -103,7 +103,7 @@ def _note_rated( event ):
 def _note_added( obj, event ):
 	if _is_note( obj ):
 		user = get_creator( obj )
-		nti_session = get_nti_session_id( user )
+		nti_session = get_nti_session_id()
 		process_event( _get_job_queue, _add_note, obj, nti_session=nti_session )
 
 @component.adapter(	nti_interfaces.INote,
@@ -137,7 +137,7 @@ def _remove_highlight( highlight_id, timestamp=None ):
 def _highlight_added( obj, event ):
 	if _is_highlight( obj ):
 		user = get_creator( obj )
-		nti_session = get_nti_session_id( user )
+		nti_session = get_nti_session_id()
 		process_event( _get_job_queue, _add_highlight, obj, nti_session=nti_session )
 
 @component.adapter(	nti_interfaces.IHighlight,

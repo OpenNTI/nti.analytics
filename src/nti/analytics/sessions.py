@@ -149,7 +149,7 @@ def update_session( session, user, user_agent=None, ip_addr=None ):
 								getattr( session_record, 'start_time', None ) ) )
 	return session
 
-def get_current_session_id( user=None, event=None ):
+def get_current_session_id( event=None ):
 	# Here is what we look for, in order:
 	# 1. A session id attached to the incoming event (probably ipad only)
 	# 2. A header on the request, (also ipad)
@@ -166,22 +166,9 @@ def get_current_session_id( user=None, event=None ):
 		return None
 
 	result = header_id = _get_header_id( request )
-	# We could validate if the header_id matches our user.
 
 	if header_id is None:
-		cookie_id = _get_cookie_id( request )
-
-		current_sessions = ()
-		if user is not None:
-			current_sessions = db_sessions.get_current_session_ids( user )
-
-		# Validate against what we have on record.
-		if cookie_id and cookie_id not in current_sessions:
-			logger.warn( 'Received analytics session that we have no record of (cookie=%s) (found=%s)',
-						cookie_id, current_sessions )
-			# Survive, but do not use the weird value.
-			cookie_id = None
-		result = cookie_id
+		result = _get_cookie_id( request )
 
 	return result
 

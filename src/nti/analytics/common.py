@@ -10,7 +10,6 @@ logger = __import__('logging').getLogger(__name__)
 
 from datetime import datetime
 
-from pyramid.location import lineage
 from pyramid.threadlocal import get_current_request
 from pyramid.traversal import find_interface
 
@@ -156,8 +155,7 @@ def _do_execute_job( db, *args, **kwargs ):
 		# Nothing we can do with these events; leave them on the floor.
 		logger.info(
 				'Object missing (deleted) before event could be processed; event dropped. (%s) (%s)',
-				e,
-				func )
+				e, func )
 		result = None
 	else:
 		# Must flush to verify integrity.  If we hit any race
@@ -197,7 +195,7 @@ def _execute_job( *args, **kwargs ):
 
 	with current_site( event_site ):
 		# We bail if our site does not have a db.
-		db = get_analytics_db()
+		db = get_analytics_db( strict=False )
 		if db is None:
 			logger.info( 'No analytics db found for site (%s), will drop event',
 						event_site_name )
@@ -219,9 +217,7 @@ def process_event( get_job_queue, object_op, obj=None, **kwargs ):
 	"""
 	Processes the event, which may not occur synchronously.
 	"""
-	# TODO Do we want to check if we have analytics
-	# for this site before queuing the event?
-
+	# We could check if we have analytics for this site before queuing the event.
 	request = get_current_request()
 	if not _should_create_analytics( request ):
 		return

@@ -112,7 +112,7 @@ def _questionset_assessed( question_set, event ):
 	# We'll have creator for self-assessments, but not for assignments,
 	# which we throw away anyway.
 	user = get_creator( question_set )
-	nti_session = get_nti_session_id( user )
+	nti_session = get_nti_session_id()
 	_process_question_set( question_set, nti_session=nti_session )
 
 @component.adapter(IQAssessedQuestion, IIntIdAddedEvent)
@@ -143,7 +143,7 @@ def _assignment_taken( oid, nti_session=None ):
 @component.adapter(IUsersCourseAssignmentHistoryItem, IIntIdAddedEvent)
 def _assignment_history_item_added( item, event ):
 	user = get_creator( item )
-	nti_session = get_nti_session_id( user )
+	nti_session = get_nti_session_id()
 	process_event( _get_job_queue, _assignment_taken, item, nti_session=nti_session )
 
 def _set_grade( oid, username, graded_val, nti_session=None, timestamp=None ):
@@ -164,7 +164,7 @@ def _set_grade( oid, username, graded_val, nti_session=None, timestamp=None ):
 
 def _grade_submission( grade, submission ):
 	user = get_creator( grade )
-	nti_session = get_nti_session_id( user )
+	nti_session = get_nti_session_id()
 	timestamp = datetime.utcnow()
 	graded_val = grade.grade
 	process_event( _get_job_queue,
@@ -212,7 +212,7 @@ def _remove_feedback( feedback_id, timestamp=None ):
 @component.adapter(IUsersCourseAssignmentHistoryItemFeedback, IIntIdAddedEvent)
 def _feedback_added(feedback, event):
 	user = get_creator( feedback )
-	nti_session = get_nti_session_id( user )
+	nti_session = get_nti_session_id()
 	process_event( _get_job_queue, _add_feedback, feedback, nti_session=nti_session )
 
 @component.adapter(IUsersCourseAssignmentHistoryItemFeedback, IIntIdRemovedEvent)

@@ -92,7 +92,7 @@ def _like_comment( oid, delta=0 ):
 					intid_interfaces.IIntIdAddedEvent)
 def _add_personal_blog_comment(comment, event):
 	user = get_creator( comment )
-	nti_session = get_nti_session_id( user )
+	nti_session = get_nti_session_id()
 	process_event( _get_comment_queue, _add_comment, comment, nti_session=nti_session )
 
 
@@ -119,7 +119,7 @@ def _add_blog( oid, nti_session=None ):
 
 def _do_blog_added( blog, event ):
 	user = get_creator( blog )
-	nti_session = get_nti_session_id( user )
+	nti_session = get_nti_session_id()
 	process_event( _get_blog_queue, _add_blog, blog, nti_session=nti_session )
 
 def _flag_blog( oid, state=False ):

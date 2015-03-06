@@ -373,8 +373,7 @@ def handle_events( batch_events ):
 		# expect a valid session to exist.
 		if not event.user:
 			event.user = get_current_username()
-		user = get_entity(event.user)
-		nti_session = get_nti_session_id( user, event=event )
+		nti_session = get_nti_session_id( event=event )
 
 		if INoteViewEvent.providedBy( event ):
 			process_event( _get_note_queue, _add_note_event, event=event, nti_session=nti_session )

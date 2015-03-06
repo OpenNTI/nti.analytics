@@ -81,8 +81,7 @@ def _update_meeting( oid, timestamp=None ):
 
 @component.adapter(chat_interfaces.IMeeting, IObjectAddedEvent)
 def _meeting_created(meeting, event):
-	creator = get_creator( meeting )
-	nti_session = get_nti_session_id( creator )
+	nti_session = get_nti_session_id()
 	process_event( _get_job_queue, _add_meeting, meeting, nti_session=nti_session )
 
 @component.adapter( chat_interfaces.IMeeting, lce_interfaces.IObjectModifiedEvent )
@@ -140,16 +139,14 @@ def _update_friends_list( oid, nti_session=None, timestamp=None ):
 @component.adapter(nti_interfaces.IFriendsList, intid_interfaces.IIntIdAddedEvent)
 def _friendslist_added(obj, event):
 	if _is_friends_list( obj ):
-		user = get_creator( obj )
-		nti_session = get_nti_session_id( user )
+		nti_session = get_nti_session_id()
 		process_event( _get_job_queue, _add_friends_list, obj, nti_session=nti_session )
 
 @component.adapter(nti_interfaces.IFriendsList, lce_interfaces.IObjectModifiedEvent)
 def _friendslist_modified(obj, event):
 	if not nti_interfaces.IDynamicSharingTargetFriendsList.providedBy( obj ):
 		timestamp = datetime.utcnow()
-		user = get_creator( obj )
-		nti_session = get_nti_session_id( user )
+		nti_session = get_nti_session_id()
 		process_event( _get_job_queue, _update_friends_list, obj, nti_session=nti_session, timestamp=timestamp )
 
 @component.adapter(nti_interfaces.IFriendsList, intid_interfaces.IIntIdRemovedEvent)
@@ -199,8 +196,7 @@ def _remove_dfl_member( source, target, username=None, timestamp=None, nti_sessi
 @component.adapter(	nti_interfaces.IDynamicSharingTargetFriendsList,
 				 	 intid_interfaces.IIntIdAddedEvent)
 def _dfl_added(obj, event):
-	user = get_creator( obj )
-	nti_session = get_nti_session_id( user )
+	nti_session = get_nti_session_id()
 	process_event( _get_job_queue, _add_dfl, obj, nti_session=nti_session )
 
 @component.adapter(nti_interfaces.IDynamicSharingTargetFriendsList,
@@ -220,7 +216,7 @@ def _handle_dfl_membership_event( event, to_call ):
 
 	target = getattr(target, 'username', target)
 
-	nti_session = get_nti_session_id( get_entity( source ) )
+	nti_session = get_nti_session_id()
 	process_event( _get_job_queue,
 					to_call,
 					source=source,

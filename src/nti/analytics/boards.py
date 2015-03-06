@@ -113,7 +113,7 @@ def _like_comment( oid, delta=0 ):
 def _add_general_forum_comment(comment, event):
 	if _is_forum_comment( comment ):
 		user = get_creator( comment )
-		nti_session = get_nti_session_id( user )
+		nti_session = get_nti_session_id()
 		process_event( _get_comments_queue, _add_comment, comment, nti_session=nti_session )
 
 @component.adapter(frm_interfaces.IGeneralForumComment,
@@ -186,7 +186,7 @@ def _topic_rated( event ):
 def _topic_added( topic, event ):
 	if _is_topic( topic ):
 		user = get_creator( topic )
-		nti_session = get_nti_session_id( user )
+		nti_session = get_nti_session_id()
 		process_event( _get_topic_queue, _add_topic, topic, nti_session=nti_session )
 
 @component.adapter( frm_interfaces.ITopic, intid_interfaces.IIntIdRemovedEvent )
@@ -218,7 +218,7 @@ def _add_forum( oid, nti_session=None ):
 @component.adapter( frm_interfaces.IForum, intid_interfaces.IIntIdAddedEvent )
 def _forum_added( forum, event ):
 	user = get_creator( forum )
-	nti_session = get_nti_session_id( user )
+	nti_session = get_nti_session_id()
 	process_event( _get_board_queue, _add_forum, forum, nti_session=nti_session )
 
 @component.adapter( frm_interfaces.IForum, intid_interfaces.IIntIdRemovedEvent )

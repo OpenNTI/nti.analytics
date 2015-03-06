@@ -59,7 +59,6 @@ def _add_enrollment( oid, username, scope, nti_session=None, timestamp=None ):
 	if 		user is not None \
 		and course is not None:
 
-		user = get_entity( username )
 		enrollment_type = scope
 		course_name = get_root_context_name( course )
 		db_enrollments.create_course_enrollment( user, nti_session, timestamp, course, enrollment_type )
@@ -75,7 +74,7 @@ def _handle_event( record, to_call ):
 	course = record.CourseInstance
 	scope = record.Scope
 
-	nti_session = get_nti_session_id( get_entity( user ) )
+	nti_session = get_nti_session_id()
 	process_event( _get_job_queue,
 					to_call,
 					course,
