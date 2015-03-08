@@ -54,8 +54,9 @@ get_current_user = get_user
 def get_predictionio_client(client=None, name=''):
 	if client is None:
 		app = get_predictionio_app(name=name)
-		client = EventClient(access_key=app.AppKey, url=app.URL) \
-				 if app is not None else None
+		if app is not None:
+			access_key = str(app.AppKey)
+			client = EventClient(access_key=access_key, url=app.URL)
 	return client
 
 def object_finder(obj):
