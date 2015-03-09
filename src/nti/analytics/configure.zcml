@@ -164,7 +164,7 @@
 		<ana:registerRedisProcessingQueue />
 	</configure>
 
-	<configure zcml:condition="have casc_env">
+	<configure zcml:condition="have pandora_env">
 		<include package=".predictionio" />
 	</configure>
 </configure>
