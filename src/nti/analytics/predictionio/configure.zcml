@@ -10,6 +10,10 @@
 	<include package="zope.security" />
 			 	
 	<!-- Adapters --> 
+	<adapter for="dolmen.builtins.interfaces.IString"
+			 factory=".adapters._StringPropertyAdpater"
+			 provides=".interfaces.IProperties" />
+
 	<adapter for=""
 			 factory=".adapters._GenericPropertyAdpater"
 			 provides=".interfaces.IProperties" />

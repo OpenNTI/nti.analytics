@@ -10,6 +10,7 @@ __docformat__ = "restructuredtext en"
 logger = __import__('logging').getLogger(__name__)
 
 import six
+import pytz
 import isodate
 import numbers
 from datetime import datetime
@@ -25,7 +26,7 @@ from . import get_predictionio_client
 def parse_event_time(event_time=None):
 	try:
 		if isinstance(event_time, numbers.Number):
-			event_time = datetime.utcfromtimestamp(event_time)
+			event_time = datetime.fromtimestamp(event_time, pytz.utc)
 		elif isinstance(event_time, six.string_types):
 			event_time = isodate.parse_datetime(event_time)
 	except (ValueError, TypeError):

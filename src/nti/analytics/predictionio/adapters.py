@@ -46,9 +46,18 @@ def get_tag_types(item):
 	return result
 
 @interface.implementer(IProperties)
+@component.adapter(IString)
+def _StringPropertyAdpater(item):
+	return {}
+
+@interface.implementer(IProperties)
 @component.adapter(interface.Interface)
 def _GenericPropertyAdpater(item):
-	return {'Class': item.__class__.__name__}
+	if isinstance(item, six.string_types):
+		result = _StringPropertyAdpater(item)
+	else:
+		result = {'Class': item.__class__.__name__}
+	return result
 
 @interface.implementer(IProperties)
 @component.adapter(IUser)

@@ -20,6 +20,7 @@ from predictionio import EventClient
 from nti.dataserver.users import User
 from nti.dataserver.interfaces import IUser
 
+from nti.ntiids.ntiids import is_ntiid_of_type
 from nti.ntiids.ntiids import find_object_with_ntiid
 
 from .interfaces import IPredictionIOApp
@@ -29,6 +30,8 @@ LIKE_API = "like"
 DISLIKE_API = "dislike"
 LIKE_CAT_NAME = "likes"
 RATE_CATE_NAME = 'rating'
+
+NTIVIDEO = 'NTIVideo'
 
 primitives = six.string_types + (numbers.Number, bool)
 
@@ -61,6 +64,7 @@ def get_predictionio_client(client=None, name=''):
 
 def object_finder(obj):
 	if isinstance(obj, six.string_types):
-		return find_object_with_ntiid(obj)
+		if not is_ntiid_of_type(obj, NTIVIDEO):
+			return find_object_with_ntiid(obj)
 	return obj
 find_object = object_finder

@@ -9,13 +9,7 @@ __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
-import gevent
-import transaction
-from functools import partial
-
 from zope import component
-
-from nti.dataserver.interfaces import IDataserverTransactionRunner
 
 from ..recorded.interfaces import IObjectViewedRecordedEvent
 
@@ -26,21 +20,21 @@ from .interfaces import IOID
 from . import VIEW_API
 from . import primitives as _primitives
 
-def _process_view(username, oid, params=None):
-	return create_user_event(event=VIEW_API, 
-			  		 	 	 user=username,
-			  		 	 	 obj=oid,
-			  			 	 params=params)
-
-def _process_view_event(username, oid, params=None):
-
-	def _process_event():
-		transaction_runner = component.getUtility(IDataserverTransactionRunner)
-		func = partial(_process_view, username=username, oid=oid, params=params)
-		transaction_runner(func)
-
-	transaction.get().addAfterCommitHook(
-						lambda success: success and gevent.spawn(_process_event))
+def _process_view_event(username, oid, params=None, event_time=None, safe=True):
+	__traceback_info__ = username, oid, params, event_time
+	try:
+		## CS: 20150309. Don't process events in a greenlet
+		## since view events are batched queue events
+		return create_user_event(event=VIEW_API, 
+				  		 	 	 user=username,
+				  		 	 	 obj=oid,
+				  			 	 params=params,
+				  			 	 event_time=event_time)
+	except Exception:
+		if not safe:
+			raise
+		else:
+			logger.exception("Cannot process user view event")
 
 @component.adapter(IObjectViewedRecordedEvent)
 def _object_viewed(event):
