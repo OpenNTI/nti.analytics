@@ -111,5 +111,11 @@
 		<pio:registerPredictionIOApp
 				appKey="Jwd3gXiwInTHcGUxU7AmMegq0soRVtiXynPkxjDEiTPp5tXQ66MIm39EWx7NI4tP" />
 	</configure>
+	<configure zcml:condition="have pandora_env">
+		<pio:registerPredictionIOApp
+				appKey="vTQSUlkseIerYvjguMeKvRd3mQ77mH4rONk1VwR0sUAbt7SGAM3eNLkLHyvsj3tp" 
+				url="http://pandora.local:7070" />
+	</configure>
+	
 </configure>
 
