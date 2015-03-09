@@ -23,7 +23,7 @@ from nti.utils.cypher import get_plaintext
 
 from .interfaces import IPredictionIOApp
 
-DEFAULT_URL = 'http://localhost:8000'
+DEFAULT_URL = 'http://localhost:7070'
 
 @WithRepr
 @EqHash('AppKey')
