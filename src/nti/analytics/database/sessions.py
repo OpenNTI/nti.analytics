@@ -100,11 +100,13 @@ def _create_ip_location( db, ip_addr, user_id ):
 		db.session.add( ip_location )
 
 def _check_ip_location( db, ip_addr, user_id ):
-	old_ip_location = db.session.query( IpGeoLocation ).filter(
-									IpGeoLocation.ip_addr == ip_addr,
-									IpGeoLocation.user_id == user_id ).first()
-	if not old_ip_location:
-		_create_ip_location( db, ip_addr, user_id )
+	# Should only be null in tests.
+	if ip_addr:
+		old_ip_location = db.session.query( IpGeoLocation ).filter(
+										IpGeoLocation.ip_addr == ip_addr,
+										IpGeoLocation.user_id == user_id ).first()
+		if not old_ip_location:
+			_create_ip_location( db, ip_addr, user_id )
 
 def create_session( user, user_agent, start_time, ip_addr, end_time=None ):
 	db = get_analytics_db()
