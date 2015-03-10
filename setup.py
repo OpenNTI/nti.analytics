@@ -33,7 +33,9 @@ setup(
 	install_requires=[
 		'setuptools',
 		'nti.async',
-		'predictionio'
+		'predictionio',
+		'python-geoip',
+		'python-geoip-geolite2'
 	],
 	entry_points=entry_points
 )

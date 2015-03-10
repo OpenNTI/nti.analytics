@@ -8,8 +8,11 @@ __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
+from geoip import geolite2
+
 from sqlalchemy import Column
 from sqlalchemy import Integer
+from sqlalchemy import Float
 from sqlalchemy import String
 from sqlalchemy import ForeignKey
 from sqlalchemy import DateTime
@@ -32,6 +35,21 @@ class Sessions(Base):
 	user_agent_id = Column('user_agent_id', Integer)
 	start_time = Column('start_time', DateTime)
 	end_time = Column('end_time', DateTime)
+
+class IpGeoLocation(Base):
+	__tablename__ = 'IpGeoLocation'
+
+	# Store ip_addr and country code, with lat/long.
+	# We can use 'geopy.geocoders' to lookup state/postal_code data
+	# from lat/long.  It may make sense to gather this information at
+	# read time.
+	# Store by user_id for ease of lookup.
+	ip_id = Column('ip_id', Integer, Sequence('ip_id_seq'), index=True, primary_key=True )
+	user_id = Column('user_id', Integer, ForeignKey("Users.user_id"), index=True, nullable=False )
+	ip_addr = Column('ip_addr', String(64), index=True)
+	country_code = Column('country_code', String(8))
+	latitude = Column( 'latitude', Float() )
+	longitude = Column( 'longitude', Float() )
 
 class UserAgents(Base):
 	__tablename__ = 'UserAgents'
@@ -71,6 +89,23 @@ def end_session( user, session_id, timestamp ):
 	if old_session is not None:
 		old_session.end_time = timestamp
 
+def _create_ip_location( db, ip_addr, user_id ):
+	ip_info = geolite2.lookup( ip_addr )
+	if ip_info:
+		ip_location = IpGeoLocation( ip_addr=ip_addr,
+									user_id=user_id,
+ 									country_code=ip_info.country,
+									latitude=ip_info.location[0],
+									longitude=ip_info.location[1] )
+		db.session.add( ip_location )
+
+def _check_ip_location( db, ip_addr, user_id ):
+	old_ip_location = db.session.query( IpGeoLocation ).filter(
+									IpGeoLocation.ip_addr == ip_addr,
+									IpGeoLocation.user_id == user_id ).first()
+	if not old_ip_location:
+		_create_ip_location( db, ip_addr, user_id )
+
 def create_session( user, user_agent, start_time, ip_addr, end_time=None ):
 	db = get_analytics_db()
 	user = get_or_create_user( user )
@@ -85,6 +120,9 @@ def create_session( user, user_agent, start_time, ip_addr, end_time=None ):
 							end_time=end_time,
 							ip_addr=ip_addr,
 							user_agent_id=user_agent_id )
+
+	_check_ip_location( db, ip_addr, uid )
+
 	db.session.add( new_session )
 	db.session.flush()
 

@@ -30,6 +30,8 @@ from nti.analytics.database import sessions as db_sessions
 from nti.analytics.database.users import Users
 from nti.analytics.database.sessions import Sessions
 from nti.analytics.database.sessions import UserAgents
+from nti.analytics.database.sessions import IpGeoLocation
+from nti.analytics.database.sessions import _check_ip_location
 
 class TestSessions(unittest.TestCase):
 
@@ -54,7 +56,7 @@ class TestSessions(unittest.TestCase):
 
 		# Using new generated user_id
 		user_agent = 'webapp-1.9'
-		ip_addr = '0.1.2.3.4'
+		ip_addr = '156.110.241.13'
 		db_sessions.create_session( test_user_ds_id, user_agent, time.time(), ip_addr )
 		results = self.session.query(Sessions).all()
 		assert_that( results, has_length( 1 ) )
@@ -113,7 +115,7 @@ class TestSessions(unittest.TestCase):
 		# Massive user_agent (over 512)
 		user_agent = 'webapp-1.9' * 100
 		assert_that( user_agent, has_length( greater_than( 512 )))
-		ip_addr = '0.1.2.3.4'
+		ip_addr = '156.110.241.13'
 		db_sessions.create_session( test_user_ds_id, user_agent, time.time(), ip_addr )
 		results = self.session.query(Sessions).all()
 		assert_that( results, has_length( 1 ) )
@@ -132,3 +134,22 @@ class TestSessions(unittest.TestCase):
 		user_agent_record = results[0]
 		assert_that( user_agent_record.user_agent, has_length( less_than_or_equal_to( 512 )) )
 		assert_that( user_agent_record.user_agent_id, is_( 1 ) )
+
+	def test_ip_geolocation(self):
+		results = self.session.query(IpGeoLocation).all()
+		assert_that( results, has_length( 0 ) )
+
+		ip_addr = '156.110.241.13' # alpha
+		_check_ip_location( self.db, ip_addr, test_user_ds_id )
+
+		results = self.session.query(IpGeoLocation).all()
+		assert_that( results, has_length( 1 ) )
+		assert_that( results[0].country_code, is_( 'US' ))
+		assert_that( results[0].latitude, not_none())
+		assert_that( results[0].longitude, not_none())
+
+		# Dupe for user does not add
+		_check_ip_location( self.db, ip_addr, test_user_ds_id )
+
+		results = self.session.query(IpGeoLocation).all()
+		assert_that( results, has_length( 1 ) )
