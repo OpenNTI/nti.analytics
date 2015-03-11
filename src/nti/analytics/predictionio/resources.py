@@ -13,7 +13,7 @@ from zope import component
 
 from ..recorded.interfaces import IObjectViewedRecordedEvent
 
-from .utils import get_lat_lang
+from .utils import get_latlong
 from .utils import create_user_event
 
 from .interfaces import IOID
@@ -45,9 +45,9 @@ def _object_viewed(event):
 	sessionId = event.sessionId
 
 	## latlong
-	latlng = get_lat_lang(sessionId) if sessionId else None
-	if latlng:
-		params["pio_latlng"] = ",".join(latlng)
+	latlong = get_latlong(sessionId) if sessionId is not None else None
+	if latlong:
+		params["pio_latlng"] = ",".join(latlong)
 	
 	## handle context
 	context = getattr(event, 'context', None)

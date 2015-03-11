@@ -18,6 +18,7 @@ from datetime import datetime
 from geoip import geolite2
 
 from nti.analytics.identifier import SessionId
+from nti.analytics.sessions import get_nti_session_id
 from nti.analytics.database.sessions import get_session_by_id
 
 from .interfaces import IOID
@@ -28,7 +29,8 @@ from . import get_user
 from . import object_finder
 from . import get_predictionio_client
 
-def get_lat_lang(nti_session=None):
+def get_latlong(nti_session=None):
+	nti_session = get_nti_session_id() if nti_session is None else nti_session
 	sid = SessionId.get_id(nti_session)
 	session = get_session_by_id(sid) if sid else None
 	ip_addr = getattr(session, 'ip_addr', None)
