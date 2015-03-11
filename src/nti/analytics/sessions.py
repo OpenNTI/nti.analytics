@@ -118,11 +118,12 @@ def _user_logout_event( event ):
 		timestamp = datetime.utcnow()
 		_process_end_session( username, cookie_id, timestamp )
 
-def handle_end_session( username, request ):
+def handle_end_session( username, request, timestamp=None ):
 	# This could be done synchronously, to be consistent, but we don't have to currently.
 	session_id = _get_cookie_id( request )
 	if session_id is not None:
-		timestamp = datetime.utcnow()
+		if timestamp is None:
+			timestamp = datetime.utcnow()
 		_process_end_session( username=username, session_id=session_id, timestamp=timestamp )
 		_remove_cookie( request )
 
