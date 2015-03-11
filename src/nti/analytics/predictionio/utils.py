@@ -15,6 +15,11 @@ import isodate
 import numbers
 from datetime import datetime
 
+from geoip import geolite2
+
+from nti.analytics.identifier import SessionId
+from nti.analytics.database.sessions import get_session_by_id
+
 from .interfaces import IOID
 from .interfaces import IType
 from .interfaces import IProperties
@@ -22,6 +27,16 @@ from .interfaces import IProperties
 from . import get_user
 from . import object_finder
 from . import get_predictionio_client
+
+def get_lat_lang(nti_session=None):
+	sid = SessionId.get_id(nti_session)
+	session = get_session_by_id(sid) if sid else None
+	ip_addr = getattr(session, 'ip_addr', None)
+	match = geolite2.lookup( ip_addr ) if ip_addr else None
+	if match is not None:
+		result = match.location or ()
+		return result
+	return None
 
 def parse_event_time(event_time=None):
 	try:

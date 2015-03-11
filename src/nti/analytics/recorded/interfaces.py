@@ -82,6 +82,8 @@ class IVideoSkipRecordedEvent(IVideoRecordedEvent):
 @interface.implementer(IObjectViewedRecordedEvent)
 class ObjectViewedRecordedEvent(ObjectEvent):
 
+	sessionId = alias('session')
+	
 	def __init__(self, user, obj, timestamp=None, session=None):
 		super(ObjectViewedRecordedEvent, self).__init__(obj)
 		self.user = user
