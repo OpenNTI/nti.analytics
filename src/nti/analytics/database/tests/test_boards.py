@@ -30,11 +30,15 @@ from nti.analytics.database import boards as db_boards
 
 from nti.analytics.database.users import get_user_db_id
 from nti.analytics.database.boards import ForumsCreated
+from nti.analytics.database.boards import TopicLikes
+from nti.analytics.database.boards import TopicFavorites
 from nti.analytics.database.boards import TopicsCreated
 from nti.analytics.database.boards import TopicsViewed
+from nti.analytics.database.boards import ForumCommentLikes
+from nti.analytics.database.boards import ForumCommentFavorites
 from nti.analytics.database.boards import ForumCommentsCreated
 
-from . import DEFAULT_INTID
+from nti.analytics.database.tests import DEFAULT_INTID
 
 class TestForums(AnalyticsTestBase):
 
@@ -285,6 +289,44 @@ class TestTopics(AnalyticsTestBase):
 		topic_view = results[0]
 		assert_that( topic_view.time_length, new_time_length )
 
+	def _do_test_rating(self, table, _rating_call ):
+		"For table and rating call, do basic tests."
+		results = self.session.query( table ).all()
+		assert_that( results, has_length( 0 ) )
+
+		event_time = datetime.now()
+		topic_ds_id = DEFAULT_INTID
+		my_topic = MockTopic( self.forum, intid=topic_ds_id )
+		# Create topic
+		topic_record = db_boards.create_topic( test_user_ds_id,
+								test_session_id, self.course_id, my_topic )
+
+		delta = 1
+		_rating_call( my_topic, test_user_ds_id,
+						test_session_id, event_time, delta )
+
+		results = self.session.query( table ).all()
+		assert_that( results, has_length( 1 ) )
+
+		rating_record = results[0]
+		assert_that( rating_record.user_id, not_none() )
+		assert_that( rating_record.session_id, is_( test_session_id ) )
+		assert_that( rating_record.topic_id, is_( topic_record.topic_id ) )
+		assert_that( rating_record.timestamp, not_none() )
+
+		# Now revert
+		delta = -1
+		_rating_call( my_topic, test_user_ds_id,
+					test_session_id, event_time, delta )
+		results = self.session.query( table ).all()
+		assert_that( results, has_length( 0 ) )
+
+	def test_likes(self):
+		self._do_test_rating( TopicLikes, db_boards.like_topic )
+
+	def test_favorites(self):
+		self._do_test_rating( TopicFavorites, db_boards.favorite_topic )
+
 class TestForumComments(AnalyticsTestBase):
 
 	def setUp(self):
@@ -489,6 +531,44 @@ class TestForumComments(AnalyticsTestBase):
 		assert_that( results, has_length( 2 ) )
 		results = [x.Comment for x in results]
 		assert_that( results, has_items( new_comment1, new_comment2 ) )
+
+	def _do_test_rating(self, table, _rating_call ):
+		"For table and rating call, do basic tests."
+		results = self.session.query( table ).all()
+		assert_that( results, has_length( 0 ) )
+
+		event_time = datetime.now()
+		# Topic parent
+		comment_id = DEFAULT_INTID
+		my_comment = MockComment( self.topic, intid=comment_id )
+
+		db_boards.create_forum_comment( test_user_ds_id,
+										test_session_id, self.course_id,
+										self.topic, my_comment )
+
+		delta = 1
+		_rating_call( my_comment, test_user_ds_id,
+						test_session_id, event_time, delta )
+
+		results = self.session.query( table ).all()
+		assert_that( results, has_length( 1 ) )
+
+		rating_record = results[0]
+		assert_that( rating_record.user_id, not_none() )
+		assert_that( rating_record.session_id, is_( test_session_id ) )
+		assert_that( rating_record.timestamp, not_none() )
+
+		# Now revert
+		delta = -1
+		_rating_call( my_comment, test_user_ds_id, test_session_id, event_time, delta )
+		results = self.session.query( table ).all()
+		assert_that( results, has_length( 0 ) )
+
+	def test_likes(self):
+		self._do_test_rating( ForumCommentLikes, db_boards.like_comment )
+
+	def test_favorites(self):
+		self._do_test_rating( ForumCommentFavorites, db_boards.favorite_comment )
 
 class TestLazyCreate(AnalyticsTestBase):
 	"""

@@ -67,6 +67,41 @@ class BlogCommentsCreated(Base,CommentsMixin,BlogMixin,RatingsMixin):
         PrimaryKeyConstraint('comment_id'),
     )
 
+class BlogFavorites(Base,BaseTableMixin,BlogMixin):
+	__tablename__ = 'BlogFavorites'
+
+	__table_args__ = (
+        PrimaryKeyConstraint('user_id', 'blog_id'),
+    )
+
+class BlogLikes(Base,BaseTableMixin,BlogMixin):
+	__tablename__ = 'BlogLikes'
+
+	__table_args__ = (
+        PrimaryKeyConstraint('user_id', 'blog_id'),
+    )
+
+class BlogCommentMixin(object):
+
+	@declared_attr
+	def comment_id(cls):
+		return Column('comment_id', Integer, ForeignKey("BlogCommentsCreated.comment_id"), nullable=False, index=True)
+
+
+class BlogCommentFavorites(Base,BaseTableMixin,BlogCommentMixin):
+	__tablename__ = 'BlogCommentFavorites'
+
+	__table_args__ = (
+        PrimaryKeyConstraint('user_id', 'comment_id'),
+    )
+
+class BlogCommentLikes(Base,BaseTableMixin,BlogCommentMixin):
+	__tablename__ = 'BlogCommentLikes'
+
+	__table_args__ = (
+        PrimaryKeyConstraint('user_id', 'comment_id'),
+    )
+
 def _get_blog_id( db, blog_ds_id ):
 	blog = db.session.query(BlogsCreated).filter( BlogsCreated.blog_ds_id == blog_ds_id ).first()
 	return blog and blog.blog_id
@@ -126,24 +161,70 @@ def delete_blog( timestamp, blog_ds_id ):
 									{ BlogCommentsCreated.deleted : timestamp } )
 	db.session.flush()
 
-def like_blog( blog, delta ):
+def _get_blog_rating_record( db, table, user_id, blog_id ):
+	blog_rating_record = db.session.query( table ).filter(
+									table.user_id == user_id,
+									table.blog_id == blog_id ).first()
+	return blog_rating_record
+
+def _create_blog_rating_record( db, table, user, session_id, timestamp, blog_id, delta ):
+	"""
+	Creates a like or favorite record, based on given table. If
+	the delta is negative, we delete the like or favorite record.
+	"""
+	if user is not None:
+		user_record = get_or_create_user( user )
+		user_id = user_record.user_id
+
+		blog_rating_record = _get_blog_rating_record( db, table,
+													user_id, blog_id )
+
+		if not blog_rating_record and delta > 0:
+			# Create
+			timestamp = timestamp_type( timestamp )
+			blog_rating_record = table( blog_id=blog_id,
+								user_id=user_id,
+								timestamp=timestamp,
+								session_id=session_id )
+			db.session.add( blog_rating_record )
+		elif blog_rating_record and delta < 0:
+			# Delete
+			db.session.delete( blog_rating_record )
+		db.session.flush()
+
+def like_blog( blog, user, session_id, timestamp, delta ):
 	db = get_analytics_db()
 	blog_ds_id = BlogId.get_id( blog )
-	db_blog = db.session.query(BlogsCreated).filter( BlogsCreated.blog_ds_id == blog_ds_id ).one()
+	db_blog = db.session.query(BlogsCreated).filter(
+								BlogsCreated.blog_ds_id == blog_ds_id ).first()
 	db_blog.like_count += delta
 	db.session.flush()
 
-def favorite_blog( blog, delta ):
+	if db_blog is not None:
+		blog_id = db_blog.blog_id
+		_create_blog_rating_record( db, BlogLikes, user,
+								session_id, timestamp,
+								blog_id, delta )
+
+def favorite_blog( blog, user, session_id, timestamp, delta ):
 	db = get_analytics_db()
 	blog_ds_id = BlogId.get_id( blog )
-	db_blog = db.session.query(BlogsCreated).filter( BlogsCreated.blog_ds_id == blog_ds_id ).one()
+	db_blog = db.session.query(BlogsCreated).filter(
+								BlogsCreated.blog_ds_id == blog_ds_id ).first()
 	db_blog.favorite_count += delta
 	db.session.flush()
+
+	if db_blog is not None:
+		blog_id = db_blog.blog_id
+		_create_blog_rating_record( db, BlogFavorites, user,
+								session_id, timestamp,
+								blog_id, delta )
 
 def flag_blog( blog, state ):
 	db = get_analytics_db()
 	blog_ds_id = BlogId.get_id( blog )
-	db_blog = db.session.query(BlogsCreated).filter( BlogsCreated.blog_ds_id == blog_ds_id ).one()
+	db_blog = db.session.query(BlogsCreated).filter(
+							BlogsCreated.blog_ds_id == blog_ds_id ).first()
 	db_blog.is_flagged = state
 	db.session.flush()
 
@@ -248,27 +329,66 @@ def delete_blog_comment(timestamp, comment_id):
 	comment.deleted=timestamp
 	db.session.flush()
 
-def like_comment( comment, delta ):
+def _get_blog_comment_rating_record( db, table, user_id, comment_id ):
+	blog_coment_rating_record = db.session.query( table ).filter(
+									table.user_id == user_id,
+									table.comment_id == comment_id ).first()
+	return blog_coment_rating_record
+
+def _create_blog_comment_rating_record( db, table, user, session_id, timestamp, comment_id, delta ):
+	"""
+	Creates a like or favorite record, based on given table. If
+	the delta is negative, we delete the like or favorite record.
+	"""
+	if user is not None:
+		user_record = get_or_create_user( user )
+		user_id = user_record.user_id
+
+		blog_comment_rating = _get_blog_comment_rating_record( db, table,
+															user_id, comment_id)
+
+		if not blog_comment_rating and delta > 0:
+			# Create
+			timestamp = timestamp_type( timestamp )
+			blog_comment_rating = table( comment_id=comment_id,
+								user_id=user_id,
+								timestamp=timestamp,
+								session_id=session_id )
+			db.session.add( blog_comment_rating )
+		elif blog_comment_rating and delta < 0:
+			# Delete
+			db.session.delete( blog_comment_rating )
+		db.session.flush()
+
+def like_comment( comment, user, session_id, timestamp, delta ):
 	db = get_analytics_db()
 	comment_id = CommentId.get_id( comment )
 	db_comment = db.session.query(BlogCommentsCreated).filter(
-								BlogCommentsCreated.comment_id == comment_id ).one()
+								BlogCommentsCreated.comment_id == comment_id ).first()
 	db_comment.like_count += delta
 	db.session.flush()
+	if db_comment is not None:
+		comment_id = db_comment.comment_id
+		_create_blog_comment_rating_record( db, BlogCommentLikes, user,
+								session_id, timestamp, comment_id, delta )
 
-def favorite_comment( comment, delta ):
+def favorite_comment( comment, user, session_id, timestamp, delta ):
 	db = get_analytics_db()
 	comment_id = CommentId.get_id( comment )
 	db_comment = db.session.query(BlogCommentsCreated).filter(
-									BlogCommentsCreated.comment_id == comment_id ).one()
+									BlogCommentsCreated.comment_id == comment_id ).first()
 	db_comment.favorite_count += delta
 	db.session.flush()
+	if db_comment is not None:
+		comment_id = db_comment.comment_id
+		_create_blog_comment_rating_record( db, BlogCommentFavorites, user,
+								session_id, timestamp, comment_id, delta )
 
 def flag_comment( comment, state ):
 	db = get_analytics_db()
 	comment_id = CommentId.get_id( comment )
 	db_comment = db.session.query(BlogCommentsCreated).filter(
-									BlogCommentsCreated.comment_id == comment_id ).one()
+									BlogCommentsCreated.comment_id == comment_id ).first()
 	db_comment.is_flagged = state
 	db.session.flush()
 

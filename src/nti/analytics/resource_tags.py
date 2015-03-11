@@ -15,6 +15,7 @@ from datetime import datetime
 from contentratings.interfaces import IObjectRatedEvent
 
 from nti.dataserver import interfaces as nti_interfaces
+from nti.dataserver.users.users import User
 
 from nti.ntiids import ntiids
 
@@ -24,9 +25,9 @@ from nti.analytics import interfaces as analytic_interfaces
 
 from nti.analytics.sessions import get_nti_session_id
 
-from .common import get_creator
-from .common import process_event
-from .common import get_rating_from_event
+from nti.analytics.common import get_creator
+from nti.analytics.common import process_event
+from nti.analytics.common import get_rating_from_event
 
 from nti.analytics.resolvers import get_root_context
 
@@ -71,16 +72,18 @@ def _flag_note( oid, state=False ):
 		db_resource_tags.flag_note( note, state )
 		logger.debug( 'Note flagged (note=%s) (state=%s)', note, state )
 
-def _favorite_note( oid, delta=0 ):
+def _favorite_note( oid, username, delta=0, timestamp=None, nti_session=None ):
 	note = ntiids.find_object_with_ntiid( oid )
 	if note is not None:
-		db_resource_tags.favorite_note( note, delta )
+		user = User.get_user( username )
+		db_resource_tags.favorite_note( note, user, nti_session, timestamp, delta )
 		logger.debug( 'Note favorite (note=%s)', note )
 
-def _like_note( oid, delta=0 ):
+def _like_note( oid, username, delta=0, timestamp=None, nti_session=None ):
 	note = ntiids.find_object_with_ntiid( oid )
 	if note is not None:
-		db_resource_tags.like_note( note, delta )
+		user = User.get_user( username )
+		db_resource_tags.like_note( note, user, nti_session, timestamp, delta )
 		logger.debug( 'Note liked (note=%s)', note )
 
 @component.adapter( nti_interfaces.IObjectFlaggingEvent )
@@ -94,15 +97,19 @@ def _note_flagged( event ):
 def _note_rated( event ):
 	obj = event.object
 	if _is_note( obj ):
+		timestamp = event.rating.timestamp
+		nti_session = get_nti_session_id()
 		is_favorite, delta = get_rating_from_event( event )
 		to_call = _favorite_note if is_favorite else _like_note
-		process_event( _get_job_queue, to_call, obj, delta=delta )
+		process_event( _get_job_queue, to_call, obj,
+					event.rating.userid, delta=delta,
+					nti_session=nti_session,
+					timestamp=timestamp )
 
 @component.adapter(	nti_interfaces.INote,
 					intid_interfaces.IIntIdAddedEvent )
 def _note_added( obj, event ):
 	if _is_note( obj ):
-		user = get_creator( obj )
 		nti_session = get_nti_session_id()
 		process_event( _get_job_queue, _add_note, obj, nti_session=nti_session )
 
@@ -136,7 +143,6 @@ def _remove_highlight( highlight_id, timestamp=None ):
 					intid_interfaces.IIntIdAddedEvent )
 def _highlight_added( obj, event ):
 	if _is_highlight( obj ):
-		user = get_creator( obj )
 		nti_session = get_nti_session_id()
 		process_event( _get_job_queue, _add_highlight, obj, nti_session=nti_session )
 

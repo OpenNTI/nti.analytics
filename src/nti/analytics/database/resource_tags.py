@@ -67,6 +67,28 @@ class NotesViewed(Base,BaseViewMixin,NoteMixin):
         PrimaryKeyConstraint('note_id', 'user_id', 'timestamp'),
     )
 
+class NoteRatingMixin(object):
+
+	@declared_attr
+	def note_id(cls):
+		return Column('note_id', Integer, ForeignKey("NotesCreated.note_id"), nullable=False, index=True )
+
+
+class NoteFavorites(Base,BaseTableMixin,NoteRatingMixin):
+	__tablename__ = 'NoteFavorites'
+
+	__table_args__ = (
+        PrimaryKeyConstraint('user_id', 'note_id'),
+    )
+
+class NoteLikes(Base,BaseTableMixin,NoteRatingMixin):
+	__tablename__ = 'NoteLikes'
+
+	__table_args__ = (
+        PrimaryKeyConstraint('user_id', 'note_id'),
+    )
+
+
 class HighlightsCreated(Base,BaseTableMixin,ResourceMixin,DeletedMixin):
 	__tablename__ = 'HighlightsCreated'
 	highlight_ds_id = Column('highlight_ds_id', INTID_COLUMN_TYPE, index=True, nullable=True, autoincrement=False )
@@ -167,24 +189,69 @@ def delete_note(timestamp, note_ds_id):
 	note.note_ds_id = None
 	db.session.flush()
 
-def like_note( note, delta ):
+def _get_note_rating_record( db, table, user_id, note_id ):
+	note_rating_record = db.session.query( table ).filter(
+									table.user_id == user_id,
+									table.note_id == note_id ).first()
+	return note_rating_record
+
+def _create_note_rating_record( db, table, user, session_id, timestamp, note_id, delta ):
+	"""
+	Creates a like or favorite record, based on given table. If
+	the delta is negative, we delete the like or favorite record.
+	"""
+	if user is not None:
+		user_record = get_or_create_user( user )
+		user_id = user_record.user_id
+
+		note_rating_record = _get_note_rating_record( db, table,
+													user_id, note_id )
+
+		if not note_rating_record and delta > 0:
+			# Create
+			timestamp = timestamp_type( timestamp )
+			note_rating_record = table( note_id=note_id,
+								user_id=user_id,
+								timestamp=timestamp,
+								session_id=session_id )
+			db.session.add( note_rating_record )
+		elif note_rating_record and delta < 0:
+			# Delete
+			db.session.delete( note_rating_record )
+
+def like_note( note, user, session_id, timestamp, delta ):
 	db = get_analytics_db()
 	note_ds_id = NoteId.get_id( note )
-	db_note = db.session.query(NotesCreated).filter( NotesCreated.note_ds_id == note_ds_id ).one()
+	db_note = db.session.query(NotesCreated).filter(
+							NotesCreated.note_ds_id == note_ds_id ).first()
 	db_note.like_count += delta
 	db.session.flush()
 
-def favorite_note( note, delta ):
+	if db_note is not None:
+		note_id = db_note.note_id
+		_create_note_rating_record( db, NoteLikes, user,
+								session_id, timestamp,
+								note_id, delta )
+
+def favorite_note( note, user, session_id, timestamp, delta ):
 	db = get_analytics_db()
 	note_ds_id = NoteId.get_id( note )
-	db_note = db.session.query(NotesCreated).filter( NotesCreated.note_ds_id == note_ds_id ).one()
+	db_note = db.session.query(NotesCreated).filter(
+							NotesCreated.note_ds_id == note_ds_id ).first()
 	db_note.favorite_count += delta
 	db.session.flush()
+
+	if db_note is not None:
+		note_id = db_note.note_id
+		_create_note_rating_record( db, NoteFavorites, user,
+								session_id, timestamp,
+								note_id, delta )
 
 def flag_note( note, state ):
 	db = get_analytics_db()
 	note_ds_id = NoteId.get_id( note )
-	db_note = db.session.query(NotesCreated).filter( NotesCreated.note_ds_id == note_ds_id ).one()
+	db_note = db.session.query(NotesCreated).filter(
+							NotesCreated.note_ds_id == note_ds_id ).first()
 	db_note.is_flagged = state
 	db.session.flush()
 

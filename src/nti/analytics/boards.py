@@ -14,6 +14,7 @@ from zope.lifecycleevent import interfaces as lce_interfaces
 from contentratings.interfaces import IObjectRatedEvent
 
 from nti.dataserver import interfaces as nti_interfaces
+from nti.dataserver.users.users import User
 from nti.dataserver.contenttypes.forums import interfaces as frm_interfaces
 
 from nti.intid import interfaces as intid_interfaces
@@ -96,23 +97,24 @@ def _flag_comment( oid, state=False ):
 		db_boards.flag_comment( comment, state )
 		logger.debug( 'Comment flagged (comment=%s) (state=%s)', comment, state )
 
-def _favorite_comment( oid, delta=0 ):
+def _favorite_comment( oid, username, delta=0, timestamp=None, nti_session=None ):
 	comment = ntiids.find_object_with_ntiid( oid )
 	if comment is not None:
-		db_boards.favorite_comment( comment, delta )
+		user = User.get_user( username )
+		db_boards.favorite_comment( comment, user, nti_session, timestamp, delta )
 		logger.debug( 'Comment favorite (comment=%s)', comment )
 
-def _like_comment( oid, delta=0 ):
+def _like_comment( oid, username, delta=0, timestamp=None, nti_session=None ):
 	comment = ntiids.find_object_with_ntiid( oid )
 	if comment is not None:
-		db_boards.like_comment( comment, delta )
+		user = User.get_user( username )
+		db_boards.like_comment( comment, user, nti_session, timestamp, delta )
 		logger.debug( 'Comment liked (comment=%s)', comment )
 
 @component.adapter( frm_interfaces.IGeneralForumComment,
 					intid_interfaces.IIntIdAddedEvent )
 def _add_general_forum_comment(comment, event):
 	if _is_forum_comment( comment ):
-		user = get_creator( comment )
 		nti_session = get_nti_session_id()
 		process_event( _get_comments_queue, _add_comment, comment, nti_session=nti_session )
 
@@ -149,16 +151,18 @@ def _flag_topic( oid, state=False ):
 		db_boards.flag_topic( topic, state )
 		logger.debug( 'Topic flagged (topic=%s) (state=%s)', topic, state )
 
-def _favorite_topic( oid, delta=0 ):
+def _favorite_topic( oid, username, delta=0, timestamp=None, nti_session=None):
 	topic = ntiids.find_object_with_ntiid( oid )
 	if topic is not None:
-		db_boards.favorite_topic( topic, delta )
+		user = User.get_user( username )
+		db_boards.favorite_topic( topic, user, nti_session, timestamp, delta )
 		logger.debug( 'Topic favorite (topic=%s)', topic )
 
-def _like_topic( oid, delta=0 ):
+def _like_topic( oid, username, delta=0, timestamp=None, nti_session=None ):
 	topic = ntiids.find_object_with_ntiid( oid )
 	if topic is not None:
-		db_boards.like_topic( topic, delta )
+		user = User.get_user( username )
+		db_boards.like_topic( topic, user, nti_session, timestamp, delta )
 		logger.debug( 'Topic liked (topic=%s)', topic )
 
 @component.adapter( nti_interfaces.IObjectFlaggingEvent )
@@ -173,19 +177,29 @@ def _topic_flagged( event ):
 @component.adapter( IObjectRatedEvent )
 def _topic_rated( event ):
 	obj = event.object
+
 	if _is_topic( obj ):
-		is_favorite, delta = get_rating_from_event( event )
-		to_call = _favorite_topic if is_favorite else _like_topic
-		process_event( _get_topic_queue, to_call, obj, delta=delta )
+		_like_call = _like_topic
+		_favorite_call = _favorite_topic
+		_queue = _get_topic_queue
 	elif _is_forum_comment( obj ):
+		_like_call = _like_comment
+		_favorite_call = _favorite_comment
+		_queue = _get_comments_queue
+
+	if _like_call is not None:
+		timestamp = event.rating.timestamp
+		nti_session = get_nti_session_id()
 		is_favorite, delta = get_rating_from_event( event )
-		to_call = _favorite_comment if is_favorite else _like_comment
-		process_event( _get_comments_queue, to_call, obj, delta=delta )
+		to_call = _favorite_call if is_favorite else _like_call
+		process_event( _queue, to_call,
+					obj, event.rating.userid,
+					delta=delta, nti_session=nti_session,
+					timestamp=timestamp )
 
 @component.adapter( frm_interfaces.ITopic, intid_interfaces.IIntIdAddedEvent )
 def _topic_added( topic, event ):
 	if _is_topic( topic ):
-		user = get_creator( topic )
 		nti_session = get_nti_session_id()
 		process_event( _get_topic_queue, _add_topic, topic, nti_session=nti_session )
 
@@ -217,7 +231,6 @@ def _add_forum( oid, nti_session=None ):
 
 @component.adapter( frm_interfaces.IForum, intid_interfaces.IIntIdAddedEvent )
 def _forum_added( forum, event ):
-	user = get_creator( forum )
 	nti_session = get_nti_session_id()
 	process_event( _get_board_queue, _add_forum, forum, nti_session=nti_session )
 

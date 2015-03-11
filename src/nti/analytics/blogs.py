@@ -16,6 +16,7 @@ from contentratings.interfaces import IObjectRatedEvent
 from nti.intid import interfaces as intid_interfaces
 
 from nti.dataserver import interfaces as nti_interfaces
+from nti.dataserver.users.users import User
 from nti.dataserver.contenttypes.forums import interfaces as frm_interfaces
 
 from nti.ntiids import ntiids
@@ -76,22 +77,23 @@ def _flag_comment( oid, state=False ):
 		db_blogs.flag_comment( comment, state )
 		logger.debug( 'Blog comment flagged (comment=%s) (state=%s)', comment, state )
 
-def _favorite_comment( oid, delta=0 ):
+def _favorite_comment( oid, username, delta=0, timestamp=None, nti_session=None ):
 	comment = ntiids.find_object_with_ntiid( oid )
 	if comment is not None:
-		db_blogs.favorite_comment( comment, delta )
+		user = User.get_user( username )
+		db_blogs.favorite_comment( comment, user, nti_session, timestamp, delta )
 		logger.debug( 'Comment favorite (comment=%s)', comment )
 
-def _like_comment( oid, delta=0 ):
+def _like_comment( oid, username, delta=0, timestamp=None, nti_session=None ):
 	comment = ntiids.find_object_with_ntiid( oid )
 	if comment is not None:
-		db_blogs.like_comment( comment, delta )
+		user = User.get_user( username )
+		db_blogs.like_comment( comment, user, nti_session, timestamp, delta )
 		logger.debug( 'Comment liked (comment=%s)', comment )
 
 @component.adapter( frm_interfaces.IPersonalBlogComment,
 					intid_interfaces.IIntIdAddedEvent)
 def _add_personal_blog_comment(comment, event):
-	user = get_creator( comment )
 	nti_session = get_nti_session_id()
 	process_event( _get_comment_queue, _add_comment, comment, nti_session=nti_session )
 
@@ -118,7 +120,6 @@ def _add_blog( oid, nti_session=None ):
 		logger.debug( "Blog created (user=%s) (blog=%s)", user, blog )
 
 def _do_blog_added( blog, event ):
-	user = get_creator( blog )
 	nti_session = get_nti_session_id()
 	process_event( _get_blog_queue, _add_blog, blog, nti_session=nti_session )
 
@@ -128,16 +129,18 @@ def _flag_blog( oid, state=False ):
 		db_blogs.flag_blog( blog, state )
 		logger.debug( 'Blog flagged (blog=%s) (state=%s)', blog, state )
 
-def _favorite_blog( oid, delta=0 ):
+def _favorite_blog( oid, username, delta=0, timestamp=None, nti_session=None ):
 	blog = ntiids.find_object_with_ntiid( oid )
 	if blog is not None:
-		db_blogs.favorite_blog( blog, delta )
+		user = User.get_user( username )
+		db_blogs.favorite_blog( blog, user, nti_session, timestamp, delta )
 		logger.debug( 'Blog favorite (blog=%s)', blog )
 
-def _like_blog( oid, delta=0 ):
+def _like_blog( oid, username, delta=0, timestamp=None, nti_session=None ):
 	blog = ntiids.find_object_with_ntiid( oid )
 	if blog is not None:
-		db_blogs.like_blog( blog, delta )
+		user = User.get_user( username )
+		db_blogs.like_blog( blog, user, nti_session, timestamp, delta )
 		logger.debug( 'Blog liked (blog=%s)', blog )
 
 
@@ -154,14 +157,26 @@ def _blog_flagged( event ):
 @component.adapter( IObjectRatedEvent )
 def _blog_rated( event ):
 	obj = event.object
+	_favorite_call = _like_call = _queue = None
+
 	if _is_blog( obj ):
-		is_favorite, delta = get_rating_from_event( event )
-		to_call = _favorite_blog if is_favorite else _like_blog
-		process_event( _get_blog_queue, to_call, obj, delta=delta )
+		_like_call = _like_blog
+		_favorite_call = _favorite_blog
+		_queue = _get_blog_queue
 	elif _is_blog_comment( obj ):
+		_like_call = _like_comment
+		_favorite_call = _favorite_comment
+		_queue = _get_comment_queue
+
+	if _like_call is not None:
+		timestamp = event.rating.timestamp
+		nti_session = get_nti_session_id()
 		is_favorite, delta = get_rating_from_event( event )
-		to_call = _favorite_comment if is_favorite else _like_comment
-		process_event( _get_comment_queue, to_call, obj, delta=delta )
+		to_call = _favorite_call if is_favorite else _like_call
+		process_event( _queue, to_call,
+					obj, event.rating.userid,
+					delta=delta, nti_session=nti_session,
+					timestamp=timestamp )
 
 @component.adapter(	frm_interfaces.IPersonalBlogEntry,
 					intid_interfaces.IIntIdAddedEvent )

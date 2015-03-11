@@ -27,9 +27,13 @@ MockFL = MockNote = MockHighlight = MockTopic = MockComment = MockThought = Mock
 
 from nti.analytics.database import blogs as db_blogs
 
+from nti.analytics.database.blogs import BlogLikes
+from nti.analytics.database.blogs import BlogFavorites
 from nti.analytics.database.blogs import BlogsCreated
 from nti.analytics.database.blogs import BlogsViewed
 from nti.analytics.database.blogs import BlogCommentsCreated
+from nti.analytics.database.blogs import BlogCommentLikes
+from nti.analytics.database.blogs import BlogCommentFavorites
 
 from nti.analytics.database.users import get_user_db_id
 
@@ -128,6 +132,41 @@ class TestBlog(AnalyticsTestBase):
 		blog_view = results[0]
 		assert_that( blog_view.time_length, is_( new_time_length ) )
 
+	def _do_test_rating(self, table, _rating_call ):
+		"For table and rating call, do basic tests."
+		results = self.session.query( table ).all()
+		assert_that( results, has_length( 0 ) )
+
+		event_time = datetime.now()
+		new_blog_ds_id = 999
+		new_blog = MockParent( None, intid=new_blog_ds_id )
+		new_blog_record = db_blogs.create_blog( test_user_ds_id, test_session_id, new_blog )
+
+		delta = 1
+		_rating_call( new_blog_ds_id, test_user_ds_id,
+						test_session_id, event_time, delta )
+
+		results = self.session.query( table ).all()
+		assert_that( results, has_length( 1 ) )
+
+		rating_record = results[0]
+		assert_that( rating_record.user_id, is_( new_blog_record.user_id ) )
+		assert_that( rating_record.session_id, is_( test_session_id ) )
+		assert_that( rating_record.blog_id, is_( new_blog_record.blog_id ) )
+		assert_that( rating_record.timestamp, not_none() )
+
+		# Now revert
+		delta = -1
+		_rating_call( new_blog, test_user_ds_id, test_session_id, event_time, delta )
+		results = self.session.query( table ).all()
+		assert_that( results, has_length( 0 ) )
+
+	def test_likes(self):
+		self._do_test_rating( BlogLikes, db_blogs.like_blog )
+
+	def test_favorites(self):
+		self._do_test_rating( BlogFavorites, db_blogs.favorite_blog )
+
 class TestBlogComments(AnalyticsTestBase):
 
 	def setUp(self):
@@ -225,6 +264,42 @@ class TestBlogComments(AnalyticsTestBase):
 		assert_that( blog_comment.blog_id, is_( self.blog_id ) )
 		assert_that( blog_comment.comment_id, is_( comment_id ) )
 		assert_that( blog_comment.deleted, not_none() )
+
+	def _do_test_rating(self, table, _rating_call ):
+		"For table and rating call, do basic tests."
+		results = self.session.query( table ).all()
+		assert_that( results, has_length( 0 ) )
+
+		event_time = datetime.now()
+		comment_id = DEFAULT_INTID
+		my_comment = MockComment( CommentPost(), inReplyTo=CommentPost(), intid=comment_id )
+		comment_record = db_blogs.create_blog_comment( test_user_ds_id, test_session_id,
+													self.blog_ds_id, my_comment )
+
+		delta = 1
+		_rating_call( comment_id, test_user_ds_id,
+						test_session_id, event_time, delta )
+
+		results = self.session.query( table ).all()
+		assert_that( results, has_length( 1 ) )
+
+		rating_record = results[0]
+		assert_that( rating_record.user_id, is_( comment_record.user_id ) )
+		assert_that( rating_record.session_id, is_( test_session_id ) )
+		assert_that( rating_record.comment_id, is_( comment_record.comment_id ) )
+		assert_that( rating_record.timestamp, not_none() )
+
+		# Now revert
+		delta = -1
+		_rating_call( comment_id, test_user_ds_id, test_session_id, event_time, delta )
+		results = self.session.query( table ).all()
+		assert_that( results, has_length( 0 ) )
+
+	def test_likes(self):
+		self._do_test_rating( BlogCommentLikes, db_blogs.like_comment )
+
+	def test_favorites(self):
+		self._do_test_rating( BlogCommentFavorites, db_blogs.favorite_comment )
 
 class TestBlogLazyCreate(AnalyticsTestBase):
 	"""

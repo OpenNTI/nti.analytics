@@ -34,6 +34,8 @@ from nti.analytics.database.resources import Resources
 
 from nti.analytics.database.resource_views import CourseResourceViews
 from nti.analytics.database.resource_views import VideoEvents
+from nti.analytics.database.resource_tags import NoteLikes
+from nti.analytics.database.resource_tags import NoteFavorites
 from nti.analytics.database.resource_tags import NotesCreated
 from nti.analytics.database.resource_tags import NotesViewed
 from nti.analytics.database.resource_tags import HighlightsCreated
@@ -411,6 +413,46 @@ class TestCourseResources(AnalyticsTestBase):
 		assert_that( results, has_length( 2 ) )
 		result_owners = [x.user_id for x in results]
 		assert_that( result_owners, contains_inanyorder( note_db_id, parent_note_db_id ))
+
+	def _do_test_rating(self, table, _rating_call ):
+		"For table and rating call, do basic tests."
+		results = self.session.query( table ).all()
+		assert_that( results, has_length( 0 ) )
+
+		event_time = datetime.now()
+		# Note
+		resource_id = 'ntiid:course_resource'
+		note_ds_id = DEFAULT_INTID
+		my_note = MockNote( resource_id, containerId=resource_id, intid=note_ds_id )
+
+		# Create note
+		note_record = db_tags.create_note( test_user_ds_id,
+							test_session_id, self.course_id, my_note )
+
+		delta = 1
+		_rating_call( my_note, test_user_ds_id,
+						test_session_id, event_time, delta )
+
+		results = self.session.query( table ).all()
+		assert_that( results, has_length( 1 ) )
+
+		rating_record = results[0]
+		assert_that( rating_record.user_id, not_none() )
+		assert_that( rating_record.session_id, is_( test_session_id ) )
+		assert_that( rating_record.note_id, is_( note_record.note_id ))
+		assert_that( rating_record.timestamp, not_none() )
+
+		# Now revert
+		delta = -1
+		_rating_call( my_note, test_user_ds_id, test_session_id, event_time, delta )
+		results = self.session.query( table ).all()
+		assert_that( results, has_length( 0 ) )
+
+	def test_likes(self):
+		self._do_test_rating( NoteLikes, db_tags.like_note )
+
+	def test_favorites(self):
+		self._do_test_rating( NoteFavorites, db_tags.favorite_note )
 
 	def test_highlight(self):
 		results = self.session.query( HighlightsCreated ).all()
