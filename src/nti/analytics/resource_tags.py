@@ -72,14 +72,14 @@ def _flag_note( oid, state=False ):
 		db_resource_tags.flag_note( note, state )
 		logger.debug( 'Note flagged (note=%s) (state=%s)', note, state )
 
-def _favorite_note( oid, username, delta=0, timestamp=None, nti_session=None ):
+def _favorite_note( oid, username=None, delta=0, timestamp=None, nti_session=None ):
 	note = ntiids.find_object_with_ntiid( oid )
 	if note is not None:
 		user = User.get_user( username )
 		db_resource_tags.favorite_note( note, user, nti_session, timestamp, delta )
 		logger.debug( 'Note favorite (note=%s)', note )
 
-def _like_note( oid, username, delta=0, timestamp=None, nti_session=None ):
+def _like_note( oid, username=None, delta=0, timestamp=None, nti_session=None ):
 	note = ntiids.find_object_with_ntiid( oid )
 	if note is not None:
 		user = User.get_user( username )
@@ -102,7 +102,8 @@ def _note_rated( event ):
 		is_favorite, delta = get_rating_from_event( event )
 		to_call = _favorite_note if is_favorite else _like_note
 		process_event( _get_job_queue, to_call, obj,
-					event.rating.userid, delta=delta,
+					username=event.rating.userid,
+					delta=delta,
 					nti_session=nti_session,
 					timestamp=timestamp )
 

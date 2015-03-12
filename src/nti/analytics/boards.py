@@ -97,14 +97,14 @@ def _flag_comment( oid, state=False ):
 		db_boards.flag_comment( comment, state )
 		logger.debug( 'Comment flagged (comment=%s) (state=%s)', comment, state )
 
-def _favorite_comment( oid, username, delta=0, timestamp=None, nti_session=None ):
+def _favorite_comment( oid, username=None, delta=0, timestamp=None, nti_session=None ):
 	comment = ntiids.find_object_with_ntiid( oid )
 	if comment is not None:
 		user = User.get_user( username )
 		db_boards.favorite_comment( comment, user, nti_session, timestamp, delta )
 		logger.debug( 'Comment favorite (comment=%s)', comment )
 
-def _like_comment( oid, username, delta=0, timestamp=None, nti_session=None ):
+def _like_comment( oid, username=None, delta=0, timestamp=None, nti_session=None ):
 	comment = ntiids.find_object_with_ntiid( oid )
 	if comment is not None:
 		user = User.get_user( username )
@@ -151,14 +151,14 @@ def _flag_topic( oid, state=False ):
 		db_boards.flag_topic( topic, state )
 		logger.debug( 'Topic flagged (topic=%s) (state=%s)', topic, state )
 
-def _favorite_topic( oid, username, delta=0, timestamp=None, nti_session=None):
+def _favorite_topic( oid, username=None, delta=0, timestamp=None, nti_session=None):
 	topic = ntiids.find_object_with_ntiid( oid )
 	if topic is not None:
 		user = User.get_user( username )
 		db_boards.favorite_topic( topic, user, nti_session, timestamp, delta )
 		logger.debug( 'Topic favorite (topic=%s)', topic )
 
-def _like_topic( oid, username, delta=0, timestamp=None, nti_session=None ):
+def _like_topic( oid, username=None, delta=0, timestamp=None, nti_session=None ):
 	topic = ntiids.find_object_with_ntiid( oid )
 	if topic is not None:
 		user = User.get_user( username )
@@ -194,8 +194,10 @@ def _topic_rated( event ):
 		is_favorite, delta = get_rating_from_event( event )
 		to_call = _favorite_call if is_favorite else _like_call
 		process_event( _queue, to_call,
-					obj, event.rating.userid,
-					delta=delta, nti_session=nti_session,
+					obj,
+					username=event.rating.userid,
+					delta=delta,
+					nti_session=nti_session,
 					timestamp=timestamp )
 
 @component.adapter( frm_interfaces.ITopic, intid_interfaces.IIntIdAddedEvent )

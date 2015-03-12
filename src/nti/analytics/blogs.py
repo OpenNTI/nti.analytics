@@ -77,14 +77,14 @@ def _flag_comment( oid, state=False ):
 		db_blogs.flag_comment( comment, state )
 		logger.debug( 'Blog comment flagged (comment=%s) (state=%s)', comment, state )
 
-def _favorite_comment( oid, username, delta=0, timestamp=None, nti_session=None ):
+def _favorite_comment( oid, username=None, delta=0, timestamp=None, nti_session=None ):
 	comment = ntiids.find_object_with_ntiid( oid )
 	if comment is not None:
 		user = User.get_user( username )
 		db_blogs.favorite_comment( comment, user, nti_session, timestamp, delta )
 		logger.debug( 'Comment favorite (comment=%s)', comment )
 
-def _like_comment( oid, username, delta=0, timestamp=None, nti_session=None ):
+def _like_comment( oid, username=None, delta=0, timestamp=None, nti_session=None ):
 	comment = ntiids.find_object_with_ntiid( oid )
 	if comment is not None:
 		user = User.get_user( username )
@@ -129,14 +129,14 @@ def _flag_blog( oid, state=False ):
 		db_blogs.flag_blog( blog, state )
 		logger.debug( 'Blog flagged (blog=%s) (state=%s)', blog, state )
 
-def _favorite_blog( oid, username, delta=0, timestamp=None, nti_session=None ):
+def _favorite_blog( oid, username=None, delta=0, timestamp=None, nti_session=None ):
 	blog = ntiids.find_object_with_ntiid( oid )
 	if blog is not None:
 		user = User.get_user( username )
 		db_blogs.favorite_blog( blog, user, nti_session, timestamp, delta )
 		logger.debug( 'Blog favorite (blog=%s)', blog )
 
-def _like_blog( oid, username, delta=0, timestamp=None, nti_session=None ):
+def _like_blog( oid, username=None, delta=0, timestamp=None, nti_session=None ):
 	blog = ntiids.find_object_with_ntiid( oid )
 	if blog is not None:
 		user = User.get_user( username )
@@ -174,7 +174,8 @@ def _blog_rated( event ):
 		is_favorite, delta = get_rating_from_event( event )
 		to_call = _favorite_call if is_favorite else _like_call
 		process_event( _queue, to_call,
-					obj, event.rating.userid,
+					obj,
+					username=event.rating.userid,
 					delta=delta, nti_session=nti_session,
 					timestamp=timestamp )
 
