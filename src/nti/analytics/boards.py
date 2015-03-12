@@ -177,6 +177,7 @@ def _topic_flagged( event ):
 @component.adapter( IObjectRatedEvent )
 def _topic_rated( event ):
 	obj = event.object
+	_favorite_call = _like_call = _queue = None
 
 	if _is_topic( obj ):
 		_like_call = _like_topic
