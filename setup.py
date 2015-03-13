@@ -33,6 +33,10 @@ setup(
 	install_requires=[
 		'setuptools',
 		'nti.async',
+		'nti.app.assessment',
+		'nti.app.products.courseware',
+		'nti.app.products.courseware_ims',
+		'nti.app.products.gradebook',
 		'predictionio',
 		'python-geoip',
 		'python-geoip-geolite2'
