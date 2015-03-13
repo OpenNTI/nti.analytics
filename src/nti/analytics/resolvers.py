@@ -22,11 +22,7 @@ from nti.contenttypes.courses.interfaces import ICourseInstance
 
 from nti.contentlibrary.interfaces import IContentPackage
 from nti.contentlibrary.interfaces import IContentPackageLibraryModifiedOnSyncEvent
-from nti.contentlibrary.indexed_data.interfaces import IAudioIndexedDataContainer
-from nti.contentlibrary.indexed_data.interfaces import IVideoIndexedDataContainer
-from nti.contentlibrary.indexed_data.interfaces import IRelatedContentIndexedDataContainer
-from nti.contentlibrary.indexed_data.interfaces import ISlideDeckIndexedDataContainer
-from nti.contentlibrary.indexed_data.interfaces import ITimelineIndexedDataContainer
+from nti.contentlibrary.indexed_data.interfaces import CONTAINER_IFACES
 
 from nti.externalization.externalization import to_external_ntiid_oid
 
@@ -41,13 +37,7 @@ from nti.analytics import SESSIONS_ANALYTICS
 
 from nti.analytics.common import process_event
 
-## FIXME Need tests
-
-CONTAINER_IFACES = (IRelatedContentIndexedDataContainer,
-					IVideoIndexedDataContainer,
-					IAudioIndexedDataContainer,
-					ISlideDeckIndexedDataContainer,
-					ITimelineIndexedDataContainer)
+## TODO Need tests
 
 def _get_job_queue():
 	factory = get_factory()
