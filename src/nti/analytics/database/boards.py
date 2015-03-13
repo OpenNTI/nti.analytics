@@ -113,7 +113,7 @@ class ForumCommentMixin(object):
 
 	@declared_attr
 	def comment_id(cls):
-		return Column('comment_id', Integer, nullable=False, index=True)
+		return Column('comment_id', Integer, ForeignKey("ForumCommentsCreated.comment_id"), nullable=False, index=True)
 
 
 class ForumCommentFavorites(Base,BaseTableMixin,ForumCommentMixin):

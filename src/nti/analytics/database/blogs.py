@@ -85,7 +85,7 @@ class BlogCommentMixin(object):
 
 	@declared_attr
 	def comment_id(cls):
-		return Column('comment_id', Integer, nullable=False, index=True)
+		return Column('comment_id', Integer, ForeignKey("BlogCommentsCreated.comment_id"), nullable=False, index=True)
 
 
 class BlogCommentFavorites(Base,BaseTableMixin,BlogCommentMixin):
