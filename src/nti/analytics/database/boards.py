@@ -113,7 +113,7 @@ class ForumCommentMixin(object):
 
 	@declared_attr
 	def comment_id(cls):
-		return Column('comment_id', Integer, ForeignKey("ForumCommentsCreated.comment_id"), nullable=False, index=True)
+		return Column('comment_id', Integer, nullable=False, index=True)
 
 
 class ForumCommentFavorites(Base,BaseTableMixin,ForumCommentMixin):
@@ -307,7 +307,7 @@ def _create_topic_rating_record( db, table, user, session_id, timestamp, topic_i
 def like_topic( topic, user, session_id, timestamp, delta ):
 	db = get_analytics_db()
 	topic_ds_id = TopicId.get_id( topic )
-	db_topic = db.session.query(TopicsCreated).filter( TopicsCreated.topic_ds_id == topic_ds_id ).one()
+	db_topic = db.session.query(TopicsCreated).filter( TopicsCreated.topic_ds_id == topic_ds_id ).first()
 	db_topic.like_count += delta
 	db.session.flush()
 
@@ -319,7 +319,7 @@ def like_topic( topic, user, session_id, timestamp, delta ):
 def favorite_topic( topic, user, session_id, timestamp, delta ):
 	db = get_analytics_db()
 	topic_ds_id = TopicId.get_id( topic )
-	db_topic = db.session.query(TopicsCreated).filter( TopicsCreated.topic_ds_id == topic_ds_id ).one()
+	db_topic = db.session.query(TopicsCreated).filter( TopicsCreated.topic_ds_id == topic_ds_id ).first()
 	db_topic.favorite_count += delta
 	db.session.flush()
 
@@ -331,7 +331,7 @@ def favorite_topic( topic, user, session_id, timestamp, delta ):
 def flag_topic( topic, state ):
 	db = get_analytics_db()
 	topic_ds_id = TopicId.get_id( topic )
-	db_topic = db.session.query(TopicsCreated).filter( TopicsCreated.topic_ds_id == topic_ds_id ).one()
+	db_topic = db.session.query(TopicsCreated).filter( TopicsCreated.topic_ds_id == topic_ds_id ).first()
 	db_topic.is_flagged = state
 	db.session.flush()
 

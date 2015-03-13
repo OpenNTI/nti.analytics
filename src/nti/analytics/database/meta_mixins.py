@@ -87,7 +87,7 @@ class CommentsMixin(BaseTableMixin,DeletedMixin):
 	# comment_id should be the DS intid
 	@declared_attr
 	def comment_id(cls):
-		return Column('comment_id', INTID_COLUMN_TYPE, nullable=False, autoincrement=False)
+		return Column('comment_id', INTID_COLUMN_TYPE, index=True, nullable=False, autoincrement=False)
 
 	@declared_attr
 	def comment_length(cls):
