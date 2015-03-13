@@ -81,26 +81,26 @@ class BlogLikes(Base,BaseTableMixin,BlogMixin):
         PrimaryKeyConstraint('user_id', 'blog_id'),
     )
 
-# class BlogCommentMixin(object):
-#
-# 	@declared_attr
-# 	def comment_id(cls):
-# 		return Column('comment_id', Integer, ForeignKey("BlogCommentsCreated.comment_id"), nullable=False, index=True)
-#
-#
-# class BlogCommentFavorites(Base,BaseTableMixin,BlogCommentMixin):
-# 	__tablename__ = 'BlogCommentFavorites'
-#
-# 	__table_args__ = (
-#         PrimaryKeyConstraint('user_id', 'comment_id'),
-#     )
-#
-# class BlogCommentLikes(Base,BaseTableMixin,BlogCommentMixin):
-# 	__tablename__ = 'BlogCommentLikes'
-#
-# 	__table_args__ = (
-#         PrimaryKeyConstraint('user_id', 'comment_id'),
-#     )
+class BlogCommentMixin(object):
+
+	@declared_attr
+	def comment_id(cls):
+		return Column('comment_id', INTID_COLUMN_TYPE, ForeignKey("BlogCommentsCreated.comment_id"), nullable=False, index=True)
+
+
+class BlogCommentFavorites(Base,BaseTableMixin,BlogCommentMixin):
+	__tablename__ = 'BlogCommentFavorites'
+
+	__table_args__ = (
+        PrimaryKeyConstraint('user_id', 'comment_id'),
+    )
+
+class BlogCommentLikes(Base,BaseTableMixin,BlogCommentMixin):
+	__tablename__ = 'BlogCommentLikes'
+
+	__table_args__ = (
+        PrimaryKeyConstraint('user_id', 'comment_id'),
+    )
 
 def _get_blog_id( db, blog_ds_id ):
 	blog = db.session.query(BlogsCreated).filter( BlogsCreated.blog_ds_id == blog_ds_id ).first()
@@ -369,8 +369,8 @@ def like_comment( comment, user, session_id, timestamp, delta ):
 	db.session.flush()
 	if db_comment is not None:
 		comment_id = db_comment.comment_id
-# 		_create_blog_comment_rating_record( db, BlogCommentLikes, user,
-# 								session_id, timestamp, comment_id, delta )
+		_create_blog_comment_rating_record( db, BlogCommentLikes, user,
+								session_id, timestamp, comment_id, delta )
 
 def favorite_comment( comment, user, session_id, timestamp, delta ):
 	db = get_analytics_db()
@@ -381,8 +381,8 @@ def favorite_comment( comment, user, session_id, timestamp, delta ):
 	db.session.flush()
 	if db_comment is not None:
 		comment_id = db_comment.comment_id
-# 		_create_blog_comment_rating_record( db, BlogCommentFavorites, user,
-# 								session_id, timestamp, comment_id, delta )
+		_create_blog_comment_rating_record( db, BlogCommentFavorites, user,
+								session_id, timestamp, comment_id, delta )
 
 def flag_comment( comment, state ):
 	db = get_analytics_db()
