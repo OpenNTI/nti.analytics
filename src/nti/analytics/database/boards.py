@@ -109,26 +109,26 @@ class TopicLikes(Base,BaseTableMixin,TopicRatingMixin):
         PrimaryKeyConstraint('user_id', 'topic_id'),
     )
 
-class ForumCommentMixin(object):
-
-	@declared_attr
-	def comment_id(cls):
-		return Column('comment_id', Integer, ForeignKey("ForumCommentsCreated.comment_id"), nullable=False, index=True)
-
-
-class ForumCommentFavorites(Base,BaseTableMixin,ForumCommentMixin):
-	__tablename__ = 'ForumCommentFavorites'
-
-	__table_args__ = (
-        PrimaryKeyConstraint('user_id', 'comment_id'),
-    )
-
-class ForumCommentLikes(Base,BaseTableMixin,ForumCommentMixin):
-	__tablename__ = 'ForumCommentLikes'
-
-	__table_args__ = (
-        PrimaryKeyConstraint('user_id', 'comment_id'),
-    )
+# class ForumCommentMixin(object):
+#
+# 	@declared_attr
+# 	def comment_id(cls):
+# 		return Column('comment_id', Integer, ForeignKey("ForumCommentsCreated.comment_id"), nullable=False, index=True)
+#
+#
+# class ForumCommentFavorites(Base,BaseTableMixin,ForumCommentMixin):
+# 	__tablename__ = 'ForumCommentFavorites'
+#
+# 	__table_args__ = (
+#         PrimaryKeyConstraint('user_id', 'comment_id'),
+#     )
+#
+# class ForumCommentLikes(Base,BaseTableMixin,ForumCommentMixin):
+# 	__tablename__ = 'ForumCommentLikes'
+#
+# 	__table_args__ = (
+#         PrimaryKeyConstraint('user_id', 'comment_id'),
+#     )
 
 def _get_forum( db, forum_ds_id ):
 	forum = db.session.query(ForumsCreated).filter( ForumsCreated.forum_ds_id == forum_ds_id ).first()
@@ -490,8 +490,8 @@ def like_comment( comment, user, session_id, timestamp, delta ):
 
 	if db_comment is not None:
 		comment_id = db_comment.comment_id
-		_create_forum_comment_rating_record( db, ForumCommentLikes, user,
-								session_id, timestamp, comment_id, delta )
+# 		_create_forum_comment_rating_record( db, ForumCommentLikes, user,
+# 								session_id, timestamp, comment_id, delta )
 
 def favorite_comment( comment, user, session_id, timestamp, delta ):
 	db = get_analytics_db()
@@ -503,8 +503,8 @@ def favorite_comment( comment, user, session_id, timestamp, delta ):
 
 	if db_comment is not None:
 		comment_id = db_comment.comment_id
-		_create_forum_comment_rating_record( db, ForumCommentFavorites, user,
-								session_id, timestamp, comment_id, delta )
+# 		_create_forum_comment_rating_record( db, ForumCommentFavorites, user,
+# 								session_id, timestamp, comment_id, delta )
 
 def flag_comment( comment, state ):
 	db = get_analytics_db()
