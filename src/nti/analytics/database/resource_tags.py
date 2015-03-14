@@ -25,6 +25,7 @@ from nti.analytics.common import get_creator
 from nti.analytics.identifier import SessionId
 from nti.analytics.identifier import NoteId
 from nti.analytics.identifier import HighlightId
+from nti.analytics.identifier import BookmarkId
 from nti.analytics.identifier import ResourceId
 
 from nti.analytics.database import INTID_COLUMN_TYPE
@@ -91,8 +92,20 @@ class NoteLikes(Base,BaseTableMixin,NoteRatingMixin):
 
 class HighlightsCreated(Base,BaseTableMixin,ResourceMixin,DeletedMixin):
 	__tablename__ = 'HighlightsCreated'
-	highlight_ds_id = Column('highlight_ds_id', INTID_COLUMN_TYPE, index=True, nullable=True, autoincrement=False )
-	highlight_id = Column('highlight_id', Integer, Sequence( 'highlight_seq' ), index=True, nullable=False, primary_key=True )
+	highlight_ds_id = Column('highlight_ds_id', INTID_COLUMN_TYPE, index=True,
+							nullable=True, autoincrement=False )
+	highlight_id = Column('highlight_id', Integer, Sequence( 'highlight_seq' ), index=True,
+							nullable=False, primary_key=True )
+
+class BookmarksCreated(Base,BaseTableMixin,ResourceMixin,DeletedMixin):
+	"""
+	Store bookmarks on content objects.
+	"""
+	__tablename__ = 'BookmarksCreated'
+	bookmark_ds_id = Column('bookmark_ds_id', INTID_COLUMN_TYPE, index=True,
+							nullable=True, autoincrement=False )
+	bookmark_id = Column('bookmark_id', Integer, Sequence( 'bookmark_seq' ), index=True,
+							nullable=False, primary_key=True )
 
 
 def _get_sharing_enum( note, course ):
@@ -339,18 +352,62 @@ def delete_highlight(timestamp, highlight_ds_id):
 	db.session.flush()
 
 
+def _bookmark_exists( db, bookmark_ds_id ):
+	return db.session.query( BookmarksCreated ).filter(
+							BookmarksCreated.bookmark_ds_id == bookmark_ds_id ).count()
+
+def create_bookmark(user, nti_session, course, bookmark):
+	db = get_analytics_db()
+	user_record = get_or_create_user( user )
+	uid = user_record.user_id
+	sid = SessionId.get_id( nti_session )
+	rid = ResourceId.get_id( bookmark.containerId )
+	rid = get_resource_id( db, rid, create=True )
+
+	bookmark_ds_id = BookmarkId.get_id( bookmark )
+
+	if _bookmark_exists( db, bookmark_ds_id ):
+		logger.warn( 'Bookmark already exists (ds_id=%s) (user=%s)',
+					bookmark_ds_id, user )
+		return
+
+	course_id = get_root_context_id( db, course, create=True )
+	timestamp = get_created_timestamp( bookmark )
+
+	new_object = BookmarksCreated( user_id=uid,
+									session_id=sid,
+									timestamp=timestamp,
+									course_id=course_id,
+									bookmark_ds_id=bookmark_ds_id,
+									resource_id=rid)
+	db.session.add( new_object )
+
+def delete_bookmark(timestamp, bookmark_ds_id):
+	db = get_analytics_db()
+	timestamp = timestamp_type( timestamp )
+	bookmark = db.session.query(BookmarksCreated).filter(
+								BookmarksCreated.bookmark_ds_id == bookmark_ds_id ).first()
+	if not bookmark:
+		logger.info( 'Bookmark never created (%s)', bookmark_ds_id )
+		return
+	bookmark.deleted=timestamp
+	bookmark.bookmark_ds_id = None
+	db.session.flush()
+
 def get_notes_created_for_course(course):
 	db = get_analytics_db()
 	course_id = get_root_context_id( db, course )
-	results = db.session.query(NotesCreated).filter( 	NotesCreated.course_id == course_id,
-														NotesCreated.deleted == None  ).all()
+	results = db.session.query(NotesCreated).filter(
+								NotesCreated.course_id == course_id,
+								NotesCreated.deleted == None  ).all()
 	return results
 
 def get_highlights_created_for_course(course):
 	db = get_analytics_db()
 	course_id = get_root_context_id( db, course )
-	results = db.session.query(HighlightsCreated).filter( HighlightsCreated.course_id == course_id,
-															HighlightsCreated.deleted == None  ).all()
+	results = db.session.query(HighlightsCreated).filter(
+								HighlightsCreated.course_id == course_id,
+								HighlightsCreated.deleted == None  ).all()
 	return results
 
 def get_note_view_count( note ):

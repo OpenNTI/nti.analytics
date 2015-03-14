@@ -14,14 +14,19 @@ from datetime import datetime
 
 from contentratings.interfaces import IObjectRatedEvent
 
-from nti.dataserver import interfaces as nti_interfaces
+from nti.dataserver.interfaces import IBookmark
+from nti.dataserver.interfaces import IHighlight
+from nti.dataserver.interfaces import INote
+from nti.dataserver.interfaces import IObjectFlaggedEvent
+from nti.dataserver.interfaces import IObjectFlaggingEvent
 from nti.dataserver.users.users import User
 
 from nti.ntiids import ntiids
 
-from nti.intid import interfaces as intid_interfaces
+from nti.intid.interfaces import IIntIdAddedEvent
+from nti.intid.interfaces import IIntIdRemovedEvent
 
-from nti.analytics import interfaces as analytic_interfaces
+from nti.analytics.interfaces import IObjectProcessor
 
 from nti.analytics.sessions import get_nti_session_id
 
@@ -35,6 +40,7 @@ from nti.analytics.database import resource_tags as db_resource_tags
 
 from nti.analytics.identifier import NoteId
 from nti.analytics.identifier import HighlightId
+from nti.analytics.identifier import BookmarkId
 
 from nti.analytics import get_factory
 from nti.analytics import TAGS_ANALYTICS
@@ -86,10 +92,10 @@ def _like_note( oid, username=None, delta=0, timestamp=None, nti_session=None ):
 		db_resource_tags.like_note( note, user, nti_session, timestamp, delta )
 		logger.debug( 'Note liked (note=%s)', note )
 
-@component.adapter( nti_interfaces.IObjectFlaggingEvent )
+@component.adapter( IObjectFlaggingEvent )
 def _note_flagged( event ):
 	obj = event.object
-	state = True if nti_interfaces.IObjectFlaggedEvent.providedBy( event ) else False
+	state = True if IObjectFlaggedEvent.providedBy( event ) else False
 	if _is_note( obj ):
 		process_event( _get_job_queue, _flag_note, obj, state=state )
 
@@ -107,15 +113,13 @@ def _note_rated( event ):
 					nti_session=nti_session,
 					timestamp=timestamp )
 
-@component.adapter(	nti_interfaces.INote,
-					intid_interfaces.IIntIdAddedEvent )
+@component.adapter(	INote, IIntIdAddedEvent )
 def _note_added( obj, event ):
 	if _is_note( obj ):
 		nti_session = get_nti_session_id()
 		process_event( _get_job_queue, _add_note, obj, nti_session=nti_session )
 
-@component.adapter(	nti_interfaces.INote,
-					intid_interfaces.IIntIdRemovedEvent )
+@component.adapter(	INote, IIntIdRemovedEvent )
 def _note_removed( obj, event ):
 	if _is_note( obj ):
 		timestamp = datetime.utcnow()
@@ -140,33 +144,54 @@ def _remove_highlight( highlight_id, timestamp=None ):
 	db_resource_tags.delete_highlight( timestamp, highlight_id )
 	logger.debug( "Highlight deleted (highlight_id=%s)", highlight_id )
 
-@component.adapter(	nti_interfaces.IHighlight,
-					intid_interfaces.IIntIdAddedEvent )
+@component.adapter(	IHighlight, IIntIdAddedEvent )
 def _highlight_added( obj, event ):
 	if _is_highlight( obj ):
 		nti_session = get_nti_session_id()
 		process_event( _get_job_queue, _add_highlight, obj, nti_session=nti_session )
 
-@component.adapter(	nti_interfaces.IHighlight,
-					intid_interfaces.IIntIdRemovedEvent )
+@component.adapter(	IHighlight, IIntIdRemovedEvent )
 def _highlight_removed( obj, event ):
 	if _is_highlight( obj ):
 		timestamp = datetime.utcnow()
 		highlight_id = HighlightId.get_id( obj )
 		process_event( _get_job_queue, _remove_highlight, highlight_id=highlight_id, timestamp=timestamp )
 
-component.moduleProvides(analytic_interfaces.IObjectProcessor)
 
+# Bookmarks
+def _add_bookmark( oid, nti_session=None ):
+	bookmark = ntiids.find_object_with_ntiid( oid )
+	if bookmark is not None:
+		user = get_creator( bookmark )
+		course = _get_course( bookmark )
+		db_resource_tags.create_bookmark( user, nti_session, course, bookmark )
+		logger.debug( "Bookmark created (user=%s) (course=%s)",
+					user,
+					getattr( course, '__name__', course ) )
 
+def _remove_bookmark( bookmark_id, timestamp=None ):
+	db_resource_tags.delete_bookmark( timestamp, bookmark_id )
+	logger.debug( "Bookmark deleted (bookmark_id=%s)", bookmark_id )
 
+@component.adapter(	IBookmark, IIntIdAddedEvent )
+def _bookmark_added( obj, event ):
+	nti_session = get_nti_session_id()
+	process_event( _get_job_queue, _add_bookmark, obj, nti_session=nti_session )
 
+@component.adapter(	IBookmark, IIntIdRemovedEvent )
+def _bookmark_removed( obj, event ):
+	timestamp = datetime.utcnow()
+	bookmark_id = BookmarkId.get_id( obj )
+	process_event( _get_job_queue, _remove_bookmark, bookmark_id=bookmark_id, timestamp=timestamp )
+
+component.moduleProvides( IObjectProcessor )
 
 def _is_note( obj ):
-	return nti_interfaces.INote.providedBy( obj )
+	return INote.providedBy( obj )
 
 def _is_highlight( obj ):
-	return 	nti_interfaces.IHighlight.providedBy( obj ) \
-		and not nti_interfaces.INote.providedBy( obj )
+	return 	IHighlight.providedBy( obj ) \
+		and not INote.providedBy( obj )
 
 def init( obj ):
 	result = True
@@ -174,6 +199,8 @@ def init( obj ):
 		process_event( _get_job_queue, _add_note, obj )
 	elif _is_highlight( obj ):
 		process_event( _get_job_queue, _add_highlight, obj )
+	elif IBookmark.providedBy( obj ):
+		process_event( _get_job_queue, _add_bookmark, obj )
 	else:
 		result = False
 	return result

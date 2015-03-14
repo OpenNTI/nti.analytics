@@ -65,6 +65,8 @@
 	<subscriber handler=".resource_tags._note_removed" />
 	<subscriber handler=".resource_tags._highlight_added" />
 	<subscriber handler=".resource_tags._highlight_removed" />
+	<subscriber handler=".resource_tags._bookmark_added" />
+	<subscriber handler=".resource_tags._bookmark_removed" />
 	<subscriber handler=".resource_tags._note_flagged" />
 	<subscriber handler=".resource_tags._note_rated" />
 

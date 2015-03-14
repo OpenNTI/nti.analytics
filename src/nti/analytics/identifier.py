@@ -68,8 +68,19 @@ class _NtiidIdentifier(_Identifier):
 		# TODO We may have to decode here. Add tests.
 		return ntiids.find_object_with_ntiid( uid )
 
-class UserId(_DSIdentifier):
-	pass
+UserId = _DSIdentifier
+CommentId = _DSIdentifier
+ForumId = _DSIdentifier
+TopicId = _DSIdentifier
+NoteId = _DSIdentifier
+HighlightId = _DSIdentifier
+BlogId = _DSIdentifier
+ChatId = _DSIdentifier
+DFLId = _DSIdentifier
+FriendsListId = _DSIdentifier
+SubmissionId = _DSIdentifier
+FeedbackId = _DSIdentifier
+BookmarkId = _DSIdentifier
 
 class SessionId(_Identifier):
 
@@ -103,42 +114,7 @@ class RootContextId(_NtiidIdentifier):
 		obj = ICourseInstance( obj, obj )
 		return obj
 
-class CommentId(_DSIdentifier):
-	pass
+# Resource could be a video or content piece.
+ResourceId = _NtiidIdentifier
+QuestionSetId = _NtiidIdentifier
 
-class ForumId(_DSIdentifier):
-	pass
-
-class TopicId(_DSIdentifier):
-	pass
-
-class NoteId(_DSIdentifier):
-	pass
-
-class HighlightId(_DSIdentifier):
-	pass
-
-class ResourceId(_NtiidIdentifier):
-	# Resource could be a video or content piece.
-	pass
-
-class BlogId(_DSIdentifier):
-	pass
-
-class ChatId(_DSIdentifier):
-	pass
-
-class DFLId(_DSIdentifier):
-	pass
-
-class FriendsListId(_DSIdentifier):
-	pass
-
-class SubmissionId(_DSIdentifier):
-	pass
-
-class QuestionSetId(_NtiidIdentifier):
-	pass
-
-class FeedbackId(_DSIdentifier):
-	pass
