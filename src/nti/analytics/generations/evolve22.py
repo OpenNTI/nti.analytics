@@ -58,4 +58,4 @@ def evolve(context):
 	"""
 	Add play_speed column.
 	"""
-	do_evolve( context )
+	do_evolve()
