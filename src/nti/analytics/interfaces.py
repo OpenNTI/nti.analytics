@@ -127,6 +127,8 @@ class IVideoEvent(IResourceEvent):
 
 	with_transcript = Bool(title=u"Whether the video was viewed with a transcript or not.")
 
+	PlaySpeed = ValidTextLine(title="The play speed of the video", required=False)
+
 class ICourseCatalogViewEvent(IAnalyticsViewEvent, ICourseEvent):
 	"""
 	Describes a course catalog viewing event.

@@ -316,7 +316,8 @@ def _add_video_event( event, nti_session=None ):
 						event.event_type,
 						event.video_start_time,
 						event.video_end_time,
-						event.with_transcript )
+						event.with_transcript,
+						event.PlaySpeed )
 	logger.debug( 	"Video event (user=%s) (course=%s) (resource=%s) (type=%s) (start=%s) (end=%s) (time_length=%s)",
 					user,
 					getattr( course, '__name__', course ),

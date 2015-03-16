@@ -83,6 +83,7 @@ class ResourceEvent(RootContextEvent):
 @interface.implementer(IVideoEvent)
 class WatchVideoEvent(RootContextEvent):
 	createDirectFieldProperties(IVideoEvent)
+	PlaySpeed = None # bwc
 
 	__external_class_name__ = "WatchVideoEvent"
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.watchvideoevent'
@@ -93,6 +94,7 @@ class WatchVideoEvent(RootContextEvent):
 @interface.implementer(IVideoEvent)
 class SkipVideoEvent(RootContextEvent):
 	createDirectFieldProperties(IVideoEvent)
+	PlaySpeed = None # bwc
 
 	__external_class_name__ = "SkipVideoEvent"
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.skipvideoevent'

@@ -47,7 +47,7 @@ class TestResourceViews(AnalyticsTestBase):
 									course_id, self.context_path,
 									resource_val, time_length, max_time_length,
 									video_event_type, video_start_time,
-									video_end_time,  with_transcript )
+									video_end_time,  with_transcript, None )
 
 
 	def _create_resource_view(self, user_id, resource_val):

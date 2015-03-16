@@ -12,6 +12,7 @@ from sqlalchemy import Column
 from sqlalchemy import Integer
 from sqlalchemy import Boolean
 from sqlalchemy import Enum
+from sqlalchemy import String
 
 from sqlalchemy.schema import Sequence
 
@@ -65,6 +66,7 @@ class VideoEvents(Base,ResourceViewMixin,TimeLengthMixin):
 	max_time_length = Column( 'max_time_length', Integer, nullable=True )
 
 	video_view_id = Column('video_view_id', Integer, Sequence( 'video_view_id_seq' ), primary_key=True )
+	play_speed = Column( 'play_speed', String( 16 ), nullable=True )
 
 def _resource_view_exists( db, user_id, resource_id, timestamp ):
 	# TODO Need to clean up these dupe events
@@ -123,7 +125,8 @@ def create_video_event(	user,
 						video_event_type,
 						video_start_time,
 						video_end_time,
-						with_transcript ):
+						with_transcript,
+						play_speed ):
 	db = get_analytics_db()
 	user = get_or_create_user( user )
 	uid = user.user_id
@@ -161,7 +164,8 @@ def create_video_event(	user,
 								video_event_type=video_event_type,
 								video_start_time=video_start_time,
 								video_end_time=video_end_time,
-								with_transcript=with_transcript )
+								with_transcript=with_transcript,
+								play_speed=play_speed )
 	db.session.add( new_object )
 
 def _resolve_resource_view( record, course=None, user=None ):
