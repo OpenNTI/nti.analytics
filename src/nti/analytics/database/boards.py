@@ -509,7 +509,8 @@ def favorite_comment( comment, user, session_id, timestamp, delta ):
 def flag_comment( comment, state ):
 	db = get_analytics_db()
 	comment_id = CommentId.get_id( comment )
-	db_comment = db.session.query(ForumCommentsCreated).filter( ForumCommentsCreated.comment_id == comment_id ).one()
+	db_comment = db.session.query(ForumCommentsCreated).filter(
+								ForumCommentsCreated.comment_id == comment_id ).one()
 	db_comment.is_flagged = state
 	db.session.flush()
 
