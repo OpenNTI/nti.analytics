@@ -8,30 +8,39 @@ __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
+from datetime import datetime
+
 from zope import component
-from zope.lifecycleevent import interfaces as lce_interfaces
+from zope.lifecycleevent.interfaces import IObjectModifiedEvent
+
+from nti.ntiids import ntiids
+from nti.intid.interfaces import IIntIdAddedEvent
+from nti.intid.interfaces import IIntIdRemovedEvent
 
 from contentratings.interfaces import IObjectRatedEvent
 
-from nti.dataserver import interfaces as nti_interfaces
+from nti.dataserver.interfaces import IObjectFlaggedEvent
+from nti.dataserver.interfaces import IObjectFlaggingEvent
+from nti.dataserver.interfaces import IDeletedObjectPlaceholder
+
 from nti.dataserver.users.users import User
-from nti.dataserver.contenttypes.forums import interfaces as frm_interfaces
 
-from nti.intid import interfaces as intid_interfaces
+from nti.dataserver.contenttypes.forums.interfaces import ITopic
+from nti.dataserver.contenttypes.forums.interfaces import IForum
+from nti.dataserver.contenttypes.forums.interfaces import IPersonalBlogComment
+from nti.dataserver.contenttypes.forums.interfaces import IPersonalBlogEntry
+from nti.dataserver.contenttypes.forums.interfaces import IPersonalBlogEntryPost
+from nti.dataserver.contenttypes.forums.interfaces import IGeneralForumComment
 
-from nti.ntiids import ntiids
-
-from datetime import datetime
-
-from nti.analytics import interfaces as analytic_interfaces
+from nti.analytics.interfaces import IObjectProcessor
 from nti.analytics.sessions import get_nti_session_id
 
-from .common import get_creator
-from .common import get_deleted_time
-from .common import get_object_root
-from .common import get_course
-from .common import process_event
-from .common import get_rating_from_event
+from nti.analytics.common import get_creator
+from nti.analytics.common import get_deleted_time
+from nti.analytics.common import get_object_root
+from nti.analytics.common import get_course
+from nti.analytics.common import process_event
+from nti.analytics.common import get_rating_from_event
 
 from nti.analytics.database import boards as db_boards
 
@@ -63,14 +72,14 @@ get_topic_view_count = db_boards.get_topic_view_count
 
 def _is_topic( obj ):
 	# Exclude blogs
-	result = 	frm_interfaces.ITopic.providedBy(obj) \
-			and not (	frm_interfaces.IPersonalBlogEntry.providedBy( obj ) \
-					or 	frm_interfaces.IPersonalBlogEntryPost.providedBy( obj ) )
+	result = 	ITopic.providedBy(obj) \
+			and not (	IPersonalBlogEntry.providedBy( obj ) \
+					or 	IPersonalBlogEntryPost.providedBy( obj ) )
 	return result
 
 def _is_forum_comment( obj ):
-	result = 	frm_interfaces.IGeneralForumComment.providedBy( obj ) \
-			and not frm_interfaces.IPersonalBlogComment.providedBy( obj )
+	result = 	IGeneralForumComment.providedBy( obj ) \
+			and not IPersonalBlogComment.providedBy( obj )
 	return result
 
 # Comments
@@ -78,7 +87,7 @@ def _add_comment( oid, nti_session=None ):
 	comment = ntiids.find_object_with_ntiid( oid )
 	if comment is not None:
 		user = get_creator( comment )
-		topic = get_object_root( comment, frm_interfaces.ITopic )
+		topic = get_object_root( comment, ITopic )
 		course = get_course( topic )
 		if topic:
 			db_boards.create_forum_comment( user, nti_session, course, topic, comment )
@@ -111,18 +120,16 @@ def _like_comment( oid, username=None, delta=0, timestamp=None, nti_session=None
 		db_boards.like_comment( comment, user, nti_session, timestamp, delta )
 		logger.debug( 'Comment liked (comment=%s)', comment )
 
-@component.adapter( frm_interfaces.IGeneralForumComment,
-					intid_interfaces.IIntIdAddedEvent )
+@component.adapter( IGeneralForumComment, IIntIdAddedEvent )
 def _add_general_forum_comment(comment, event):
 	if _is_forum_comment( comment ):
 		nti_session = get_nti_session_id()
 		process_event( _get_comments_queue, _add_comment, comment, nti_session=nti_session )
 
-@component.adapter(frm_interfaces.IGeneralForumComment,
-				   lce_interfaces.IObjectModifiedEvent)
+@component.adapter( IGeneralForumComment, IObjectModifiedEvent )
 def _modify_general_forum_comment(comment, event):
 	if		_is_forum_comment( comment ) \
-		and nti_interfaces.IDeletedObjectPlaceholder.providedBy( comment ):
+		and IDeletedObjectPlaceholder.providedBy( comment ):
 			timestamp = datetime.utcnow()
 			comment_id = CommentId.get_id( comment )
 			process_event( _get_comments_queue, _remove_comment, comment_id=comment_id, timestamp=timestamp )
@@ -165,10 +172,10 @@ def _like_topic( oid, username=None, delta=0, timestamp=None, nti_session=None )
 		db_boards.like_topic( topic, user, nti_session, timestamp, delta )
 		logger.debug( 'Topic liked (topic=%s)', topic )
 
-@component.adapter( nti_interfaces.IObjectFlaggingEvent )
+@component.adapter( IObjectFlaggingEvent )
 def _topic_flagged( event ):
 	obj = event.object
-	state = True if nti_interfaces.IObjectFlaggedEvent.providedBy( event ) else False
+	state = True if IObjectFlaggedEvent.providedBy( event ) else False
 	if _is_topic( obj ):
 		process_event( _get_topic_queue, _flag_topic, obj, state=state )
 	elif _is_forum_comment( obj ):
@@ -200,13 +207,13 @@ def _topic_rated( event ):
 					nti_session=nti_session,
 					timestamp=timestamp )
 
-@component.adapter( frm_interfaces.ITopic, intid_interfaces.IIntIdAddedEvent )
+@component.adapter( ITopic, IIntIdAddedEvent )
 def _topic_added( topic, event ):
 	if _is_topic( topic ):
 		nti_session = get_nti_session_id()
 		process_event( _get_topic_queue, _add_topic, topic, nti_session=nti_session )
 
-@component.adapter( frm_interfaces.ITopic, intid_interfaces.IIntIdRemovedEvent )
+@component.adapter( ITopic, IIntIdRemovedEvent )
 def _topic_removed( topic, event ):
 	if _is_topic( topic ):
 		timestamp = datetime.utcnow()
@@ -232,22 +239,22 @@ def _add_forum( oid, nti_session=None ):
 						getattr( forum, '__name__', forum ),
 						getattr( course, '__name__', course ) )
 
-@component.adapter( frm_interfaces.IForum, intid_interfaces.IIntIdAddedEvent )
+@component.adapter( IForum, IIntIdAddedEvent )
 def _forum_added( forum, event ):
 	nti_session = get_nti_session_id()
 	process_event( _get_board_queue, _add_forum, forum, nti_session=nti_session )
 
-@component.adapter( frm_interfaces.IForum, intid_interfaces.IIntIdRemovedEvent )
+@component.adapter( IForum, IIntIdRemovedEvent )
 def _forum_removed( forum, event ):
 	timestamp = get_deleted_time( forum )
 	forum_id = ForumId.get_id( forum )
 	process_event( _get_board_queue, _remove_forum, forum_id=forum_id, timestamp=timestamp )
 
-component.moduleProvides(analytic_interfaces.IObjectProcessor)
+component.moduleProvides( IObjectProcessor )
 
 def init( obj ):
 	result = True
-	if frm_interfaces.IForum.providedBy(obj):
+	if IForum.providedBy(obj):
 		process_event( _get_board_queue, _add_forum, obj )
 	elif _is_topic( obj ):
 		process_event( _get_topic_queue, _add_topic, obj )

@@ -8,37 +8,42 @@ __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
+from datetime import datetime
+
 from zope import component
-from zope.lifecycleevent import interfaces as lce_interfaces
+from zope.lifecycleevent.interfaces import IObjectModifiedEvent
 
 from contentratings.interfaces import IObjectRatedEvent
 
-from nti.intid import interfaces as intid_interfaces
-
-from nti.dataserver import interfaces as nti_interfaces
-from nti.dataserver.users.users import User
-from nti.dataserver.contenttypes.forums import interfaces as frm_interfaces
-
 from nti.ntiids import ntiids
+from nti.intid.interfaces import IIntIdAddedEvent
+from nti.intid.interfaces import IIntIdRemovedEvent
 
-from datetime import datetime
+from nti.dataserver.interfaces import IObjectFlaggedEvent
+from nti.dataserver.interfaces import IObjectFlaggingEvent
+from nti.dataserver.interfaces import IDeletedObjectPlaceholder
 
-from nti.analytics import interfaces as analytic_interfaces
+from nti.dataserver.users.users import User
+from nti.dataserver.contenttypes.forums.interfaces import IPersonalBlogComment
+from nti.dataserver.contenttypes.forums.interfaces import IPersonalBlogEntry
+from nti.dataserver.contenttypes.forums.interfaces import IPersonalBlogEntryPost
+
+from nti.analytics import get_factory
+from nti.analytics import BLOGS_ANALYTICS
+from nti.analytics import COMMENTS_ANALYTICS
+
+from nti.analytics.interfaces import IObjectProcessor
 from nti.analytics.sessions import get_nti_session_id
 
-from .common import get_creator
-from .common import get_object_root
-from .common import process_event
-from .common import get_rating_from_event
+from nti.analytics.common import get_creator
+from nti.analytics.common import get_object_root
+from nti.analytics.common import process_event
+from nti.analytics.common import get_rating_from_event
 
 from nti.analytics.database import blogs as db_blogs
 
 from nti.analytics.identifier import BlogId
 from nti.analytics.identifier import CommentId
-
-from nti.analytics import get_factory
-from nti.analytics import BLOGS_ANALYTICS
-from nti.analytics import COMMENTS_ANALYTICS
 
 def _get_blog_queue():
 	factory = get_factory()
@@ -49,20 +54,20 @@ def _get_comment_queue():
 	return factory.get_queue( COMMENTS_ANALYTICS )
 
 def _is_blog( obj ):
-	return 	frm_interfaces.IPersonalBlogEntry.providedBy( obj ) \
-		or 	frm_interfaces.IPersonalBlogEntryPost.providedBy( obj )
+	return 	IPersonalBlogEntry.providedBy( obj ) \
+		or 	IPersonalBlogEntryPost.providedBy( obj )
 
 def _is_blog_comment( obj ):
-	return frm_interfaces.IPersonalBlogComment.providedBy( obj )
+	return IPersonalBlogComment.providedBy( obj )
 
 # Comments
 def _add_comment( oid, nti_session=None ):
 	comment = ntiids.find_object_with_ntiid( oid )
 	if comment is not None:
 		user = get_creator( comment )
-		blog = get_object_root( comment, frm_interfaces.IPersonalBlogEntry )
+		blog = get_object_root( comment, IPersonalBlogEntry )
 		if blog is None:
-			blog = get_object_root( comment, frm_interfaces.IPersonalBlogEntryPost )
+			blog = get_object_root( comment, IPersonalBlogEntryPost )
 		if blog:
 			db_blogs.create_blog_comment( user, nti_session, blog, comment )
 			logger.debug( "Blog comment created (user=%s) (blog=%s)", user, blog )
@@ -91,19 +96,17 @@ def _like_comment( oid, username=None, delta=0, timestamp=None, nti_session=None
 		db_blogs.like_comment( comment, user, nti_session, timestamp, delta )
 		logger.debug( 'Comment liked (comment=%s)', comment )
 
-@component.adapter( frm_interfaces.IPersonalBlogComment,
-					intid_interfaces.IIntIdAddedEvent)
+@component.adapter( IPersonalBlogComment, IIntIdAddedEvent)
 def _add_personal_blog_comment(comment, event):
 	nti_session = get_nti_session_id()
 	process_event( _get_comment_queue, _add_comment, comment, nti_session=nti_session )
 
 
-@component.adapter(frm_interfaces.IPersonalBlogComment,
-				   lce_interfaces.IObjectModifiedEvent)
+@component.adapter( IPersonalBlogComment, IObjectModifiedEvent )
 def _modify_personal_blog_comment(comment, event):
 	# TODO Could these be changes in sharing? Perhaps different by object type.
 	# IObjectSharingModifiedEvent
-	if nti_interfaces.IDeletedObjectPlaceholder.providedBy( comment ):
+	if IDeletedObjectPlaceholder.providedBy( comment ):
 		timestamp = datetime.utcnow()
 		comment_id = CommentId.get_id( comment )
 		process_event( _get_comment_queue, _remove_comment, comment_id=comment_id, timestamp=timestamp )
@@ -144,10 +147,10 @@ def _like_blog( oid, username=None, delta=0, timestamp=None, nti_session=None ):
 		logger.debug( 'Blog liked (blog=%s)', blog )
 
 
-@component.adapter( nti_interfaces.IObjectFlaggingEvent )
+@component.adapter( IObjectFlaggingEvent )
 def _blog_flagged( event ):
 	obj = event.object
-	state = True if nti_interfaces.IObjectFlaggedEvent.providedBy( event ) else False
+	state = True if IObjectFlaggedEvent.providedBy( event ) else False
 	if _is_blog( obj ):
 		process_event( _get_blog_queue, _flag_blog, obj, state=state )
 
@@ -179,8 +182,7 @@ def _blog_rated( event ):
 					delta=delta, nti_session=nti_session,
 					timestamp=timestamp )
 
-@component.adapter(	frm_interfaces.IPersonalBlogEntry,
-					intid_interfaces.IIntIdAddedEvent )
+@component.adapter(	IPersonalBlogEntry, IIntIdAddedEvent )
 def _blog_added( blog, event ):
 	_do_blog_added( blog, event )
 
@@ -188,14 +190,13 @@ def _delete_blog( blog_id, timestamp ):
 	db_blogs.delete_blog( timestamp, blog_id )
 	logger.debug( 'Blog deleted (blog_id=%s)', blog_id )
 
-@component.adapter(	frm_interfaces.IPersonalBlogEntry,
-					intid_interfaces.IIntIdRemovedEvent )
+@component.adapter(	IPersonalBlogEntry, IIntIdRemovedEvent )
 def _blog_removed( blog, event ):
 	timestamp = datetime.utcnow()
 	blog_id = BlogId.get_id( blog )
 	process_event( _get_blog_queue, _delete_blog, blog_id=blog_id, timestamp=timestamp )
 
-component.moduleProvides(analytic_interfaces.IObjectProcessor)
+component.moduleProvides( IObjectProcessor )
 
 def init( obj ):
 	result = True

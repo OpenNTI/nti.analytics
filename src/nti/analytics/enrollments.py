@@ -15,25 +15,25 @@ from nti.ntiids import ntiids
 from nti.intid.interfaces import IIntIdAddedEvent
 from nti.intid.interfaces import IIntIdRemovedEvent
 
-from nti.dataserver import interfaces as nti_interfaces
+from nti.dataserver.interfaces import IUser
 
 from nti.contenttypes.courses.interfaces import ICourseInstanceEnrollmentRecord
 from nti.contenttypes.courses.enrollment import DefaultPrincipalEnrollments
 
 from datetime import datetime
 
-from nti.analytics import interfaces as analytics_interfaces
+from nti.analytics import get_factory
+from nti.analytics import ENROLL_ANALYTICS
+
+from nti.analytics.interfaces import IObjectProcessor
 
 from nti.analytics.sessions import get_nti_session_id
 
 from nti.analytics.database import enrollments as db_enrollments
 
-from .common import get_root_context_name
-from .common import process_event
-from .common import get_entity
-
-from nti.analytics import get_factory
-from nti.analytics import ENROLL_ANALYTICS
+from nti.analytics.common import get_root_context_name
+from nti.analytics.common import process_event
+from nti.analytics.common import get_entity
 
 get_enrollments_for_course = db_enrollments.get_enrollments_for_course
 
@@ -100,10 +100,10 @@ def _user_enrollments( user ):
 		scope = enrollment.Scope
 		process_event( _get_job_queue, _add_enrollment, course, username=username, scope=scope )
 
-component.moduleProvides(analytics_interfaces.IObjectProcessor)
+component.moduleProvides( IObjectProcessor )
 def init( obj ):
 	result = False
-	if 	nti_interfaces.IUser.providedBy(obj):
+	if 	IUser.providedBy(obj):
 		_user_enrollments( obj )
 		result = True
 	return result

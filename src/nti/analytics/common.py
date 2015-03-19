@@ -27,9 +27,9 @@ from nti.async import create_job
 
 from nti.analytics.database import get_analytics_db
 
-from nti.dataserver import interfaces as nti_interfaces
 from nti.dataserver import rating
 from nti.dataserver import liking
+from nti.dataserver.interfaces import IEntity
 from nti.dataserver.rating import IObjectUnratedEvent
 from nti.dataserver.users import Entity
 
@@ -76,7 +76,7 @@ def get_ratings( obj ):
 	return like_count, favorite_count, is_flagged
 
 def get_entity(entity):
-	if not nti_interfaces.IEntity.providedBy(entity):
+	if not IEntity.providedBy(entity):
 		entity = Entity.get_entity(str(entity))
 	return entity
 
