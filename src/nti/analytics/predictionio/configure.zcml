@@ -86,6 +86,10 @@
 			 factory=".adapters._UserOIDAdpater"
 			 provides=".interfaces.IOID" />
 			
+	<adapter for="nti.contenttypes.presentation.interfaces.INTIIDIdentifiable"
+			 factory=".adapters._NTIIDIdentifiableOIDAdpater"
+			 provides=".interfaces.IOID" />
+			 
 	<adapter for="dolmen.builtins.interfaces.IString"
 			 factory=".adapters._StringOIDAdpater"
 			 provides=".interfaces.IOID" />
@@ -93,7 +97,7 @@
 	<adapter for="dolmen.builtins.interfaces.INumeric"
 			 factory=".adapters._NumericOIDAdpater"
 			 provides=".interfaces.IOID" />
-			   
+	   
 	<!-- Subscribers -->
 	<subscriber handler=".ratings._topic_rated" />
 	<subscriber handler=".ratings._object_rated" />

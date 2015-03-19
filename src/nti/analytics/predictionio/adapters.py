@@ -21,6 +21,8 @@ from nti.contentlibrary.interfaces import IContentUnit
 
 from nti.contenttypes.courses.interfaces import ICourseCatalogEntry
 
+from nti.contenttypes.presentation.interfaces import INTIIDIdentifiable
+
 from nti.dataserver.interfaces import IUser
 from nti.dataserver.interfaces import INote
 from nti.dataserver.interfaces import IModeledContent
@@ -159,4 +161,10 @@ def _CourseCatalogEntryOIDAdpater(item):
 @component.adapter(IUser)
 def _UserOIDAdpater(user):
 	result = user.username
+	return result
+
+@interface.implementer(IOID)
+@component.adapter(INTIIDIdentifiable)
+def _NTIIDIdentifiableOIDAdpater(item):
+	result = item.ntiid
 	return result
