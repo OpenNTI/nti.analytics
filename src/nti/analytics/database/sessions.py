@@ -77,14 +77,18 @@ def _get_user_agent( user_agent ):
 	return user_agent[:512] if len( user_agent ) > 512 else user_agent
 
 def end_session( user, session_id, timestamp ):
-	# Make sure to verify the user/session match up.
-	user = get_or_create_user( user )
-	uid = user.user_id
 	timestamp = timestamp_type( timestamp )
-
 	db = get_analytics_db()
-	old_session = db.session.query( Sessions ).filter( Sessions.session_id == session_id,
+
+	# Make sure to verify the user/session match up; if possible.
+	if user is not None:
+		user = get_or_create_user( user )
+		uid = user.user_id
+
+		old_session = db.session.query( Sessions ).filter( Sessions.session_id == session_id,
 														Sessions.user_id == uid ).first()
+	else:
+		old_session = db.session.query( Sessions ).filter( Sessions.session_id == session_id).first()
 
 	if old_session is not None:
 		old_session.end_time = timestamp

@@ -36,7 +36,7 @@ from . import RATE_CATE_NAME
 from . import get_current_username
 
 def _process_like_pio(username, oid, api, params=None):
-	return create_user_event(event=api, 
+	return create_user_event(event=api,
 				  		 	 user=username,
 				  		 	 obj=oid,
 				  			 params=params)
@@ -48,9 +48,9 @@ def record_unlike(username, oid, params=None):
 	_process_like_pio(username, oid, DISLIKE_API, params=params)
 
 def _process_like_event(username, oid, like=True, latlong=None):
-	
+
 	params = {"pio_latlng": ",".join(latlong)} if latlong else None
-	
+
 	def _process_event():
 		transaction_runner = component.getUtility(IDataserverTransactionRunner)
 		if like:
@@ -69,7 +69,7 @@ def record_rating(username, oid, rating, latlong=None, params=None):
 	if latlong:
 		params["pio_latlng"] = ",".join(latlong)
 
-	return create_user_event(event="rate", 
+	return create_user_event(event="rate",
 			  		 	 	 user=username,
 			  		 	 	 obj=oid,
 			  			 	 params=params)
@@ -78,7 +78,7 @@ def _process_rating_event(username, oid, rating, latlng=None):
 
 	def _process_event():
 		transaction_runner = component.getUtility(IDataserverTransactionRunner)
-		func = partial(	record_rating, username=username, rating=rating, 
+		func = partial(	record_rating, username=username, rating=rating,
 						oid=oid, latlng=latlng)
 		transaction_runner(func)
 

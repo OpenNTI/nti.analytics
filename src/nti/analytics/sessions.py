@@ -72,7 +72,7 @@ def _get_job_queue():
 
 def _end_session( username, session_id, timestamp=None ):
 	user = get_entity( username )
-	if session_id is not None and user is not None:
+	if session_id is not None:
 		db_sessions.end_session( user, session_id, timestamp )
 		logger.debug( 'Session ended (user=%s) (session_id=%s)', username, session_id )
 
@@ -114,7 +114,10 @@ def _user_logout_event( event ):
 	cookie_id = _get_cookie_id( event.request )
 
 	if cookie_id is not None:
-		username = event.user.username
+		user = event.user
+		username = getattr( user, 'username', None )
+		if username is None:
+			username = getattr( event.request, 'remote_user', None )
 		timestamp = datetime.utcnow()
 		_process_end_session( username, cookie_id, timestamp )
 
