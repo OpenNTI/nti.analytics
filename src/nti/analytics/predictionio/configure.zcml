@@ -85,11 +85,7 @@
 	<adapter for="nti.dataserver.interfaces.IUser"
 			 factory=".adapters._UserOIDAdpater"
 			 provides=".interfaces.IOID" />
-			
-	<adapter for="nti.contenttypes.presentation.interfaces.INTIIDIdentifiable"
-			 factory=".adapters._NTIIDIdentifiableOIDAdpater"
-			 provides=".interfaces.IOID" />
-			 
+ 
 	<adapter for="dolmen.builtins.interfaces.IString"
 			 factory=".adapters._StringOIDAdpater"
 			 provides=".interfaces.IOID" />
