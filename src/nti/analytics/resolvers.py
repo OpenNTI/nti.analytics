@@ -24,6 +24,8 @@ from nti.contentlibrary.interfaces import IContentPackage
 from nti.contentlibrary.interfaces import IContentPackageLibraryModifiedOnSyncEvent
 from nti.contentlibrary.indexed_data.interfaces import CONTAINER_IFACES
 
+from nti.dataserver.core.interfaces import IContainerContext
+
 from nti.externalization.externalization import to_external_ntiid_oid
 
 from nti.ntiids.ntiids import find_object_with_ntiid
@@ -36,8 +38,6 @@ from nti.analytics import get_factory
 from nti.analytics import SESSIONS_ANALYTICS
 
 from nti.analytics.common import process_event
-
-## TODO Need tests
 
 def _get_job_queue():
 	factory = get_factory()
@@ -248,13 +248,30 @@ def get_course_by_container_id( container_id ):
 	# site.  Once the migration is complete, we should default to
 	# our current site in the fast lane.
 
-	# Update: JZ: TODO do we still need to check our global site for site packages?
+	# Do we still need to check our global site for site packages?
 	result = _get_course_from_ntiid_resolver().get_course( container_id )
 	return result
 
 get_course_for_ntiid = get_course_by_container_id
 
-def get_root_context( obj ):
+def get_container_context( obj ):
+	"""
+	Attempt to get the root context from the object itself.
+	We expect this to be a course in most cases, or a
+	ContentPackageBundle in rare cases.
+
+	TODO: Verify bundles work like we expect.
+	TODO: Once clients have swapped over to using the
+		new course/Pages api, the legacy algorithm can go away.
+	"""
+	result = None
+	container_context = IContainerContext( obj, None )
+	if container_context:
+		context_id = container_context.context_id
+		result = find_object_with_ntiid( context_id )
+	return result
+
+def get_container_context_legacy( obj ):
 	"""
 	Given a object with a 'containerId' or 'ntiid', find the root context of the object.
 	This will *attempt* to find the course container for the
@@ -276,5 +293,19 @@ def get_root_context( obj ):
 		if 		result is None \
 			or 	not IContentPackage.providedBy( result ):
 			raise TypeError( "No course/content-package found for ntiid (%s)" % ntiid )
+
+	return result
+
+def get_root_context( obj ):
+	"""
+	Given a object, attempt to find the root context, typically
+	a course or ContentPackageBundle.
+	"""
+	result = get_container_context( obj )
+
+	if result is None:
+		logger.info( 'Object does not have expected context annotation (%s)', obj )
+	else:
+		result = get_container_context_legacy( obj )
 
 	return result

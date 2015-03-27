@@ -84,12 +84,12 @@ class TestAnalyticAdapters( NTIAnalyticsTestCase ):
 
 	def _get_assignment(self):
 		new_assignment = QAssignment()
-		new_assignment.ntiid = self.assignment_id = 'tag:ntiid1'
+		new_assignment.ntiid = self.assignment_id = 'tag:nextthought.com,2015:ntiid1'
 		return new_assignment
 
 	def _get_self_assessment(self):
 		assessment = QQuestionSet()
-		assessment.ntiid = self.question_set_id = 'tag:question_set1'
+		assessment.ntiid = self.question_set_id = 'tag:nextthought.com,2015:question_set1'
 		return assessment
 
 	def _install_user(self):
