@@ -32,6 +32,7 @@ from nti.analytics.model import AnalyticsSession
 from nti.analytics.model import AnalyticsSessions
 from nti.analytics.model import BatchResourceEvents
 from nti.analytics.model import CourseCatalogViewEvent
+from nti.analytics.model import VideoPlaySpeedChangeEvent
 from nti.analytics.model import AnalyticsClientParams
 
 from nti.analytics.interfaces import IVideoEvent
@@ -42,6 +43,7 @@ from nti.analytics.interfaces import ITopicViewEvent
 from nti.analytics.interfaces import IAnalyticsSessions
 from nti.analytics.interfaces import IBatchResourceEvents
 from nti.analytics.interfaces import ICourseCatalogViewEvent
+from nti.analytics.interfaces import IVideoPlaySpeedChangeEvent
 from nti.analytics.interfaces import IProgress
 from nti.analytics.interfaces import IAnalyticsClientParams
 from nti.analytics.interfaces import DEFAULT_ANALYTICS_BATCH_SIZE
@@ -130,6 +132,17 @@ start_video_event = WatchVideoEvent(user=user,
 				video_start_time=video_start_time,
 				video_end_time=None,
 				with_transcript=with_transcript)
+
+old_play_speed = '2x'
+new_play_speed = '4x'
+play_speed_event = VideoPlaySpeedChangeEvent(
+				user=user,
+				timestamp=timestamp,
+				RootContextID=course,
+				ResourceId=resource_id,
+				OldPlaySpeed=old_play_speed,
+				NewPlaySpeed=new_play_speed,
+				VideoTime=video_start_time )
 
 session = AnalyticsSession( SessionStartTime=timestamp, SessionEndTime=timestamp+1 )
 
@@ -266,6 +279,27 @@ class TestResourceEvents(NTIAnalyticsTestCase):
 		internalization.update_from_external_object(new_io, ext_obj)
 		assert_that(new_io, has_property('MaxDuration', is_( 60 )))
 
+	def test_video_play_speed_event(self):
+		assert_that(play_speed_event, verifiably_provides( IVideoPlaySpeedChangeEvent ) )
+
+		ext_obj = toExternalObject(play_speed_event)
+		assert_that(ext_obj, has_entry('Class', 'VideoPlaySpeedChangeEvent'))
+		assert_that(ext_obj, has_entry('MimeType', 'application/vnd.nextthought.analytics.videoplayspeedchange' ))
+
+		factory = internalization.find_factory_for(ext_obj)
+		assert_that(factory, is_(not_none()))
+
+		new_io = factory()
+		internalization.update_from_external_object(new_io, ext_obj)
+		assert_that(new_io, has_property('user', is_( user )))
+		assert_that(new_io, has_property('timestamp', is_( timestamp )))
+		assert_that(new_io, has_property('RootContextID', is_( course )))
+		assert_that(new_io, has_property('ResourceId', is_( resource_id )))
+		assert_that(new_io, has_property('OldPlaySpeed', is_( old_play_speed )))
+		assert_that(new_io, has_property('NewPlaySpeed', is_( new_play_speed )))
+		assert_that(new_io, has_property('VideoTime', is_( video_start_time )))
+		assert_that( new_io, is_( VideoPlaySpeedChangeEvent ) )
+
 	def test_video_start_event(self):
 		assert_that(start_video_event, verifiably_provides( IVideoEvent ) )
 		ext_obj = toExternalObject(start_video_event)
@@ -323,7 +357,8 @@ class TestResourceEvents(NTIAnalyticsTestCase):
 	def test_batch(self):
 
 		batch_events = [ 	watch_video_event, skip_video_event, resource_event,
-							course_catalog_event, blog_event, note_event, topic_event ]
+							course_catalog_event, blog_event, note_event, topic_event,
+							play_speed_event ]
 		batch_count = len( batch_events )
 		io = BatchResourceEvents( events=batch_events )
 		assert_does_not_pickle(io)

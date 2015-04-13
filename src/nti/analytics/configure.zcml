@@ -108,7 +108,8 @@
 						 .interfaces.IAnalyticsSession
 						 .interfaces.IAnalyticsSessions
 						 .interfaces.IProgress
-						 .interfaces.IAnalyticsClientParams"
+						 .interfaces.IAnalyticsClientParams
+						 .interfaces.IVideoPlaySpeedChangeEvent"
 		modules=".model" />
 
 	<adapter factory=".internalization._ResourceEventUpdater"

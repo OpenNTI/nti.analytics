@@ -68,7 +68,10 @@ class ITimeLength(interface.Interface):
 
 	Duration = Number(title=u"The time length of the event, in seconds", required=False)
 
-class IAnalyticsViewEvent(IAnalyticsObjectBase, ITimeLength):
+class IAnalyticsEvent( IAnalyticsObjectBase ):
+	"""An analytics event."""
+
+class IAnalyticsViewEvent(IAnalyticsEvent, ITimeLength):
 	"""
 	A basic analytics viewing event.
 	"""
@@ -129,7 +132,7 @@ class IVideoEvent(IResourceEvent):
 
 	PlaySpeed = ValidTextLine(title="The play speed of the video", required=False)
 
-class IVideoPlaySpeedChangeEvent(IAnalyticsObjectBase, ICourseEvent):
+class IVideoPlaySpeedChangeEvent(IAnalyticsEvent, ICourseEvent):
 	"""
 	Describes when a user changes the video play speed.
 	"""
@@ -139,8 +142,8 @@ class IVideoPlaySpeedChangeEvent(IAnalyticsObjectBase, ICourseEvent):
 
 	NewPlaySpeed = ValidTextLine(title="The new play speed of the video", required=True)
 
-	VideoTime = ValidTextLine(title="The point at which the video play speed changes, in seconds.",
-							required=True)
+	VideoTime = Number(title="The point at which the video play speed changes, in seconds.",
+						required=True)
 
 class ICourseCatalogViewEvent(IAnalyticsViewEvent, ICourseEvent):
 	"""
@@ -150,7 +153,7 @@ class ICourseCatalogViewEvent(IAnalyticsViewEvent, ICourseEvent):
 class IBatchResourceEvents( IIterable ):
 	events = TypedIterable(
 		title="The events in this batch",
-		value_type=Object( IAnalyticsViewEvent ) )
+		value_type=Object( IAnalyticsEvent ) )
 
 
 class IAnalyticsRatings(interface.Interface):
