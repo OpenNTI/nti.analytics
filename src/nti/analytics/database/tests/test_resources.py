@@ -141,7 +141,7 @@ class TestCourseResources(AnalyticsTestBase):
 		video_start_time = 30
 		video_end_time = 60
 		with_transcript = True
-		play_speed = '2x'
+		play_speed = 2
 		event_time = datetime.now()
 		db_views.create_video_event( test_user_ds_id,
 									test_session_id, event_time,
@@ -165,7 +165,7 @@ class TestCourseResources(AnalyticsTestBase):
 		assert_that( resource_view.time_length, is_( time_length ) )
 		assert_that( resource_view.max_time_length, is_(max_time_length) )
 		assert_that( resource_view.with_transcript )
-		assert_that( resource_view.play_speed, is_(play_speed) )
+		assert_that( resource_view.play_speed, is_( str( play_speed )) )
 
 		results = db_views.get_user_video_events( test_user_ds_id, self.course_id )
 		results = [x for x in results]
@@ -242,8 +242,8 @@ class TestCourseResources(AnalyticsTestBase):
 		video_event_type = 'WATCH'
 		with_transcript = True
 		event_time = video_start_time = datetime.now()
-		old_play_speed = '1x'
-		new_play_speed = '2x'
+		old_play_speed = 1
+		new_play_speed = 2
 		db_views.create_play_speed_event( test_user_ds_id,
 										test_session_id,
 										event_time,
@@ -265,8 +265,8 @@ class TestCourseResources(AnalyticsTestBase):
 		assert_that( play_speed.resource_id, is_( self.resource_id ) )
 		assert_that( play_speed.video_time, is_( video_time ) )
 		assert_that( play_speed.video_view_id, none() )
-		assert_that( play_speed.old_play_speed, is_( old_play_speed ) )
-		assert_that( play_speed.new_play_speed, is_( new_play_speed ) )
+		assert_that( play_speed.old_play_speed, is_( str( old_play_speed ) ) )
+		assert_that( play_speed.new_play_speed, is_( str( new_play_speed ) ) )
 
 		# Now our video watch event, with same timestamp
 		# updates our play_speed record with our view id.

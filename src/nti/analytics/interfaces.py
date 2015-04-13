@@ -130,7 +130,7 @@ class IVideoEvent(IResourceEvent):
 
 	with_transcript = Bool(title=u"Whether the video was viewed with a transcript or not.")
 
-	PlaySpeed = ValidTextLine(title="The play speed of the video", required=False)
+	PlaySpeed = Number(title="The play speed of the video", required=False)
 
 class IVideoPlaySpeedChangeEvent(IAnalyticsEvent, ICourseEvent):
 	"""
@@ -138,9 +138,9 @@ class IVideoPlaySpeedChangeEvent(IAnalyticsEvent, ICourseEvent):
 	"""
 	ResourceId = ValidTextLine(title="The resource ntiid.", required=True)
 
-	OldPlaySpeed = ValidTextLine(title="The old play speed of the video", required=True)
+	OldPlaySpeed = Number(title="The old play speed of the video", required=True)
 
-	NewPlaySpeed = ValidTextLine(title="The new play speed of the video", required=True)
+	NewPlaySpeed = Number(title="The new play speed of the video", required=True)
 
 	VideoTime = Number(title="The point at which the video play speed changes, in seconds.",
 						required=True)

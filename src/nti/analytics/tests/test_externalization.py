@@ -133,8 +133,8 @@ start_video_event = WatchVideoEvent(user=user,
 				video_end_time=None,
 				with_transcript=with_transcript)
 
-old_play_speed = '2x'
-new_play_speed = '4x'
+old_play_speed = 2
+new_play_speed = 4
 play_speed_event = VideoPlaySpeedChangeEvent(
 				user=user,
 				timestamp=timestamp,
