@@ -13,6 +13,7 @@ from datetime import datetime
 
 from hamcrest import is_
 from hamcrest import none
+from hamcrest import contains
 from hamcrest import not_none
 from hamcrest import has_length
 from hamcrest import assert_that
@@ -29,6 +30,7 @@ from nti.analytics.database.resources import Resources
 
 from nti.analytics.database.resource_views import CourseResourceViews
 from nti.analytics.database.resource_views import VideoEvents
+from nti.analytics.database.resource_views import VideoPlaySpeedEvents
 from nti.analytics.database._utils import get_context_path
 
 class TestCourseResources(AnalyticsTestBase):
@@ -226,6 +228,77 @@ class TestCourseResources(AnalyticsTestBase):
 		assert_that( resource_view.video_start_time, is_( video_start_time ) )
 		assert_that( resource_view.video_end_time, none() )
 		assert_that( resource_view.time_length, none() )
+
+	def test_video_play_speed(self):
+		"""
+		Validate video play speed events can be entered.
+		"""
+		results = self.session.query( VideoPlaySpeedEvents ).all()
+		assert_that( results, has_length( 0 ) )
+
+		resource_val = 'ntiid:course_video'
+		time_length = max_time_length =  video_end_time = None
+		video_time = 3
+		video_event_type = 'WATCH'
+		with_transcript = True
+		event_time = video_start_time = datetime.now()
+		old_play_speed = '1x'
+		new_play_speed = '2x'
+		db_views.create_play_speed_event( test_user_ds_id,
+										test_session_id,
+										event_time,
+										self.course_id,
+										resource_val,
+										video_time,
+										old_play_speed,
+										new_play_speed )
+
+		results = self.session.query(VideoPlaySpeedEvents).all()
+		assert_that( results, has_length( 1 ) )
+
+		play_speed = results[0]
+		assert_that( play_speed.user_id, is_( 1 ) )
+		assert_that( play_speed.session_id, is_( test_session_id ) )
+		assert_that( play_speed.timestamp, not_none() )
+		assert_that( play_speed.course_id, is_( self.course_id ) )
+		assert_that( play_speed.video_play_speed_id, is_( 1 ) )
+		assert_that( play_speed.resource_id, is_( self.resource_id ) )
+		assert_that( play_speed.video_time, is_( video_time ) )
+		assert_that( play_speed.video_view_id, none() )
+		assert_that( play_speed.old_play_speed, is_( old_play_speed ) )
+		assert_that( play_speed.new_play_speed, is_( new_play_speed ) )
+
+		# Now our video watch event, with same timestamp
+		# updates our play_speed record with our view id.
+		db_views.create_video_event( test_user_ds_id,
+									test_session_id, event_time,
+									self.course_id, self.context_path,
+									resource_val, time_length, max_time_length,
+									video_event_type, video_start_time,
+									video_end_time,  with_transcript, None )
+
+		results = self.session.query(VideoEvents).all()
+		assert_that( results, has_length( 1 ) )
+
+		play_speed = results[0]
+		assert_that( play_speed.video_view_id, is_( 1 ) )
+
+		# Now another play speed event, contains the correct view id.
+		db_views.create_play_speed_event( test_user_ds_id,
+										test_session_id,
+										event_time,
+										self.course_id,
+										resource_val,
+										video_time + 1,
+										'2x',
+										'4x' )
+
+		results = self.session.query(VideoPlaySpeedEvents).all()
+		assert_that( results, has_length( 2 ) )
+
+		results = [x.video_view_id for x in results]
+		assert_that( results, contains( 1, 1 ) )
+
 
 	def test_context_path(self):
 		path = ['dashboard']

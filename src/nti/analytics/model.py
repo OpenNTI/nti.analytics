@@ -42,6 +42,7 @@ from nti.analytics.interfaces import IAnalyticsAssignmentDetail
 from nti.analytics.interfaces import IUserResearchStatus
 from nti.analytics.interfaces import IUserResearchStatusEvent
 from nti.analytics.interfaces import IAnalyticsClientParams
+from nti.analytics.interfaces import IVideoPlaySpeedChangeEvent
 
 from nti.dataserver.interfaces import IUser
 
@@ -129,6 +130,17 @@ class TopicViewEvent(RootContextEvent):
 
 	__external_class_name__ = "TopicViewEvent"
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.topicviewevent'
+
+@interface.implementer(IVideoPlaySpeedChangeEvent)
+class VideoPlaySpeedChangeEvent(SchemaConfigured):
+	createDirectFieldProperties(IVideoPlaySpeedChangeEvent)
+
+	__external_can_create__ = True
+	__external_class_name__ = "VideoPlaySpeedChangeEvent"
+	mime_type = mimeType = 'application/vnd.nextthought.analytics.videoplayspeedchange'
+
+	def __init__(self, *args, **kwargs):
+		SchemaConfigured.__init__(self, *args, **kwargs)
 
 @interface.implementer(IBatchResourceEvents)
 @WithRepr

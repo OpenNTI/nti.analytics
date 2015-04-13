@@ -20,6 +20,7 @@ from nti.analytics.interfaces import INoteViewEvent
 from nti.analytics.interfaces import ITopicViewEvent
 from nti.analytics.interfaces import IResourceEvent
 from nti.analytics.interfaces import ICourseCatalogViewEvent
+from nti.analytics.interfaces import IVideoPlaySpeedChangeEvent
 
 from nti.analytics.common import get_entity
 from nti.analytics.common import process_event
@@ -145,6 +146,24 @@ def _validate_resource_event( event ):
 							(user=%s) (resource=%s) (event=%s)""" %
 							( event.user, event.resource_id, event ) )
 
+def _validate_play_speed_event( event ):
+	""" Validate our events, sanitizing as we go. """
+	_validate_resource_event( event )
+
+	old_play_speed = event.OldPlaySpeed
+	new_play_speed = event.NewPlaySpeed
+
+	if 	old_play_speed == new_play_speed:
+		raise UnrecoverableAnalyticsError(
+					'PlaySpeed event has invalid time values (old=%s) (new=%s) (event=%s)' %
+					( old_play_speed, new_play_speed, event.event_type ) )
+
+	video_time = event.VideoTime
+
+	if video_time < 0:
+		raise UnrecoverableAnalyticsError(
+						'Video event has invalid time value (time=%s) (event=%s)' %
+						( video_time, event.event_type ) )
 
 def _validate_video_event( event ):
 	""" Validate our events, sanitizing as we go. """
@@ -341,6 +360,33 @@ def _add_video_event( event, nti_session=None ):
 				 video_end_time=event.video_end_time,
 				 with_transcript=event.with_transcript))
 
+def _add_play_speed_event( event, nti_session=None ):
+	try:
+		_validate_play_speed_event( event )
+	except UnrecoverableAnalyticsError as e:
+		logger.warn( 'Error while validating event (%s)', e )
+		return
+
+	user = get_entity( event.user )
+	resource_id = event.ResourceId
+	course = _get_course( event )
+	video_time = event.VideoTime
+
+	db_resource_views.create_play_speed_event( user,
+						nti_session,
+						event.timestamp,
+						course,
+						resource_id,
+						video_time,
+						event.OldPlaySpeed,
+						event.NewPlaySpeed )
+	logger.debug( 	"PlaySpeed event (user=%s) (course=%s) (resource=%s) (old=%s) (new=%s)",
+					user,
+					getattr( course, '__name__', course ),
+					resource_id,
+					event.OldPlaySpeed,
+					event.NewPlaySpeed )
+
 def _get_resource_queue():
 	factory = get_factory()
 	return factory.get_queue( RESOURCE_VIEW_ANALYTICS )
@@ -388,6 +434,8 @@ def handle_events( batch_events ):
 			process_event( _get_resource_queue, _add_resource_event, event=event, nti_session=nti_session )
 		elif ICourseCatalogViewEvent.providedBy( event ):
 			process_event( _get_catalog_queue, _add_catalog_event, event=event, nti_session=nti_session )
+		elif IVideoPlaySpeedChangeEvent.providedBy( event ):
+			process_event( _get_video_queue, _add_play_speed_event, event=event, nti_session=nti_session )
 	# If we validated early, we could return something meaningful.
 	# But we'd have to handle all validation exceptions as to not lose the valid
 	# events. The nti.async.processor does this and at least drops the bad

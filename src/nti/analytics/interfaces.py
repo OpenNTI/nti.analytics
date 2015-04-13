@@ -129,6 +129,19 @@ class IVideoEvent(IResourceEvent):
 
 	PlaySpeed = ValidTextLine(title="The play speed of the video", required=False)
 
+class IVideoPlaySpeedChangeEvent(IAnalyticsObjectBase, ICourseEvent):
+	"""
+	Describes when a user changes the video play speed.
+	"""
+	ResourceId = ValidTextLine(title="The resource ntiid.", required=True)
+
+	OldPlaySpeed = ValidTextLine(title="The old play speed of the video", required=True)
+
+	NewPlaySpeed = ValidTextLine(title="The new play speed of the video", required=True)
+
+	VideoTime = ValidTextLine(title="The point at which the video play speed changes, in seconds.",
+							required=True)
+
 class ICourseCatalogViewEvent(IAnalyticsViewEvent, ICourseEvent):
 	"""
 	Describes a course catalog viewing event.

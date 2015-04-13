@@ -30,6 +30,8 @@ from nti.analytics.model import SkipVideoEvent
 from nti.analytics.database import Base
 from nti.analytics.database import get_analytics_db
 
+from nti.analytics.database.meta_mixins import ResourceMixin
+from nti.analytics.database.meta_mixins import BaseTableMixin
 from nti.analytics.database.meta_mixins import ResourceViewMixin
 from nti.analytics.database.meta_mixins import TimeLengthMixin
 
@@ -55,7 +57,6 @@ class CourseResourceViews(Base,ResourceViewMixin,TimeLengthMixin):
 	# let's try this.
 	resource_view_id = Column('resource_view_id', Integer, Sequence( 'resource_view_id_seq' ), primary_key=True )
 
-
 class VideoEvents(Base,ResourceViewMixin,TimeLengthMixin):
 	__tablename__ = 'VideoEvents'
 	video_event_type = Column('video_event_type', Enum( 'WATCH', 'SKIP' ), nullable=False )
@@ -67,6 +68,18 @@ class VideoEvents(Base,ResourceViewMixin,TimeLengthMixin):
 
 	video_view_id = Column('video_view_id', Integer, Sequence( 'video_view_id_seq' ), primary_key=True )
 	play_speed = Column( 'play_speed', String( 16 ), nullable=True )
+
+class VideoPlaySpeedEvents(Base,BaseTableMixin,ResourceMixin):
+	__tablename__ = 'VideoPlaySpeedEvents'
+
+	video_play_speed_id = Column('video_play_speed_id', Integer,
+								Sequence( 'video_play_speed_id_seq' ), primary_key=True )
+	old_play_speed = Column( 'old_play_speed', String( 16 ), nullable=False )
+	new_play_speed = Column( 'new_play_speed', String( 16 ), nullable=False )
+	video_time = Column('video_time', Integer, nullable=False )
+
+	# Optionally link to an actual video event, if possible.
+	video_view_id = Column('video_view_id', Integer, nullable=True, index=True )
 
 def _resource_view_exists( db, user_id, resource_id, timestamp ):
 	# TODO Need to clean up these dupe events
@@ -115,6 +128,54 @@ def _video_view_exists( db, user_id, resource_id, timestamp, event_type ):
 							VideoEvents.resource_id == resource_id,
 							VideoEvents.timestamp == timestamp,
 							VideoEvents.video_event_type == event_type ).first()
+
+def _video_play_speed_exists( db, user_id, resource_id, timestamp, video_time ):
+	return db.session.query( VideoPlaySpeedEvents ).filter(
+							VideoPlaySpeedEvents.user_id == user_id,
+							VideoPlaySpeedEvents.resource_id == resource_id,
+							VideoPlaySpeedEvents.timestamp == timestamp,
+							VideoPlaySpeedEvents.video_time == video_time ).first()
+
+def create_play_speed_event( user, nti_session, timestamp, course, resource_id,
+							video_time, old_play_speed, new_play_speed ):
+	db = get_analytics_db()
+	user = get_or_create_user( user )
+	uid = user.user_id
+	sid = SessionId.get_id( nti_session )
+	vid = ResourceId.get_id( resource_id )
+	vid = get_resource_id( db, vid, create=True )
+
+	course_id = get_root_context_id( db, course, create=True )
+	timestamp = timestamp_type( timestamp )
+
+	existing_record = _video_play_speed_exists( db, uid, vid, timestamp, video_time )
+
+	if existing_record is not None:
+		# Should only have one record for timestamp, video_time, user, video.
+		# Ok, duplicate event received, apparently.
+		logger.warn( 'Video play_speed already exists (user=%s) (video_time=%s) (timestamp=%s)',
+					user, video_time, timestamp )
+		return
+
+	video_record = _video_view_exists( db, uid, vid, timestamp, 'WATCH' )
+	video_view_id = video_record.video_view_id if video_record else None
+
+	new_object = VideoPlaySpeedEvents(	user_id=uid,
+								session_id=sid,
+								timestamp=timestamp,
+								course_id=course_id,
+								resource_id=vid,
+								video_view_id=video_view_id,
+								video_time=video_time,
+								old_play_speed=old_play_speed,
+								new_play_speed=new_play_speed )
+	db.session.add( new_object )
+
+def _get_video_play_speed( db, user_id, resource_id, timestamp ):
+	return db.session.query( VideoPlaySpeedEvents ).filter(
+							VideoPlaySpeedEvents.user_id == user_id,
+							VideoPlaySpeedEvents.resource_id == resource_id,
+							VideoPlaySpeedEvents.timestamp == timestamp ).first()
 
 def create_video_event(	user,
 						nti_session, timestamp,
@@ -167,6 +228,12 @@ def create_video_event(	user,
 								with_transcript=with_transcript,
 								play_speed=play_speed )
 	db.session.add( new_object )
+	db.session.flush()
+
+	# Update our referenced field, if necessary.
+	video_play_speed = _get_video_play_speed( db, uid, vid, timestamp )
+	if video_play_speed:
+		video_play_speed.video_view_id = new_object.video_view_id
 
 def _resolve_resource_view( record, course=None, user=None ):
 	time_length = record.time_length
