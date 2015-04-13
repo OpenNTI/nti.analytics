@@ -139,6 +139,8 @@ class VideoPlaySpeedChangeEvent(SchemaConfigured):
 	__external_class_name__ = "VideoPlaySpeedChangeEvent"
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.videoplayspeedchange'
 
+	resource_id = alias('ResourceId')
+
 	def __init__(self, *args, **kwargs):
 		SchemaConfigured.__init__(self, *args, **kwargs)
 
