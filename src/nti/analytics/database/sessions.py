@@ -67,7 +67,8 @@ def _create_user_agent( db, user_agent ):
 	return new_agent
 
 def _get_user_agent_id( db, user_agent ):
-	user_agent_record = db.session.query(UserAgents).filter( UserAgents.user_agent == user_agent ).first()
+	user_agent_record = db.session.query(UserAgents).filter(
+										UserAgents.user_agent == user_agent ).first()
 	if user_agent_record is None:
 		user_agent_record = _create_user_agent( db, user_agent )
 	return user_agent_record.user_agent_id
@@ -85,13 +86,22 @@ def end_session( user, session_id, timestamp ):
 		user = get_or_create_user( user )
 		uid = user.user_id
 
-		old_session = db.session.query( Sessions ).filter( Sessions.session_id == session_id,
-														Sessions.user_id == uid ).first()
+		old_session = db.session.query( Sessions ).filter(
+										Sessions.session_id == session_id,
+										Sessions.user_id == uid ).first()
 	else:
-		old_session = db.session.query( Sessions ).filter( Sessions.session_id == session_id).first()
+		old_session = db.session.query( Sessions ).filter(
+										Sessions.session_id == session_id).first()
 
-	if old_session is not None:
+	result = None
+
+	# Make sure we don't end a session that was already explicitly
+	# ended.
+	if 		old_session is not None \
+		and not old_session.end_time:
 		old_session.end_time = timestamp
+		result = old_session
+	return result
 
 def _create_ip_location( db, ip_addr, user_id ):
 	ip_info = geolite2.lookup( ip_addr )
