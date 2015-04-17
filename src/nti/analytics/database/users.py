@@ -77,6 +77,9 @@ def create_user(user):
 	return user
 
 def _get_user_record( user ):
+	# Look into using sqlalchemy baked queries for this
+	# and other high volume calls that return a single row.
+	# This is still considered experimental for 1.0.0.
 	db = get_analytics_db()
 	uid = UserId.get_id( user )
 	found_user = db.session.query(Users).filter( Users.user_ds_id == uid ).first()
