@@ -50,7 +50,7 @@ def registerAnalyticsDB(_context, dburi=None, twophase=False, autocommit=False, 
 # Should only be called in testmode. Resets our in-memory database.
 @component.adapter( IDataserverClosedEvent )
 def _closed_dataserver( event ):
-	# TODO This dupes what we have in config.zcml.
+	# This dupes what we have in config.zcml.
 	logger.info( 'Resetting AnalyticsDB' )
 	db = AnalyticsDB( dburi='sqlite://', testmode=True, defaultSQLite=True )
 	component.getSiteManager().registerUtility( db, IAnalyticsDB )

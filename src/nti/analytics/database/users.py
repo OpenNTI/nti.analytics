@@ -114,12 +114,14 @@ def get_user( user_id ):
 
 def delete_entity( entity_ds_id ):
 	db = get_analytics_db()
-	found_user = db.session.query(Users).filter( Users.user_ds_id == entity_ds_id ).first()
+	found_user = db.session.query(Users).filter(
+								Users.user_ds_id == entity_ds_id ).first()
 	if found_user is not None:
 		found_user.user_ds_id = None
 
 def update_user_research( user_ds_id, allow_research ):
 	db = get_analytics_db()
-	found_user = db.session.query(Users).filter( Users.user_ds_id == user_ds_id ).first()
+	found_user = db.session.query(Users).filter(
+								Users.user_ds_id == user_ds_id ).first()
 	if found_user is not None:
 		found_user.allow_research = allow_research

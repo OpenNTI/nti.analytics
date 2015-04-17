@@ -28,12 +28,17 @@ from nti.schema.field import Number
 from nti.schema.field import Object
 from nti.schema.field import Variant
 
-class IObjectViewedRecordedEvent(IObjectEvent):
+from nti.analytics.interfaces import IAnalyticsSession
+
+class IObjectRecordedEvent(IObjectEvent):
 	user = Object(IUser, title="user that viewed object")
 	timestamp = Number(	title=u"The timestamp when this event occurred",
 						default=0.0,
 						required=False )
 	session = interface.Attribute("analytics session")
+
+class IObjectViewedRecordedEvent(IObjectRecordedEvent):
+	pass
 
 class INoteViewedRecordedEvent(IObjectViewedRecordedEvent):
 	object = Object(INote, title="note viewed", required=True)
@@ -43,14 +48,14 @@ class ITopicViewedRecordedEvent(IObjectViewedRecordedEvent):
 	object = Object(ITopic, title="topic viewed", required=True)
 	context = Variant((Object(IString, title="the context id"),
 					   Object(INumeric, title="the context id"),
-					   Object(ICourseInstance, title="the context course")), 
+					   Object(ICourseInstance, title="the context course")),
 					 title="context object", required=False)
-	
+
 class ICatalogViewedRecordedEvent(IObjectViewedRecordedEvent):
 	object = Variant((Object(ICourseInstance, title="the course"),
-					  Object(ICourseCatalogEntry, title="the course entry")), 
+					  Object(ICourseCatalogEntry, title="the course entry")),
 					 title="course/catalog viewed", required=True)
-	
+
 class IBlogViewedRecordedEvent(IObjectViewedRecordedEvent):
 	object = Object(IContained, title="blog viewed", required=True)
 
@@ -58,9 +63,9 @@ class IResourceViewedRecordedEvent(IObjectViewedRecordedEvent):
 	object = Object(IString, title="resourced viewed", required=True)
 	context = Variant((Object(IString, title="the context id"),
 					   Object(INumeric, title="the context id"),
-					   Object(ICourseInstance, title="the context course")), 
+					   Object(ICourseInstance, title="the context course")),
 					 title="context object", required=False)
-	
+
 class IVideoRecordedEvent(IObjectViewedRecordedEvent):
 	object = Object(IString, title="video id", required=True)
 	context_path = Object(IString, title="context path", required=False)
@@ -70,52 +75,57 @@ class IVideoRecordedEvent(IObjectViewedRecordedEvent):
 	with_transcript = Bool(title="Viewed with a trascript", required=False, default=False)
 	context = Variant((Object(IString, title="the context id"),
 					   Object(INumeric, title="the context id"),
-					   Object(ICourseInstance, title="the context course")), 
+					   Object(ICourseInstance, title="the context course")),
 					 title="context object", required=False)
+
+class IAnalyticsSessionRecordedEvent(IObjectRecordedEvent, IAnalyticsSession):
+	pass
 
 class IVideoWatchRecordedEvent(IVideoRecordedEvent):
 	pass
-	
+
 class IVideoSkipRecordedEvent(IVideoRecordedEvent):
 	pass
 
-@interface.implementer(IObjectViewedRecordedEvent)
-class ObjectViewedRecordedEvent(ObjectEvent):
+@interface.implementer(IObjectRecordedEvent)
+class ObjectRecordedEvent(ObjectEvent):
 
 	sessionId = alias('session')
-	
+
 	def __init__(self, user, obj, timestamp=None, session=None):
-		super(ObjectViewedRecordedEvent, self).__init__(obj)
+		super(ObjectRecordedEvent, self).__init__(obj)
 		self.user = user
 		self.session = session
 		self.timestamp = timestamp or 0.0
+
+ObjectViewedRecordedEvent = ObjectRecordedEvent
 
 @interface.implementer(INoteViewedRecordedEvent)
 class NoteViewedRecordedEvent(ObjectViewedRecordedEvent):
 
 	note = alias('object')
-	
+
 	def __init__(self, user, note, context=None, timestamp=None, session=None):
 		super(NoteViewedRecordedEvent, self).__init__(user, note, timestamp, session)
 		self.context = context
-		
+
 @interface.implementer(ITopicViewedRecordedEvent)
 class TopicViewedRecordedEvent(ObjectViewedRecordedEvent):
 
 	topic = alias('object')
-	
+
 	def __init__(self, user, topic, context=None, timestamp=None, session=None):
 		super(TopicViewedRecordedEvent, self).__init__(user, topic, timestamp, session)
 		self.context = context
 
 @interface.implementer(IBlogViewedRecordedEvent)
 class BlogViewedRecordedEvent(ObjectViewedRecordedEvent):
-	
+
 	blog = alias('object')
-	
+
 	def __init__(self, user, blog, timestamp=None, session=None):
 		super(BlogViewedRecordedEvent, self).__init__(user, blog, timestamp, session)
-	
+
 @interface.implementer(ICatalogViewedRecordedEvent)
 class CatalogViewedRecordedEvent(ObjectViewedRecordedEvent):
 
@@ -126,21 +136,21 @@ class CatalogViewedRecordedEvent(ObjectViewedRecordedEvent):
 
 @interface.implementer(IResourceViewedRecordedEvent)
 class ResourceViewedRecordedEvent(ObjectViewedRecordedEvent):
-	
+
 	resource = alias('object')
-	
+
 	def __init__(self, user, resource, context=None, timestamp=None, session=None):
 		super(ResourceViewedRecordedEvent, self).__init__(user, resource, timestamp, session)
 		self.context = context
 
 @interface.implementer(IVideoRecordedEvent)
 class VideoRecordedEvent(ObjectViewedRecordedEvent):
-	
+
 	resource = alias('object')
 	time_length = alias('duration')
-	
+
 	def __init__(self, user, video, context=None, timestamp=None, session=None,
-				 context_path=None, duration=0, video_start_time=0, 
+				 context_path=None, duration=0, video_start_time=0,
 				 video_end_time=0, with_transcript=False):
 		super(VideoRecordedEvent, self).__init__(user, video, timestamp, session)
 		self.context = context
@@ -149,11 +159,19 @@ class VideoRecordedEvent(ObjectViewedRecordedEvent):
 		self.video_end_time = video_end_time
 		self.with_transcript = with_transcript
 		self.video_start_time = video_start_time
-		
+
 @interface.implementer(IVideoWatchRecordedEvent)
 class VideoWatchRecordedEvent(VideoRecordedEvent):
 	pass
-	
+
 @interface.implementer(IVideoSkipRecordedEvent)
 class VideoSkipRecordedEvent(VideoRecordedEvent):
 	pass
+
+@interface.implementer(IAnalyticsSessionRecordedEvent)
+class AnalyticsSessionRecordedEvent(ObjectRecordedEvent):
+
+	def __init__(self, user, start_time, end_time, timestamp=None):
+		super(AnalyticsSessionRecordedEvent, self).__init__(user, None, timestamp)
+		self.SessionStartTime = start_time
+		self.SessionEndTime = end_time
