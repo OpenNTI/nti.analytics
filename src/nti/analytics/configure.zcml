@@ -12,6 +12,9 @@
 
 	<include package="." file="meta.zcml" />
 
+	<!-- Include any nti.analytics plugins -->
+	<includePlugins package="." />
+
 	<!-- Job runner -->
 	<include package="nti.async" />
 

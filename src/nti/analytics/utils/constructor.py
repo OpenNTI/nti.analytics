@@ -12,6 +12,9 @@ import logging
 
 from zope import component
 
+from zope.container.contained import Contained
+from z3c.autoinclude.zcml import includePluginsDirective
+
 from nti.async.utils.processor import Processor
 
 from nti.analytics import QUEUE_NAMES
@@ -21,6 +24,13 @@ from nti.analytics.resource_views import logger as resource_view_logger
 from nti.analytics.users import logger as users_logger
 from nti.analytics.sessions import logger as sessions_logger
 from nti.analytics.resolvers import logger as resolvers_logger
+
+class PluginPoint(Contained):
+
+	def __init__(self, name):
+		self.__name__ = name
+
+PP_ANALYTICS = PluginPoint('nti.analytics')
 
 class Constructor(Processor):
 
@@ -33,6 +43,9 @@ class Constructor(Processor):
 			users_logger.setLevel( logging.DEBUG )
 			sessions_logger.setLevel( logging.DEBUG )
 			resolvers_logger.setLevel( logging.DEBUG )
+
+	def extend_context(self, context):
+		includePluginsDirective(context, PP_ANALYTICS)
 
 	def process_args(self, args):
 		setattr(args, 'library', True)  # load library
