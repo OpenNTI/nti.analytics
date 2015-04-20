@@ -14,7 +14,6 @@
 
 	<!-- Job runner -->
 	<include package="nti.async" />
-	<include package="nti.learning_network" />
 
 	<!-- Generations -->
 	<utility factory=".generations.install._AnalyticsSchemaManager"
