@@ -305,7 +305,6 @@ def get_root_context( obj ):
 
 	if result is None:
 		logger.info( 'Object does not have expected context annotation (%s)', obj )
-	else:
 		result = get_container_context_legacy( obj )
 
 	return result
