@@ -91,11 +91,12 @@ def _self_assessment_taken( oid, nti_session=None ):
 
 		__traceback_info__ = submission.containerId
 		course = get_root_context( submission )
-		db_assessments.create_self_assessment_taken(user, nti_session,
+		obj = db_assessments.create_self_assessment_taken(user, nti_session,
 													timestamp, course, submission)
 		logger.debug("Self-assessment submitted (user=%s) (assignment=%s)",
 					 user, submission.questionSetId )
-		notify( AnalyticsAssessmentRecordedEvent( user, submission, course, timestamp ) )
+		if obj:
+			notify( AnalyticsAssessmentRecordedEvent( user, submission, course, timestamp ) )
 
 def _process_question_set( question_set, nti_session=None ):
 	# We only want self-assessments here.
@@ -137,12 +138,13 @@ def _assignment_taken( oid, nti_session=None ):
 		user = get_creator( submission )
 		timestamp = get_created_timestamp( submission )
 		course = _get_course( submission )
-		db_assessments.create_assignment_taken( user, nti_session, timestamp, course, submission )
+		obj = db_assessments.create_assignment_taken( user, nti_session, timestamp, course, submission )
 		logger.debug("Assignment submitted (user=%s) (assignment=%s)", user, submission.assignmentId )
 
-		for feedback in submission.Feedback.values():
-			_do_add_feedback( nti_session, feedback, submission )
-		notify( AnalyticsAssessmentRecordedEvent( user, submission, course, timestamp ) )
+		if obj:
+			for feedback in submission.Feedback.values():
+				_do_add_feedback( nti_session, feedback, submission )
+			notify( AnalyticsAssessmentRecordedEvent( user, submission, course, timestamp ) )
 
 @component.adapter(IUsersCourseAssignmentHistoryItem, IIntIdAddedEvent)
 def _assignment_history_item_added( item, event ):

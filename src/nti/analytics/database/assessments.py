@@ -262,7 +262,7 @@ def create_self_assessment_taken( user, nti_session, timestamp, course, submissi
 	if _self_assessment_exists( db, submission_id ):
 		logger.warn( "Self-assessment already exists (ds_id=%s) (user=%s) ",
 					submission_id, user )
-		return
+		return False
 
 	self_assessment_id = QuestionSetId.get_id( submission.questionSetId )
 	# We likely will not have a grader.
@@ -304,6 +304,7 @@ def create_self_assessment_taken( user, nti_session, timestamp, course, submissi
 													submission=response,
 													time_length=time_length )
 			db.session.add( grade_details )
+	return True
 
 def _get_grade( submission ):
 	return IGrade( submission, None )
@@ -342,7 +343,7 @@ def create_assignment_taken( user, nti_session, timestamp, course, submission ):
 	if _assignment_taken_exists( db, submission_id ):
 		logger.warn( 'Assignment taken already exists (ds_id=%s) (user=%s)',
 					submission_id, user )
-		return
+		return False
 
 	assignment_id = submission.assignmentId
 	submission_obj = submission.Submission

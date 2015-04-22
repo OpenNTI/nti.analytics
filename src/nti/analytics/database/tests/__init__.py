@@ -21,7 +21,6 @@ from zope import component
 import zope.testing.cleanup
 
 from nti.dataserver.tests.mock_dataserver import WithMockDS
-from nti.dataserver.tests.mock_dataserver import mock_db_trans
 
 from nti.contenttypes.courses.interfaces import ICourseInstance
 
