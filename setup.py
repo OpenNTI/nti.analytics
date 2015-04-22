@@ -31,6 +31,7 @@ setup(
 	package_dir={'': 'src'},
 	namespace_packages=['nti'],
 	install_requires=[
+		'alembic',
 		'setuptools',
 		'nti.async',
 		'nti.app.assessment',
@@ -39,7 +40,8 @@ setup(
 		'nti.app.products.gradebook',
 		'predictionio',
 		'python-geoip',
-		'python-geoip-geolite2'
+		'python-geoip-geolite2',
+		'sqlalchemy'
 	],
 	entry_points=entry_points
 )

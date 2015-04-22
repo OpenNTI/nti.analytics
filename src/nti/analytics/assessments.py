@@ -11,6 +11,7 @@ logger = __import__('logging').getLogger(__name__)
 from datetime import datetime
 
 from zope import component
+from zope.event import notify
 from zope.lifecycleevent.interfaces import IObjectModifiedEvent
 
 from nti.app.assessment.interfaces import IUsersCourseAssignmentHistoryItem
@@ -46,6 +47,8 @@ from .common import get_created_timestamp
 from .database import assessments as db_assessments
 
 from .interfaces import IObjectProcessor
+
+from .recorded.interfaces import AnalyticsAssessmentRecordedEvent
 
 component.moduleProvides(IObjectProcessor)
 
@@ -92,6 +95,7 @@ def _self_assessment_taken( oid, nti_session=None ):
 													timestamp, course, submission)
 		logger.debug("Self-assessment submitted (user=%s) (assignment=%s)",
 					 user, submission.questionSetId )
+		notify( AnalyticsAssessmentRecordedEvent( user, submission, course, timestamp ) )
 
 def _process_question_set( question_set, nti_session=None ):
 	# We only want self-assessments here.
@@ -111,7 +115,6 @@ def _process_question_set( question_set, nti_session=None ):
 def _questionset_assessed( question_set, event ):
 	# We'll have creator for self-assessments, but not for assignments,
 	# which we throw away anyway.
-	user = get_creator( question_set )
 	nti_session = get_nti_session_id()
 	_process_question_set( question_set, nti_session=nti_session )
 
@@ -139,10 +142,10 @@ def _assignment_taken( oid, nti_session=None ):
 
 		for feedback in submission.Feedback.values():
 			_do_add_feedback( nti_session, feedback, submission )
+		notify( AnalyticsAssessmentRecordedEvent( user, submission, course, timestamp ) )
 
 @component.adapter(IUsersCourseAssignmentHistoryItem, IIntIdAddedEvent)
 def _assignment_history_item_added( item, event ):
-	user = get_creator( item )
 	nti_session = get_nti_session_id()
 	process_event( _get_job_queue, _assignment_taken, item, nti_session=nti_session )
 
@@ -211,7 +214,6 @@ def _remove_feedback( feedback_id, timestamp=None ):
 
 @component.adapter(IUsersCourseAssignmentHistoryItemFeedback, IIntIdAddedEvent)
 def _feedback_added(feedback, event):
-	user = get_creator( feedback )
 	nti_session = get_nti_session_id()
 	process_event( _get_job_queue, _add_feedback, feedback, nti_session=nti_session )
 

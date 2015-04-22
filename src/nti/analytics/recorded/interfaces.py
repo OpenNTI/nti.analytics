@@ -14,6 +14,9 @@ from zope.interface.interfaces import ObjectEvent, IObjectEvent
 from dolmen.builtins import IString
 from dolmen.builtins import INumeric
 
+from nti.assessment.interfaces import IQAssignment
+from nti.assessment.interfaces import IQAssessedQuestionSet
+
 from nti.common.property import alias
 
 from nti.contenttypes.courses.interfaces import ICourseInstance
@@ -86,6 +89,13 @@ class IVideoWatchRecordedEvent(IVideoRecordedEvent):
 
 class IVideoSkipRecordedEvent(IVideoRecordedEvent):
 	pass
+
+class IAnalyticsAssessmentRecordedEvent(IObjectRecordedEvent):
+	object = Variant((Object(IQAssignment, title="the assignment"),
+					 Object(IQAssessedQuestionSet, title="the assessed question set")),
+					 title="The assessment", required=True)
+
+	context = Object(ICourseInstance, title="root context", required=False)
 
 @interface.implementer(IObjectRecordedEvent)
 class ObjectRecordedEvent(ObjectEvent):
@@ -175,3 +185,13 @@ class AnalyticsSessionRecordedEvent(ObjectRecordedEvent):
 		super(AnalyticsSessionRecordedEvent, self).__init__(user, None, timestamp)
 		self.SessionStartTime = start_time
 		self.SessionEndTime = end_time
+
+@interface.implementer(IAnalyticsAssessmentRecordedEvent)
+class AnalyticsAssessmentRecordedEvent(ObjectRecordedEvent):
+
+	assessment = alias('object')
+	course = alias('context')
+
+	def __init__(self, user, assessment, course, timestamp=None):
+		super(AnalyticsAssessmentRecordedEvent, self).__init__(user, assessment, timestamp)
+		self.context = course
