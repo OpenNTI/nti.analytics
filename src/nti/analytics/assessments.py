@@ -48,7 +48,8 @@ from .database import assessments as db_assessments
 
 from .interfaces import IObjectProcessor
 
-from .recorded.interfaces import AnalyticsAssessmentRecordedEvent
+from .recorded.interfaces import AnalyticsAssignmentRecordedEvent
+from .recorded.interfaces import AnalyticsSelfAssessmentRecordedEvent
 
 component.moduleProvides(IObjectProcessor)
 
@@ -96,7 +97,7 @@ def _self_assessment_taken( oid, nti_session=None ):
 		logger.debug("Self-assessment submitted (user=%s) (assignment=%s)",
 					 user, submission.questionSetId )
 		if obj:
-			notify( AnalyticsAssessmentRecordedEvent( user, submission, course, timestamp ) )
+			notify( AnalyticsSelfAssessmentRecordedEvent( user, submission, course, timestamp ) )
 
 def _process_question_set( question_set, nti_session=None ):
 	# We only want self-assessments here.
@@ -144,7 +145,7 @@ def _assignment_taken( oid, nti_session=None ):
 		if obj:
 			for feedback in submission.Feedback.values():
 				_do_add_feedback( nti_session, feedback, submission )
-			notify( AnalyticsAssessmentRecordedEvent( user, submission, course, timestamp ) )
+			notify( AnalyticsAssignmentRecordedEvent( user, submission, course, timestamp ) )
 
 @component.adapter(IUsersCourseAssignmentHistoryItem, IIntIdAddedEvent)
 def _assignment_history_item_added( item, event ):
