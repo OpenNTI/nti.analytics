@@ -27,6 +27,8 @@ from nti.analytics.database import Base
 from nti.analytics.database import get_analytics_db
 from nti.analytics.database.users import get_or_create_user
 
+from nti.analytics.database._utils import get_time_bounded_records
+
 class Sessions(Base):
 	__tablename__ = 'Sessions'
 	session_id = Column('session_id', SESSION_COLUMN_TYPE, Sequence('session_id_seq'), index=True, primary_key=True )
@@ -151,3 +153,12 @@ def get_session_by_id( session_id ):
 	if session_record:
 		make_transient( session_record )
 	return session_record
+
+def get_user_sessions( user, timestamp=None ):
+	"""
+	Fetch any sessions started *after* the optionally given timestamp.
+	"""
+	filters = ()
+	if timestamp is not None:
+		filters = ( Sessions.start_time >= timestamp, )
+	return get_time_bounded_records( user, Sessions, filters=filters )

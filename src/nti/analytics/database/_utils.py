@@ -4,11 +4,15 @@
 $Id$
 """
 from __future__ import print_function, unicode_literals, absolute_import, division
+from nti.analytics.database.root_context import get_root_context_id
 __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
 from collections import OrderedDict
+
+from . import get_analytics_db
+from .users import get_user_db_id
 
 def get_context_path( context_path ):
 	# Note: we could also sub these resource_ids for the actual
@@ -28,3 +32,30 @@ def get_context_path( context_path ):
 
 def expand_context_path( context_path ):
 	return context_path.split( '/' )
+
+def get_time_bounded_records( user, table, start_timestamp=None, course=None, filters=None ):
+	"""
+	Get the bounded records for the give user, table, timestamp (and course).
+	"""
+	db = get_analytics_db()
+	result = []
+	user_id = get_user_db_id( user )
+	course_id = None
+	filters = list( filters ) if filters else []
+
+	if user_id is not None:
+		filters.append( table.user_id == user_id )
+
+		if course is not None:
+			course_id = get_root_context_id( course )
+			if course_id is not None:
+				filters.append( table.course_id == course_id )
+			else:
+				# If we have course, but no course_id (return empty)
+				return result
+
+		if start_timestamp is not None:
+			filters.append( table.timestamp >= start_timestamp )
+
+		result = db.session.query( table ).filter( *filters ).all()
+	return result
