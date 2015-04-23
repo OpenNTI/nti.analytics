@@ -32,7 +32,7 @@ class BaseTableMixin(object):
 	def user_id(cls):
 		return Column('user_id', Integer, ForeignKey("Users.user_id"), index=True, nullable=True )
 
-	timestamp = Column('timestamp', DateTime, nullable=True )
+	timestamp = Column('timestamp', DateTime, nullable=True, index=True )
 
 class BaseViewMixin(object):
 
@@ -46,9 +46,8 @@ class BaseViewMixin(object):
 	def user_id(cls):
 		return Column('user_id', Integer, ForeignKey("Users.user_id"), index=True )
 
-	timestamp = Column('timestamp', DateTime)
+	timestamp = Column('timestamp', DateTime, index=True)
 
-	# RHP/username/
 	# Dashboard/lesson_ntiid
 	context_path = Column('context_path', String(1048), nullable=True)
 

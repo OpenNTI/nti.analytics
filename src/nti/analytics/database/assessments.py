@@ -85,6 +85,8 @@ class AssignmentsTaken(Base,AssignmentMixin):
 	# We may have multiple grades in the future.
 	grade = relationship( 'AssignmentGrades', uselist=False, lazy='joined' )
 
+	is_late = Column('is_late', Boolean, nullable=True)
+
 class AssignmentSubmissionMixin(BaseTableMixin):
 	@declared_attr
 	def assignment_taken_id(cls):
