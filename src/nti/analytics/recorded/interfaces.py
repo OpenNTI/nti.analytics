@@ -14,9 +14,6 @@ from zope.interface.interfaces import ObjectEvent, IObjectEvent
 from dolmen.builtins import IString
 from dolmen.builtins import INumeric
 
-from nti.assessment.interfaces import IQAssessedQuestionSet
-from nti.app.assessment.interfaces import IUsersCourseAssignmentHistoryItem
-
 from nti.common.property import alias
 
 from nti.contenttypes.courses.interfaces import ICourseInstance
@@ -30,8 +27,6 @@ from nti.schema.field import Bool
 from nti.schema.field import Number
 from nti.schema.field import Object
 from nti.schema.field import Variant
-
-from nti.analytics.interfaces import IAnalyticsSession
 
 class IObjectRecordedEvent(IObjectEvent):
 	user = Object(IUser, title="user that viewed object")
@@ -81,23 +76,11 @@ class IVideoRecordedEvent(IObjectViewedRecordedEvent):
 					   Object(ICourseInstance, title="the context course")),
 					 title="context object", required=False)
 
-class IAnalyticsSessionRecordedEvent(IObjectRecordedEvent, IAnalyticsSession):
-	pass
-
 class IVideoWatchRecordedEvent(IVideoRecordedEvent):
 	pass
 
 class IVideoSkipRecordedEvent(IVideoRecordedEvent):
 	pass
-
-class IAnalyticsAssessmentRecordedEvent(IObjectRecordedEvent):
-	context = Object(ICourseInstance, title="root context", required=False)
-
-class IAnalyticsSelfAssessmentRecordedEvent(IAnalyticsAssessmentRecordedEvent):
-	object = Object(IQAssessedQuestionSet, title="The assessment", required=True)
-
-class IAnalyticsAssignmentRecordedEvent(IAnalyticsAssessmentRecordedEvent):
-	object = Object(IUsersCourseAssignmentHistoryItem, title="The assessment", required=True)
 
 @interface.implementer(IObjectRecordedEvent)
 class ObjectRecordedEvent(ObjectEvent):
@@ -180,28 +163,3 @@ class VideoWatchRecordedEvent(VideoRecordedEvent):
 class VideoSkipRecordedEvent(VideoRecordedEvent):
 	pass
 
-@interface.implementer(IAnalyticsSessionRecordedEvent)
-class AnalyticsSessionRecordedEvent(ObjectRecordedEvent):
-
-	def __init__(self, user, start_time, end_time, timestamp=None):
-		super(AnalyticsSessionRecordedEvent, self).__init__(user, None, timestamp)
-		self.SessionStartTime = start_time
-		self.SessionEndTime = end_time
-
-@interface.implementer(IAnalyticsAssessmentRecordedEvent)
-class AnalyticsAssessmentRecordedEvent(ObjectRecordedEvent):
-
-	assessment = alias('object')
-	course = alias('context')
-
-	def __init__(self, user, assessment, course, timestamp=None):
-		super(AnalyticsAssessmentRecordedEvent, self).__init__(user, assessment, timestamp)
-		self.context = course
-
-@interface.implementer(IAnalyticsSelfAssessmentRecordedEvent)
-class AnalyticsSelfAssessmentRecordedEvent(AnalyticsAssessmentRecordedEvent):
-	pass
-
-@interface.implementer(IAnalyticsAssignmentRecordedEvent)
-class AnalyticsAssignmentRecordedEvent(AnalyticsAssessmentRecordedEvent):
-	pass

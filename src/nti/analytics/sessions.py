@@ -14,7 +14,6 @@ from calendar import timegm as _calendar_timegm
 from pyramid.threadlocal import get_current_request
 
 from zope import component
-from zope.event import notify
 
 from nti.appserver.interfaces import IUserLogoutEvent
 
@@ -27,10 +26,10 @@ from nti.analytics.common import process_event
 
 from nti.analytics.database import sessions as db_sessions
 
-from nti.analytics.recorded.interfaces import AnalyticsSessionRecordedEvent
-
 ANALYTICS_SESSION_COOKIE_NAME = str( 'nti.da_session' )
 ANALYTICS_SESSION_HEADER = str( 'x-nti-da-session' )
+
+get_user_sessions = db_sessions.get_user_sessions
 
 def _get_session_id_from_val( val ):
 	if val is None:
@@ -76,10 +75,8 @@ def _get_job_queue():
 def _end_session( username, session_id, timestamp=None ):
 	user = get_entity( username )
 	if session_id is not None:
-		session = db_sessions.end_session( user, session_id, timestamp )
+		db_sessions.end_session( user, session_id, timestamp )
 		logger.debug( 'Session ended (user=%s) (session_id=%s)', username, session_id )
-		if session:
-			notify( AnalyticsSessionRecordedEvent( user, session.start_time, session.end_time, timestamp ))
 
 def _add_session( username, user_agent, ip_addr, end_time=None, start_time=None, timestamp=None ):
 	if username:
