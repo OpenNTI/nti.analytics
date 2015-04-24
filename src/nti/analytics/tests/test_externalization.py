@@ -37,8 +37,7 @@ from nti.analytics.model import AnalyticsClientParams
 from nti.analytics.model import SelfAssessmentViewEvent
 from nti.analytics.model import AssignmentViewEvent
 
-from nti.analytics.interfaces import IVideoEvent, ISelfAssessmentViewEvent,\
-	IAssignmentViewEvent
+from nti.analytics.interfaces import IVideoEvent
 from nti.analytics.interfaces import IResourceEvent
 from nti.analytics.interfaces import IBlogViewEvent
 from nti.analytics.interfaces import INoteViewEvent
