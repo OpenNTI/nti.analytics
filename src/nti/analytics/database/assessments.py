@@ -33,6 +33,7 @@ from nti.assessment.common import grader_for_response
 from nti.assessment.interfaces import IQUploadedFile
 from nti.assessment.interfaces import IQAssessedQuestionSet
 from nti.assessment.interfaces import IQModeledContentResponse
+from nti.assessment.interfaces import IQAssignmentDateContext
 
 from nti.assessment.randomized.interfaces import IQRandomizedPart
 
@@ -329,6 +330,13 @@ def _get_grader_id( submission ):
 			grader = grader.user_id
 	return grader
 
+def _is_late( course, submission ):
+	assignment = submission.Assignment
+	date_context = IQAssignmentDateContext( course )
+	due_date = date_context.of( assignment ).available_for_submission_ending
+	submitted_late = submission.created > due_date if due_date else False
+	return submitted_late
+
 def _get_assignment_taken_id( db, submission_id ):
 	submission = db.session.query(AssignmentsTaken).filter( AssignmentsTaken.submission_id == submission_id ).first()
 	return submission and submission.assignment_taken_id
@@ -352,6 +360,7 @@ def create_assignment_taken( user, nti_session, timestamp, course, submission ):
 	assignment_id = submission.assignmentId
 	submission_obj = submission.Submission
 	time_length = _get_duration( submission_obj )
+	is_late = _is_late( course, submission )
 
 	new_object = AssignmentsTaken( 	user_id=uid,
 									session_id=sid,
@@ -359,6 +368,7 @@ def create_assignment_taken( user, nti_session, timestamp, course, submission ):
 									course_id=course_id,
 									assignment_id=assignment_id,
 									submission_id=submission_id,
+									is_late=is_late,
 									time_length=time_length )
 	db.session.add( new_object )
 	db.session.flush()
@@ -392,7 +402,6 @@ def create_assignment_taken( user, nti_session, timestamp, course, submission ):
 				question_part_dict[ (question_id,idx) ] = parts
 
 	db.session.flush()
-
 
 	# Grade
 	graded_submission = _get_grade( submission )
@@ -598,6 +607,7 @@ def _resolve_assignment( row, details=None ):
 										GradeNum=grade_num,
 										Grade=grade,
 										Grader=grader,
+										IsLate=submission_record.is_late,
 										Details=details )
 	return result
 

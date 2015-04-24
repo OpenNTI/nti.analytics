@@ -234,6 +234,8 @@ class IAnalyticsAssignment(IAnalyticsObjectBase, ITimeLength, ICourseEvent, IAss
 		value_type=Object( IAnalyticsAssignmentDetail ),
 		required=False )
 
+	IsLate = Bool(title=u"Whether the submitted assignment was late.")
+
 class IAnalyticsSession(interface.Interface):
 	"""
 	The analytics logical session.

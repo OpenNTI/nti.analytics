@@ -35,7 +35,7 @@ def expand_context_path( context_path ):
 
 def get_filtered_records( user, table, timestamp=None, course=None, filters=None ):
 	"""
-	Get the bounded records for the give user, table, timestamp (and course).
+	Get the filtered records for the give user, table, timestamp (and course).
 	"""
 	db = get_analytics_db()
 	result = []
