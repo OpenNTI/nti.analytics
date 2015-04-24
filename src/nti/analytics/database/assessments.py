@@ -69,6 +69,8 @@ from nti.analytics.database.meta_mixins import CourseMixin
 from nti.analytics.database.meta_mixins import DeletedMixin
 from nti.analytics.database.meta_mixins import TimeLengthMixin
 
+from nti.analytics.database._utils import get_filtered_records
+
 class AssignmentMixin(BaseTableMixin,CourseMixin,TimeLengthMixin):
 	# Max length of 160 as of 8.1.14
 	@declared_attr
@@ -629,22 +631,18 @@ def _resolve_assignment_details( row ):
 		details.append( result )
 	return _resolve_assignment( submission_record, details=details )
 
-def get_self_assessments_for_user(user, course):
+def get_self_assessments_for_user(user, course=None, timestamp=None):
 	"Retrieves all self-assessments for the given user and course."
-	db = get_analytics_db()
-	uid = get_user_db_id( user )
-	course_id = get_root_context_id( db, course )
-	results = db.session.query(SelfAssessmentsTaken).filter( 	SelfAssessmentsTaken.user_id == uid,
-																SelfAssessmentsTaken.course_id == course_id ).all()
-
+	results = get_filtered_records( user, SelfAssessmentsTaken, course=course, timestamp=timestamp )
 	return resolve_objects( _resolve_self_assessment, results )
 
 def get_self_assessments_for_user_and_id(user, assessment_id):
 	"Pulls all assessment records for the given user matching the passed in assessment id."
 	db = get_analytics_db()
 	uid = get_user_db_id( user )
-	results = db.session.query(SelfAssessmentsTaken).filter( 	SelfAssessmentsTaken.user_id == uid,
-																SelfAssessmentsTaken.assignment_id == assessment_id ).all()
+	results = db.session.query(SelfAssessmentsTaken).filter(
+							SelfAssessmentsTaken.user_id == uid,
+							SelfAssessmentsTaken.assignment_id == assessment_id ).all()
 
 	return resolve_objects( _resolve_self_assessment, results )
 
@@ -658,16 +656,9 @@ def get_assignment_for_user( user, assignment_id ):
 
 	return resolve_objects( _resolve_assignment, results )
 
-def get_assignments_for_user(user, course):
+def get_assignments_for_user(user, course=None, timestamp=None):
 	"Retrieves all assignments for the given user and course."
-	# We may not have a grade here.
-	db = get_analytics_db()
-	uid = get_user_db_id( user )
-	course_id = get_root_context_id( db, course )
-	results = db.session.query( AssignmentsTaken ) \
-					.filter( AssignmentsTaken.user_id == uid,
-							AssignmentsTaken.course_id == course_id ).all()
-
+	results = get_filtered_records( user, AssignmentsTaken, course=course, timestamp=timestamp )
 	return resolve_objects( _resolve_assignment, results )
 
 def get_self_assessments_for_course(course):

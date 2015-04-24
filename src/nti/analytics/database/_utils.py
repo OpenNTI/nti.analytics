@@ -33,7 +33,7 @@ def get_context_path( context_path ):
 def expand_context_path( context_path ):
 	return context_path.split( '/' )
 
-def get_time_bounded_records( user, table, start_timestamp=None, course=None, filters=None ):
+def get_filtered_records( user, table, timestamp=None, course=None, filters=None ):
 	"""
 	Get the bounded records for the give user, table, timestamp (and course).
 	"""
@@ -41,21 +41,21 @@ def get_time_bounded_records( user, table, start_timestamp=None, course=None, fi
 	result = []
 	user_id = get_user_db_id( user )
 	course_id = None
-	filters = list( filters ) if filters else []
 
 	if user_id is not None:
+		filters = list( filters ) if filters else []
 		filters.append( table.user_id == user_id )
 
 		if course is not None:
-			course_id = get_root_context_id( course )
+			course_id = get_root_context_id( db, course )
 			if course_id is not None:
 				filters.append( table.course_id == course_id )
 			else:
 				# If we have course, but no course_id (return empty)
 				return result
 
-		if start_timestamp is not None:
-			filters.append( table.timestamp >= start_timestamp )
+		if timestamp is not None:
+			filters.append( table.timestamp >= timestamp )
 
 		result = db.session.query( table ).filter( *filters ).all()
 	return result
