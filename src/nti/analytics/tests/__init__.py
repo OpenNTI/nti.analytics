@@ -73,20 +73,6 @@ class SharedConfiguringTestLayer(ZopeComponentLayer,
 	def testTearDown(cls):
 		pass
 
-class NTIAnalyticsTestCase(unittest.TestCase):
-	layer = SharedConfiguringTestLayer
-
-class NTIAnalyticsApplicationTestLayer(ApplicationTestLayer):
-
-	@classmethod
-	def setUp(cls):
-		pass
-
-	@classmethod
-	def tearDown(cls):
-		pass
-
-
 DEFAULT_INTID = 101
 
 cache = dict()
@@ -143,7 +129,10 @@ test_user_ds_id = 78
 test_session_id = 1
 
 class AnalyticsTestBase(unittest.TestCase):
-	""" A base class that simply creates a user and session"""
+	"""
+	A base class that creates a user and session, as well as mocks out
+	getting ids from objects (and vice versa on reverse lookup).
+	"""
 
 	def setUp(self):
 		self.db = AnalyticsDB( dburi='sqlite://' )
@@ -170,3 +159,16 @@ class AnalyticsTestBase(unittest.TestCase):
 		self.session.close()
 		for patch in self.patches:
 			patch.restore()
+
+class NTIAnalyticsTestCase(AnalyticsTestBase):
+	layer = SharedConfiguringTestLayer
+
+class NTIAnalyticsApplicationTestLayer(ApplicationTestLayer):
+
+	@classmethod
+	def setUp(cls):
+		pass
+
+	@classmethod
+	def tearDown(cls):
+		pass

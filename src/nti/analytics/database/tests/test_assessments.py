@@ -9,6 +9,7 @@ import time
 import weakref
 
 from datetime import datetime
+from datetime import timedelta
 
 # disable: accessing protected members, too many methods
 # pylint: disable=W0212,R0904
@@ -24,22 +25,24 @@ from nti.app.assessment.feedback import UsersCourseAssignmentHistoryItemFeedback
 from nti.app.assessment.history import UsersCourseAssignmentHistory
 from nti.contenttypes.courses.courses import CourseInstance
 
-from nti.assessment.assignment import QAssignmentSubmissionPendingAssessment
-
-from nti.assessment.submission import AssignmentSubmission
-from nti.assessment.submission import QuestionSetSubmission
-from nti.assessment.submission import QuestionSubmission
 from nti.assessment.assessed import QAssessedQuestionSet
 from nti.assessment.assessed import QAssessedQuestion
 from nti.assessment.assessed import QAssessedPart
+from nti.assessment.assignment import QAssignment
+from nti.assessment.assignment import QAssignmentSubmissionPendingAssessment
+from nti.assessment.submission import AssignmentSubmission
+from nti.assessment.submission import QuestionSetSubmission
+from nti.assessment.submission import QuestionSubmission
 
 from nti.app.products.gradebook.grades import Grade
 
 from nti.analytics.database.tests import test_user_ds_id
 from nti.analytics.database.tests import test_session_id
 from nti.analytics.database.tests import AnalyticsTestBase
+from nti.analytics.database.tests import NTIAnalyticsTestCase
 
 from nti.analytics.database import assessments as db_assessments
+from nti.analytics.database import get_analytics_db
 
 from nti.analytics.database.assessments import _get_grade_val
 from nti.analytics.database.assessments import _get_response
@@ -86,6 +89,7 @@ def _get_history_item():
 	history.owner = weakref.ref( result_creator )
 
 	result.createdTime = time.time()
+	result.Assignment = QAssignment( parts=() )
 	return result, result_creator
 
 class TestAssessments(AnalyticsTestBase):
@@ -168,14 +172,17 @@ class TestAssessments(AnalyticsTestBase):
 		db_assessments.create_self_assessment_taken(
 								test_user_ds_id, test_session_id, assessment_time, self.course_id, new_assessment )
 
-		sa_records = db_assessments.get_self_assessments_for_user( test_user_ds_id, self.course_id )
 		sa_records = [x for x in sa_records]
 		assert_that( sa_records, has_length( 1 ) )
 
-class TestAssignments(AnalyticsTestBase):
+class TestAssignments(NTIAnalyticsTestCase):
 
 	def setUp(self):
 		super( TestAssignments, self ).setUp()
+		self.course = CourseInstance()
+		self.course.__dict__['_ds_intid'] = 1111
+		self.db = get_analytics_db()
+		self.course_id = 2
 
 	def test_grade(self):
 		# Could be a lot of types: 7, 7/10, 95, 95%, A-, 90 A
@@ -222,10 +229,10 @@ class TestAssignments(AnalyticsTestBase):
 		assert_that( answer1, is_( answer ))
 
 	def test_assignments(self):
-		assignment_records = db_assessments.get_assignments_for_user( test_user_ds_id, self.course_id )
+		assignment_records = db_assessments.get_assignments_for_user( test_user_ds_id, self.course )
 		assignment_records = [x for x in assignment_records]
 		assert_that( assignment_records, has_length( 0 ) )
-		assignment_records = db_assessments.get_assignments_for_course( self.course_id )
+		assignment_records = db_assessments.get_assignments_for_course( self.course )
 		assignment_records = [x for x in assignment_records]
 		assert_that( assignment_records, has_length( 0 ))
 		assignment_details = self.db.session.query( AssignmentDetails ).all()
@@ -236,13 +243,14 @@ class TestAssignments(AnalyticsTestBase):
 		assert_that( assignment_grades, has_length( 0 ))
 
 		# Submit assignment w/no grade
-		assignment_records = db_assessments.get_assignments_for_user( test_user_ds_id, self.course_id )
+		assignment_records = db_assessments.get_assignments_for_user( test_user_ds_id, self.course )
 		assignment_records = [x for x in assignment_records]
 		assert_that( assignment_records, has_length( 0 ) )
 
 		new_assignment, _ = _get_history_item()
+		now = datetime.utcnow()
 		db_assessments.create_assignment_taken(
-								test_user_ds_id, test_session_id, datetime.now(), self.course_id, new_assignment )
+								test_user_ds_id, test_session_id, now, self.course, new_assignment )
 
 		# Check grade
 		assignment_grades = self.db.session.query( AssignmentGrades ).all()
@@ -251,16 +259,17 @@ class TestAssignments(AnalyticsTestBase):
 		assert_that( assignment_feedback, has_length( 0 ))
 
 		# By course/user
-		assignment_records = db_assessments.get_assignments_for_user( test_user_ds_id, self.course_id )
+		assignment_records = db_assessments.get_assignments_for_user( test_user_ds_id, self.course )
 		assignment_records = [x for x in assignment_records]
 		assert_that( assignment_records, has_length( 1 ))
+		assert_that( assignment_records[0].IsLate, is_( False ))
 
 		assignment_taken = assignment_records[0]
 		assert_that( assignment_taken.Submission, is_( new_assignment ))
 		assert_that( assignment_taken.timestamp, not_none() )
 
 		# By course
-		assignment_records = db_assessments.get_assignments_for_course( self.course_id )
+		assignment_records = db_assessments.get_assignments_for_course( self.course )
 		assignment_records = [x for x in assignment_records]
 		assert_that( assignment_records, has_length( 1 ))
 
@@ -275,11 +284,10 @@ class TestAssignments(AnalyticsTestBase):
 
 		assignment_taken = assignment_records[0]
 		assert_that( assignment_taken.user_id, is_( 1 ))
-		assert_that( assignment_taken.course_id, is_( 1 ))
+		assert_that( assignment_taken.course_id, is_( self.course_id ))
 		assert_that( assignment_taken.timestamp, not_none() )
 		assert_that( assignment_taken.time_length, is_( -1 ) )
 		assert_that( assignment_taken.assignment_id, is_( 'b' ) )
-		assert_that( assignment_taken.submission_id, is_( 103 ) )
 
 		# Details
 		assignment_details = self.db.session.query( AssignmentDetails ).all()
@@ -300,13 +308,16 @@ class TestAssignments(AnalyticsTestBase):
 		mock_get_grade.is_callable().returns( my_grade )
 
 		# Submit assignment w/no grade
-		assignment_records = db_assessments.get_assignments_for_user( test_user_ds_id, self.course_id )
+		assignment_records = db_assessments.get_assignments_for_user( test_user_ds_id, self.course )
 		assignment_records = [x for x in assignment_records]
 		assert_that( assignment_records, has_length( 0 ) )
 
 		new_assignment, _ = _get_history_item()
+		now = datetime.utcnow()
+		month_ago = now - timedelta( days=30 )
+		new_assignment.Assignment.available_for_submission_ending = month_ago
 		db_assessments.create_assignment_taken(
-								test_user_ds_id, test_session_id, datetime.now(), self.course_id, new_assignment )
+								test_user_ds_id, test_session_id, now, self.course, new_assignment )
 
 		# Check grade
 		assignment_grades = self.db.session.query( AssignmentGrades ).all()
@@ -315,9 +326,10 @@ class TestAssignments(AnalyticsTestBase):
 		assert_that( assignment_feedback, has_length( 0 ))
 
 		# By course/user
-		assignment_records = db_assessments.get_assignments_for_user( test_user_ds_id, self.course_id )
+		assignment_records = db_assessments.get_assignments_for_user( test_user_ds_id, self.course )
 		assignment_records = [x for x in assignment_records]
 		assert_that( assignment_records, has_length( 1 ))
+		assert_that( assignment_records[0].IsLate, is_( True ))
 
 		assignment_taken = assignment_records[0]
 		assert_that( assignment_taken.Submission, is_( new_assignment ))
@@ -326,7 +338,7 @@ class TestAssignments(AnalyticsTestBase):
 		assert_that( assignment_taken.GradeNum, is_( 20 ) )
 
 		# By course
-		assignment_records = db_assessments.get_assignments_for_course( self.course_id )
+		assignment_records = db_assessments.get_assignments_for_course( self.course )
 		assignment_records = [x for x in assignment_records]
 		assert_that( assignment_records, has_length( 1 ))
 
@@ -335,7 +347,7 @@ class TestAssignments(AnalyticsTestBase):
 		assert_that( assignment_taken.timestamp, not_none() )
 
 		# Details
-		assignment_taken= db_assessments.get_assignment_details_for_course( self.course_id, _assignment_id)
+		assignment_taken= db_assessments.get_assignment_details_for_course( self.course, _assignment_id)
 		assignment_taken = [x for x in assignment_taken]
 		assert_that( assignment_taken, has_length( 1 ))
 
@@ -388,7 +400,7 @@ class TestAssignments(AnalyticsTestBase):
 		feedback.__parent__ = new_assignment
 
 		db_assessments.create_assignment_taken(
-						test_user_ds_id, test_session_id, datetime.now(), self.course_id, new_assignment )
+						test_user_ds_id, test_session_id, datetime.now(), self.course, new_assignment )
 
 		db_assessments.create_submission_feedback(
 						feedback_creator, test_session_id, datetime.now(), new_assignment, feedback )
@@ -414,8 +426,7 @@ class TestAssignments(AnalyticsTestBase):
 
 		# Create object
 		new_assignment, result_creator = _get_history_item()
-		course = CourseInstance()
-		course['_ds_intid'] = self.course_id
+		course = self.course
 		new_assignment.__parent__.__parent__ = course
 		feedback = UsersCourseAssignmentHistoryItemFeedback()
 		feedback.__dict__['creator'] = feedback_creator = Principal( username='9999' )
@@ -444,24 +455,24 @@ class TestAssignments(AnalyticsTestBase):
 
 
 	def test_idempotent(self):
-		assignment_records = db_assessments.get_assignments_for_user( test_user_ds_id, self.course_id )
+		assignment_records = db_assessments.get_assignments_for_user( test_user_ds_id, self.course )
 		assignment_records = [x for x in assignment_records]
 		assert_that( assignment_records, has_length( 0 ) )
 
 		assignment_time = datetime.now()
 		new_assignment, _ = _get_history_item()
 		db_assessments.create_assignment_taken(
-					test_user_ds_id, test_session_id, assignment_time, self.course_id, new_assignment )
+					test_user_ds_id, test_session_id, assignment_time, self.course, new_assignment )
 
-		assignment_records = db_assessments.get_assignments_for_user( test_user_ds_id, self.course_id )
+		assignment_records = db_assessments.get_assignments_for_user( test_user_ds_id, self.course )
 		assignment_records = [x for x in assignment_records]
 		assert_that( assignment_records, has_length( 1 ) )
 
 		# Again
 		db_assessments.create_assignment_taken(
-					test_user_ds_id, test_session_id, assignment_time, self.course_id, new_assignment )
+					test_user_ds_id, test_session_id, assignment_time, self.course, new_assignment )
 
-		assignment_records = db_assessments.get_assignments_for_user( test_user_ds_id, self.course_id )
+		assignment_records = db_assessments.get_assignments_for_user( test_user_ds_id, self.course )
 		assignment_records = [x for x in assignment_records]
 		assert_that( assignment_records, has_length( 1 ) )
 
