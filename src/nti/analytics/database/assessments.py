@@ -56,20 +56,23 @@ from nti.analytics.identifier import FeedbackId
 from nti.analytics.database.users import get_or_create_user
 from nti.analytics.database.users import get_user
 from nti.analytics.database.users import get_user_db_id
-from nti.analytics.database.root_context import get_root_context_id
-from nti.analytics.database.root_context import get_root_context
 
+from nti.analytics.database import Base
 from nti.analytics.database import resolve_objects
 from nti.analytics.database import NTIID_COLUMN_TYPE
 from nti.analytics.database import INTID_COLUMN_TYPE
-from nti.analytics.database import Base
 from nti.analytics.database import get_analytics_db
 
 from nti.analytics.database.meta_mixins import BaseTableMixin
 from nti.analytics.database.meta_mixins import CourseMixin
 from nti.analytics.database.meta_mixins import DeletedMixin
 from nti.analytics.database.meta_mixins import TimeLengthMixin
+from nti.analytics.database.meta_mixins import ResourceViewMixin
 
+from nti.analytics.database.root_context import get_root_context_id
+from nti.analytics.database.root_context import get_root_context
+
+from nti.analytics.database._utils import create_view
 from nti.analytics.database._utils import get_filtered_records
 
 class AssignmentMixin(BaseTableMixin,CourseMixin,TimeLengthMixin):
@@ -153,7 +156,6 @@ class AssignmentDetailGrades(Base,GradeDetailMixin,AssignmentSubmissionMixin):
 
 	assignment_details_id = Column('assignment_details_id', Integer, ForeignKey("AssignmentDetails.assignment_details_id"), unique=True, primary_key=True )
 
-
 # Each feedback 'tree' should have an associated grade with it.
 class AssignmentFeedback(Base,AssignmentSubmissionMixin,DeletedMixin):
 	__tablename__ = 'AssignmentFeedback'
@@ -177,6 +179,17 @@ class SelfAssessmentDetails(Base,BaseTableMixin,DetailMixin,GradeDetailMixin):
 	self_assessment_id = Column('self_assessment_id', Integer, ForeignKey("SelfAssessmentsTaken.self_assessment_id"), nullable=False, index=True)
 
 	self_assessment_details_id = Column('self_assessment_details_id', Integer, Sequence( 'self_assessment_details_seq' ), primary_key=True )
+
+class SelfAssessmentViews(Base,ResourceViewMixin,TimeLengthMixin):
+	__tablename__ = 'SelfAssessmentViews'
+	self_assessment_view_id = Column('self_assessment_view_id', Integer,
+									Sequence( 'self_assessment_view_id_seq' ), primary_key=True )
+
+class AssignmentViews(Base,ResourceViewMixin,TimeLengthMixin):
+	__tablename__ = 'AssignmentViews'
+	assignment_view_id = Column('assignment_view_id', Integer,
+							Sequence( 'assignment_view_id_seq' ), primary_key=True )
+
 
 def _get_duration( submission ):
 	"""
@@ -558,6 +571,14 @@ def delete_feedback( timestamp, feedback_ds_id ):
 	feedback.deleted=timestamp
 	feedback.feedback_ds_id = None
 	db.session.flush()
+
+def create_self_assessment_view( user, nti_session, timestamp, course, context_path, resource, time_length):
+	return create_view( SelfAssessmentViews, user, nti_session, timestamp,
+						course, context_path, resource, time_length)
+
+def create_assignment_view( user, nti_session, timestamp, course, context_path, resource, time_length):
+	return create_view( AssignmentViews, user, nti_session, timestamp,
+						course, context_path, resource, time_length)
 
 def _resolve_self_assessment( row, course=None ):
 	make_transient( row )
