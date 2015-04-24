@@ -23,6 +23,7 @@ from alembic.migration import MigrationContext
 from nti.analytics.database import get_analytics_db
 from nti.analytics.database.enrollments import CourseDrops
 from nti.analytics.database.enrollments import CourseEnrollments
+from nti.analytics.database.enrollments import CourseCatalogViews
 from nti.analytics.database.assessments import AssignmentGrades
 from nti.analytics.database.assessments import AssignmentsTaken
 from nti.analytics.database.assessments import SelfAssessmentsTaken
@@ -58,7 +59,6 @@ from nti.analytics.database.resource_tags import NoteLikes
 from nti.analytics.database.resource_tags import NotesCreated
 from nti.analytics.database.resource_tags import NotesViewed
 from nti.analytics.database.resource_views import CourseResourceViews
-from nti.analytics.database.resource_views import CourseCatalogViews
 from nti.analytics.database.resource_views import VideoEvents
 
 INDEX_EXISTS_QUERY = 	"""
@@ -138,9 +138,9 @@ def do_evolve():
 
 	# Every table with timestamp
 	for table_name in TABLES:
-		ix_name = 'ix_%s_timestamp' % table_name.lower()
-		if not _index_exists( connection, ix_name, table_name ):
-			op.create_index( ix_name, table_name, ['timestamp'] )
+		ix_name = 'ix_%s_timestamp' % table_name.__tablename__.lower()
+		if not _index_exists( connection, ix_name, table_name.__tablename__ ):
+			op.create_index( ix_name, table_name.__tablename__, ['timestamp'] )
 
 	column_name = 'is_late'
 
