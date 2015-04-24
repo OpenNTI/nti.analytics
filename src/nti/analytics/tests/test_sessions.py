@@ -26,7 +26,7 @@ from ..sessions import get_user_sessions
 class TestSessions( NTIAnalyticsTestCase ):
 
 	@WithMockDSTrans
-	def test(self):
+	def test_adding_sessions(self):
 		start = datetime( year=2007, month=3, day=6,
 							hour=6, minute=10, second=30 )
 		seconds_delta = 3600

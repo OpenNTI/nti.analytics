@@ -28,9 +28,11 @@ from nti.analytics.identifier import HighlightId
 from nti.analytics.identifier import BookmarkId
 from nti.analytics.identifier import ResourceId
 
-from nti.analytics.database import INTID_COLUMN_TYPE
 from nti.analytics.database import Base
 from nti.analytics.database import get_analytics_db
+from nti.analytics.database import INTID_COLUMN_TYPE
+
+from nti.analytics.database._utils import get_filtered_records
 
 from nti.analytics.database.meta_mixins import BaseTableMixin
 from nti.analytics.database.meta_mixins import BaseViewMixin
@@ -394,12 +396,38 @@ def delete_bookmark(timestamp, bookmark_ds_id):
 	bookmark.bookmark_ds_id = None
 	db.session.flush()
 
+def get_notes( user, course=None, timestamp=None, get_deleted=False  ):
+	"""
+	Fetch any notes for a user started *after* the optionally given
+	timestamp.  Optionally, can filter by course and include/exclude
+	deleted.
+	"""
+	filters = ()
+	if not get_deleted:
+		filters = (NotesCreated.deleted == None,)
+	results = get_filtered_records( user, NotesCreated, course=course,
+								timestamp=timestamp, filters=filters )
+	return results
+
 def get_notes_created_for_course(course):
 	db = get_analytics_db()
 	course_id = get_root_context_id( db, course )
 	results = db.session.query(NotesCreated).filter(
 								NotesCreated.course_id == course_id,
 								NotesCreated.deleted == None  ).all()
+	return results
+
+def get_highlights( user, course=None, timestamp=None, get_deleted=False ):
+	"""
+	Fetch any highlights for a user started *after* the optionally given
+	timestamp.  Optionally, can filter by course and include/exclude
+	deleted.
+	"""
+	filters = ()
+	if not get_deleted:
+		filters = (HighlightsCreated.deleted == None,)
+	results = get_filtered_records( user, HighlightsCreated, course=course,
+								timestamp=timestamp, filters=filters )
 	return results
 
 def get_highlights_created_for_course(course):

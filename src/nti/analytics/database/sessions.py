@@ -157,7 +157,7 @@ def get_session_by_id( session_id ):
 
 def get_user_sessions( user, timestamp=None ):
 	"""
-	Fetch any sessions started *after* the optionally given timestamp.
+	Fetch any sessions for a user started *after* the optionally given timestamp.
 	"""
 	filters = ()
 	if timestamp is not None:
