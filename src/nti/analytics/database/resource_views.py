@@ -30,6 +30,8 @@ from nti.analytics.model import SkipVideoEvent
 from nti.analytics.database import Base
 from nti.analytics.database import get_analytics_db
 
+from nti.analytics.database._utils import get_filtered_records
+
 from nti.analytics.database.meta_mixins import ResourceMixin
 from nti.analytics.database.meta_mixins import BaseTableMixin
 from nti.analytics.database.meta_mixins import ResourceViewMixin
@@ -46,8 +48,6 @@ from nti.analytics.database.resources import get_resource_val
 from nti.analytics.database._utils import expand_context_path
 from nti.analytics.database._utils import get_context_path
 
-# For meta-views into synthetic course info, we can special type the resource_id:
-#	(about|instructors|tech_support)
 class CourseResourceViews(Base,ResourceViewMixin,TimeLengthMixin):
 	__tablename__ = 'CourseResourceViews'
 
@@ -83,8 +83,6 @@ class VideoPlaySpeedEvents(Base,BaseTableMixin,ResourceMixin):
 
 def _resource_view_exists( db, user_id, resource_id, timestamp ):
 	# TODO Need to clean up these dupe events
-	# We probably do not need a timestamp index here since we have an index on
-	# the user and resource columns.
 	return db.session.query( CourseResourceViews ).filter(
 							CourseResourceViews.user_id == user_id,
 							CourseResourceViews.resource_id == resource_id,
@@ -297,32 +295,28 @@ def get_user_resource_views_for_ntiid( user, resource_ntiid ):
 	db = get_analytics_db()
 	user_id = get_user_db_id( user )
 	resource_id = get_resource_id( db, resource_ntiid )
-	results = db.session.query( CourseResourceViews ).filter( CourseResourceViews.user_id == user_id,
-															CourseResourceViews.resource_id == resource_id ).all()
+	results = db.session.query( CourseResourceViews ).filter(
+								CourseResourceViews.user_id == user_id,
+								CourseResourceViews.resource_id == resource_id ).all()
 	return resolve_objects( _resolve_resource_view, results, user=user )
 
 def get_user_video_views_for_ntiid( user, resource_ntiid ):
 	db = get_analytics_db()
 	user_id = get_user_db_id( user )
 	resource_id = get_resource_id( db, resource_ntiid )
-	results = db.session.query( VideoEvents ).filter( VideoEvents.user_id == user_id,
-													VideoEvents.resource_id == resource_id,
-													VideoEvents.video_event_type == VIDEO_WATCH ).all()
+	results = db.session.query( VideoEvents ).filter(
+								VideoEvents.user_id == user_id,
+								VideoEvents.resource_id == resource_id,
+								VideoEvents.video_event_type == VIDEO_WATCH ).all()
 	return resolve_objects( _resolve_video_view, results, user=user )
 
-def get_user_resource_views( user, course ):
-	db = get_analytics_db()
-	user_id = get_user_db_id( user )
-	course_id = get_root_context_id( db, course )
-	results = db.session.query( CourseResourceViews ).filter( CourseResourceViews.user_id == user_id,
-															CourseResourceViews.course_id == course_id ).all()
+def get_user_resource_views( user, course=None, timestamp=None ):
+	results = get_filtered_records( user, CourseResourceViews,
+								course=course, timestamp=timestamp )
 	return resolve_objects( _resolve_resource_view, results, user=user, course=course )
 
-def get_user_video_events( user, course ):
-	db = get_analytics_db()
-	user_id = get_user_db_id( user )
-	course_id = get_root_context_id( db, course )
-	results = db.session.query( VideoEvents ).filter( VideoEvents.user_id == user_id,
-													VideoEvents.course_id == course_id ).all()
+def get_user_video_events( user, course=None, timestamp=None ):
+	results = get_filtered_records( user, VideoEvents,
+								course=course, timestamp=timestamp )
 	return resolve_objects( _resolve_video_view, results, user=user, course=course )
 

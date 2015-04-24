@@ -53,13 +53,14 @@ from nti.analytics import VIDEO_VIEW_ANALYTICS
 from nti.analytics import CATALOG_VIEW_ANALYTICS
 from nti.analytics import RESOURCE_VIEW_ANALYTICS
 
-get_user_resource_views = db_resource_views.get_user_resource_views_for_ntiid
+get_user_resource_views = db_resource_views.get_user_resource_views
+get_user_resource_views_for_ntiid = db_resource_views.get_user_resource_views_for_ntiid
 get_user_video_events = db_resource_views.get_user_video_events
 
 def get_progress_for_ntiid( user, resource_ntiid ):
 	# Not sure if one of these is more expensive than the other.  Perhaps
 	# the caller would be able to specify video or other?
-	resource_views = db_resource_views.get_user_resource_views_for_ntiid( user, resource_ntiid )
+	resource_views = get_user_resource_views_for_ntiid( user, resource_ntiid )
 
 	if resource_views:
 		result = get_progress_for_resource_views( resource_ntiid, resource_views )
