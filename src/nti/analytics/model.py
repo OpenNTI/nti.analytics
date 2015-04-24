@@ -43,6 +43,8 @@ from nti.analytics.interfaces import IUserResearchStatus
 from nti.analytics.interfaces import IUserResearchStatusEvent
 from nti.analytics.interfaces import IAnalyticsClientParams
 from nti.analytics.interfaces import IVideoPlaySpeedChangeEvent
+from nti.analytics.interfaces import ISelfAssessmentViewEvent
+from nti.analytics.interfaces import IAssignmentViewEvent
 
 from nti.dataserver.interfaces import IUser
 
@@ -80,6 +82,20 @@ class ResourceEvent(RootContextEvent):
 
 	__external_class_name__ = "ResourceEvent"
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.resourceevent'
+
+@interface.implementer(ISelfAssessmentViewEvent)
+class SelfAssessmentViewEvent(ResourceEvent):
+	createDirectFieldProperties(IResourceEvent)
+
+	__external_class_name__ = "SelfAssessmentViewEvent"
+	mime_type = mimeType = 'application/vnd.nextthought.analytics.selfassessmentviewevent'
+
+@interface.implementer(IAssignmentViewEvent)
+class AssignmentViewEvent(ResourceEvent):
+	createDirectFieldProperties(IResourceEvent)
+
+	__external_class_name__ = "AssignmentViewEvent"
+	mime_type = mimeType = 'application/vnd.nextthought.analytics.assignmentviewevent'
 
 @interface.implementer(IVideoEvent)
 class WatchVideoEvent(RootContextEvent):

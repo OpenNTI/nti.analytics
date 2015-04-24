@@ -106,6 +106,18 @@ class IResourceEvent(IAnalyticsViewEvent, ICourseEvent):
 	"""
 	resource_id = ValidTextLine(title="The resource ntiid.")
 
+class ISelfAssessmentViewEvent(IResourceEvent):
+	"""
+	Describes a self-assessment viewing event.
+	"""
+	pass
+
+class IAssignmentViewEvent(IResourceEvent):
+	"""
+	Describes an assignment viewing event.
+	"""
+	pass
+
 class INoteViewEvent(IAnalyticsViewEvent, ICourseEvent):
 	"""
 	A note viewing event.

@@ -21,6 +21,8 @@ from nti.analytics.interfaces import ITopicViewEvent
 from nti.analytics.interfaces import IResourceEvent
 from nti.analytics.interfaces import ICourseCatalogViewEvent
 from nti.analytics.interfaces import IVideoPlaySpeedChangeEvent
+from nti.analytics.interfaces import IAssignmentViewEvent
+from nti.analytics.interfaces import ISelfAssessmentViewEvent
 
 from nti.analytics.common import get_entity
 from nti.analytics.common import process_event
@@ -32,6 +34,7 @@ from nti.analytics.database import boards as db_boards
 from nti.analytics.database import enrollments as db_enrollments
 from nti.analytics.database import resource_tags as db_resource_tags
 from nti.analytics.database import resource_views as db_resource_views
+from nti.analytics.database import assessments as db_assess_views
 
 from nti.analytics.progress import get_progress_for_resource_views
 from nti.analytics.progress import get_progress_for_video_views
@@ -288,7 +291,7 @@ def _add_catalog_event( event, nti_session=None ):
 	notify(CatalogViewedRecordedEvent(user=user, context=course, timestamp=event.timestamp,
 									  session=nti_session))
 
-def _add_resource_event( event, nti_session=None ):
+def _do_resource_view( to_call, event, nti_session=None ):
 	try:
 		_validate_resource_event( event )
 	except UnrecoverableAnalyticsError as e:
@@ -299,13 +302,8 @@ def _add_resource_event( event, nti_session=None ):
 	resource_id = event.resource_id
 	course = _get_course( event )
 
-	db_resource_views.create_course_resource_view( user,
-								nti_session,
-								event.timestamp,
-								course,
-								event.context_path,
-								resource_id,
-								event.time_length )
+	to_call( user, nti_session, event.timestamp, course,
+			event.context_path, resource_id, event.time_length )
 	logger.debug( 	"Resource view event (user=%s) (course=%s) (resource=%s) (time_length=%s)",
 					user,
 					getattr( course, '__name__', course ),
@@ -313,6 +311,15 @@ def _add_resource_event( event, nti_session=None ):
 
 	notify(ResourceViewedRecordedEvent(user=user, resource=resource_id, context=course,
 									   timestamp=event.timestamp, session=nti_session))
+
+def _add_resource_event( event, nti_session=None ):
+	_do_resource_view( db_resource_views.create_course_resource_view, event, nti_session )
+
+def _add_self_assessment_event( event, nti_session=None ):
+	_do_resource_view( db_assess_views.create_self_assessment_view, event, nti_session )
+
+def _add_assignment_event( event, nti_session=None ):
+	_do_resource_view( db_assess_views.create_assignment_view, event, nti_session )
 
 def _add_video_event( event, nti_session=None ):
 	try:
@@ -431,6 +438,10 @@ def handle_events( batch_events ):
 			process_event( _get_topic_queue, _add_topic_event, event=event, nti_session=nti_session )
 		elif IVideoEvent.providedBy( event ):
 			process_event( _get_video_queue, _add_video_event, event=event, nti_session=nti_session )
+		elif ISelfAssessmentViewEvent.providedBy( event ):
+			process_event( _get_resource_queue, _add_self_assessment_event, event=event, nti_session=nti_session )
+		elif IAssignmentViewEvent.providedBy( event ):
+			process_event( _get_resource_queue, _add_assignment_event, event=event, nti_session=nti_session )
 		elif IResourceEvent.providedBy( event ):
 			process_event( _get_resource_queue, _add_resource_event, event=event, nti_session=nti_session )
 		elif ICourseCatalogViewEvent.providedBy( event ):
