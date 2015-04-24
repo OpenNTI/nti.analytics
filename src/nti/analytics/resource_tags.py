@@ -48,6 +48,7 @@ from nti.analytics import TAGS_ANALYTICS
 get_note_view_count = db_resource_tags.get_note_view_count
 get_notes = db_resource_tags.get_notes
 get_highlights = db_resource_tags.get_highlights
+get_bookmarks = db_resource_tags.get_bookmarks
 
 def _get_job_queue():
 	factory = get_factory()

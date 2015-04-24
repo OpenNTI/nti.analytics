@@ -438,6 +438,19 @@ def get_highlights_created_for_course(course):
 								HighlightsCreated.deleted == None  ).all()
 	return results
 
+def get_bookmarks( user, course=None, timestamp=None, get_deleted=False ):
+	"""
+	Fetch any bookmarks for a user started *after* the optionally given
+	timestamp.  Optionally, can filter by course and include/exclude
+	deleted.
+	"""
+	filters = ()
+	if not get_deleted:
+		filters = (BookmarksCreated.deleted == None,)
+	results = get_filtered_records( user, BookmarksCreated, course=course,
+								timestamp=timestamp, filters=filters )
+	return results
+
 def get_note_view_count( note ):
 	"""
 	Return the number of times this note has been viewed.
