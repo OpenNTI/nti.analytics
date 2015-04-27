@@ -117,13 +117,13 @@ def _note_rated( event ):
 					timestamp=timestamp )
 
 @component.adapter(	INote, IIntIdAddedEvent )
-def _note_added( obj, event ):
+def _note_added( obj, _ ):
 	if _is_note( obj ):
 		nti_session = get_nti_session_id()
 		process_event( _get_job_queue, _add_note, obj, nti_session=nti_session )
 
 @component.adapter(	INote, IIntIdRemovedEvent )
-def _note_removed( obj, event ):
+def _note_removed( obj, _ ):
 	if _is_note( obj ):
 		timestamp = datetime.utcnow()
 		note_id = NoteId.get_id( obj )
@@ -148,13 +148,13 @@ def _remove_highlight( highlight_id, timestamp=None ):
 	logger.debug( "Highlight deleted (highlight_id=%s)", highlight_id )
 
 @component.adapter(	IHighlight, IIntIdAddedEvent )
-def _highlight_added( obj, event ):
+def _highlight_added( obj, _ ):
 	if _is_highlight( obj ):
 		nti_session = get_nti_session_id()
 		process_event( _get_job_queue, _add_highlight, obj, nti_session=nti_session )
 
 @component.adapter(	IHighlight, IIntIdRemovedEvent )
-def _highlight_removed( obj, event ):
+def _highlight_removed( obj, _ ):
 	if _is_highlight( obj ):
 		timestamp = datetime.utcnow()
 		highlight_id = HighlightId.get_id( obj )
@@ -177,12 +177,12 @@ def _remove_bookmark( bookmark_id, timestamp=None ):
 	logger.debug( "Bookmark deleted (bookmark_id=%s)", bookmark_id )
 
 @component.adapter(	IBookmark, IIntIdAddedEvent )
-def _bookmark_added( obj, event ):
+def _bookmark_added( obj, _ ):
 	nti_session = get_nti_session_id()
 	process_event( _get_job_queue, _add_bookmark, obj, nti_session=nti_session )
 
 @component.adapter(	IBookmark, IIntIdRemovedEvent )
-def _bookmark_removed( obj, event ):
+def _bookmark_removed( obj, _ ):
 	timestamp = datetime.utcnow()
 	bookmark_id = BookmarkId.get_id( obj )
 	process_event( _get_job_queue, _remove_bookmark, bookmark_id=bookmark_id, timestamp=timestamp )
