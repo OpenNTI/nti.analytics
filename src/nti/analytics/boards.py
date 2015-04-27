@@ -121,13 +121,13 @@ def _like_comment( oid, username=None, delta=0, timestamp=None, nti_session=None
 		logger.debug( 'Comment liked (comment=%s)', comment )
 
 @component.adapter( IGeneralForumComment, IIntIdAddedEvent )
-def _add_general_forum_comment(comment, event):
+def _add_general_forum_comment(comment, _):
 	if _is_forum_comment( comment ):
 		nti_session = get_nti_session_id()
 		process_event( _get_comments_queue, _add_comment, comment, nti_session=nti_session )
 
 @component.adapter( IGeneralForumComment, IObjectModifiedEvent )
-def _modify_general_forum_comment(comment, event):
+def _modify_general_forum_comment(comment, _):
 	if		_is_forum_comment( comment ) \
 		and IDeletedObjectPlaceholder.providedBy( comment ):
 			timestamp = datetime.utcnow()
@@ -208,19 +208,17 @@ def _topic_rated( event ):
 					timestamp=timestamp )
 
 @component.adapter( ITopic, IIntIdAddedEvent )
-def _topic_added( topic, event ):
+def _topic_added( topic, _ ):
 	if _is_topic( topic ):
 		nti_session = get_nti_session_id()
 		process_event( _get_topic_queue, _add_topic, topic, nti_session=nti_session )
 
 @component.adapter( ITopic, IIntIdRemovedEvent )
-def _topic_removed( topic, event ):
+def _topic_removed( topic, _ ):
 	if _is_topic( topic ):
 		timestamp = datetime.utcnow()
 		topic_id = TopicId.get_id( topic )
 		process_event( _get_topic_queue, _remove_topic, topic_id=topic_id, timestamp=timestamp )
-
-
 
 
 # Forum
@@ -240,12 +238,12 @@ def _add_forum( oid, nti_session=None ):
 						getattr( course, '__name__', course ) )
 
 @component.adapter( IForum, IIntIdAddedEvent )
-def _forum_added( forum, event ):
+def _forum_added( forum, _ ):
 	nti_session = get_nti_session_id()
 	process_event( _get_board_queue, _add_forum, forum, nti_session=nti_session )
 
 @component.adapter( IForum, IIntIdRemovedEvent )
-def _forum_removed( forum, event ):
+def _forum_removed( forum, _ ):
 	timestamp = get_deleted_time( forum )
 	forum_id = ForumId.get_id( forum )
 	process_event( _get_board_queue, _remove_forum, forum_id=forum_id, timestamp=timestamp )

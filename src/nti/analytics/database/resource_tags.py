@@ -398,7 +398,7 @@ def delete_bookmark(timestamp, bookmark_ds_id):
 
 def get_notes( user, course=None, timestamp=None, get_deleted=False  ):
 	"""
-	Fetch any notes for a user started *after* the optionally given
+	Fetch any notes for a user created *after* the optionally given
 	timestamp.  Optionally, can filter by course and include/exclude
 	deleted.
 	"""
@@ -419,7 +419,7 @@ def get_notes_created_for_course(course):
 
 def get_highlights( user, course=None, timestamp=None, get_deleted=False ):
 	"""
-	Fetch any highlights for a user started *after* the optionally given
+	Fetch any highlights for a user created *after* the optionally given
 	timestamp.  Optionally, can filter by course and include/exclude
 	deleted.
 	"""

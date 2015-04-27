@@ -21,8 +21,6 @@ from nti.analytics.interfaces import ITopicViewEvent
 from nti.analytics.interfaces import IResourceEvent
 from nti.analytics.interfaces import ICourseCatalogViewEvent
 from nti.analytics.interfaces import IVideoPlaySpeedChangeEvent
-from nti.analytics.interfaces import IAssignmentViewEvent
-from nti.analytics.interfaces import ISelfAssessmentViewEvent
 
 from nti.analytics.common import get_entity
 from nti.analytics.common import process_event
@@ -438,10 +436,6 @@ def handle_events( batch_events ):
 			process_event( _get_topic_queue, _add_topic_event, event=event, nti_session=nti_session )
 		elif IVideoEvent.providedBy( event ):
 			process_event( _get_video_queue, _add_video_event, event=event, nti_session=nti_session )
-		elif ISelfAssessmentViewEvent.providedBy( event ):
-			process_event( _get_resource_queue, _add_self_assessment_event, event=event, nti_session=nti_session )
-		elif IAssignmentViewEvent.providedBy( event ):
-			process_event( _get_resource_queue, _add_assignment_event, event=event, nti_session=nti_session )
 		elif IResourceEvent.providedBy( event ):
 			process_event( _get_resource_queue, _add_resource_event, event=event, nti_session=nti_session )
 		elif ICourseCatalogViewEvent.providedBy( event ):
