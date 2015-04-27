@@ -12,6 +12,9 @@ from zope.event import notify
 
 from nti.ntiids import ntiids
 
+from nti.assessment.interfaces import IQuestionSet
+from nti.assessment.interfaces import IQAssignment
+
 from nti.contenttypes.courses.interfaces import ICourseInstance
 
 from nti.analytics.interfaces import IVideoEvent
@@ -289,7 +292,7 @@ def _add_catalog_event( event, nti_session=None ):
 	notify(CatalogViewedRecordedEvent(user=user, context=course, timestamp=event.timestamp,
 									  session=nti_session))
 
-def _do_resource_view( to_call, event, nti_session=None ):
+def _add_resource_event( event, nti_session=None ):
 	try:
 		_validate_resource_event( event )
 	except UnrecoverableAnalyticsError as e:
@@ -300,24 +303,28 @@ def _do_resource_view( to_call, event, nti_session=None ):
 	resource_id = event.resource_id
 	course = _get_course( event )
 
+	obj = _get_object( resource_id )
+
+	if IQAssignment.providedBy( obj ):
+		to_call = db_assess_views.create_assignment_view
+		obj_type = 'Assignment'
+	elif IQuestionSet.providedBy( obj ):
+		to_call = db_assess_views.create_self_assessment_view
+		obj_type = 'SelfAssessment'
+	else:
+		to_call = db_resource_views.create_course_resource_view
+		obj_type = 'Resource'
+
 	to_call( user, nti_session, event.timestamp, course,
 			event.context_path, resource_id, event.time_length )
-	logger.debug( 	"Resource view event (user=%s) (course=%s) (resource=%s) (time_length=%s)",
+	logger.debug( 	"%s view event (user=%s) (course=%s) (resource=%s) (time_length=%s)",
+					obj_type,
 					user,
 					getattr( course, '__name__', course ),
 					resource_id, event.time_length )
 
 	notify(ResourceViewedRecordedEvent(user=user, resource=resource_id, context=course,
 									   timestamp=event.timestamp, session=nti_session))
-
-def _add_resource_event( event, nti_session=None ):
-	_do_resource_view( db_resource_views.create_course_resource_view, event, nti_session )
-
-def _add_self_assessment_event( event, nti_session=None ):
-	_do_resource_view( db_assess_views.create_self_assessment_view, event, nti_session )
-
-def _add_assignment_event( event, nti_session=None ):
-	_do_resource_view( db_assess_views.create_assignment_view, event, nti_session )
 
 def _add_video_event( event, nti_session=None ):
 	try:
