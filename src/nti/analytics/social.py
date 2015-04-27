@@ -4,6 +4,7 @@
 $Id$
 """
 from __future__ import print_function, unicode_literals, absolute_import, division
+
 __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
@@ -46,6 +47,8 @@ from nti.analytics.sessions import get_nti_session_id
 from nti.analytics.identifier import FriendsListId
 from nti.analytics.identifier import DFLId
 
+get_contacts_added = db_social.get_contacts_added
+
 def _get_job_queue():
 	factory = get_factory()
 	return factory.get_queue( SOCIAL_ANALYTICS )
@@ -57,6 +60,7 @@ def _is_friends_list( obj ):
 
 def _is_contacts_friends_list( obj ):
 	# Look for 'mycontacts'; is there a better way to do this?
+	# This is a webapp/client-specific concept.
 	return 	IFriendsList.providedBy( obj ) \
 		and 'mycontacts' in obj.__name__
 
@@ -88,12 +92,12 @@ def _update_meeting( oid, timestamp=None ):
 		logger.debug( "Meeting joined by new users (count=%s)", count )
 
 @component.adapter( IMeeting, IObjectAddedEvent )
-def _meeting_created(meeting, event):
+def _meeting_created( meeting, _ ):
 	nti_session = get_nti_session_id()
 	process_event( _get_job_queue, _add_meeting, meeting, nti_session=nti_session )
 
 @component.adapter( IMeeting, IObjectModifiedEvent )
-def _meeting_joined( meeting, event ):
+def _meeting_joined( meeting, _ ):
 	# Not sure if this event is needed, as all participants seem
 	# to be in meeting at meeting creation time.
 	timestamp = datetime.utcnow()
@@ -145,20 +149,20 @@ def _update_friends_list( oid, nti_session=None, timestamp=None ):
 			logger.debug( 'Update FriendsList (user=%s) (count=%s)', user, result )
 
 @component.adapter( IFriendsList, IIntIdAddedEvent )
-def _friendslist_added(obj, event):
+def _friendslist_added(obj, _):
 	if _is_friends_list( obj ):
 		nti_session = get_nti_session_id()
 		process_event( _get_job_queue, _add_friends_list, obj, nti_session=nti_session )
 
 @component.adapter( IFriendsList, IObjectModifiedEvent )
-def _friendslist_modified(obj, event):
+def _friendslist_modified(obj, _):
 	if not IDynamicSharingTargetFriendsList.providedBy( obj ):
 		timestamp = datetime.utcnow()
 		nti_session = get_nti_session_id()
 		process_event( _get_job_queue, _update_friends_list, obj, nti_session=nti_session, timestamp=timestamp )
 
 @component.adapter( IFriendsList, IIntIdRemovedEvent )
-def _friendslist_deleted(obj, event):
+def _friendslist_deleted(obj, _):
 	if _is_friends_list( obj ):
 		obj_id = FriendsListId.get_id( obj )
 		timestamp = datetime.utcnow()
@@ -202,15 +206,15 @@ def _remove_dfl_member( source, target, username=None, timestamp=None, nti_sessi
 		logger.debug( "DFL left (member=%s) (dfl=%s)", member, dfl )
 
 @component.adapter(	IDynamicSharingTargetFriendsList, IIntIdAddedEvent )
-def _dfl_added(obj, event):
+def _dfl_added(obj, _):
 	nti_session = get_nti_session_id()
 	process_event( _get_job_queue, _add_dfl, obj, nti_session=nti_session )
 
 @component.adapter( IDynamicSharingTargetFriendsList, IIntIdRemovedEvent )
-def _dfl_deleted(obj, event):
+def _dfl_deleted(obj, _):
 	timestamp = datetime.utcnow()
-	id = DFLId.get_id( obj )
-	process_event( _get_job_queue, _remove_dfl, dfl_id=id, timestamp=timestamp )
+	dfl_id = DFLId.get_id( obj )
+	process_event( _get_job_queue, _remove_dfl, dfl_id=dfl_id, timestamp=timestamp )
 
 def _handle_dfl_membership_event( event, to_call ):
 	timestamp = datetime.utcnow()

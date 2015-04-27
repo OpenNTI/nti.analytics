@@ -34,6 +34,8 @@ from nti.analytics.database.meta_mixins import DeletedMixin
 
 from nti.analytics.database.users import get_or_create_user
 
+from nti.analytics.database._utils import get_filtered_records
+
 class DynamicFriendsListMixin(object):
 	@declared_attr
 	def dfl_id(cls):
@@ -415,3 +417,13 @@ def update_friends_list( user, nti_session, timestamp, friends_list ):
 		_delete_friend_list_member( db, friends_list_id, old_member )
 
 	return len( members_to_add ) - len( members_to_remove )
+
+def get_contacts_added( user, timestamp=None ):
+	"""
+	Fetch any contacts added for a user *after* the optionally given
+	timestamp.
+	"""
+	filters = []
+	results = get_filtered_records( user, ContactsAdded,
+								timestamp=timestamp, filters=filters )
+	return results
