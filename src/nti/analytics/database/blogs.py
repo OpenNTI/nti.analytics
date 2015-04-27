@@ -40,6 +40,7 @@ from nti.analytics.database.meta_mixins import RatingsMixin
 from nti.analytics.database.users import get_or_create_user
 
 from nti.analytics.database._utils import get_context_path
+from nti.analytics.database._utils import get_filtered_records
 
 class BlogMixin(object):
 
@@ -391,4 +392,16 @@ def flag_comment( comment, state ):
 									BlogCommentsCreated.comment_id == comment_id ).first()
 	db_comment.is_flagged = state
 	db.session.flush()
+
+def get_blogs( user, timestamp=None, get_deleted=False ):
+	"""
+	Fetch any blogs for a user created *after* the optionally given
+	timestamp.  Optionally, can include/exclude deleted.
+	"""
+	filters = []
+	if not get_deleted:
+		filters.append( BlogsCreated.deleted == None )
+	results = get_filtered_records( user, BlogsCreated,
+								timestamp=timestamp, filters=filters )
+	return results
 

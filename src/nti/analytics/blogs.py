@@ -45,6 +45,8 @@ from nti.analytics.database import blogs as db_blogs
 from nti.analytics.identifier import BlogId
 from nti.analytics.identifier import CommentId
 
+get_blogs = db_blogs.get_blogs
+
 def _get_blog_queue():
 	factory = get_factory()
 	return factory.get_queue( BLOGS_ANALYTICS )
