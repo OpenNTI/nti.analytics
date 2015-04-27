@@ -43,8 +43,11 @@ class TestResourceTags( NTIAnalyticsTestCase ):
 		assert_that( results, has_length( 0 ))
 
 		note = Note()
-		note.body = ('test',)
+		note._ds_intid = 888
+		note.body = ('test222',)
 		note.creator = user
+		note.containerId = 'tag:nti:foo'
+		user.addContainedObject( note )
 		course = CourseInstance()
 		mock_find_object.is_callable().returns( note )
 		mock_container_context.is_callable().returns( course )
@@ -54,6 +57,31 @@ class TestResourceTags( NTIAnalyticsTestCase ):
 		_add_note( oid )
 
 		results = get_notes( user )
+		assert_that( results, has_length( 1 ))
+
+		results = get_notes( user, top_level_only=True )
+		assert_that( results, has_length( 1 ))
+
+		results = get_notes( user, replies_only=True )
+		assert_that( results, has_length( 0 ))
+
+		# Reply-to
+		note2 = Note()
+		note2.body = ('test',)
+		note2.creator = user
+		note2.inReplyTo = note
+		note2._ds_intid = 777
+		mock_find_object.is_callable().returns( note2 )
+
+		_add_note( oid+1 )
+
+		results = get_notes( user )
+		assert_that( results, has_length( 2 ))
+
+		results = get_notes( user, top_level_only=True )
+		assert_that( results, has_length( 1 ))
+
+		results = get_notes( user, replies_only=True )
 		assert_that( results, has_length( 1 ))
 
 	@WithMockDSTrans

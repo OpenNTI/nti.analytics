@@ -396,15 +396,20 @@ def delete_bookmark(timestamp, bookmark_ds_id):
 	bookmark.bookmark_ds_id = None
 	db.session.flush()
 
-def get_notes( user, course=None, timestamp=None, get_deleted=False  ):
+def get_notes( user, course=None, timestamp=None, get_deleted=False, top_level_only=False, replies_only=False ):
 	"""
 	Fetch any notes for a user created *after* the optionally given
 	timestamp.  Optionally, can filter by course and include/exclude
-	deleted.
+	deleted, or whether the note is a reply (or top-level).
 	"""
-	filters = ()
+	filters = []
 	if not get_deleted:
-		filters = (NotesCreated.deleted == None,)
+		filters.append( NotesCreated.deleted == None )
+
+	if top_level_only:
+		filters.append( NotesCreated.parent_id == None )
+	elif replies_only:
+		filters.append( NotesCreated.parent_id != None )
 	results = get_filtered_records( user, NotesCreated, course=course,
 								timestamp=timestamp, filters=filters )
 	return results
