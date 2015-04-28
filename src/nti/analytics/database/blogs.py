@@ -295,13 +295,16 @@ def create_blog_comment(user, nti_session, blog, comment ):
 		logger.warn( 'Blog comment already exists (comment_id=%s)', cid )
 		return
 
-	pid = None
+	pid = parent_user_id = None
 	like_count, favorite_count, is_flagged = get_ratings( comment )
 
 	timestamp = get_created_timestamp( comment )
 	parent_comment = getattr( comment, 'inReplyTo', None )
 	if parent_comment is not None:
 		pid = CommentId.get_id( parent_comment )
+		parent_creator = get_creator( parent_comment )
+		parent_user_record = get_or_create_user( parent_creator )
+		parent_user_id = parent_user_record.user_id
 
 	comment_length = sum( len( x ) for x in comment.body )
 
@@ -310,6 +313,7 @@ def create_blog_comment(user, nti_session, blog, comment ):
 										timestamp=timestamp,
 										blog_id=bid,
 										parent_id=pid,
+										parent_user_id=parent_user_id,
 										comment_length=comment_length,
 										comment_id=cid,
 										like_count=like_count,

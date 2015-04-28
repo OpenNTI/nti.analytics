@@ -97,4 +97,8 @@ class CommentsMixin(BaseTableMixin,DeletedMixin):
 	def parent_id(cls):
 		return Column('parent_id', INTID_COLUMN_TYPE)
 
+	@declared_attr
+	def parent_user_id(cls):
+		return Column('parent_user_id', Integer, nullable=True)
+
 

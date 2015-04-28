@@ -60,6 +60,7 @@ class NotesCreated(Base,BaseTableMixin,ResourceMixin,DeletedMixin,RatingsMixin):
 
 	# Parent-id should be other notes; top-level notes will have null parent_ids
 	parent_id = Column('parent_id', Integer, nullable=True)
+	parent_user_id = Column('parent_user_id', Integer, nullable=True)
 	sharing = Column('sharing', Enum( 'PUBLIC', 'COURSE', 'OTHER', 'UNKNOWN' ), nullable=False )
 	note_length = Column('note_length', Integer, nullable=True )
 
@@ -136,8 +137,13 @@ def _get_sharing_enum( note, course ):
 
 	return result
 
+def _get_note( db, note_ds_id ):
+	note = db.session.query(NotesCreated).filter(
+							NotesCreated.note_ds_id == note_ds_id ).first()
+	return note
+
 def _get_note_id( db, note_ds_id ):
-	note = db.session.query(NotesCreated).filter( NotesCreated.note_ds_id == note_ds_id ).first()
+	note = _get_note( db, note_ds_id )
 	return note and note.note_id
 
 _note_exists = _get_note_id
@@ -164,16 +170,21 @@ def create_note(user, nti_session, course, note):
 
 	note_length = sum( len( x ) for x in note.body )
 
-	pid = None
+	parent_id = parent_user_id = None
 	parent_note = getattr( note, 'inReplyTo', None )
+
 	if parent_note is not None:
 		pid = NoteId.get_id( parent_note )
-		pid = _get_note_id( db, pid )
-
-		if pid is None:
+		parent_note_record = _get_note( db, pid )
+		if parent_note_record:
+			parent_id = parent_note_record.note_id
+			parent_user_id = parent_note_record.user_id
+		else:
+			# We need to create our parent record
 			note_creator = get_creator( parent_note )
 			new_note = create_note( note_creator, None, course, parent_note )
-			pid = new_note.note_id
+			parent_id = new_note.note_id
+			parent_user_id = new_note.user_id
 			logger.info( 'Created parent note (user=%s) (note=%s)', note_creator, parent_note )
 
 	new_object = NotesCreated( 	user_id=uid,
@@ -182,7 +193,8 @@ def create_note(user, nti_session, course, note):
 								course_id=course_id,
 								note_ds_id=note_ds_id,
 								resource_id=rid,
-								parent_id=pid,
+								parent_id=parent_id,
+								parent_user_id=parent_user_id,
 								note_length=note_length,
 								sharing=sharing,
 								like_count=like_count,

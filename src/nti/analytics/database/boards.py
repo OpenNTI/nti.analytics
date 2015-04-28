@@ -415,7 +415,7 @@ def create_forum_comment(user, nti_session, course, topic, comment):
 		return
 
 	course_id = get_root_context_id( db, course, create=True )
-	pid = None
+	pid = parent_user_id = None
 	timestamp = get_created_timestamp( comment )
 	like_count, favorite_count, is_flagged = get_ratings( comment )
 
@@ -424,6 +424,9 @@ def create_forum_comment(user, nti_session, course, topic, comment):
 	parent_comment = getattr( comment, 'inReplyTo', None )
 	if parent_comment is not None:
 		pid = CommentId.get_id( parent_comment )
+		parent_creator = get_creator( parent_comment )
+		parent_user_record = get_or_create_user( parent_creator )
+		parent_user_id = parent_user_record.user_id
 
 	new_object = ForumCommentsCreated( 	user_id=uid,
 										session_id=sid,
@@ -432,6 +435,7 @@ def create_forum_comment(user, nti_session, course, topic, comment):
 										forum_id=fid,
 										topic_id=topic_id,
 										parent_id=pid,
+										parent_user_id=parent_user_id,
 										comment_length=comment_length,
 										comment_id=cid,
 										like_count=like_count,
