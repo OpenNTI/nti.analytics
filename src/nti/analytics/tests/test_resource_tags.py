@@ -10,6 +10,7 @@ logger = __import__('logging').getLogger(__name__)
 
 import fudge
 
+from hamcrest import is_
 from hamcrest import has_length
 from hamcrest import assert_that
 
@@ -30,8 +31,10 @@ from ..resource_tags import get_highlights
 from ..resource_tags import _add_note
 from ..resource_tags import _add_bookmark
 from ..resource_tags import _add_highlight
+from ..resource_tags import get_replies_to_user
+from ..resource_tags import get_user_replies_to_others
 
-class TestResourceTags( NTIAnalyticsTestCase ):
+class TestNotes( NTIAnalyticsTestCase ):
 
 	@WithMockDSTrans
 	@fudge.patch( 'nti.ntiids.ntiids.find_object_with_ntiid',
@@ -86,6 +89,61 @@ class TestResourceTags( NTIAnalyticsTestCase ):
 
 	@WithMockDSTrans
 	@fudge.patch( 'nti.ntiids.ntiids.find_object_with_ntiid',
+				'nti.analytics.resolvers.get_container_context',
+				'nti.analytics.database.resource_tags._get_sharing_enum' )
+	def test_reply_comments(self, mock_find_object, mock_container_context, mock_sharing_enum):
+		user1 = User.create_user( username='new_user1', dataserver=self.ds )
+		user2 = User.create_user( username='new_user2', dataserver=self.ds )
+
+		course = CourseInstance()
+		mock_container_context.is_callable().returns( course )
+		mock_sharing_enum.is_callable().returns( 'UNKNOWN' )
+
+		# Create note
+		note1 = Note()
+		note1.body = ('test222',)
+		note1.creator = user1
+		note1.containerId = 'tag:nti:foo'
+		user1.addContainedObject( note1 )
+		mock_find_object.is_callable().returns( note1 )
+		_add_note( note1 )
+
+		results = get_replies_to_user( user1 )
+		assert_that( results, has_length( 0 ))
+		results = get_user_replies_to_others( user2 )
+		assert_that( results, has_length( 0 ))
+
+		# Reply-to
+		note2 = Note()
+		note2.creator = user2
+		note2.body = ('test222',)
+		note2.__parent__ = note1
+		note2.containerId = 'tag:nti:foo'
+		user2.addContainedObject( note2 )
+		note2.inReplyTo = note1
+		mock_find_object.is_callable().returns( note2 )
+		_add_note( note2 )
+
+		# Both should return same record
+		# Replies to user; User replies to others
+		results = get_replies_to_user( user1 )
+		assert_that( results, has_length( 1 ))
+		assert_that( results[0].note_ds_id, is_( note2._ds_intid ))
+
+		results = get_user_replies_to_others( user2 )
+		assert_that( results, has_length( 1 ))
+		assert_that( results[0].note_ds_id, is_( note2._ds_intid ))
+
+		# The reverse is nothing
+		results = get_replies_to_user( user2 )
+		assert_that( results, has_length( 0 ))
+		results = get_user_replies_to_others( user1 )
+		assert_that( results, has_length( 0 ))
+
+class TestHighlights( NTIAnalyticsTestCase ):
+
+	@WithMockDSTrans
+	@fudge.patch( 'nti.ntiids.ntiids.find_object_with_ntiid',
 				'nti.analytics.resolvers.get_container_context')
 	def test_add_highlight(self, mock_find_object, mock_container_context):
 		user = User.create_user( username='new_user1', dataserver=self.ds )
@@ -103,6 +161,9 @@ class TestResourceTags( NTIAnalyticsTestCase ):
 
 		results = get_highlights( user )
 		assert_that( results, has_length( 1 ))
+
+
+class TestBookmarks( NTIAnalyticsTestCase ):
 
 	@WithMockDSTrans
 	@fudge.patch( 'nti.ntiids.ntiids.find_object_with_ntiid',
@@ -123,4 +184,5 @@ class TestResourceTags( NTIAnalyticsTestCase ):
 
 		results = get_bookmarks( user )
 		assert_that( results, has_length( 1 ))
+
 
