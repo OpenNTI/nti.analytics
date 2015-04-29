@@ -69,6 +69,8 @@ get_topics_created_for_user = db_boards.get_topics_created_for_user
 get_forum_comments_for_user = db_boards.get_forum_comments_for_user
 get_topic_views = db_boards.get_topic_views
 get_topic_view_count = db_boards.get_topic_view_count
+get_replies_to_user = db_boards.get_replies_to_user
+get_user_replies_to_others = db_boards.get_user_replies_to_others
 
 def _is_topic( obj ):
 	# Exclude blogs
@@ -89,7 +91,7 @@ def _add_comment( oid, nti_session=None ):
 		user = get_creator( comment )
 		topic = get_object_root( comment, ITopic )
 		course = get_course( topic )
-		if topic:
+		if topic is not None:
 			db_boards.create_forum_comment( user, nti_session, course, topic, comment )
 			logger.debug( 	"Forum comment created (user=%s) (topic=%s) (course=%s)",
 							user,

@@ -308,7 +308,7 @@ def create_blog_comment(user, nti_session, blog, comment ):
 		parent_user_record = get_or_create_user( parent_creator )
 		parent_user_id = parent_user_record.user_id
 
-	comment_length = sum( len( x ) for x in comment.body )
+	comment_length = sum( len( x ) for x in comment.body ) if comment.body else 0
 
 	new_object = BlogCommentsCreated( 	user_id=uid,
 										session_id=sid,

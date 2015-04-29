@@ -46,6 +46,8 @@ from nti.analytics.identifier import BlogId
 from nti.analytics.identifier import CommentId
 
 get_blogs = db_blogs.get_blogs
+get_replies_to_user = db_blogs.get_replies_to_user
+get_user_replies_to_others = db_blogs.get_user_replies_to_others
 
 def _get_blog_queue():
 	factory = get_factory()
@@ -70,7 +72,7 @@ def _add_comment( oid, nti_session=None ):
 		blog = get_object_root( comment, IPersonalBlogEntry )
 		if blog is None:
 			blog = get_object_root( comment, IPersonalBlogEntryPost )
-		if blog:
+		if blog is not None:
 			db_blogs.create_blog_comment( user, nti_session, blog, comment )
 			logger.debug( "Blog comment created (user=%s) (blog=%s)", user, blog )
 
@@ -99,13 +101,13 @@ def _like_comment( oid, username=None, delta=0, timestamp=None, nti_session=None
 		logger.debug( 'Comment liked (comment=%s)', comment )
 
 @component.adapter( IPersonalBlogComment, IIntIdAddedEvent)
-def _add_personal_blog_comment(comment, event):
+def _add_personal_blog_comment(comment, _):
 	nti_session = get_nti_session_id()
 	process_event( _get_comment_queue, _add_comment, comment, nti_session=nti_session )
 
 
 @component.adapter( IPersonalBlogComment, IObjectModifiedEvent )
-def _modify_personal_blog_comment(comment, event):
+def _modify_personal_blog_comment(comment, _):
 	# TODO Could these be changes in sharing? Perhaps different by object type.
 	# IObjectSharingModifiedEvent
 	if IDeletedObjectPlaceholder.providedBy( comment ):
@@ -124,7 +126,7 @@ def _add_blog( oid, nti_session=None ):
 		db_blogs.create_blog( user, nti_session, blog )
 		logger.debug( "Blog created (user=%s) (blog=%s)", user, blog )
 
-def _do_blog_added( blog, event ):
+def _do_blog_added( blog, _ ):
 	nti_session = get_nti_session_id()
 	process_event( _get_blog_queue, _add_blog, blog, nti_session=nti_session )
 
@@ -193,7 +195,7 @@ def _delete_blog( blog_id, timestamp ):
 	logger.debug( 'Blog deleted (blog_id=%s)', blog_id )
 
 @component.adapter(	IPersonalBlogEntry, IIntIdRemovedEvent )
-def _blog_removed( blog, event ):
+def _blog_removed( blog, _ ):
 	timestamp = datetime.utcnow()
 	blog_id = BlogId.get_id( blog )
 	process_event( _get_blog_queue, _delete_blog, blog_id=blog_id, timestamp=timestamp )

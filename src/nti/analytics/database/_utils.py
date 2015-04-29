@@ -113,8 +113,8 @@ def get_user_replies_to_others( table, user, course=None, timestamp=None, get_de
 	Fetch any replies our users provided, *after* the optionally given timestamp.
 	"""
 	user_id = get_user_db_id( user )
-	filters = ( table.parent_user_id is not None,
-				table.parent_user_id != user_id )
+	filters = [ table.parent_user_id is not None,
+				table.parent_user_id != user_id ]
 
 	if not get_deleted:
 		filters.append( table.deleted == None )
