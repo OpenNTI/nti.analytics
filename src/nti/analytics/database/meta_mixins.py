@@ -99,6 +99,6 @@ class CommentsMixin(BaseTableMixin,DeletedMixin):
 
 	@declared_attr
 	def parent_user_id(cls):
-		return Column('parent_user_id', Integer, nullable=True)
+		return Column('parent_user_id', Integer, index=True, nullable=True)
 
 

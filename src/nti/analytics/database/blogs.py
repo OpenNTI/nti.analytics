@@ -41,6 +41,8 @@ from nti.analytics.database.users import get_or_create_user
 
 from nti.analytics.database._utils import get_context_path
 from nti.analytics.database._utils import get_filtered_records
+from nti.analytics.database._utils import get_replies_to_user as _get_replies_to_user
+from nti.analytics.database._utils import get_user_replies_to_others as _get_user_replies_to_others
 
 class BlogMixin(object):
 
@@ -408,4 +410,18 @@ def get_blogs( user, timestamp=None, get_deleted=False ):
 	results = get_filtered_records( user, BlogsCreated,
 								timestamp=timestamp, filters=filters )
 	return results
+
+def get_user_replies_to_others( user, timestamp=None, get_deleted=False ):
+	"""
+	Fetch any replies our users provided, *after* the optionally given timestamp.
+	"""
+	return _get_user_replies_to_others( BlogCommentsCreated, user,
+									timestamp=timestamp, get_deleted=get_deleted )
+
+def get_replies_to_user( user, timestamp=None, get_deleted=False  ):
+	"""
+	Fetch any replies to our user, *after* the optionally given timestamp.
+	"""
+	return _get_replies_to_user( BlogCommentsCreated, user,
+								timestamp=timestamp, get_deleted=get_deleted )
 

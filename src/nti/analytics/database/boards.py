@@ -53,6 +53,8 @@ from nti.analytics.database.root_context import get_root_context_id
 from nti.analytics.database.root_context import get_root_context
 
 from nti.analytics.database._utils import get_context_path
+from nti.analytics.database._utils import get_replies_to_user as _get_replies_to_user
+from nti.analytics.database._utils import get_user_replies_to_others as _get_user_replies_to_others
 
 class ForumMixin(CourseMixin):
 	@declared_attr
@@ -576,9 +578,10 @@ def get_forum_comments_for_user(user, course):
 	db = get_analytics_db()
 	uid = get_user_db_id( user )
 	course_id = get_root_context_id( db, course )
-	results = db.session.query(ForumCommentsCreated).filter( ForumCommentsCreated.user_id == uid,
-															ForumCommentsCreated.course_id == course_id,
-															ForumCommentsCreated.deleted == None ).all()
+	results = db.session.query(ForumCommentsCreated).filter(
+								ForumCommentsCreated.user_id == uid,
+								ForumCommentsCreated.course_id == course_id,
+								ForumCommentsCreated.deleted == None ).all()
 
 	return resolve_objects( _resolve_comment, results )
 
@@ -586,9 +589,10 @@ def get_topics_created_for_user(user, course):
 	db = get_analytics_db()
 	uid = get_user_db_id( user )
 	course_id = get_root_context_id( db, course )
-	results = db.session.query(TopicsCreated).filter( TopicsCreated.user_id == uid,
-														TopicsCreated.course_id == course_id,
-														TopicsCreated.deleted == None  ).all()
+	results = db.session.query(TopicsCreated).filter(
+								TopicsCreated.user_id == uid,
+								TopicsCreated.course_id == course_id,
+								TopicsCreated.deleted == None  ).all()
 
 	return resolve_objects( _resolve_topic, results )
 
@@ -596,8 +600,9 @@ def get_topic_views(user, topic):
 	db = get_analytics_db()
 	uid = get_user_db_id( user )
 	topic_id = _get_topic_id_from_topic( db, topic )
-	results = db.session.query(TopicsViewed).filter( TopicsViewed.user_id == uid,
-													TopicsViewed.topic_id == topic_id ).all()
+	results = db.session.query(TopicsViewed).filter(
+								TopicsViewed.user_id == uid,
+								TopicsViewed.topic_id == topic_id ).all()
 
 	return resolve_objects( _resolve_topic_view, results, topic=topic )
 
@@ -605,8 +610,9 @@ def get_topic_views(user, topic):
 def get_comments_for_topic( topic ):
 	db = get_analytics_db()
 	topic_id = _get_topic_id_from_topic( db, topic )
-	results = db.session.query(ForumCommentsCreated).filter( ForumCommentsCreated.topic_id == topic_id,
-															ForumCommentsCreated.deleted == None ).all()
+	results = db.session.query(ForumCommentsCreated).filter(
+								ForumCommentsCreated.topic_id == topic_id,
+								ForumCommentsCreated.deleted == None ).all()
 	return resolve_objects( _resolve_comment, results )
 
 
@@ -614,15 +620,17 @@ def get_comments_for_topic( topic ):
 def get_forum_comments(forum):
 	db = get_analytics_db()
 	forum_id = _get_forum_id_from_forum( db, forum )
-	results = db.session.query(ForumCommentsCreated).filter( 	ForumCommentsCreated.forum_id == forum_id,
-																ForumCommentsCreated.deleted == None  ).all()
+	results = db.session.query(ForumCommentsCreated).filter(
+								ForumCommentsCreated.forum_id == forum_id,
+								ForumCommentsCreated.deleted == None  ).all()
 	return resolve_objects( _resolve_comment, results )
 
 def get_topics_created_for_forum(forum):
 	db = get_analytics_db()
 	forum_id = _get_forum_id_from_forum( db, forum )
-	results = db.session.query(TopicsCreated).filter( TopicsCreated.forum_id == forum_id,
-													TopicsCreated.deleted == None  ).all()
+	results = db.session.query(TopicsCreated).filter(
+								TopicsCreated.forum_id == forum_id,
+								TopicsCreated.deleted == None  ).all()
 	return resolve_objects( _resolve_topic, results )
 
 
@@ -630,15 +638,17 @@ def get_topics_created_for_forum(forum):
 def get_forum_comments_for_course(course):
 	db = get_analytics_db()
 	course_id = get_root_context_id( db, course )
-	results = db.session.query(ForumCommentsCreated).filter( 	ForumCommentsCreated.course_id == course_id,
-																ForumCommentsCreated.deleted == None  ).all()
+	results = db.session.query(ForumCommentsCreated).filter(
+								ForumCommentsCreated.course_id == course_id,
+								ForumCommentsCreated.deleted == None  ).all()
 	return resolve_objects( _resolve_comment, results )
 
 def get_topics_created_for_course(course):
 	db = get_analytics_db()
 	course_id = get_root_context_id( db, course )
-	results = db.session.query(TopicsCreated).filter( 	TopicsCreated.course_id == course_id,
-														TopicsCreated.deleted == None  ).all()
+	results = db.session.query(TopicsCreated).filter(
+								TopicsCreated.course_id == course_id,
+								TopicsCreated.deleted == None  ).all()
 	return resolve_objects( _resolve_topic, results )
 
 
@@ -651,6 +661,18 @@ def get_topic_view_count( topic ):
 	topic_id = _get_topic_id_from_topic( db, topic )
 	if topic_id is not None:
 		result = db.session.query(TopicsViewed).filter(
-											TopicsViewed.topic_id == topic_id,
-											TopicsViewed.time_length > 0 ).count()
+									TopicsViewed.topic_id == topic_id,
+									TopicsViewed.time_length > 0 ).count()
 	return result
+
+def get_user_replies_to_others( user, course=None, timestamp=None, get_deleted=False ):
+	"""
+	Fetch any replies our users provided, *after* the optionally given timestamp.
+	"""
+	return _get_user_replies_to_others( ForumCommentsCreated, user, course, timestamp, get_deleted )
+
+def get_replies_to_user( user, course=None, timestamp=None, get_deleted=False  ):
+	"""
+	Fetch any replies to our user, *after* the optionally given timestamp.
+	"""
+	return _get_replies_to_user( ForumCommentsCreated, user, course, timestamp, get_deleted )

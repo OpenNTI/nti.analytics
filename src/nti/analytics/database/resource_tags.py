@@ -45,6 +45,9 @@ from nti.analytics.database.root_context import get_root_context_id
 from nti.analytics.database.resources import get_resource_id
 
 from nti.analytics.database._utils import get_context_path
+from nti.analytics.database._utils import get_replies_to_user as _get_replies_to_user
+from nti.analytics.database._utils import get_user_replies_to_others as _get_user_replies_to_others
+
 
 class NoteMixin(ResourceMixin):
 
@@ -60,7 +63,7 @@ class NotesCreated(Base,BaseTableMixin,ResourceMixin,DeletedMixin,RatingsMixin):
 
 	# Parent-id should be other notes; top-level notes will have null parent_ids
 	parent_id = Column('parent_id', Integer, nullable=True)
-	parent_user_id = Column('parent_user_id', Integer, nullable=True)
+	parent_user_id = Column('parent_user_id', Integer, index=True, nullable=True)
 	sharing = Column('sharing', Enum( 'PUBLIC', 'COURSE', 'OTHER', 'UNKNOWN' ), nullable=False )
 	note_length = Column('note_length', Integer, nullable=True )
 
@@ -426,6 +429,18 @@ def get_notes( user, course=None, timestamp=None, get_deleted=False, top_level_o
 								timestamp=timestamp, filters=filters )
 	return results
 
+def get_user_replies_to_others( user, course=None, timestamp=None, get_deleted=False ):
+	"""
+	Fetch any replies our users provided, *after* the optionally given timestamp.
+	"""
+	return _get_user_replies_to_others( NotesCreated, user, course, timestamp, get_deleted )
+
+def get_replies_to_user( user, course=None, timestamp=None, get_deleted=False  ):
+	"""
+	Fetch any replies to our user, *after* the optionally given timestamp.
+	"""
+	return _get_replies_to_user( NotesCreated, user, course, timestamp, get_deleted )
+
 def get_notes_created_for_course(course):
 	db = get_analytics_db()
 	course_id = get_root_context_id( db, course )
@@ -478,6 +493,6 @@ def get_note_view_count( note ):
 	note_id = _get_note_id( db, note_ds_id )
 	if note_id is not None:
 		result = db.session.query(NotesViewed).filter(
-											NotesViewed.note_id == note_id ).count()
+								NotesViewed.note_id == note_id ).count()
 	return result
 

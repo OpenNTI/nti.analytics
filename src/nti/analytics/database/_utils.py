@@ -84,12 +84,11 @@ def create_view( table, user, nti_session, timestamp, course, context_path, reso
 
 def get_filtered_records( user, table, timestamp=None, course=None, filters=None ):
 	"""
-	Get the filtered records for the give user, table, timestamp (and course).
+	Get the filtered records for the given user, table, timestamp (and course).
 	"""
 	db = get_analytics_db()
 	result = []
 	user_id = get_user_db_id( user )
-	course_id = None
 
 	if user_id is not None:
 		filters = list( filters ) if filters else []
@@ -107,4 +106,49 @@ def get_filtered_records( user, table, timestamp=None, course=None, filters=None
 			filters.append( table.timestamp >= timestamp )
 
 		result = db.session.query( table ).filter( *filters ).all()
+	return result
+
+def get_user_replies_to_others( table, user, course=None, timestamp=None, get_deleted=False ):
+	"""
+	Fetch any replies our users provided, *after* the optionally given timestamp.
+	"""
+	user_id = get_user_db_id( user )
+	filters = ( table.parent_user_id is not None,
+				table.parent_user_id != user_id )
+
+	if not get_deleted:
+		filters.append( table.deleted == None )
+
+	return get_filtered_records( user, table, course=course,
+								timestamp=timestamp, filters=filters )
+
+def get_replies_to_user( table, user, course=None, timestamp=None, get_deleted=False  ):
+	"""
+	Fetch any replies to our user, *after* the optionally given timestamp.
+	"""
+	# This is similar to our generic filtering func above, but
+	# we want to specifically exclude our given user.
+	db = get_analytics_db()
+	result = []
+	user_id = get_user_db_id( user )
+	filters = [ table.parent_user_id == user_id,
+				table.user_id != user_id ]
+
+	if not get_deleted:
+		filters.append( table.deleted == None )
+
+	if user_id is not None:
+		if course is not None:
+			course_id = get_root_context_id( db, course )
+			if course_id is not None:
+				filters.append( table.course_id == course_id )
+			else:
+				# If we have course, but no course_id (return empty)
+				return result
+
+		if timestamp is not None:
+			filters.append( table.timestamp >= timestamp )
+
+		result = db.session.query( table ).filter( *filters ).all()
+
 	return result
