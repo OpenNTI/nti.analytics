@@ -107,7 +107,7 @@ def _note_flagged( event ):
 @component.adapter( IObjectRatedEvent )
 def _note_rated( event ):
 	obj = event.object
-	if _is_note( obj ):
+	if _is_note( obj ) and event.rating is not None:
 		timestamp = event.rating.timestamp
 		nti_session = get_nti_session_id()
 		is_favorite, delta = get_rating_from_event( event )
