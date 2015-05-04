@@ -8,6 +8,8 @@ __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
+import urlparse
+
 from zope.event import notify
 
 from nti.ntiids import ntiids
@@ -39,6 +41,7 @@ from nti.analytics.database import assessments as db_assess_views
 
 from nti.analytics.progress import get_progress_for_resource_views
 from nti.analytics.progress import get_progress_for_video_views
+from nti.analytics.progress import get_progress_for_resource_container
 
 from nti.analytics.recorded.interfaces import VideoSkipRecordedEvent
 from nti.analytics.recorded.interfaces import BlogViewedRecordedEvent
@@ -61,19 +64,48 @@ get_user_resource_views = db_resource_views.get_user_resource_views
 get_user_resource_views_for_ntiid = db_resource_views.get_user_resource_views_for_ntiid
 get_user_video_events = db_resource_views.get_user_video_events
 
+def _has_href_fragment( node, children ):
+	def _has_frag( node ):
+		return urlparse.urldefrag( node.href )[1]
+	# A fragment if we have a frag or if any of our children do
+	return bool( 	_has_frag( node )
+				or 	_has_frag( next( iter( children ))))
+
+def _is_page_container( node ):
+	# Node is only page container if it has children and
+	# does not have a fragment in its href.
+	children = getattr( node, 'children', None )
+	return bool( children and not _has_href_fragment( node, children ) )
+
 def get_progress_for_ntiid( user, resource_ntiid ):
-	# Not sure if one of these is more expensive than the other.  Perhaps
-	# the caller would be able to specify video or other?
-	resource_views = get_user_resource_views_for_ntiid( user, resource_ntiid )
+	obj = _get_object( resource_ntiid )
+	if _is_page_container( obj ):
+		# Top level container with pages (?)
+		child_views_dict = {}
+		# TODO Some clients might be sending in view events for the container itself
+		# instead of the first page.  We add that in, even through it might
+		# disturb the accuracy of our results.
+		parent_views = get_user_resource_views_for_ntiid( user, obj.ntiid )
+		child_views_dict[obj.ntiid] = parent_views
 
-	if resource_views:
-		result = get_progress_for_resource_views( resource_ntiid, resource_views )
-
+		for child in obj.children:
+			child_views = get_user_resource_views_for_ntiid( user, child.ntiid )
+			child_views_dict[child.ntiid] = child_views
+		result = get_progress_for_resource_container( resource_ntiid, child_views_dict )
 	else:
-		resource_views = db_resource_views.get_user_video_views_for_ntiid( user, resource_ntiid )
-		result = get_progress_for_video_views( resource_ntiid, resource_views )
+		# Not sure if one of these is more expensive than the other.  Perhaps
+		# the caller would be able to specify video or other?
+		resource_views = get_user_resource_views_for_ntiid( user, resource_ntiid )
+
+		if resource_views:
+			result = get_progress_for_resource_views( resource_ntiid, resource_views )
+
+		else:
+			resource_views = db_resource_views.get_user_video_views_for_ntiid( user, resource_ntiid )
+			result = get_progress_for_video_views( resource_ntiid, resource_views )
 
 	return result
+
 
 def get_video_progress_for_course( user, course ):
 	"""

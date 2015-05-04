@@ -147,7 +147,8 @@ def _get_forum_id_from_forum( db, forum ):
 	return _get_forum_id( db, forum_ds_id )
 
 def _get_topic( db, topic_ds_id ):
-	topic = db.session.query(TopicsCreated).filter( TopicsCreated.topic_ds_id == topic_ds_id ).first()
+	topic = db.session.query(TopicsCreated).filter(
+							TopicsCreated.topic_ds_id == topic_ds_id ).first()
 	return topic
 
 def _get_topic_id( db, topic_ds_id ):
@@ -163,7 +164,8 @@ def _get_topic_id_from_topic( db, topic ):
 def _get_topic_from_db_id( topic_id ):
 	"Return the actual topic object represented by the given db id."
 	db = get_analytics_db()
-	topic = db.session.query(TopicsCreated).filter( TopicsCreated.topic_id == topic_id ).first()
+	topic = db.session.query(TopicsCreated).filter(
+							TopicsCreated.topic_id == topic_id ).first()
 	topic = TopicId.get_object( topic.topic_ds_id )
 	return topic
 

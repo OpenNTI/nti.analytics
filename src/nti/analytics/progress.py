@@ -41,6 +41,29 @@ class DefaultProgress( object ):
 		self.HasProgress = has_progress
 		self.LastModified = last_modified
 
+def get_progress_for_resource_container( resource_ntiid, resource_view_dict ):
+	"""
+	For a page container, use the children progress to determine
+	aggregate progress for the container, which should typically return a
+	num_of_pages_viewed/num_of_pages fraction.
+	"""
+	# Get progress for each child
+	children_progress = (get_progress_for_resource_views( child_ntiid, child_views )
+						for child_ntiid, child_views in resource_view_dict.items())
+
+	children_progress = [x for x in children_progress if x]
+
+	result = None
+	if children_progress:
+		# Each page with *any* progress is viewed
+		viewed_pages = sum( (1 for x in children_progress if x and x.HasProgress) )
+		num_pages = len( resource_view_dict )
+		last_mod = max( (x.LastModified for x in children_progress if x) )
+
+		result = DefaultProgress( resource_ntiid, viewed_pages, num_pages,
+								bool( viewed_pages ), last_modified=last_mod )
+	return result
+
 def get_progress_for_resource_views( resource_ntiid, resource_views ):
 	"""
 	For a set of events for a given ntiid, looking at a resource constitutes progress.

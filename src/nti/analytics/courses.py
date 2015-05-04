@@ -31,7 +31,7 @@ def _delete_course( course_id ):
 	logger.info( 'Deleted course (id=%s)', course_id )
 
 @component.adapter( ICourseInstance, IIntIdRemovedEvent )
-def _course_removed( entity, event ):
+def _course_removed( entity, _ ):
 	course_id = RootContextId.get_id( entity )
 	process_event( _get_job_queue, _delete_course, course_id=course_id )
 

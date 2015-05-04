@@ -45,7 +45,7 @@ class TestComments( NTIAnalyticsTestCase ):
 		course = CourseInstance()
 
 		# Create forum/topic
-		# Should be lazily created in analytics
+		# Should be lazily created
 		forum = GeneralForum()
 		forum.creator = user1
 		forum.__parent__ = course
@@ -56,7 +56,7 @@ class TestComments( NTIAnalyticsTestCase ):
 		topic.__parent__ = forum
 		intids.register( topic )
 
-		# Now our hierarchal comments
+		# Now our hierarchical comments
 		comment1 = GeneralForumComment()
 		comment1.creator = user2
 		comment1.body = ('test222',)

@@ -8,6 +8,7 @@ __docformat__ = "restructuredtext en"
 # pylint: disable=W0212,R0904
 
 import time
+import fudge
 
 from unittest import TestCase
 
@@ -22,17 +23,25 @@ from nti.analytics.database.root_context import _create_course
 from nti.analytics.database.boards import create_topic_view
 from nti.analytics.database.boards import create_topic
 from nti.analytics.database.users import create_user
+from nti.analytics.database import resource_views as db_views
 
 from nti.analytics.progress import _get_last_mod_progress
 from nti.analytics.progress import get_topic_progress
+from nti.analytics.resource_views import get_progress_for_ntiid
 
+from nti.contentlibrary.contentunit import ContentUnit
 from nti.contenttypes.courses.courses import CourseInstance
+
+from nti.dataserver.users import User
+
+from nti.dataserver.tests.mock_dataserver import WithMockDSTrans
 
 from nti.dataserver.contenttypes.forums.topic import CommunityHeadlineTopic
 
-from nti.analytics.tests import AnalyticsTestBase
-
 from nti.testing.time import time_monotonically_increases
+
+from . import AnalyticsTestBase
+from . import NTIAnalyticsTestCase
 
 class MockDBRecord( object ):
 	"""
@@ -124,3 +133,81 @@ class TestTopicProgress( AnalyticsTestBase ):
 		assert_that( result.HasProgress, is_( True ) )
 		assert_that( result.ResourceID, is_( self.topic.NTIID ) )
 		assert_that( result.last_modified, is_( t3 ) )
+
+class TestPagedProgress( NTIAnalyticsTestCase ):
+
+	def _create_resource_view(self, user, resource_val, course):
+		time_length = 30
+		event_time = time.time()
+		db_views.create_course_resource_view( user,
+											None, event_time,
+											course, None,
+											resource_val, time_length )
+
+	@WithMockDSTrans
+	@fudge.patch( 'nti.ntiids.ntiids.find_object_with_ntiid' )
+	def test_paged_progress(self, mock_find_object):
+		user = User.create_user( username='new_user1', dataserver=self.ds )
+		course = CourseInstance()
+
+		container = ContentUnit()
+		container.NTIID = container_ntiid = 'tag:nextthought.com,2011:bleh'
+		mock_find_object.is_callable().returns( container )
+
+		# No children
+		result = get_progress_for_ntiid( user, container_ntiid )
+		assert_that( result, none() )
+
+		# One child with no views
+		child1 = ContentUnit()
+		child1.ntiid = child_ntiid = 'tag:nextthought.com,2011:bleh.page_1'
+		container.children = children = (child1,)
+		# Max progress is different, currently.  Since the container
+		# counts towards progress.  This may change.
+		max_progress = len( children ) + 1
+
+		mock_find_object.is_callable().returns( container )
+		result = get_progress_for_ntiid( user, container_ntiid )
+		assert_that( result, none() )
+
+		# Child with view
+		self._create_resource_view( user, child_ntiid, course )
+
+		mock_find_object.is_callable().returns( container )
+		result = get_progress_for_ntiid( user, container_ntiid )
+		assert_that( result, not_none() )
+		assert_that( result.AbsoluteProgress, is_( 1 ))
+		assert_that( result.MaxPossibleProgress, is_( max_progress ))
+
+		# Multiple children
+		child2 = ContentUnit()
+		child3 = ContentUnit()
+		child2.ntiid = child_ntiid2 = 'tag:nextthought.com,2011:bleh.page_2'
+		child3.ntiid = 'tag:nextthought.com,2011:bleh.page_3'
+		container.children = children = ( child1, child2, child3 )
+		max_progress = len( children ) + 1
+
+		mock_find_object.is_callable().returns( container )
+		result = get_progress_for_ntiid( user, container_ntiid )
+		assert_that( result, not_none() )
+		assert_that( result.AbsoluteProgress, is_( 1 ))
+		assert_that( result.MaxPossibleProgress, is_( max_progress ))
+
+		# Original child again
+		self._create_resource_view( user, child_ntiid, course )
+
+		mock_find_object.is_callable().returns( container )
+		result = get_progress_for_ntiid( user, container_ntiid )
+		assert_that( result, not_none() )
+		assert_that( result.AbsoluteProgress, is_( 1 ))
+		assert_that( result.MaxPossibleProgress, is_( max_progress ))
+
+		# Different child
+		self._create_resource_view( user, child_ntiid2, course )
+
+		mock_find_object.is_callable().returns( container )
+		result = get_progress_for_ntiid( user, container_ntiid )
+		assert_that( result, not_none() )
+		assert_that( result.AbsoluteProgress, is_( 2 ))
+		assert_that( result.MaxPossibleProgress, is_( max_progress ))
+		assert_that( result.HasProgress, is_( True ))

@@ -232,7 +232,7 @@ def _reset():
 	_get_course_from_ntiid_resolver().reset()
 
 @component.adapter( IContentPackageLibraryModifiedOnSyncEvent )
-def _library_sync(event):
+def _library_sync( _ ):
 	process_event( _get_job_queue, _reset )
 
 def get_course_by_container_id( container_id ):
