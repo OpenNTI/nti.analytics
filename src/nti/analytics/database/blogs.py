@@ -42,6 +42,7 @@ from nti.analytics.database.users import get_or_create_user
 
 from nti.analytics.database._utils import get_context_path
 from nti.analytics.database._utils import get_filtered_records
+from nti.analytics.database._utils import get_ratings_for_user_objects
 from nti.analytics.database._utils import get_replies_to_user as _get_replies_to_user
 from nti.analytics.database._utils import get_user_replies_to_others as _get_user_replies_to_others
 
@@ -434,3 +435,33 @@ def get_replies_to_user( user, timestamp=None, get_deleted=False  ):
 	return _get_replies_to_user( BlogCommentsCreated, user,
 								timestamp=timestamp, get_deleted=get_deleted )
 
+def get_likes_for_users_blogs( user, timestamp=None ):
+	"""
+	Fetch any likes created for a user's blogs *after* the optionally given
+	timestamp.  Optionally, can filter by course and include/exclude
+	deleted.
+	"""
+	return get_ratings_for_user_objects( BlogLikes, user, timestamp=timestamp )
+
+def get_favorites_for_users_blogs( user, timestamp=None ):
+	"""
+	Fetch any favorites created for a user's blogs *after* the optionally given
+	timestamp.  Optionally, can filter by course and include/exclude
+	deleted.
+	"""
+	return get_ratings_for_user_objects( BlogFavorites, user, timestamp=timestamp )
+
+def get_likes_for_users_comments( user, timestamp=None ):
+	"""
+	Fetch any likes created for a user's comments *after* the optionally given
+	timestamp.  Optionally, can filter by course and include/exclude
+	deleted.
+	"""
+	return get_ratings_for_user_objects( BlogCommentLikes, user, timestamp=timestamp )
+
+def get_favorites_for_users_comments( user, timestamp=None ):
+	"""
+	Fetch any favorites created for a user's comments *after* the optionally given
+	timestamp.
+	"""
+	return get_ratings_for_user_objects( BlogCommentFavorites, user, timestamp=timestamp )

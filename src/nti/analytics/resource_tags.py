@@ -51,6 +51,8 @@ get_highlights = db_resource_tags.get_highlights
 get_bookmarks = db_resource_tags.get_bookmarks
 get_replies_to_user = db_resource_tags.get_replies_to_user
 get_user_replies_to_others = db_resource_tags.get_user_replies_to_others
+get_likes_for_users_notes = db_resource_tags.get_likes_for_users_notes
+get_favorites_for_users_notes = db_resource_tags.get_favorites_for_users_notes
 
 def _get_job_queue():
 	factory = get_factory()

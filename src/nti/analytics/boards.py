@@ -71,6 +71,10 @@ get_topic_views = db_boards.get_topic_views
 get_topic_view_count = db_boards.get_topic_view_count
 get_replies_to_user = db_boards.get_replies_to_user
 get_user_replies_to_others = db_boards.get_user_replies_to_others
+get_likes_for_users_topics = db_boards.get_likes_for_users_topics
+get_favorites_for_users_topics = db_boards.get_favorites_for_users_topics
+get_likes_for_users_comments = db_boards.get_likes_for_users_comments
+get_favorites_for_users_comments = db_boards.get_favorites_for_users_comments
 
 def _is_topic( obj ):
 	# Exclude blogs

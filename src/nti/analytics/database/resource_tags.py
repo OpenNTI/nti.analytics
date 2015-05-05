@@ -47,6 +47,7 @@ from nti.analytics.database.root_context import get_root_context_id
 from nti.analytics.database.resources import get_resource_id
 
 from nti.analytics.database._utils import get_context_path
+from nti.analytics.database._utils import get_ratings_for_user_objects
 from nti.analytics.database._utils import get_replies_to_user as _get_replies_to_user
 from nti.analytics.database._utils import get_user_replies_to_others as _get_user_replies_to_others
 
@@ -436,6 +437,20 @@ def get_notes( user, course=None, timestamp=None, get_deleted=False, top_level_o
 	results = get_filtered_records( user, NotesCreated, course=course,
 								timestamp=timestamp, filters=filters )
 	return results
+
+def get_likes_for_users_notes( user, course=None, timestamp=None ):
+	"""
+	Fetch any likes created for a user's notes *after* the optionally given
+	timestamp.  Optionally, can filter by course.
+	"""
+	return get_ratings_for_user_objects( NoteLikes, user, course, timestamp )
+
+def get_favorites_for_users_notes( user, course=None, timestamp=None ):
+	"""
+	Fetch any favorites created for a user's notes *after* the optionally given
+	timestamp.  Optionally, can filter by course.
+	"""
+	return get_ratings_for_user_objects( NoteFavorites, user, course, timestamp )
 
 def get_user_replies_to_others( user, course=None, timestamp=None, get_deleted=False ):
 	"""

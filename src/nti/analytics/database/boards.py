@@ -54,6 +54,7 @@ from nti.analytics.database.root_context import get_root_context_id
 from nti.analytics.database.root_context import get_root_context
 
 from nti.analytics.database._utils import get_context_path
+from nti.analytics.database._utils import get_ratings_for_user_objects
 from nti.analytics.database._utils import get_replies_to_user as _get_replies_to_user
 from nti.analytics.database._utils import get_user_replies_to_others as _get_user_replies_to_others
 
@@ -699,3 +700,31 @@ def get_replies_to_user( user, course=None, timestamp=None, get_deleted=False  )
 	Fetch any replies to our user, *after* the optionally given timestamp.
 	"""
 	return _get_replies_to_user( ForumCommentsCreated, user, course, timestamp, get_deleted )
+
+def get_likes_for_users_topics( user, course=None, timestamp=None ):
+	"""
+	Fetch any likes created for a user's topics *after* the optionally given
+	timestamp.  Optionally, can filter by course.
+	"""
+	return get_ratings_for_user_objects( TopicLikes, user, course, timestamp )
+
+def get_favorites_for_users_topics( user, course=None, timestamp=None ):
+	"""
+	Fetch any favorites created for a user's topics *after* the optionally given
+	timestamp.  Optionally, can filter by course.
+	"""
+	return get_ratings_for_user_objects( TopicFavorites, user, course, timestamp )
+
+def get_likes_for_users_comments( user, course=None, timestamp=None ):
+	"""
+	Fetch any likes created for a user's topics *after* the optionally given
+	timestamp.  Optionally, can filter by course.
+	"""
+	return get_ratings_for_user_objects( ForumCommentLikes, user, course, timestamp )
+
+def get_favorites_for_users_comments( user, course=None, timestamp=None ):
+	"""
+	Fetch any favorites created for a user's topics *after* the optionally given
+	timestamp.  Optionally, can filter by course.
+	"""
+	return get_ratings_for_user_objects( ForumCommentFavorites, user, course, timestamp )

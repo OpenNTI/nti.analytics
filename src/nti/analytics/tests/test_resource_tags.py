@@ -29,10 +29,14 @@ from ..resource_tags import get_notes
 from ..resource_tags import get_bookmarks
 from ..resource_tags import get_highlights
 from ..resource_tags import _add_note
+from ..resource_tags import _like_note
+from ..resource_tags import _favorite_note
 from ..resource_tags import _add_bookmark
 from ..resource_tags import _add_highlight
 from ..resource_tags import get_replies_to_user
 from ..resource_tags import get_user_replies_to_others
+from ..resource_tags import get_likes_for_users_notes
+from ..resource_tags import get_favorites_for_users_notes
 
 class TestNotes( NTIAnalyticsTestCase ):
 
@@ -139,6 +143,52 @@ class TestNotes( NTIAnalyticsTestCase ):
 		assert_that( results, has_length( 0 ))
 		results = get_user_replies_to_others( user1 )
 		assert_that( results, has_length( 0 ))
+
+	@WithMockDSTrans
+	@fudge.patch( 'nti.ntiids.ntiids.find_object_with_ntiid',
+				'nti.analytics.resolvers.get_container_context',
+				'nti.analytics.database.resource_tags._get_sharing_enum' )
+	def test_rated_notes(self, mock_find_object, mock_container_context, mock_sharing_enum):
+		user1 = User.create_user( username='new_user1', dataserver=self.ds )
+		user2 = User.create_user( username='new_user2', dataserver=self.ds )
+
+		course = CourseInstance()
+		mock_container_context.is_callable().returns( course )
+		mock_sharing_enum.is_callable().returns( 'UNKNOWN' )
+
+		# Create note
+		note1 = Note()
+		note1.body = ('test222',)
+		note1.creator = user1
+		note1.containerId = 'tag:nti:foo'
+		user1.addContainedObject( note1 )
+		mock_find_object.is_callable().returns( note1 )
+		_add_note( note1 )
+
+		# Base
+		results = get_likes_for_users_notes( user1 )
+		assert_that( results, has_length( 0 ))
+		results = get_favorites_for_users_notes( user1 )
+		assert_that( results, has_length( 0 ))
+
+		# Like note
+		mock_find_object.is_callable().returns( note1 )
+		_like_note( 11, delta=1, username=user2.username )
+
+		results = get_likes_for_users_notes( user1 )
+		assert_that( results, has_length( 1 ))
+		results = get_favorites_for_users_notes( user1 )
+		assert_that( results, has_length( 0 ))
+
+		# Favorite note
+		mock_find_object.is_callable().returns( note1 )
+		_favorite_note( 11, delta=1, username=user2.username )
+
+		results = get_likes_for_users_notes( user1 )
+		assert_that( results, has_length( 1 ))
+		results = get_favorites_for_users_notes( user1 )
+		assert_that( results, has_length( 1 ))
+
 
 class TestHighlights( NTIAnalyticsTestCase ):
 
