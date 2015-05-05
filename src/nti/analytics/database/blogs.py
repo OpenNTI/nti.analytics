@@ -36,6 +36,7 @@ from nti.analytics.database.meta_mixins import DeletedMixin
 from nti.analytics.database.meta_mixins import CommentsMixin
 from nti.analytics.database.meta_mixins import TimeLengthMixin
 from nti.analytics.database.meta_mixins import RatingsMixin
+from nti.analytics.database.meta_mixins import CreatorMixin
 
 from nti.analytics.database.users import get_or_create_user
 
@@ -70,14 +71,14 @@ class BlogCommentsCreated(Base,CommentsMixin,BlogMixin,RatingsMixin):
         PrimaryKeyConstraint('comment_id'),
     )
 
-class BlogFavorites(Base,BaseTableMixin,BlogMixin):
+class BlogFavorites(Base,BaseTableMixin,BlogMixin,CreatorMixin):
 	__tablename__ = 'BlogFavorites'
 
 	__table_args__ = (
         PrimaryKeyConstraint('user_id', 'blog_id'),
     )
 
-class BlogLikes(Base,BaseTableMixin,BlogMixin):
+class BlogLikes(Base,BaseTableMixin,BlogMixin,CreatorMixin):
 	__tablename__ = 'BlogLikes'
 
 	__table_args__ = (
@@ -91,14 +92,14 @@ class BlogCommentMixin(object):
 		return Column('comment_id', INTID_COLUMN_TYPE, ForeignKey("BlogCommentsCreated.comment_id"), nullable=False, index=True)
 
 
-class BlogCommentFavorites(Base,BaseTableMixin,BlogCommentMixin):
+class BlogCommentFavorites(Base,BaseTableMixin,BlogCommentMixin, CreatorMixin):
 	__tablename__ = 'BlogCommentFavorites'
 
 	__table_args__ = (
         PrimaryKeyConstraint('user_id', 'comment_id'),
     )
 
-class BlogCommentLikes(Base,BaseTableMixin,BlogCommentMixin):
+class BlogCommentLikes(Base,BaseTableMixin,BlogCommentMixin, CreatorMixin):
 	__tablename__ = 'BlogCommentLikes'
 
 	__table_args__ = (
@@ -170,7 +171,7 @@ def _get_blog_rating_record( db, table, user_id, blog_id ):
 									table.blog_id == blog_id ).first()
 	return blog_rating_record
 
-def _create_blog_rating_record( db, table, user, session_id, timestamp, blog_id, delta ):
+def _create_blog_rating_record( db, table, user, session_id, timestamp, blog_id, delta, creator_id ):
 	"""
 	Creates a like or favorite record, based on given table. If
 	the delta is negative, we delete the like or favorite record.
@@ -188,7 +189,8 @@ def _create_blog_rating_record( db, table, user, session_id, timestamp, blog_id,
 			blog_rating_record = table( blog_id=blog_id,
 								user_id=user_id,
 								timestamp=timestamp,
-								session_id=session_id )
+								session_id=session_id,
+								creator_id=creator_id )
 			db.session.add( blog_rating_record )
 		elif blog_rating_record and delta < 0:
 			# Delete
@@ -200,28 +202,30 @@ def like_blog( blog, user, session_id, timestamp, delta ):
 	blog_ds_id = BlogId.get_id( blog )
 	db_blog = db.session.query(BlogsCreated).filter(
 								BlogsCreated.blog_ds_id == blog_ds_id ).first()
-	db_blog.like_count += delta
-	db.session.flush()
 
 	if db_blog is not None:
+		db_blog.like_count += delta
+		db.session.flush()
+		creator_id = db_blog.user_id
 		blog_id = db_blog.blog_id
 		_create_blog_rating_record( db, BlogLikes, user,
 								session_id, timestamp,
-								blog_id, delta )
+								blog_id, delta, creator_id )
 
 def favorite_blog( blog, user, session_id, timestamp, delta ):
 	db = get_analytics_db()
 	blog_ds_id = BlogId.get_id( blog )
 	db_blog = db.session.query(BlogsCreated).filter(
 								BlogsCreated.blog_ds_id == blog_ds_id ).first()
-	db_blog.favorite_count += delta
-	db.session.flush()
 
 	if db_blog is not None:
+		db_blog.favorite_count += delta
+		db.session.flush()
+		creator_id = db_blog.user_id
 		blog_id = db_blog.blog_id
 		_create_blog_rating_record( db, BlogFavorites, user,
 								session_id, timestamp,
-								blog_id, delta )
+								blog_id, delta, creator_id )
 
 def flag_blog( blog, state ):
 	db = get_analytics_db()
@@ -342,7 +346,7 @@ def _get_blog_comment_rating_record( db, table, user_id, comment_id ):
 									table.comment_id == comment_id ).first()
 	return blog_coment_rating_record
 
-def _create_blog_comment_rating_record( db, table, user, session_id, timestamp, comment_id, delta ):
+def _create_blog_comment_rating_record( db, table, user, session_id, timestamp, comment_id, delta, creator_id ):
 	"""
 	Creates a like or favorite record, based on given table. If
 	the delta is negative, we delete the like or favorite record.
@@ -360,7 +364,8 @@ def _create_blog_comment_rating_record( db, table, user, session_id, timestamp, 
 			blog_comment_rating = table( comment_id=comment_id,
 								user_id=user_id,
 								timestamp=timestamp,
-								session_id=session_id )
+								session_id=session_id,
+								creator_id=creator_id )
 			db.session.add( blog_comment_rating )
 		elif blog_comment_rating and delta < 0:
 			# Delete
@@ -372,24 +377,28 @@ def like_comment( comment, user, session_id, timestamp, delta ):
 	comment_id = CommentId.get_id( comment )
 	db_comment = db.session.query(BlogCommentsCreated).filter(
 								BlogCommentsCreated.comment_id == comment_id ).first()
-	db_comment.like_count += delta
-	db.session.flush()
+
 	if db_comment is not None:
+		db_comment.like_count += delta
+		db.session.flush()
+		creator_id = db_comment.user_id
 		comment_id = db_comment.comment_id
 		_create_blog_comment_rating_record( db, BlogCommentLikes, user,
-								session_id, timestamp, comment_id, delta )
+								session_id, timestamp, comment_id, delta, creator_id )
 
 def favorite_comment( comment, user, session_id, timestamp, delta ):
 	db = get_analytics_db()
 	comment_id = CommentId.get_id( comment )
 	db_comment = db.session.query(BlogCommentsCreated).filter(
 									BlogCommentsCreated.comment_id == comment_id ).first()
-	db_comment.favorite_count += delta
-	db.session.flush()
+
 	if db_comment is not None:
+		db_comment.favorite_count += delta
+		db.session.flush()
+		creator_id = db_comment.user_id
 		comment_id = db_comment.comment_id
 		_create_blog_comment_rating_record( db, BlogCommentFavorites, user,
-								session_id, timestamp, comment_id, delta )
+								session_id, timestamp, comment_id, delta, creator_id )
 
 def flag_comment( comment, state ):
 	db = get_analytics_db()

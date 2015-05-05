@@ -39,6 +39,7 @@ from nti.analytics.database.meta_mixins import BaseViewMixin
 from nti.analytics.database.meta_mixins import DeletedMixin
 from nti.analytics.database.meta_mixins import ResourceMixin
 from nti.analytics.database.meta_mixins import RatingsMixin
+from nti.analytics.database.meta_mixins import CreatorMixin
 
 from nti.analytics.database.users import get_or_create_user
 from nti.analytics.database.root_context import get_root_context_id
@@ -74,7 +75,7 @@ class NotesViewed(Base,BaseViewMixin,NoteMixin):
         PrimaryKeyConstraint('note_id', 'user_id', 'timestamp'),
     )
 
-class NoteRatingMixin(object):
+class NoteRatingMixin(CreatorMixin):
 
 	@declared_attr
 	def note_id(cls):
@@ -225,7 +226,7 @@ def _get_note_rating_record( db, table, user_id, note_id ):
 									table.note_id == note_id ).first()
 	return note_rating_record
 
-def _create_note_rating_record( db, table, user, session_id, timestamp, note_id, delta ):
+def _create_note_rating_record( db, table, user, session_id, timestamp, note_id, delta, creator_id ):
 	"""
 	Creates a like or favorite record, based on given table. If
 	the delta is negative, we delete the like or favorite record.
@@ -243,7 +244,8 @@ def _create_note_rating_record( db, table, user, session_id, timestamp, note_id,
 			note_rating_record = table( note_id=note_id,
 								user_id=user_id,
 								timestamp=timestamp,
-								session_id=session_id )
+								session_id=session_id,
+								creator_id=creator_id )
 			db.session.add( note_rating_record )
 		elif note_rating_record and delta < 0:
 			# Delete
@@ -254,28 +256,30 @@ def like_note( note, user, session_id, timestamp, delta ):
 	note_ds_id = NoteId.get_id( note )
 	db_note = db.session.query(NotesCreated).filter(
 							NotesCreated.note_ds_id == note_ds_id ).first()
-	db_note.like_count += delta
-	db.session.flush()
 
 	if db_note is not None:
+		db_note.like_count += delta
+		db.session.flush()
+		creator_id = db_note.user_id
 		note_id = db_note.note_id
 		_create_note_rating_record( db, NoteLikes, user,
 								session_id, timestamp,
-								note_id, delta )
+								note_id, delta, creator_id )
 
 def favorite_note( note, user, session_id, timestamp, delta ):
 	db = get_analytics_db()
 	note_ds_id = NoteId.get_id( note )
 	db_note = db.session.query(NotesCreated).filter(
 							NotesCreated.note_ds_id == note_ds_id ).first()
-	db_note.favorite_count += delta
-	db.session.flush()
 
 	if db_note is not None:
+		db_note.favorite_count += delta
+		db.session.flush()
+		creator_id = db_note.user_id
 		note_id = db_note.note_id
 		_create_note_rating_record( db, NoteFavorites, user,
 								session_id, timestamp,
-								note_id, delta )
+								note_id, delta, creator_id )
 
 def flag_note( note, state ):
 	db = get_analytics_db()

@@ -93,7 +93,7 @@ def do_evolve():
 
 	logger.info( 'Finished analytics evolve (%s) (updated_records=%s)', generation, updated )
 
-def evolve(context):
+def evolve( _ ):
 	"""
 	Add 'parent_user_id' column to replyTo records, with data.
 	"""

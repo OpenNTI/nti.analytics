@@ -302,7 +302,8 @@ class TestTopics(AnalyticsTestBase):
 								test_session_id, self.course_id, my_topic )
 
 		delta = 1
-		_rating_call( my_topic, test_user_ds_id,
+		new_user_ds_id = 111111
+		_rating_call( my_topic, new_user_ds_id,
 						test_session_id, event_time, delta )
 
 		results = self.session.query( table ).all()
@@ -313,10 +314,11 @@ class TestTopics(AnalyticsTestBase):
 		assert_that( rating_record.session_id, is_( test_session_id ) )
 		assert_that( rating_record.topic_id, is_( topic_record.topic_id ) )
 		assert_that( rating_record.timestamp, not_none() )
+		assert_that( rating_record.creator_id, is_( topic_record.user_id ))
 
 		# Now revert
 		delta = -1
-		_rating_call( my_topic, test_user_ds_id,
+		_rating_call( my_topic, new_user_ds_id,
 					test_session_id, event_time, delta )
 		results = self.session.query( table ).all()
 		assert_that( results, has_length( 0 ) )
@@ -542,12 +544,13 @@ class TestForumComments(AnalyticsTestBase):
 		comment_id = DEFAULT_INTID
 		my_comment = MockComment( self.topic, intid=comment_id )
 
-		db_boards.create_forum_comment( test_user_ds_id,
+		comment_record = db_boards.create_forum_comment( test_user_ds_id,
 										test_session_id, self.course_id,
 										self.topic, my_comment )
 
 		delta = 1
-		_rating_call( my_comment, test_user_ds_id,
+		new_user_ds_id = 111111
+		_rating_call( my_comment, new_user_ds_id,
 						test_session_id, event_time, delta )
 
 		results = self.session.query( table ).all()
@@ -557,10 +560,11 @@ class TestForumComments(AnalyticsTestBase):
 		assert_that( rating_record.user_id, not_none() )
 		assert_that( rating_record.session_id, is_( test_session_id ) )
 		assert_that( rating_record.timestamp, not_none() )
+		assert_that( rating_record.creator_id, is_( comment_record.user_id ))
 
 		# Now revert
 		delta = -1
-		_rating_call( my_comment, test_user_ds_id, test_session_id, event_time, delta )
+		_rating_call( my_comment, new_user_ds_id, test_session_id, event_time, delta )
 		results = self.session.query( table ).all()
 		assert_that( results, has_length( 0 ) )
 

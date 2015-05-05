@@ -78,6 +78,15 @@ class RatingsMixin(FavoriteMixin):
 
 	like_count = Column('like_count', Integer, nullable=True)
 
+class CreatorMixin(object):
+	"""
+	For tables referencing an object with a creator.
+	"""
+
+	@declared_attr
+	def creator_id(cls):
+		return Column('creator_id', Integer, ForeignKey("Users.user_id"), index=True )
+
 # Time length in seconds
 class TimeLengthMixin(object):
 	time_length = Column('time_length', Integer, nullable=True )

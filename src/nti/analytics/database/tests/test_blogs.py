@@ -143,21 +143,23 @@ class TestBlog(AnalyticsTestBase):
 		new_blog_record = db_blogs.create_blog( test_user_ds_id, test_session_id, new_blog )
 
 		delta = 1
-		_rating_call( new_blog_ds_id, test_user_ds_id,
+		new_user_ds_id = 111111
+		_rating_call( new_blog_ds_id, new_user_ds_id,
 						test_session_id, event_time, delta )
 
 		results = self.session.query( table ).all()
 		assert_that( results, has_length( 1 ) )
 
 		rating_record = results[0]
-		assert_that( rating_record.user_id, is_( new_blog_record.user_id ) )
+		assert_that( rating_record.user_id, not_none() )
 		assert_that( rating_record.session_id, is_( test_session_id ) )
 		assert_that( rating_record.blog_id, is_( new_blog_record.blog_id ) )
 		assert_that( rating_record.timestamp, not_none() )
+		assert_that( rating_record.creator_id, is_( new_blog_record.user_id ))
 
 		# Now revert
 		delta = -1
-		_rating_call( new_blog, test_user_ds_id, test_session_id, event_time, delta )
+		_rating_call( new_blog, new_user_ds_id, test_session_id, event_time, delta )
 		results = self.session.query( table ).all()
 		assert_that( results, has_length( 0 ) )
 
@@ -277,21 +279,23 @@ class TestBlogComments(AnalyticsTestBase):
 													self.blog_ds_id, my_comment )
 
 		delta = 1
-		_rating_call( comment_id, test_user_ds_id,
+		new_user_ds_id = 111111
+		_rating_call( comment_id, new_user_ds_id,
 						test_session_id, event_time, delta )
 
 		results = self.session.query( table ).all()
 		assert_that( results, has_length( 1 ) )
 
 		rating_record = results[0]
-		assert_that( rating_record.user_id, is_( comment_record.user_id ) )
+		assert_that( rating_record.user_id, not_none() )
 		assert_that( rating_record.session_id, is_( test_session_id ) )
 		assert_that( rating_record.comment_id, is_( comment_record.comment_id ) )
 		assert_that( rating_record.timestamp, not_none() )
+		assert_that( rating_record.creator_id, is_( comment_record.user_id ))
 
 		# Now revert
 		delta = -1
-		_rating_call( comment_id, test_user_ds_id, test_session_id, event_time, delta )
+		_rating_call( comment_id, new_user_ds_id, test_session_id, event_time, delta )
 		results = self.session.query( table ).all()
 		assert_that( results, has_length( 0 ) )
 

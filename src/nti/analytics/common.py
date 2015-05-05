@@ -189,7 +189,7 @@ def _execute_job( *args, **kwargs ):
 
 		if 		event_site is None \
 			or 	isinstance( event_site, TrivialSite ):
-			# We could get a trival site, which is unlikely to be
+			# We could get a trivial site, which is unlikely to be
 			# useful.
 			raise ValueError( 'No site found for (%s)' % event_site_name )
 

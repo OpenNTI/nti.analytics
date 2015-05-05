@@ -45,6 +45,7 @@ from nti.analytics.database.meta_mixins import CourseMixin
 from nti.analytics.database.meta_mixins import DeletedMixin
 from nti.analytics.database.meta_mixins import TimeLengthMixin
 from nti.analytics.database.meta_mixins import RatingsMixin
+from nti.analytics.database.meta_mixins import CreatorMixin
 
 from nti.analytics.database.users import get_or_create_user
 from nti.analytics.database.users import get_user
@@ -92,7 +93,7 @@ class TopicsViewed(Base,BaseViewMixin,TopicMixin,TimeLengthMixin):
         PrimaryKeyConstraint('user_id', 'topic_id', 'timestamp'),
     )
 
-class TopicRatingMixin(object):
+class TopicRatingMixin(CreatorMixin):
 	@declared_attr
 	def topic_id(cls):
 		return Column('topic_id', Integer, ForeignKey("TopicsCreated.topic_id"), nullable=False, index=True )
@@ -118,14 +119,14 @@ class ForumCommentMixin(object):
 		return Column('comment_id', INTID_COLUMN_TYPE, ForeignKey("ForumCommentsCreated.comment_id"), nullable=False, index=True)
 
 
-class ForumCommentFavorites(Base,BaseTableMixin,ForumCommentMixin):
+class ForumCommentFavorites(Base,BaseTableMixin,ForumCommentMixin,CreatorMixin):
 	__tablename__ = 'ForumCommentFavorites'
 
 	__table_args__ = (
         PrimaryKeyConstraint('user_id', 'comment_id'),
     )
 
-class ForumCommentLikes(Base,BaseTableMixin,ForumCommentMixin):
+class ForumCommentLikes(Base,BaseTableMixin,ForumCommentMixin,CreatorMixin):
 	__tablename__ = 'ForumCommentLikes'
 
 	__table_args__ = (
@@ -283,7 +284,7 @@ def _get_topic_rating_record( db, table, user_id, topic_id ):
 									table.topic_id == topic_id ).first()
 	return topic_rating_record
 
-def _create_topic_rating_record( db, table, user, session_id, timestamp, topic_id, delta ):
+def _create_topic_rating_record( db, table, user, session_id, timestamp, topic_id, delta, creator_id ):
 	"""
 	Creates a like or favorite record, based on given table. If
 	the delta is negative, we delete the like or favorite record.
@@ -301,7 +302,8 @@ def _create_topic_rating_record( db, table, user, session_id, timestamp, topic_i
 			topic_rating_record = table( topic_id=topic_id,
 								user_id=user_id,
 								timestamp=timestamp,
-								session_id=session_id )
+								session_id=session_id,
+								creator_id=creator_id )
 			db.session.add( topic_rating_record )
 		elif topic_rating_record and delta < 0:
 			# Delete
@@ -311,31 +313,36 @@ def _create_topic_rating_record( db, table, user, session_id, timestamp, topic_i
 def like_topic( topic, user, session_id, timestamp, delta ):
 	db = get_analytics_db()
 	topic_ds_id = TopicId.get_id( topic )
-	db_topic = db.session.query(TopicsCreated).filter( TopicsCreated.topic_ds_id == topic_ds_id ).first()
-	db_topic.like_count += delta
-	db.session.flush()
+	db_topic = db.session.query(TopicsCreated).filter(
+								TopicsCreated.topic_ds_id == topic_ds_id ).first()
 
 	if db_topic is not None:
+		db_topic.like_count += delta
+		db.session.flush()
 		topic_id = db_topic.topic_id
+		creator_id = db_topic.user_id
 		_create_topic_rating_record( db, TopicLikes, user,
-								session_id, timestamp, topic_id, delta )
+								session_id, timestamp, topic_id, delta, creator_id )
 
 def favorite_topic( topic, user, session_id, timestamp, delta ):
 	db = get_analytics_db()
 	topic_ds_id = TopicId.get_id( topic )
-	db_topic = db.session.query(TopicsCreated).filter( TopicsCreated.topic_ds_id == topic_ds_id ).first()
-	db_topic.favorite_count += delta
-	db.session.flush()
+	db_topic = db.session.query(TopicsCreated).filter(
+								TopicsCreated.topic_ds_id == topic_ds_id ).first()
 
 	if db_topic is not None:
+		db_topic.favorite_count += delta
+		db.session.flush()
 		topic_id = db_topic.topic_id
+		creator_id = db_topic.user_id
 		_create_topic_rating_record( db, TopicFavorites, user,
-								session_id, timestamp, topic_id, delta )
+								session_id, timestamp, topic_id, delta, creator_id )
 
 def flag_topic( topic, state ):
 	db = get_analytics_db()
 	topic_ds_id = TopicId.get_id( topic )
-	db_topic = db.session.query(TopicsCreated).filter( TopicsCreated.topic_ds_id == topic_ds_id ).first()
+	db_topic = db.session.query(TopicsCreated).filter(
+								TopicsCreated.topic_ds_id == topic_ds_id ).first()
 	db_topic.is_flagged = state
 	db.session.flush()
 
@@ -446,6 +453,7 @@ def create_forum_comment(user, nti_session, course, topic, comment):
 										favorite_count=favorite_count,
 										is_flagged=is_flagged )
 	db.session.add( new_object )
+	return new_object
 
 def delete_forum_comment(timestamp, comment_id):
 	db = get_analytics_db()
@@ -463,7 +471,7 @@ def _get_comment_rating_record( db, table, user_id, comment_id ):
 									table.comment_id == comment_id ).first()
 	return comment_rating_record
 
-def _create_forum_comment_rating_record( db, table, user, session_id, timestamp, comment_id, delta ):
+def _create_forum_comment_rating_record( db, table, user, session_id, timestamp, comment_id, delta, creator_id ):
 	"""
 	Creates a like or favorite record, based on given table. If
 	the delta is negative, we delete the like or favorite record.
@@ -481,7 +489,8 @@ def _create_forum_comment_rating_record( db, table, user, session_id, timestamp,
 			comment_rating_record = table( comment_id=comment_id,
 								user_id=user_id,
 								timestamp=timestamp,
-								session_id=session_id )
+								session_id=session_id,
+								creator_id=creator_id )
 			db.session.add( comment_rating_record )
 		elif comment_rating_record and delta < 0:
 			# Delete
@@ -493,26 +502,28 @@ def like_comment( comment, user, session_id, timestamp, delta ):
 	comment_id = CommentId.get_id( comment )
 	db_comment = db.session.query(ForumCommentsCreated).filter(
 								ForumCommentsCreated.comment_id == comment_id ).one()
-	db_comment.like_count += delta
-	db.session.flush()
 
 	if db_comment is not None:
+		db_comment.like_count += delta
+		db.session.flush()
+		creator_id = db_comment.user_id
 		comment_id = db_comment.comment_id
 		_create_forum_comment_rating_record( db, ForumCommentLikes, user,
-								session_id, timestamp, comment_id, delta )
+								session_id, timestamp, comment_id, delta, creator_id )
 
 def favorite_comment( comment, user, session_id, timestamp, delta ):
 	db = get_analytics_db()
 	comment_id = CommentId.get_id( comment )
 	db_comment = db.session.query(ForumCommentsCreated).filter(
 								ForumCommentsCreated.comment_id == comment_id ).one()
-	db_comment.favorite_count += delta
-	db.session.flush()
 
 	if db_comment is not None:
+		db_comment.favorite_count += delta
+		db.session.flush()
+		creator_id = db_comment.user_id
 		comment_id = db_comment.comment_id
 		_create_forum_comment_rating_record( db, ForumCommentFavorites, user,
-								session_id, timestamp, comment_id, delta )
+								session_id, timestamp, comment_id, delta, creator_id )
 
 def flag_comment( comment, state ):
 	db = get_analytics_db()
