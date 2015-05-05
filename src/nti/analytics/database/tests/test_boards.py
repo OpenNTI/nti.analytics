@@ -315,6 +315,7 @@ class TestTopics(AnalyticsTestBase):
 		assert_that( rating_record.topic_id, is_( topic_record.topic_id ) )
 		assert_that( rating_record.timestamp, not_none() )
 		assert_that( rating_record.creator_id, is_( topic_record.user_id ))
+		assert_that( rating_record.course_id, is_( topic_record.course_id ))
 
 		# Now revert
 		delta = -1
@@ -561,6 +562,7 @@ class TestForumComments(AnalyticsTestBase):
 		assert_that( rating_record.session_id, is_( test_session_id ) )
 		assert_that( rating_record.timestamp, not_none() )
 		assert_that( rating_record.creator_id, is_( comment_record.user_id ))
+		assert_that( rating_record.course_id, is_( comment_record.course_id ))
 
 		# Now revert
 		delta = -1

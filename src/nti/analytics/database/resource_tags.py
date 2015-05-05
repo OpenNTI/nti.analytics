@@ -40,6 +40,7 @@ from nti.analytics.database.meta_mixins import DeletedMixin
 from nti.analytics.database.meta_mixins import ResourceMixin
 from nti.analytics.database.meta_mixins import RatingsMixin
 from nti.analytics.database.meta_mixins import CreatorMixin
+from nti.analytics.database.meta_mixins import CourseMixin
 
 from nti.analytics.database.users import get_or_create_user
 from nti.analytics.database.root_context import get_root_context_id
@@ -75,7 +76,7 @@ class NotesViewed(Base,BaseViewMixin,NoteMixin):
         PrimaryKeyConstraint('note_id', 'user_id', 'timestamp'),
     )
 
-class NoteRatingMixin(CreatorMixin):
+class NoteRatingMixin(CreatorMixin, CourseMixin):
 
 	@declared_attr
 	def note_id(cls):
@@ -226,7 +227,7 @@ def _get_note_rating_record( db, table, user_id, note_id ):
 									table.note_id == note_id ).first()
 	return note_rating_record
 
-def _create_note_rating_record( db, table, user, session_id, timestamp, note_id, delta, creator_id ):
+def _create_note_rating_record( db, table, user, session_id, timestamp, note_id, delta, creator_id, course_id ):
 	"""
 	Creates a like or favorite record, based on given table. If
 	the delta is negative, we delete the like or favorite record.
@@ -245,7 +246,8 @@ def _create_note_rating_record( db, table, user, session_id, timestamp, note_id,
 								user_id=user_id,
 								timestamp=timestamp,
 								session_id=session_id,
-								creator_id=creator_id )
+								creator_id=creator_id,
+								course_id=course_id )
 			db.session.add( note_rating_record )
 		elif note_rating_record and delta < 0:
 			# Delete
@@ -262,9 +264,10 @@ def like_note( note, user, session_id, timestamp, delta ):
 		db.session.flush()
 		creator_id = db_note.user_id
 		note_id = db_note.note_id
+		course_id = db_note.course_id
 		_create_note_rating_record( db, NoteLikes, user,
 								session_id, timestamp,
-								note_id, delta, creator_id )
+								note_id, delta, creator_id, course_id )
 
 def favorite_note( note, user, session_id, timestamp, delta ):
 	db = get_analytics_db()
@@ -277,9 +280,10 @@ def favorite_note( note, user, session_id, timestamp, delta ):
 		db.session.flush()
 		creator_id = db_note.user_id
 		note_id = db_note.note_id
+		course_id = db_note.course_id
 		_create_note_rating_record( db, NoteFavorites, user,
 								session_id, timestamp,
-								note_id, delta, creator_id )
+								note_id, delta, creator_id, course_id )
 
 def flag_note( note, state ):
 	db = get_analytics_db()

@@ -259,6 +259,7 @@ class TestResourceTags(AnalyticsTestBase):
 		assert_that( rating_record.note_id, is_( note_record.note_id ))
 		assert_that( rating_record.timestamp, not_none() )
 		assert_that( rating_record.creator_id, is_( note_record.user_id ) )
+		assert_that( rating_record.course_id, is_( note_record.course_id ))
 
 		# Now revert
 		delta = -1
