@@ -106,6 +106,20 @@ class IResourceEvent(IAnalyticsViewEvent, ICourseEvent):
 	"""
 	resource_id = ValidTextLine(title="The resource ntiid.")
 
+class ISelfAssessmentViewEvent(IAnalyticsViewEvent, ICourseEvent):
+	"""
+	Describes a self-assessment viewing event.
+	"""
+	QuestionSetId = ValidTextLine(title="The question set ntiid.", required=True)
+	ResourceId = ValidTextLine(title="The resource ntiid.", required=False)
+
+class IAssignmentViewEvent(IAnalyticsViewEvent, ICourseEvent):
+	"""
+	Describes an assignment viewing event.
+	"""
+	AssignmentId = ValidTextLine(title="The assignment ntiid.", required=True)
+	ResourceId = ValidTextLine(title="The resource ntiid.", required=False)
+
 class INoteViewEvent(IAnalyticsViewEvent, ICourseEvent):
 	"""
 	A note viewing event.

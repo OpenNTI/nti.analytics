@@ -47,7 +47,7 @@ def do_evolve():
 
 	logger.info( 'Finished analytics evolve14' )
 
-def evolve(context):
+def evolve(_):
 	"""
 	Evolve to generation 14
 	"""

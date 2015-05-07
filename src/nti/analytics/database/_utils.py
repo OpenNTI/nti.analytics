@@ -11,16 +11,8 @@ logger = __import__('logging').getLogger(__name__)
 
 from collections import OrderedDict
 
-from nti.analytics.common import timestamp_type
-
-from nti.analytics.identifier import SessionId
-from nti.analytics.identifier import ResourceId
-
 from . import get_analytics_db
-from . import should_update_event
 from .users import get_user_db_id
-from .users import get_or_create_user
-from .resources import get_resource_id
 
 def get_context_path( context_path ):
 	# Note: we could also sub these resource_ids for the actual
@@ -40,47 +32,6 @@ def get_context_path( context_path ):
 
 def expand_context_path( context_path ):
 	return context_path.split( '/' )
-
-def _resource_view_exists( db, table, user_id, resource_id, timestamp ):
-	return db.session.query( table ).filter(
-							table.user_id == user_id,
-							table.resource_id == resource_id,
-							table.timestamp == timestamp ).first()
-
-def create_view( table, user, nti_session, timestamp, course, context_path, resource, time_length):
-	"""
-	Create a basic view event, if necessary.  Also if necessary, may update existing
-	events with appropriate data.
-	"""
-	db = get_analytics_db()
-	user_record = get_or_create_user( user )
-	uid = user_record.user_id
-	sid = SessionId.get_id( nti_session )
-	rid = ResourceId.get_id( resource )
-	rid = get_resource_id( db, rid, create=True )
-
-	course_id = get_root_context_id( db, course, create=True )
-	timestamp = timestamp_type( timestamp )
-
-	existing_record = _resource_view_exists( db, table, uid, rid, timestamp )
-	if existing_record is not None:
-		if should_update_event( existing_record, time_length ):
-			existing_record.time_length = time_length
-			return
-		else:
-			logger.warn( '%s view already exists (user=%s) (resource_id=%s) (timestamp=%s)',
-						table.__tablename__, user, rid, timestamp )
-			return
-	context_path = get_context_path( context_path )
-
-	new_object = table( user_id=uid,
-						session_id=sid,
-						timestamp=timestamp,
-						course_id=course_id,
-						context_path=context_path,
-						resource_id=rid,
-						time_length=time_length )
-	db.session.add( new_object )
 
 def _do_course_and_timestamp_filtering( table, timestamp=None, course=None, filters=None ):
 	db = get_analytics_db()

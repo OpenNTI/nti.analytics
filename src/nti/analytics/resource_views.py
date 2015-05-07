@@ -14,9 +14,6 @@ from zope.event import notify
 
 from nti.ntiids import ntiids
 
-from nti.assessment.interfaces import IQuestionSet
-from nti.assessment.interfaces import IQAssignment
-
 from nti.contenttypes.courses.interfaces import ICourseInstance
 
 from nti.analytics.interfaces import IVideoEvent
@@ -26,6 +23,8 @@ from nti.analytics.interfaces import ITopicViewEvent
 from nti.analytics.interfaces import IResourceEvent
 from nti.analytics.interfaces import ICourseCatalogViewEvent
 from nti.analytics.interfaces import IVideoPlaySpeedChangeEvent
+from nti.analytics.interfaces import IAssignmentViewEvent
+from nti.analytics.interfaces import ISelfAssessmentViewEvent
 
 from nti.analytics.common import get_entity
 from nti.analytics.common import process_event
@@ -324,6 +323,31 @@ def _add_catalog_event( event, nti_session=None ):
 	notify(CatalogViewedRecordedEvent(user=user, context=course, timestamp=event.timestamp,
 									  session=nti_session))
 
+def _do_resource_view( to_call, event, nti_session=None, *args ):
+	user = get_entity( event.user )
+	resource_id = event.resource_id
+	course = _get_course( event )
+
+	to_call( user, nti_session, event.timestamp, course,
+			event.context_path, resource_id, event.time_length, *args )
+	logger.debug( 	"Resource view event (user=%s) (course=%s) (resource=%s) (time_length=%s)",
+					user,
+					getattr( course, '__name__', course ),
+					resource_id,
+					event.time_length )
+
+	notify(ResourceViewedRecordedEvent(user=user, resource=resource_id, context=course,
+									   timestamp=event.timestamp, session=nti_session))
+
+def _validate_assessment_event( event, assess_id ):
+	_validate_course_event( event )
+
+	if not ntiids.is_valid_ntiid_string( assess_id ):
+		raise UnrecoverableAnalyticsError(
+							"""Event received for invalid assessment id
+							(user=%s) (assessment_id=%s) (event=%s)""" %
+							( event.user, assess_id, event ) )
+
 def _add_resource_event( event, nti_session=None ):
 	try:
 		_validate_resource_event( event )
@@ -331,32 +355,26 @@ def _add_resource_event( event, nti_session=None ):
 		logger.warn( 'Error while validating event (%s)', e )
 		return
 
-	user = get_entity( event.user )
-	resource_id = event.resource_id
-	course = _get_course( event )
+	_do_resource_view( db_resource_views.create_course_resource_view,
+						event, nti_session )
 
-	obj = _get_object( resource_id )
+def _add_self_assessment_event( event, nti_session=None ):
+	try:
+		_validate_assessment_event( event, event.QuestionSetId )
+	except UnrecoverableAnalyticsError as e:
+		logger.warn( 'Error while validating event (%s)', e )
+		return
+	_do_resource_view( db_assess_views.create_self_assessment_view,
+					event, nti_session, event.QuestionSetId )
 
-	if IQAssignment.providedBy( obj ):
-		to_call = db_assess_views.create_assignment_view
-		obj_type = 'Assignment'
-	elif IQuestionSet.providedBy( obj ):
-		to_call = db_assess_views.create_self_assessment_view
-		obj_type = 'SelfAssessment'
-	else:
-		to_call = db_resource_views.create_course_resource_view
-		obj_type = 'Resource'
-
-	to_call( user, nti_session, event.timestamp, course,
-			event.context_path, resource_id, event.time_length )
-	logger.debug( 	"%s view event (user=%s) (course=%s) (resource=%s) (time_length=%s)",
-					obj_type,
-					user,
-					getattr( course, '__name__', course ),
-					resource_id, event.time_length )
-
-	notify(ResourceViewedRecordedEvent(user=user, resource=resource_id, context=course,
-									   timestamp=event.timestamp, session=nti_session))
+def _add_assignment_event( event, nti_session=None ):
+	try:
+		_validate_assessment_event( event, event.AssignmentId )
+	except UnrecoverableAnalyticsError as e:
+		logger.warn( 'Error while validating event (%s)', e )
+		return
+	_do_resource_view( db_assess_views.create_assignment_view,
+					event, nti_session, event.AssignmentId )
 
 def _add_video_event( event, nti_session=None ):
 	try:
@@ -475,6 +493,10 @@ def handle_events( batch_events ):
 			process_event( _get_topic_queue, _add_topic_event, event=event, nti_session=nti_session )
 		elif IVideoEvent.providedBy( event ):
 			process_event( _get_video_queue, _add_video_event, event=event, nti_session=nti_session )
+		elif ISelfAssessmentViewEvent.providedBy( event ):
+			process_event( _get_resource_queue, _add_self_assessment_event, event=event, nti_session=nti_session )
+		elif IAssignmentViewEvent.providedBy( event ):
+			process_event( _get_resource_queue, _add_assignment_event, event=event, nti_session=nti_session )
 		elif IResourceEvent.providedBy( event ):
 			process_event( _get_resource_queue, _add_resource_event, event=event, nti_session=nti_session )
 		elif ICourseCatalogViewEvent.providedBy( event ):

@@ -112,6 +112,8 @@
 						 .interfaces.IAnalyticsSessions
 						 .interfaces.IProgress
 						 .interfaces.IAnalyticsClientParams
+						 .interfaces.ISelfAssessmentViewEvent
+						 .interfaces.IAssignmentViewEvent
 						 .interfaces.IVideoPlaySpeedChangeEvent"
 		modules=".model" />
 

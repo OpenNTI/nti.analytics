@@ -48,6 +48,8 @@ from nti.analytics.database.assessments import _get_grade_val
 from nti.analytics.database.assessments import _get_response
 from nti.analytics.database.assessments import _load_response
 from nti.analytics.database.assessments import AssignmentsTaken
+from nti.analytics.database.assessments import AssignmentViews
+from nti.analytics.database.assessments import SelfAssessmentViews
 from nti.analytics.database.assessments import AssignmentDetails
 from nti.analytics.database.assessments import AssignmentGrades
 from nti.analytics.database.assessments import AssignmentFeedback
@@ -476,3 +478,74 @@ class TestAssignments(NTIAnalyticsTestCase):
 		assignment_records = [x for x in assignment_records]
 		assert_that( assignment_records, has_length( 1 ) )
 
+	def test_assessment_views(self):
+		results = self.db.session.query( SelfAssessmentViews ).all()
+		assert_that( results, has_length( 0 ))
+		results = self.db.session.query( AssignmentViews ).all()
+		assert_that( results, has_length( 0 ))
+
+		resource = None
+		context_path_flat = 'dashboard'
+		context_path= [ 'dashboard' ]
+		time_length = 30
+		event_time = time.time()
+		question_set_id = 'tag:nextthought.com,2011-10:OU-NAQ-CLC3403_LawAndJustice.naq.set.qset:QUIZ1_aristotle'
+		assignment_id = 'tag:nextthought.com,2011-10:OU-HTML-CLC3403_LawAndJustice.sec:QUIZ_01.01'
+
+		db_assessments.create_self_assessment_view( test_user_ds_id, test_session_id, event_time,
+												self.course_id, context_path, resource, time_length, question_set_id )
+
+		results = self.db.session.query( SelfAssessmentViews ).all()
+		assert_that( results, has_length( 1 ))
+		resource_view = results[0]
+		assert_that( resource_view.user_id, is_( 1 ) )
+		assert_that( resource_view.session_id, is_( test_session_id ) )
+		assert_that( resource_view.timestamp, not_none() )
+		assert_that( resource_view.course_id, is_( self.course_id ) )
+		assert_that( resource_view.context_path, is_( context_path_flat ) )
+		assert_that( resource_view.resource_id, none() )
+		assert_that( resource_view.time_length, is_( time_length ) )
+		assert_that( resource_view.assignment_id, is_( question_set_id ) )
+
+		db_assessments.create_assignment_view( test_user_ds_id, test_session_id, event_time,
+											self.course_id, context_path, resource, time_length, assignment_id )
+
+		results = self.db.session.query( AssignmentViews ).all()
+		assert_that( results, has_length( 1 ))
+		resource_view = results[0]
+		assert_that( resource_view.user_id, is_( 1 ) )
+		assert_that( resource_view.session_id, is_( test_session_id ) )
+		assert_that( resource_view.timestamp, not_none() )
+		assert_that( resource_view.course_id, is_( self.course_id ) )
+		assert_that( resource_view.context_path, is_( context_path_flat ) )
+		assert_that( resource_view.resource_id, none() )
+		assert_that( resource_view.time_length, is_( time_length ) )
+		assert_that( resource_view.assignment_id, is_( assignment_id ) )
+
+		# Test idempotent; nothing added
+		db_assessments.create_self_assessment_view( test_user_ds_id, test_session_id, event_time,
+												self.course_id, context_path, resource, time_length, question_set_id )
+
+		results = self.db.session.query( SelfAssessmentViews ).all()
+		assert_that( results, has_length( 1 ))
+
+		db_assessments.create_assignment_view( test_user_ds_id, test_session_id, event_time,
+											self.course_id, context_path, resource, time_length, assignment_id )
+
+		results = self.db.session.query( AssignmentViews ).all()
+		assert_that( results, has_length( 1 ))
+
+		# With resource
+		event_time = event_time + 1
+		resource = 'ntiid:bleh_page1'
+		db_assessments.create_self_assessment_view( test_user_ds_id, test_session_id, event_time,
+												self.course_id, context_path, resource, time_length, question_set_id )
+
+		results = self.db.session.query( SelfAssessmentViews ).all()
+		assert_that( results, has_length( 2 ))
+
+		db_assessments.create_assignment_view( test_user_ds_id, test_session_id, event_time,
+											self.course_id, context_path, resource, time_length, assignment_id )
+
+		results = self.db.session.query( AssignmentViews ).all()
+		assert_that( results, has_length( 2 ))

@@ -52,6 +52,7 @@ from nti.analytics.identifier import SessionId
 from nti.analytics.identifier import SubmissionId
 from nti.analytics.identifier import QuestionSetId
 from nti.analytics.identifier import FeedbackId
+from nti.analytics.identifier import ResourceId
 
 from nti.analytics.database.users import get_or_create_user
 from nti.analytics.database.users import get_user
@@ -62,24 +63,29 @@ from nti.analytics.database import resolve_objects
 from nti.analytics.database import NTIID_COLUMN_TYPE
 from nti.analytics.database import INTID_COLUMN_TYPE
 from nti.analytics.database import get_analytics_db
+from nti.analytics.database import should_update_event
 
 from nti.analytics.database.meta_mixins import BaseTableMixin
+from nti.analytics.database.meta_mixins import BaseViewMixin
 from nti.analytics.database.meta_mixins import CourseMixin
 from nti.analytics.database.meta_mixins import DeletedMixin
 from nti.analytics.database.meta_mixins import TimeLengthMixin
-from nti.analytics.database.meta_mixins import ResourceViewMixin
+
+from nti.analytics.database.resources import get_resource_id
 
 from nti.analytics.database.root_context import get_root_context_id
 from nti.analytics.database.root_context import get_root_context
 
-from nti.analytics.database._utils import create_view
+from nti.analytics.database._utils import get_context_path
 from nti.analytics.database._utils import get_filtered_records
 
-class AssignmentMixin(BaseTableMixin,CourseMixin,TimeLengthMixin):
-	# Max length of 160 as of 8.1.14
+class AssignmentIdMixin(object):
 	@declared_attr
 	def assignment_id(cls):
 		return Column('assignment_id', NTIID_COLUMN_TYPE, nullable=False, index=True )
+
+class AssignmentMixin(BaseTableMixin,CourseMixin,TimeLengthMixin,AssignmentIdMixin):
+	pass
 
 class AssignmentsTaken(Base,AssignmentMixin):
 	__tablename__ = 'AssignmentsTaken'
@@ -140,7 +146,8 @@ class GradeDetailMixin(GradeMixin):
 class AssignmentDetails(Base,DetailMixin,AssignmentSubmissionMixin):
 	__tablename__ = 'AssignmentDetails'
 
-	assignment_details_id = Column('assignment_details_id', Integer, Sequence( 'assignment_details_seq' ), primary_key=True )
+	assignment_details_id = Column('assignment_details_id', Integer,
+								Sequence( 'assignment_details_seq' ), primary_key=True )
 	grade = relationship( 'AssignmentDetailGrades', uselist=False, lazy='joined' )
 
 class AssignmentGrades(Base,AssignmentSubmissionMixin,GradeMixin):
@@ -154,7 +161,8 @@ class AssignmentDetailGrades(Base,GradeDetailMixin,AssignmentSubmissionMixin):
 	question_id = Column('question_id', NTIID_COLUMN_TYPE, nullable=False)
 	question_part_id = Column('question_part_id', INTID_COLUMN_TYPE, nullable=True, autoincrement=False)
 
-	assignment_details_id = Column('assignment_details_id', Integer, ForeignKey("AssignmentDetails.assignment_details_id"), unique=True, primary_key=True )
+	assignment_details_id = Column('assignment_details_id', Integer,
+								ForeignKey("AssignmentDetails.assignment_details_id"), unique=True, primary_key=True )
 
 # Each feedback 'tree' should have an associated grade with it.
 class AssignmentFeedback(Base,AssignmentSubmissionMixin,DeletedMixin):
@@ -176,16 +184,24 @@ class SelfAssessmentsTaken(Base,AssignmentMixin):
 # SelfAssessments will not have feedback or multiple graders
 class SelfAssessmentDetails(Base,BaseTableMixin,DetailMixin,GradeDetailMixin):
 	__tablename__ = 'SelfAssessmentDetails'
-	self_assessment_id = Column('self_assessment_id', Integer, ForeignKey("SelfAssessmentsTaken.self_assessment_id"), nullable=False, index=True)
+	self_assessment_id = Column('self_assessment_id', Integer,
+							ForeignKey("SelfAssessmentsTaken.self_assessment_id"),
+							nullable=False, index=True)
 
-	self_assessment_details_id = Column('self_assessment_details_id', Integer, Sequence( 'self_assessment_details_seq' ), primary_key=True )
+	self_assessment_details_id = Column('self_assessment_details_id', Integer,
+							Sequence( 'self_assessment_details_seq' ), primary_key=True )
 
-class SelfAssessmentViews(Base,ResourceViewMixin,TimeLengthMixin):
+class AssignmentViewMixin(AssignmentIdMixin, CourseMixin, BaseViewMixin, TimeLengthMixin):
+	@declared_attr
+	def resource_id(cls):
+		return Column('resource_id', Integer, nullable=True)
+
+class SelfAssessmentViews(Base, AssignmentViewMixin):
 	__tablename__ = 'SelfAssessmentViews'
 	self_assessment_view_id = Column('self_assessment_view_id', Integer,
 									Sequence( 'self_assessment_view_id_seq' ), primary_key=True )
 
-class AssignmentViews(Base,ResourceViewMixin,TimeLengthMixin):
+class AssignmentViews(Base, AssignmentViewMixin):
 	__tablename__ = 'AssignmentViews'
 	assignment_view_id = Column('assignment_view_id', Integer,
 							Sequence( 'assignment_view_id_seq' ), primary_key=True )
@@ -572,13 +588,57 @@ def delete_feedback( timestamp, feedback_ds_id ):
 	feedback.feedback_ds_id = None
 	db.session.flush()
 
-def create_self_assessment_view( user, nti_session, timestamp, course, context_path, resource, time_length):
-	return create_view( SelfAssessmentViews, user, nti_session, timestamp,
-						course, context_path, resource, time_length)
+def _assess_view_exists( db, table, user_id, assignment_id, timestamp ):
+	return db.session.query( table ).filter(
+							table.user_id == user_id,
+							table.assignment_id == assignment_id,
+							table.timestamp == timestamp ).first()
 
-def create_assignment_view( user, nti_session, timestamp, course, context_path, resource, time_length):
-	return create_view( AssignmentViews, user, nti_session, timestamp,
-						course, context_path, resource, time_length)
+def _create_assessment_view( table, user, nti_session, timestamp, course, context_path, resource, time_length, assignment_id ):
+	"""
+	Create a basic assessment view event, if necessary.  Also if necessary, may update existing
+	events with appropriate data.
+	"""
+	db = get_analytics_db()
+	user_record = get_or_create_user( user )
+	uid = user_record.user_id
+	sid = SessionId.get_id( nti_session )
+	rid = None
+	if resource is not None:
+		rid = ResourceId.get_id( resource )
+		rid = get_resource_id( db, rid, create=True )
+
+	course_id = get_root_context_id( db, course, create=True )
+	timestamp = timestamp_type( timestamp )
+
+	existing_record = _assess_view_exists( db, table, uid, assignment_id, timestamp )
+	if existing_record is not None:
+		if should_update_event( existing_record, time_length ):
+			existing_record.time_length = time_length
+			return
+		else:
+			logger.warn( '%s view already exists (user=%s) (assess_id=%s) (timestamp=%s)',
+						table.__tablename__, user, assignment_id, timestamp )
+			return
+	context_path = get_context_path( context_path )
+
+	new_object = table( user_id=uid,
+						session_id=sid,
+						timestamp=timestamp,
+						course_id=course_id,
+						context_path=context_path,
+						resource_id=rid,
+						time_length=time_length,
+						assignment_id=assignment_id )
+	db.session.add( new_object )
+
+def create_self_assessment_view( user, nti_session, timestamp, course, context_path, resource, time_length, assignment_id ):
+	return _create_assessment_view( SelfAssessmentViews, user, nti_session, timestamp,
+						course, context_path, resource, time_length, assignment_id )
+
+def create_assignment_view( user, nti_session, timestamp, course, context_path, resource, time_length, assignment_id ):
+	return _create_assessment_view( AssignmentViews, user, nti_session, timestamp,
+						course, context_path, resource, time_length, assignment_id )
 
 def _resolve_self_assessment( row, course=None ):
 	make_transient( row )

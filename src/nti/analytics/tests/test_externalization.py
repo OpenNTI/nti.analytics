@@ -34,6 +34,8 @@ from nti.analytics.model import BatchResourceEvents
 from nti.analytics.model import CourseCatalogViewEvent
 from nti.analytics.model import VideoPlaySpeedChangeEvent
 from nti.analytics.model import AnalyticsClientParams
+from nti.analytics.model import SelfAssessmentViewEvent
+from nti.analytics.model import AssignmentViewEvent
 
 from nti.analytics.interfaces import IVideoEvent
 from nti.analytics.interfaces import IResourceEvent
@@ -44,6 +46,8 @@ from nti.analytics.interfaces import IAnalyticsSessions
 from nti.analytics.interfaces import IBatchResourceEvents
 from nti.analytics.interfaces import ICourseCatalogViewEvent
 from nti.analytics.interfaces import IVideoPlaySpeedChangeEvent
+from nti.analytics.interfaces import ISelfAssessmentViewEvent
+from nti.analytics.interfaces import IAssignmentViewEvent
 from nti.analytics.interfaces import IProgress
 from nti.analytics.interfaces import IAnalyticsClientParams
 from nti.analytics.interfaces import DEFAULT_ANALYTICS_BATCH_SIZE
@@ -99,6 +103,16 @@ resource_kwargs = { 'user':user,
 					'Duration':time_length }
 
 resource_event = ResourceEvent( **resource_kwargs )
+
+self_assess_kwargs = dict( **resource_kwargs )
+self_assess_kwargs['ResourceId'] = self_assess_kwargs.pop( 'resource_id' )
+self_assess_kwargs['QuestionSetId'] = question_set_id = 'tag:nextthought,2011-05-01-selfasssessss1'
+self_assessment_event = SelfAssessmentViewEvent( **self_assess_kwargs )
+
+assignment_kwargs = dict( **resource_kwargs )
+assignment_kwargs.pop( 'resource_id' )
+assignment_kwargs['AssignmentId'] = assignment_id = 'tag:nextthought,2011-05-01-assign1'
+assignment_event = AssignmentViewEvent( **assignment_kwargs )
 
 video_start_time = 13
 video_end_time = 39
@@ -249,6 +263,48 @@ class TestResourceEvents(NTIAnalyticsTestCase):
 		assert_that(new_io, has_property( 'Duration', is_( time_length )))
 		assert_that( new_io, is_( ResourceEvent ) )
 
+	def test_self_assess_event(self):
+		assert_that(self_assessment_event, verifiably_provides( ISelfAssessmentViewEvent ) )
+
+		ext_obj = toExternalObject(self_assessment_event)
+		assert_that(ext_obj, has_entry('Class', 'SelfAssessmentViewEvent'))
+		assert_that(ext_obj, has_entry('MimeType', 'application/vnd.nextthought.analytics.selfassessmentviewevent' ))
+
+		factory = internalization.find_factory_for(ext_obj)
+		assert_that(factory, is_(not_none()))
+
+		new_io = factory()
+		internalization.update_from_external_object(new_io, ext_obj)
+		assert_that(new_io, has_property( 'user', is_( user )))
+		assert_that(new_io, has_property( 'timestamp', is_( timestamp )))
+		assert_that(new_io, has_property( 'RootContextID', is_( course )))
+		assert_that(new_io, has_property( 'context_path', is_( context_path )))
+		assert_that(new_io, has_property( 'ResourceId', is_( resource_id )))
+		assert_that(new_io, has_property( 'Duration', is_( time_length )))
+		assert_that( new_io, has_property( 'QuestionSetId', is_( question_set_id )))
+		assert_that( new_io, is_( SelfAssessmentViewEvent ) )
+
+	def test_assignment_event(self):
+		assert_that(assignment_event, verifiably_provides( IAssignmentViewEvent ) )
+
+		ext_obj = toExternalObject(assignment_event)
+		assert_that(ext_obj, has_entry('Class', 'AssignmentViewEvent'))
+		assert_that(ext_obj, has_entry('MimeType', 'application/vnd.nextthought.analytics.assignmentviewevent' ))
+
+		factory = internalization.find_factory_for(ext_obj)
+		assert_that(factory, is_(not_none()))
+
+		new_io = factory()
+		internalization.update_from_external_object(new_io, ext_obj)
+		assert_that(new_io, has_property( 'user', is_( user )))
+		assert_that(new_io, has_property( 'timestamp', is_( timestamp )))
+		assert_that(new_io, has_property( 'RootContextID', is_( course )))
+		assert_that(new_io, has_property( 'context_path', is_( context_path )))
+		assert_that(new_io, has_property( 'ResourceId', none()))
+		assert_that(new_io, has_property( 'Duration', is_( time_length )))
+		assert_that( new_io, has_property( 'AssignmentId', is_( assignment_id )))
+		assert_that( new_io, is_( AssignmentViewEvent ) )
+
 	def test_video_event(self):
 		assert_that(skip_video_event, verifiably_provides( IVideoEvent ) )
 
@@ -359,7 +415,7 @@ class TestResourceEvents(NTIAnalyticsTestCase):
 	def test_batch(self):
 		batch_events = [ 	watch_video_event, skip_video_event, resource_event,
 							course_catalog_event, blog_event, note_event, topic_event,
-							play_speed_event]
+							play_speed_event, self_assessment_event, assignment_event ]
 		batch_count = len( batch_events )
 		io = BatchResourceEvents( events=batch_events )
 		assert_does_not_pickle(io)
@@ -441,6 +497,7 @@ class TestProgress(NTIAnalyticsTestCase):
 class TestClientParams(NTIAnalyticsTestCase):
 
 	def test_progress(self):
+
 		client_params = AnalyticsClientParams()
 		assert_that( client_params, verifiably_provides( IAnalyticsClientParams ) )
 
