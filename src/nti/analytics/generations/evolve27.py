@@ -48,6 +48,13 @@ TABLES = [ ( BlogLikes, BlogsCreated, 'blog_id', BlogsCreated.blog_id ),
 			( NoteLikes, NotesCreated, 'note_id', NotesCreated.note_id ),
 			( NoteFavorites, NotesCreated, 'note_id', NotesCreated.note_id ) ]
 
+COURSE_TABLES = [ ( ForumCommentLikes, ForumCommentsCreated, 'comment_id', ForumCommentsCreated.comment_id ),
+			( ForumCommentFavorites, ForumCommentsCreated, 'comment_id', ForumCommentsCreated.comment_id ),
+			( TopicLikes, TopicsCreated, 'topic_id', TopicsCreated.topic_id ),
+			( TopicFavorites, TopicsCreated, 'topic_id', TopicsCreated.topic_id ),
+			( NoteLikes, NotesCreated, 'note_id', NotesCreated.note_id ),
+			( NoteFavorites, NotesCreated, 'note_id', NotesCreated.note_id ) ]
+
 COLUMN_EXISTS_QUERY = 	"""
 						SELECT *
 						FROM information_schema.COLUMNS
@@ -73,10 +80,15 @@ def do_evolve():
 	mc = MigrationContext.configure( connection )
 	op = Operations(mc)
 
-	# Add our column
+	# Add our creator column
 	for table, _, _, _ in TABLES:
 		if not _column_exists( connection, table.__tablename__, 'creator_id' ):
 			op.add_column( table.__tablename__, Column('creator_id', Integer, nullable=False) )
+
+	# Add our course column
+	for table, _, _, _ in COURSE_TABLES:
+		if not _column_exists( connection, table.__tablename__, 'course_id' ):
+			op.add_column( table.__tablename__, Column('course_id', Integer, nullable=False) )
 
 	def fetch_parent_record( table, column, parent_id ):
 		result = db.session.query( table ).filter( column == parent_id ).first()

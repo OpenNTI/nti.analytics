@@ -120,14 +120,14 @@ class ForumCommentMixin(object):
 		return Column('comment_id', INTID_COLUMN_TYPE, ForeignKey("ForumCommentsCreated.comment_id"), nullable=False, index=True)
 
 
-class ForumCommentFavorites(Base,BaseTableMixin,ForumCommentMixin,CreatorMixin, CourseMixin):
+class ForumCommentFavorites(Base,BaseTableMixin,ForumCommentMixin,CreatorMixin,CourseMixin):
 	__tablename__ = 'ForumCommentFavorites'
 
 	__table_args__ = (
         PrimaryKeyConstraint('user_id', 'comment_id'),
     )
 
-class ForumCommentLikes(Base,BaseTableMixin,ForumCommentMixin,CreatorMixin, CourseMixin):
+class ForumCommentLikes(Base,BaseTableMixin,ForumCommentMixin,CreatorMixin,CourseMixin):
 	__tablename__ = 'ForumCommentLikes'
 
 	__table_args__ = (
