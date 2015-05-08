@@ -58,6 +58,8 @@ get_self_assessments_for_user = db_assessments.get_self_assessments_for_user
 get_assignments_for_user = db_assessments.get_assignments_for_user
 get_assignment_for_user = db_assessments.get_assignment_for_user
 get_self_assessments_for_user_and_id = db_assessments.get_self_assessments_for_user_and_id
+get_self_assessment_views = db_assessments.get_self_assessment_views
+get_assignment_views = db_assessments.get_assignment_views
 
 def _get_course( history_item ):
 	course = None

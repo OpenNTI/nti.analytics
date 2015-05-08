@@ -788,3 +788,20 @@ def get_assignment_details_for_course(course, assignment_id):
 
 	return resolve_objects( _resolve_assignment_details, results )
 
+def get_self_assessment_views( user, course=None, timestamp=None ):
+	"""
+	Fetch any self assessment views for a user created *after* the optionally given
+	timestamp.  Optionally, can filter by course.
+	"""
+	results = get_filtered_records( user, SelfAssessmentViews,
+								course=course, timestamp=timestamp )
+	return results
+
+def get_assignment_views( user, course=None, timestamp=None ):
+	"""
+	Fetch any assignment views for a user created *after* the optionally given
+	timestamp.  Optionally, can filter by course.
+	"""
+	results = get_filtered_records( user, AssignmentViews,
+								course=course, timestamp=timestamp )
+	return results
