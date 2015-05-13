@@ -63,7 +63,8 @@ def do_evolve():
 	mc = MigrationContext.configure( connection )
 	op = Operations(mc)
 
-	# Add our column
+	# Add our column (backported to evolve27 before we have
+	# to query altered tables - which would fail).
 	for table, _, _, _ in TABLES:
 		if not _column_exists( connection, table.__tablename__, 'course_id' ):
 			op.add_column( table.__tablename__, Column('course_id', Integer, nullable=False) )

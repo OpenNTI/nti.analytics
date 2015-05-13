@@ -7,40 +7,6 @@ __docformat__ = "restructuredtext en"
 # disable: accessing protected members, too many methods
 # pylint: disable=W0212,R0904
 
-import os
-import shutil
-import tempfile
-import unittest
-import time
-
-from fudge import patch_object
-
-from datetime import datetime
-
-from zope import component
-import zope.testing.cleanup
-
-from nti.dataserver.tests.mock_dataserver import WithMockDS
-
-from nti.contenttypes.courses.interfaces import ICourseInstance
-
-from nti.app.testing.application_webtest import ApplicationTestLayer
-
-from nti.testing.layers import find_test
-from nti.testing.layers import GCLayerMixin
-from nti.testing.layers import ZopeComponentLayer
-from nti.testing.layers import ConfiguringLayerMixin
-
-from nti.dataserver.tests.mock_dataserver import DSInjectorMixin
-
-from nti.analytics import identifier
-
-from nti.analytics.database.interfaces import IAnalyticsDB
-from nti.analytics.database.database import AnalyticsDB
-from nti.analytics.database import users as db_users
-from nti.analytics.database import sessions as db_sessions
-from nti.analytics.database import root_context as db_courses
-
 from nti.analytics.tests import DEFAULT_INTID
 from nti.analytics.tests import TestIdentifier
 from nti.analytics.tests import AnalyticsTestBase
