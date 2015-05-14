@@ -37,6 +37,8 @@ from nti.analytics.database import Base
 from nti.analytics.database import get_analytics_db
 from nti.analytics.database import INTID_COLUMN_TYPE
 
+from nti.analytics.database._utils import resolve_like
+from nti.analytics.database._utils import resolve_favorite
 from nti.analytics.database._utils import get_filtered_records
 
 from nti.analytics.database.meta_mixins import BaseTableMixin
@@ -472,26 +474,30 @@ def get_likes_for_users_notes( user, course=None, timestamp=None ):
 	Fetch any likes created for a user's notes *after* the optionally given
 	timestamp.  Optionally, can filter by course.
 	"""
-	return get_ratings_for_user_objects( NoteLikes, user, course, timestamp )
+	results = get_ratings_for_user_objects( NoteLikes, user, course, timestamp )
+	return resolve_objects( resolve_like, results, obj_creator=user)
 
 def get_favorites_for_users_notes( user, course=None, timestamp=None ):
 	"""
 	Fetch any favorites created for a user's notes *after* the optionally given
 	timestamp.  Optionally, can filter by course.
 	"""
-	return get_ratings_for_user_objects( NoteFavorites, user, course, timestamp )
+	results = get_ratings_for_user_objects( NoteFavorites, user, course, timestamp )
+	return resolve_objects( resolve_favorite, results, obj_creator=user )
 
 def get_user_replies_to_others( user, course=None, timestamp=None, get_deleted=False ):
 	"""
 	Fetch any replies our users provided, *after* the optionally given timestamp.
 	"""
-	return _get_user_replies_to_others( NotesCreated, user, course, timestamp, get_deleted )
+	results = _get_user_replies_to_others( NotesCreated, user, course, timestamp, get_deleted )
+	return resolve_objects( _resolve_note, results, user=user, course=course )
 
 def get_replies_to_user( user, course=None, timestamp=None, get_deleted=False  ):
 	"""
 	Fetch any replies to our user, *after* the optionally given timestamp.
 	"""
-	return _get_replies_to_user( NotesCreated, user, course, timestamp, get_deleted )
+	results = _get_replies_to_user( NotesCreated, user, course, timestamp, get_deleted )
+	return resolve_objects( _resolve_note, results, course=course )
 
 def get_notes_created_for_course(course):
 	db = get_analytics_db()
@@ -536,7 +542,7 @@ def get_highlights_created_for_course(course):
 	results = db.session.query(HighlightsCreated).filter(
 								HighlightsCreated.course_id == course_id,
 								HighlightsCreated.deleted == None  ).all()
-	return results
+	return resolve_objects( _resolve_highlight, results, course=course )
 
 def _resolve_bookmark( row, user=None, course=None ):
 	make_transient( row )

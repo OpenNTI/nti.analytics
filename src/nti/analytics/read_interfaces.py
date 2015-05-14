@@ -29,6 +29,7 @@ from nti.contenttypes.courses.interfaces import ICourseInstance
 from nti.dataserver.contenttypes.forums.interfaces import IPost
 from nti.dataserver.contenttypes.forums.interfaces import ITopic
 
+from nti.dataserver.interfaces import IUser
 from nti.dataserver.interfaces import INote
 from nti.dataserver.interfaces import IHighlight
 from nti.dataserver.interfaces import IBookmark
@@ -87,7 +88,7 @@ class IAnalyticsVideoView( IAnalyticsVideoBase ):
 	An analytics video view.
 	"""
 
-class IAnalyticsRatings(interface.Interface):
+class IAnalyticsRatedObject(interface.Interface):
 	"""
 	Holds all ratings for this object.
 	"""
@@ -107,7 +108,7 @@ class IAnalyticsTopicView(IAnalyticsViewBase, IRootContextMixin):
 	"""
 	Topic = Object(ITopic, title='The underlying topic object.', required=True)
 
-class IAnalyticsForumComment(IAnalyticsObjectBase, IRootContextMixin, IAnalyticsRatings):
+class IAnalyticsForumComment(IAnalyticsObjectBase, IRootContextMixin, IAnalyticsRatedObject):
 	"""
 	An analytics forum comment.
 	"""
@@ -164,7 +165,7 @@ class IAnalyticsTag(IAnalyticsObjectBase, IRootContextMixin):
 	An analytics tag.
 	"""
 
-class IAnalyticsNote(IAnalyticsTag, IAnalyticsRatings):
+class IAnalyticsNote(IAnalyticsTag, IAnalyticsRatedObject):
 	"""
 	An analytics note.
 	"""
@@ -184,3 +185,21 @@ class IAnalyticsBookmark(IAnalyticsTag):
 	An analytics bookmark.
 	"""
 	Bookmark = Object(IBookmark, title='The underlying bookmark object.', required=True)
+
+class IAnalyticsRating( IAnalyticsObjectBase ):
+	"""
+	An analytics rating.
+	"""
+	# Do we want or need context?
+	ObjectCreator = Object(IUser, title="The creator of the rated object.", required=True)
+
+class IAnalyticsLike( IAnalyticsRating ):
+	"""
+	Describes a recorded like event.
+	"""
+
+class IAnalyticsFavorite( IAnalyticsRating ):
+	"""
+	Describes a recorded favorite event..
+	"""
+

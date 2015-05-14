@@ -286,9 +286,6 @@ class TestResourceTags(AnalyticsTestBase):
 		db_tags.create_highlight( 	test_user_ds_id,
 									test_session_id, self.course_id, my_highlight )
 
-		results = db_tags.get_highlights_created_for_course( self.course_id )
-		assert_that( results, has_length( 1 ) )
-
 		highlight = self.session.query(HighlightsCreated).one()
 		assert_that( highlight.user_id, is_( 1 ) )
 		assert_that( highlight.session_id, is_( test_session_id ) )
@@ -303,9 +300,6 @@ class TestResourceTags(AnalyticsTestBase):
 
 		results = self.session.query(HighlightsCreated).all()
 		assert_that( results, has_length( 1 ) )
-
-		results = db_tags.get_highlights_created_for_course( self.course_id )
-		assert_that( results, has_length( 0 ) )
 
 		highlight = self.session.query(HighlightsCreated).one()
 		assert_that( highlight.highlight_id, is_( highlight_id ) )

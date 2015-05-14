@@ -79,9 +79,8 @@ cache = dict()
 id_map = dict()
 
 def _do_cache( obj, val ):
-	cache[obj] = val
 	id_map[val] = obj
-
+	cache[obj] = val
 
 class TestIdentifier(_Identifier):
 	""" Defines ids simply if they are ints, or looks for an 'intid' field. """

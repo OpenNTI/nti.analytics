@@ -11,7 +11,12 @@ logger = __import__('logging').getLogger(__name__)
 
 from collections import OrderedDict
 
+from nti.analytics.read_models import AnalyticsLike
+from nti.analytics.read_models import AnalyticsFavorite
+
 from . import get_analytics_db
+
+from .users import get_user
 from .users import get_user_db_id
 
 def get_context_path( context_path ):
@@ -115,3 +120,21 @@ def get_ratings_for_user_objects( table, user, course=None, timestamp=None ):
 		result = _do_course_and_timestamp_filtering( table, timestamp, course, filters )
 
 	return result
+
+def _do_resolve_rating( clazz, row, rater, obj_creator ):
+	user = get_user( row.user_id ) if rater is None else rater
+	creator = get_user( row.creator_id ) if obj_creator is None else obj_creator
+
+	result = None
+	if		user is not None \
+		and creator is not None:
+		result = clazz(	user=user,
+						timestamp=row.timestamp,
+						ObjectCreator=creator )
+	return result
+
+def resolve_like( row, rater=None, obj_creator=None ):
+	return _do_resolve_rating( AnalyticsLike, row, rater, obj_creator )
+
+def resolve_favorite( row, rater=None, obj_creator=None ):
+	return _do_resolve_rating( AnalyticsFavorite, row, rater, obj_creator )

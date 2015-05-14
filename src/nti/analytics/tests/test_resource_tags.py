@@ -140,11 +140,15 @@ class TestNotes( NTIAnalyticsTestCase ):
 		# Replies to user; User replies to others
 		results = get_replies_to_user( user1 )
 		assert_that( results, has_length( 1 ))
-		assert_that( results[0].note_ds_id, is_( note2._ds_intid ))
+		assert_that( results[0].Note, is_( note2 ))
+		assert_that( results[0].user, is_( user2 ))
+		assert_that( results[0].IsReply, is_( True ))
 
 		results = get_user_replies_to_others( user2 )
 		assert_that( results, has_length( 1 ))
-		assert_that( results[0].note_ds_id, is_( note2._ds_intid ))
+		assert_that( results[0].Note, is_( note2 ))
+		assert_that( results[0].user, is_( user2 ))
+		assert_that( results[0].IsReply, is_( True ))
 
 		# The reverse is nothing
 		results = get_replies_to_user( user2 )
@@ -176,6 +180,7 @@ class TestNotes( NTIAnalyticsTestCase ):
 		# Base
 		results = get_likes_for_users_notes( user1 )
 		assert_that( results, has_length( 0 ))
+
 		results = get_favorites_for_users_notes( user1 )
 		assert_that( results, has_length( 0 ))
 
@@ -185,6 +190,9 @@ class TestNotes( NTIAnalyticsTestCase ):
 
 		results = get_likes_for_users_notes( user1 )
 		assert_that( results, has_length( 1 ))
+		assert_that( results[0].ObjectCreator, is_( user1 ))
+		assert_that( results[0].user, is_( user2 ))
+
 		results = get_favorites_for_users_notes( user1 )
 		assert_that( results, has_length( 0 ))
 
@@ -194,8 +202,11 @@ class TestNotes( NTIAnalyticsTestCase ):
 
 		results = get_likes_for_users_notes( user1 )
 		assert_that( results, has_length( 1 ))
+
 		results = get_favorites_for_users_notes( user1 )
 		assert_that( results, has_length( 1 ))
+		assert_that( results[0].ObjectCreator, is_( user1 ))
+		assert_that( results[0].user, is_( user2 ))
 
 
 class TestHighlights( NTIAnalyticsTestCase ):
