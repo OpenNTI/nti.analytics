@@ -12,19 +12,7 @@ from zope.schema import vocabulary
 from zope.dublincore.interfaces import IDCTimes
 from zope.interface.interfaces import IObjectEvent
 
-from dolmen.builtins.interfaces import IDict
-from dolmen.builtins.interfaces import IList
-from dolmen.builtins.interfaces import IString
-from dolmen.builtins.interfaces import INumeric
-from dolmen.builtins.interfaces import IUnicode
 from dolmen.builtins.interfaces import IIterable
-
-from nti.app.assessment.interfaces import IUsersCourseAssignmentHistoryItem
-
-from nti.assessment.interfaces import IQAssessedQuestionSet
-
-from nti.dataserver.contenttypes.forums.interfaces import IPost
-from nti.dataserver.contenttypes.forums.interfaces import ITopic
 
 from nti.dataserver.interfaces import IUser
 
@@ -34,7 +22,6 @@ from nti.schema.field import Choice
 from nti.schema.field import DateTime
 from nti.schema.field import Number
 from nti.schema.field import Object
-from nti.schema.field import Variant
 from nti.schema.field import DecodingValidTextLine as ValidTextLine
 from nti.schema.field import IndexedIterable as TypedIterable
 
@@ -51,7 +38,7 @@ class IAnalyticsQueueFactory(interface.Interface):
 
 class IObjectProcessor(interface.Interface):
 
-	def init( obj ):
+	def init(obj):
 		"""
 		Does analytic processing for the given object.
 		"""
@@ -59,16 +46,16 @@ class IObjectProcessor(interface.Interface):
 class IAnalyticsObjectBase(interface.Interface):
 	timestamp = Number(title=u"The timestamp when this event occurred, in seconds since epoch.",
 						default=0.0,
-						required=True )
+						required=True)
 
 	user = ValidTextLine(title='User who created the event', required=False)
-	SessionID = Number( title=u"The analytics session id.", required=False )
+	SessionID = Number(title=u"The analytics session id.", required=False)
 
 class ITimeLength(interface.Interface):
 
 	Duration = Number(title=u"The time length of the event, in seconds", required=False)
 
-class IAnalyticsEvent( IAnalyticsObjectBase ):
+class IAnalyticsEvent(IAnalyticsObjectBase):
 	"""An analytics event."""
 
 class IAnalyticsViewEvent(IAnalyticsEvent, ITimeLength):
@@ -80,7 +67,7 @@ class IAnalyticsViewEvent(IAnalyticsEvent, ITimeLength):
 						min_length=0,
 						default=None,
 						required=False,
-						value_type=ValidTextLine( title='The ntiid context segment'))
+						value_type=ValidTextLine(title='The ntiid context segment'))
 
 class IBlogViewEvent(IAnalyticsViewEvent):
 	"""
@@ -137,7 +124,7 @@ class IVideoEvent(IResourceEvent):
 							default=0)
 
 	video_end_time = Number(title=u"The point at which the video stops playing, in seconds.",
-							default=0, required=False )
+							default=0, required=False)
 
 	MaxDuration = Number(title=u"The maximum length of the video, in seconds.",
 							required=False)
@@ -164,129 +151,48 @@ class ICourseCatalogViewEvent(IAnalyticsViewEvent, ICourseEvent):
 	Describes a course catalog viewing event.
 	"""
 
-class IBatchResourceEvents( IIterable ):
+class IBatchResourceEvents(IIterable):
 	events = TypedIterable(
 		title="The events in this batch",
-		value_type=Object( IAnalyticsEvent ) )
-
-
-class IAnalyticsRatings(interface.Interface):
-	"""
-	Holds all ratings for this object.
-	"""
-	LikeCount = Number(title=u"The number of likes", default=0)
-
-	FavoriteCount = Number(title=u"The number of favorites", default=0)
-
-	Flagged = Bool(title=u"Whether the object is flagged/reported.", default=False)
-
-class IAnalyticsTopic(IAnalyticsObjectBase, ICourseEvent):
-	"""
-	An analytics topic.
-	"""
-	Topic = Object( ITopic, title='The underlying topic object.', required=True )
-
-class IAnalyticsTopicView(IAnalyticsViewEvent, ICourseEvent):
-	"""
-	An analytics topic view.
-	"""
-	Topic = Object( ITopic, title='The underlying topic object.', required=True )
-
-class IAnalyticsForumComment(IAnalyticsObjectBase, ICourseEvent, IAnalyticsRatings):
-	"""
-	An analytics forum comment.
-	"""
-	CommentLength = Number(title=u"The character length of the comment.", default=0, required=False)
-
-	Comment = Object( IPost, title=u"The underlying comment for this object.", required=True )
-
-class IAnalyticsAssessment(IAnalyticsObjectBase, ITimeLength, ICourseEvent):
-	"""
-	An analytics self-assessment taken record.
-	"""
-	Submission = Object( IQAssessedQuestionSet, title=u"The underlying submission for this object.",
-						required=True )
-
-	AssessmentId = ValidTextLine( title=u"The assessment identifier.", required=True )
-
-class IAssessmentGrade(interface.Interface):
-	"""
-	The analytics grade information.
-	"""
-	GradeNum = Number( title=u"The numerical value of the grade.", required=False )
-
-	Grade = ValidTextLine( title=u"The textual value of the grade.", required=False )
-
-	Grader = ValidTextLine( title=u"The user who graded the assignment", required=False )
-
-	IsCorrect = Bool( title=u"Whether the object could be considered correct.", required=False )
-
-class IAnalyticsAssignmentDetail( ITimeLength, IAssessmentGrade ):
-
-	QuestionId = ValidTextLine( title=u"The question ntiid.", required=True )
-	QuestionPartId = Number( title=u"The question part index.", required=True )
-	Answer = Variant( (Object(IString),
-						Object(INumeric),
-						Object(IDict),
-						Object(IList),
-						Object(IUnicode) ),
-					variant_raise_when_schema_provided=True,
-					title=u"The user submission for this question part.", required=True )
-
-
-class IAnalyticsAssignment(IAnalyticsObjectBase, ITimeLength, ICourseEvent, IAssessmentGrade):
-	"""
-	An analytics assignment taken record.
-	"""
-	Submission = Object( IUsersCourseAssignmentHistoryItem, title=u"The underlying submission for this object.",
-									required=True )
-
-	AssignmentId = ValidTextLine( title=u"The assessment identifier.", required=True )
-
-	Details = TypedIterable(
-		title="The detail parts of this assignment.",
-		value_type=Object( IAnalyticsAssignmentDetail ),
-		required=False )
-
-	IsLate = Bool(title=u"Whether the submitted assignment was late.", required=False)
+		value_type=Object(IAnalyticsEvent))
 
 class IAnalyticsSession(interface.Interface):
 	"""
 	The analytics logical session.
 	"""
-	SessionID = Number( title=u"The analytics session id.", required=False )
+	SessionID = Number(title=u"The analytics session id.", required=False)
 
-	SessionStartTime = Number( title=u"The timestamp when this sessiom started, in seconds since epoch.",
-							required=False )
+	SessionStartTime = Number(title=u"The timestamp when this sessiom started, in seconds since epoch.",
+							required=False)
 
-	SessionEndTime = Number( title=u"The timestamp when this session ended, in seconds since epoch.",
-							required=False )
+	SessionEndTime = Number(title=u"The timestamp when this session ended, in seconds since epoch.",
+							required=False)
 
 class IAnalyticsSessions(interface.Interface):
 	"""
 	A collection of analytics sessions.
 	"""
 	sessions = TypedIterable(title="The analytics sessions.",
-							 value_type=Object( IAnalyticsSession ) )
+							 value_type=Object(IAnalyticsSession))
 
 
 class IProgress(interface.Interface):
 	"""
 	Indicates progress made on an underlying content unit.
 	"""
-	AbsoluteProgress = Number( title=u"A number indicating the absolute progress made on an item.",
-							default=0 )
+	AbsoluteProgress = Number(title=u"A number indicating the absolute progress made on an item.",
+							default=0)
 
-	MaxPossibleProgress = Number( title=u"A number indicating the max possible progress that could be made on an item. May be null.",
-							default=0 )
+	MaxPossibleProgress = Number(title=u"A number indicating the max possible progress that could be made on an item. May be null.",
+							default=0)
 
-	HasProgress = Bool( title=u"Indicates there was some progress made on item.",
-					default=False )
+	HasProgress = Bool(title=u"Indicates there was some progress made on item.",
+					default=False)
 
-	ResourceID = ValidTextLine( title=u"The ntiid of the object who's progress this object represents.", required=True )
+	ResourceID = ValidTextLine(title=u"The ntiid of the object who's progress this object represents.", required=True)
 
 	LastModified = DateTime(title=u"The timestamp when this event occurred.",
-						required=False )
+						required=False)
 
 class IUserResearchStatus(IDCTimes):
 	"""
@@ -295,14 +201,14 @@ class IUserResearchStatus(IDCTimes):
 	"""
 	allow_research = Bool(title="Allow research on user's activity.",
 						  required=False,
-						  default=False )
+						  default=False)
 
 class IUserResearchStatusEvent(IObjectEvent):
 	"""
 	Sent when a user updates their research status.
 	"""
 	user = Object(IUser, title="The user")
-	allow_research = Bool( title="User allow_research status" )
+	allow_research = Bool(title="User allow_research status")
 
 DEFAULT_ANALYTICS_FREQUENCY = 60
 DEFAULT_ANALYTICS_BATCH_SIZE = 100
@@ -312,22 +218,22 @@ class IAnalyticsClientParams(interface.Interface):
 	Defines parameters clients may use when deciding how often
 	to PUT data to analytics.
 	"""
-	RecommendedBatchEventsSize = Number( title=u"How many events the client should send in a single batch_events call",
+	RecommendedBatchEventsSize = Number(title=u"How many events the client should send in a single batch_events call",
 										required=False,
-										default=DEFAULT_ANALYTICS_BATCH_SIZE )
+										default=DEFAULT_ANALYTICS_BATCH_SIZE)
 
-	RecommendedBatchEventsSendFrequency = Number( title=u"How often the client should send batch events, in seconds.",
+	RecommendedBatchEventsSendFrequency = Number(title=u"How often the client should send batch events, in seconds.",
 							required=False,
-							default=DEFAULT_ANALYTICS_FREQUENCY )
+							default=DEFAULT_ANALYTICS_FREQUENCY)
 
-	RecommendedBatchSessionsSize = Number( title=u"How many sessions the client should send in a single batch_events call",
+	RecommendedBatchSessionsSize = Number(title=u"How many sessions the client should send in a single batch_events call",
 										required=False,
-										default=DEFAULT_ANALYTICS_BATCH_SIZE )
+										default=DEFAULT_ANALYTICS_BATCH_SIZE)
 
-	RecommendedBatchSessionsSendFrequency = Number( title=u"How often the client should send session events, in seconds.",
+	RecommendedBatchSessionsSendFrequency = Number(title=u"How often the client should send session events, in seconds.",
 							required=False,
-							default=DEFAULT_ANALYTICS_FREQUENCY )
+							default=DEFAULT_ANALYTICS_FREQUENCY)
 
-	RecommendedAnalyticsSyncInterval = Number( title=u"How often the client should sync sessions and events, in seconds.",
+	RecommendedAnalyticsSyncInterval = Number(title=u"How often the client should sync sessions and events, in seconds.",
 							required=False,
-							default=DEFAULT_ANALYTICS_FREQUENCY )
+							default=DEFAULT_ANALYTICS_FREQUENCY)

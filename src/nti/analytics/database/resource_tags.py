@@ -15,6 +15,7 @@ from sqlalchemy import Enum
 
 from sqlalchemy.schema import Sequence
 from sqlalchemy.schema import PrimaryKeyConstraint
+from sqlalchemy.orm.session import make_transient
 from sqlalchemy.ext.declarative import declared_attr
 
 from nti.analytics.common import get_created_timestamp
@@ -27,6 +28,8 @@ from nti.analytics.identifier import NoteId
 from nti.analytics.identifier import HighlightId
 from nti.analytics.identifier import BookmarkId
 from nti.analytics.identifier import ResourceId
+
+from nti.analytics.read_models import AnalyticsNote
 
 from nti.analytics.database import Base
 from nti.analytics.database import get_analytics_db
@@ -42,7 +45,9 @@ from nti.analytics.database.meta_mixins import RatingsMixin
 from nti.analytics.database.meta_mixins import CreatorMixin
 from nti.analytics.database.meta_mixins import CourseMixin
 
+from nti.analytics.database.users import get_user
 from nti.analytics.database.users import get_or_create_user
+from nti.analytics.database.root_context import get_root_context
 from nti.analytics.database.root_context import get_root_context_id
 from nti.analytics.database.resources import get_resource_id
 
@@ -51,6 +56,7 @@ from nti.analytics.database._utils import get_ratings_for_user_objects
 from nti.analytics.database._utils import get_replies_to_user as _get_replies_to_user
 from nti.analytics.database._utils import get_user_replies_to_others as _get_user_replies_to_others
 
+from . import resolve_objects
 
 class NoteMixin(ResourceMixin):
 
@@ -174,6 +180,7 @@ def create_note(user, nti_session, course, note):
 	sharing = _get_sharing_enum( note, course )
 	like_count, favorite_count, is_flagged = get_ratings( note )
 
+	# FIXME Will have to handle modeled content
 	note_length = sum( len( x ) for x in note.body )
 
 	parent_id = parent_user_id = None
@@ -420,6 +427,26 @@ def delete_bookmark(timestamp, bookmark_ds_id):
 	bookmark.bookmark_ds_id = None
 	db.session.flush()
 
+def _resolve_note( row, user=None, course=None ):
+	make_transient( row )
+	note = NoteId.get_object( row.note_ds_id )
+	course = get_root_context( row.course_id ) if course is None else course
+	user = get_user( row.user_id ) if user is None else user
+	is_reply = row.parent_id is not None
+
+	result = None
+	if 		note is not None \
+		and user is not None \
+		and course is not None:
+		result = AnalyticsNote( Note=note,
+								user=user,
+								timestamp=row.timestamp,
+								RootContext=course,
+								NoteLength=row.note_length,
+								Sharing=row.sharing,
+								IsReply=is_reply )
+	return result
+
 def get_notes( user, course=None, timestamp=None, get_deleted=False, top_level_only=False, replies_only=False ):
 	"""
 	Fetch any notes for a user created *after* the optionally given
@@ -436,7 +463,7 @@ def get_notes( user, course=None, timestamp=None, get_deleted=False, top_level_o
 		filters.append( NotesCreated.parent_id != None )
 	results = get_filtered_records( user, NotesCreated, course=course,
 								timestamp=timestamp, filters=filters )
-	return results
+	return resolve_objects( _resolve_note, results, user=user, course=course )
 
 def get_likes_for_users_notes( user, course=None, timestamp=None ):
 	"""

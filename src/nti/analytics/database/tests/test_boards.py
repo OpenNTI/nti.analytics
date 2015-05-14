@@ -223,7 +223,7 @@ class TestTopics(AnalyticsTestBase):
 
 		topic = results[0]
 		assert_that( topic.user, is_( test_user_ds_id ) )
-		assert_that( topic.RootContextID, not_none())
+		assert_that( topic.RootContext, not_none())
 		assert_that( topic.Duration, is_( time_length ) )
 
 		# Delete topic

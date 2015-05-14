@@ -28,17 +28,11 @@ from nti.analytics.interfaces import IVideoEvent
 from nti.analytics.interfaces import IBlogViewEvent
 from nti.analytics.interfaces import INoteViewEvent
 from nti.analytics.interfaces import IResourceEvent
-from nti.analytics.interfaces import IAnalyticsTopic
-from nti.analytics.interfaces import IAnalyticsTopicView
 from nti.analytics.interfaces import ITopicViewEvent
 from nti.analytics.interfaces import IAnalyticsSession
 from nti.analytics.interfaces import IAnalyticsSessions
-from nti.analytics.interfaces import IAnalyticsAssessment
-from nti.analytics.interfaces import IAnalyticsAssignment
 from nti.analytics.interfaces import IBatchResourceEvents
-from nti.analytics.interfaces import IAnalyticsForumComment
 from nti.analytics.interfaces import ICourseCatalogViewEvent
-from nti.analytics.interfaces import IAnalyticsAssignmentDetail
 from nti.analytics.interfaces import IUserResearchStatus
 from nti.analytics.interfaces import IUserResearchStatusEvent
 from nti.analytics.interfaces import IAnalyticsClientParams
@@ -179,72 +173,6 @@ class BatchResourceEvents(SchemaConfigured):
 
 	def __len__(self):
 		return len( self.events )
-
-@interface.implementer(IAnalyticsTopic)
-@WithRepr
-class AnalyticsTopic(SchemaConfigured):
-	createDirectFieldProperties(IAnalyticsTopic)
-
-	__external_can_create__ = False
-	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticstopic'
-
-	def __init__(self, *args, **kwargs):
-		SchemaConfigured.__init__(self, *args, **kwargs)
-
-@interface.implementer(IAnalyticsTopicView)
-@WithRepr
-class AnalyticsTopicView(SchemaConfigured):
-	createDirectFieldProperties(IAnalyticsTopicView)
-
-	__external_can_create__ = False
-	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticstopicview'
-
-	def __init__(self, *args, **kwargs):
-		SchemaConfigured.__init__(self, *args, **kwargs)
-
-@interface.implementer(IAnalyticsForumComment)
-@WithRepr
-class AnalyticsForumComment(SchemaConfigured):
-	createDirectFieldProperties(IAnalyticsForumComment)
-
-	__external_can_create__ = False
-	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticsforumcomment'
-
-	def __init__(self, *args, **kwargs):
-		SchemaConfigured.__init__(self, *args, **kwargs)
-
-@interface.implementer(IAnalyticsAssessment)
-@WithRepr
-class AnalyticsAssessment(SchemaConfigured):
-	createDirectFieldProperties(IAnalyticsAssessment)
-
-	__external_can_create__ = False
-	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticsassessment'
-
-	def __init__(self, *args, **kwargs):
-		SchemaConfigured.__init__(self, *args, **kwargs)
-
-@interface.implementer(IAnalyticsAssignment)
-@WithRepr
-class AnalyticsAssignment(SchemaConfigured):
-	createDirectFieldProperties(IAnalyticsAssignment)
-
-	__external_can_create__ = False
-	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticsassignment'
-
-	def __init__(self, *args, **kwargs):
-		SchemaConfigured.__init__(self, *args, **kwargs)
-
-@interface.implementer(IAnalyticsAssignmentDetail)
-@WithRepr
-class AnalyticsAssignmentDetail(SchemaConfigured):
-	createDirectFieldProperties(IAnalyticsAssignmentDetail)
-
-	__external_can_create__ = False
-	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticsassignmentdetail'
-
-	def __init__(self, *args, **kwargs):
-		SchemaConfigured.__init__(self, *args, **kwargs)
 
 @interface.implementer(IAnalyticsSessions)
 @WithRepr

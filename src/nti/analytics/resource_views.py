@@ -114,7 +114,7 @@ def get_video_progress_for_course( user, course ):
 	view_dict = {}
 
 	for resource_view in resource_views:
-		view_dict.setdefault( resource_view.resource_id, [] ).append( resource_view )
+		view_dict.setdefault( resource_view.ResourceId, [] ).append( resource_view )
 
 	result = [get_progress_for_video_views( ntiid, events ) for ntiid, events in view_dict.items()]
 	return result

@@ -73,8 +73,8 @@ class TestCourseResources(AnalyticsTestBase):
 
 		resource_view = results[0]
 		assert_that( resource_view.user, is_( test_user_ds_id ) )
-		assert_that( resource_view.RootContextID, is_( self.course_id ))
-		assert_that( resource_view.resource_id, is_( resource_val ))
+		assert_that( resource_view.RootContext, is_( self.course_id ))
+		assert_that( resource_view.ResourceId, is_( resource_val ))
 
 		# Idempotent check; our time_length can be updated
 		new_time_length = time_length + 1
@@ -173,11 +173,11 @@ class TestCourseResources(AnalyticsTestBase):
 
 		resource_view = results[0]
 		assert_that( resource_view.user, is_( test_user_ds_id ) )
-		assert_that( resource_view.RootContextID, is_( self.course_id ))
-		assert_that( resource_view.resource_id, is_( resource_val ))
-		assert_that( resource_view.video_start_time, is_( video_start_time ))
-		assert_that( resource_view.video_end_time, is_( video_end_time ))
-		assert_that( resource_view.with_transcript, is_( with_transcript ))
+		assert_that( resource_view.RootContext, is_( self.course_id ))
+		assert_that( resource_view.ResourceId, is_( resource_val ))
+		assert_that( resource_view.VideoStartTime, is_( video_start_time ))
+		assert_that( resource_view.VideoEndTime, is_( video_end_time ))
+		assert_that( resource_view.WithTranscript, is_( with_transcript ))
 		assert_that( resource_view.Duration, is_( time_length ))
 
 		# Idempotent check; fields can be updated.

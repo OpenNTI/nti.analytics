@@ -10,7 +10,7 @@ logger = __import__('logging').getLogger(__name__)
 
 from zope import interface
 
-class IAnalyticsDB(interface.Interface):
+class IAnalyticsDB( interface.Interface ):
 	"""
 	Interface for the Analytics DB
 	"""

@@ -23,9 +23,9 @@ from nti.analytics.identifier import ResourceId
 
 from nti.analytics.interfaces import VIDEO_WATCH
 
-from nti.analytics.model import ResourceEvent
-from nti.analytics.model import WatchVideoEvent
-from nti.analytics.model import SkipVideoEvent
+from nti.analytics.read_models import AnalyticsResourceView
+from nti.analytics.read_models import AnalyticsVideoSkip
+from nti.analytics.read_models import AnalyticsVideoView
 
 from nti.analytics.database import Base
 from nti.analytics.database import get_analytics_db
@@ -253,11 +253,11 @@ def _resolve_resource_view( record, course=None, user=None ):
 	resource_id = record.resource_id
 	resource_ntiid = get_resource_val( resource_id )
 
-	resource_event = ResourceEvent(user=user,
+	resource_event = AnalyticsResourceView(user=user,
 					timestamp=timestamp,
-					RootContextID=course,
+					RootContext=course,
 					context_path=context_path,
-					resource_id=resource_ntiid,
+					ResourceId=resource_ntiid,
 					Duration=time_length)
 
 	return resource_event
@@ -280,21 +280,21 @@ def _resolve_video_view( record, course=None, user=None ):
 	video_end_time = record.video_end_time
 	with_transcript = record.with_transcript
 
-	if record.video_event_type == SkipVideoEvent.event_type:
-		video_type = SkipVideoEvent
+	if record.video_event_type == 'WATCH':
+		video_type = AnalyticsVideoView
 	else:
-		video_type = WatchVideoEvent
+		video_type = AnalyticsVideoSkip
 
 	video_event = video_type(user=user,
 				timestamp=timestamp,
-				RootContextID=course,
+				RootContext=course,
 				context_path=context_path,
-				resource_id=resource_ntiid,
+				ResourceId=resource_ntiid,
 				Duration=time_length,
 				MaxDuration=max_time_length,
-				video_start_time=video_start_time,
-				video_end_time=video_end_time,
-				with_transcript=with_transcript)
+				VideoStartTime=video_start_time,
+				VideoEndTime=video_end_time,
+				WithTranscript=with_transcript)
 	return video_event
 
 def get_user_resource_views_for_ntiid( user, resource_ntiid ):

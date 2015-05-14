@@ -121,7 +121,13 @@ class TestIdentifier(_Identifier):
 		result = id_map.get( val, None )
 
 		if result is None:
-			result = object()
+			try:
+				# Try casting to int
+				result = id_map.get( int( val ) )
+			except ValueError:
+				pass
+
+		result = object() if result is None else result
 
 		return result
 

@@ -44,9 +44,9 @@ from nti.analytics.common import get_creator
 from nti.analytics.common import get_course as get_course_from_object
 from nti.analytics.common import get_created_timestamp
 
-from nti.analytics.model import AnalyticsAssessment
-from nti.analytics.model import AnalyticsAssignment
-from nti.analytics.model import AnalyticsAssignmentDetail
+from nti.analytics.read_models import AnalyticsAssessment
+from nti.analytics.read_models import AnalyticsAssignment
+from nti.analytics.read_models import AnalyticsAssignmentDetail
 
 from nti.analytics.identifier import SessionId
 from nti.analytics.identifier import SubmissionId
@@ -654,7 +654,7 @@ def _resolve_self_assessment( row, course=None ):
 		result = AnalyticsAssessment( Submission=submission,
 										user=user,
 										timestamp=row.timestamp,
-										RootContextID=course,
+										RootContext=course,
 										Duration=row.time_length,
 										AssessmentId=row.assignment_id )
 	return result
@@ -682,7 +682,7 @@ def _resolve_assignment( row, details=None ):
 		result = AnalyticsAssignment( Submission=submission,
 										user=user,
 										timestamp=submission_record.timestamp,
-										RootContextID=course,
+										RootContext=course,
 										Duration=submission_record.time_length,
 										AssignmentId=submission_record.assignment_id,
 										GradeNum=grade_num,

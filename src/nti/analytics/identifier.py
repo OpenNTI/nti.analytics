@@ -65,7 +65,6 @@ class _NtiidIdentifier(_Identifier):
 
 	@classmethod
 	def get_object( cls, uid ):
-		# TODO We may have to decode here. Add tests.
 		return ntiids.find_object_with_ntiid( uid )
 
 UserId = _DSIdentifier

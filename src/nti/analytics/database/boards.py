@@ -23,9 +23,9 @@ from nti.analytics.common import get_created_timestamp
 from nti.analytics.common import timestamp_type
 from nti.analytics.common import get_ratings
 
-from nti.analytics.model import AnalyticsForumComment
-from nti.analytics.model import AnalyticsTopic
-from nti.analytics.model import AnalyticsTopicView
+from nti.analytics.read_models import AnalyticsForumComment
+from nti.analytics.read_models import AnalyticsTopic
+from nti.analytics.read_models import AnalyticsTopicView
 
 from nti.analytics.identifier import SessionId
 from nti.analytics.identifier import CommentId
@@ -561,22 +561,23 @@ def _resolve_comment( row ):
 								Flagged=row.is_flagged,
 								LikeCount=row.like_count,
 								FavoriteCount=row.favorite_count,
-								RootContextID=course )
+								RootContext=course )
 	return result
 
 def _resolve_topic( row ):
 	make_transient( row )
-	topic = TopicId.get_object( row.topic_id )
+	topic = TopicId.get_object( row.topic_ds_id )
 	course = get_root_context( row.course_id )
 	user = get_user( row.user_id )
 	result = None
+
 	if 		topic is not None \
 		and user is not None \
 		and course is not None:
 		result = AnalyticsTopic( Topic=topic,
 								user=user,
 								timestamp=row.timestamp,
-								RootContextID=course )
+								RootContext=course )
 	return result
 
 def _resolve_topic_view( row, topic=None ):
@@ -593,7 +594,7 @@ def _resolve_topic_view( row, topic=None ):
 		result = AnalyticsTopicView( Topic=topic,
 								user=user,
 								timestamp=row.timestamp,
-								RootContextID=course,
+								RootContext=course,
 								Duration=row.time_length )
 	return result
 

@@ -1,0 +1,105 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+.. $Id$
+"""
+from __future__ import print_function, unicode_literals, absolute_import, division
+__docformat__ = "restructuredtext en"
+
+logger = __import__('logging').getLogger(__name__)
+
+from zope import interface
+from nti.externalization.representation import WithRepr
+
+from nti.common.property import alias
+
+from nti.schema.field import SchemaConfigured
+from nti.schema.fieldproperty import createDirectFieldProperties
+
+from nti.analytics.read_interfaces import IAnalyticsTopic
+from nti.analytics.read_interfaces import IAnalyticsTopicView
+from nti.analytics.read_interfaces import IAnalyticsAssessment
+from nti.analytics.read_interfaces import IAnalyticsAssignment
+from nti.analytics.read_interfaces import IAnalyticsForumComment
+from nti.analytics.read_interfaces import IAnalyticsAssignmentDetail
+from nti.analytics.read_interfaces import IAnalyticsNote
+from nti.analytics.read_interfaces import IAnalyticsResourceView
+from nti.analytics.read_interfaces import IAnalyticsVideoView
+from nti.analytics.read_interfaces import IAnalyticsVideoSkip
+
+class BaseAnalyticsMixin(SchemaConfigured):
+	__external_can_create__ = False
+
+	def __init__(self, *args, **kwargs):
+		SchemaConfigured.__init__(self, *args, **kwargs)
+
+@interface.implementer(IAnalyticsTopic)
+@WithRepr
+class AnalyticsTopic(BaseAnalyticsMixin):
+	createDirectFieldProperties(IAnalyticsTopic)
+	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticstopic'
+
+@interface.implementer(IAnalyticsForumComment)
+@WithRepr
+class AnalyticsForumComment(BaseAnalyticsMixin):
+	createDirectFieldProperties(IAnalyticsForumComment)
+	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticsforumcomment'
+
+@interface.implementer(IAnalyticsAssessment)
+@WithRepr
+class AnalyticsAssessment(BaseAnalyticsMixin):
+	createDirectFieldProperties(IAnalyticsAssessment)
+	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticsassessment'
+
+@interface.implementer(IAnalyticsAssignment)
+@WithRepr
+class AnalyticsAssignment(BaseAnalyticsMixin):
+	createDirectFieldProperties(IAnalyticsAssignment)
+	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticsassignment'
+
+@interface.implementer(IAnalyticsAssignmentDetail)
+@WithRepr
+class AnalyticsAssignmentDetail(BaseAnalyticsMixin):
+	createDirectFieldProperties(IAnalyticsAssignmentDetail)
+	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticsassignmentdetail'
+
+@interface.implementer(IAnalyticsNote)
+@WithRepr
+class AnalyticsNote(BaseAnalyticsMixin):
+	createDirectFieldProperties(IAnalyticsTopic)
+	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticsnote'
+
+
+
+class BaseAnalyticsDurationMixin(SchemaConfigured):
+	__external_can_create__ = False
+
+	time_length = alias('Duration')
+
+	def __init__(self, *args, **kwargs):
+		SchemaConfigured.__init__(self, *args, **kwargs)
+
+@interface.implementer(IAnalyticsVideoView)
+@WithRepr
+class AnalyticsVideoView(BaseAnalyticsDurationMixin):
+	createDirectFieldProperties(IAnalyticsVideoView)
+	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticsvideoview'
+
+@interface.implementer(IAnalyticsVideoSkip)
+@WithRepr
+class AnalyticsVideoSkip(BaseAnalyticsDurationMixin):
+	createDirectFieldProperties(IAnalyticsVideoSkip)
+	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticsvideoskip'
+
+@interface.implementer(IAnalyticsResourceView)
+@WithRepr
+class AnalyticsResourceView(BaseAnalyticsDurationMixin):
+	createDirectFieldProperties(IAnalyticsResourceView)
+	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticsresourceview'
+
+@interface.implementer(IAnalyticsTopicView)
+@WithRepr
+class AnalyticsTopicView(BaseAnalyticsDurationMixin):
+	createDirectFieldProperties(IAnalyticsTopicView)
+	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticstopicview'
+

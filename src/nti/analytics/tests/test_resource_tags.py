@@ -56,6 +56,7 @@ class TestNotes( NTIAnalyticsTestCase ):
 		note.containerId = 'tag:nti:foo'
 		user.addContainedObject( note )
 		course = CourseInstance()
+		course._ds_intid = 123456
 		mock_find_object.is_callable().returns( note )
 		mock_container_context.is_callable().returns( course )
 		mock_sharing_enum.is_callable().returns( 'UNKNOWN' )
@@ -63,8 +64,14 @@ class TestNotes( NTIAnalyticsTestCase ):
 
 		_add_note( oid )
 
+		# Fetch
 		results = get_notes( user )
 		assert_that( results, has_length( 1 ))
+		note_record = results[0]
+		assert_that( note_record.Note, is_( note ) )
+		assert_that( note_record.IsReply, is_( False ) )
+		assert_that( note_record.RootContext, is_( course ) )
+		assert_that( note_record.NoteLength, is_( 7 ))
 
 		results = get_notes( user, top_level_only=True )
 		assert_that( results, has_length( 1 ))
