@@ -37,10 +37,6 @@ from nti.analytics.database import Base
 from nti.analytics.database import get_analytics_db
 from nti.analytics.database import INTID_COLUMN_TYPE
 
-from nti.analytics.database._utils import resolve_like
-from nti.analytics.database._utils import resolve_favorite
-from nti.analytics.database._utils import get_filtered_records
-
 from nti.analytics.database.meta_mixins import BaseTableMixin
 from nti.analytics.database.meta_mixins import BaseViewMixin
 from nti.analytics.database.meta_mixins import DeletedMixin
@@ -55,6 +51,9 @@ from nti.analytics.database.root_context import get_root_context
 from nti.analytics.database.root_context import get_root_context_id
 from nti.analytics.database.resources import get_resource_id
 
+from nti.analytics.database._utils import resolve_like
+from nti.analytics.database._utils import resolve_favorite
+from nti.analytics.database._utils import get_filtered_records
 from nti.analytics.database._utils import get_context_path
 from nti.analytics.database._utils import get_ratings_for_user_objects
 from nti.analytics.database._utils import get_replies_to_user as _get_replies_to_user

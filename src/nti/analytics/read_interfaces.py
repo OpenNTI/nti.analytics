@@ -26,7 +26,7 @@ from nti.assessment.interfaces import IQAssessedQuestionSet
 from nti.contentlibrary.interfaces import IContentPackage
 from nti.contenttypes.courses.interfaces import ICourseInstance
 
-from nti.dataserver.contenttypes.forums.interfaces import IPost
+from nti.dataserver.contenttypes.forums.interfaces import IGeneralForumComment
 from nti.dataserver.contenttypes.forums.interfaces import ITopic
 
 from nti.dataserver.interfaces import IUser
@@ -123,7 +123,7 @@ class IAnalyticsForumComment(IAnalyticsObjectBase, IRootContextMixin, IAnalytics
 	An analytics forum comment.
 	"""
 	CommentLength = Number(title=u"The character length of the comment.", default=0, required=False)
-	Comment = Object(IPost, title=u"The underlying comment for this object.", required=True)
+	Comment = Object(IGeneralForumComment, title=u"The underlying comment for this object.", required=True)
 
 class IAnalyticsAssessment(IAnalyticsObjectBase, ITimeLength, IRootContextMixin):
 	"""

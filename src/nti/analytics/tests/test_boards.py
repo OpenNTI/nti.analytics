@@ -56,11 +56,13 @@ class TestComments( NTIAnalyticsTestCase ):
 		# Should be lazily created
 		forum = GeneralForum()
 		forum.creator = user1
+		forum.NTIID = 'tag:nextthought.com,2011-10:imaforum'
 		forum.__parent__ = course
 		intids.register( forum )
 
 		topic = GeneralTopic()
 		topic.creator = user1
+		topic.NTIID = 'tag:nextthought.com,2011-10:imatopic'
 		topic.__parent__ = forum
 		intids.register( topic )
 
@@ -83,7 +85,7 @@ class TestComments( NTIAnalyticsTestCase ):
 		comment2.creator = user1
 		comment2.body = ('test222',)
 		comment2.inReplyTo = comment1
-		comment2.__parent__ = comment1
+		comment2.__parent__ = topic
 		intids.register( comment2 )
 		mock_find_object.is_callable().returns( comment2 )
 		_add_comment( comment2 )
@@ -92,11 +94,11 @@ class TestComments( NTIAnalyticsTestCase ):
 		# Replies to user; User replies to others
 		results = get_replies_to_user( user2 )
 		assert_that( results, has_length( 1 ))
-		assert_that( results[0].comment_id, is_( comment2._ds_intid ))
+		assert_that( results[0].Comment, is_( comment2 ))
 
 		results = get_user_replies_to_others( user1 )
 		assert_that( results, has_length( 1 ))
-		assert_that( results[0].comment_id, is_( comment2._ds_intid ))
+		assert_that( results[0].Comment, is_( comment2 ))
 
 		# The reverse is nothing
 		results = get_replies_to_user( user1 )
@@ -149,6 +151,9 @@ class TestComments( NTIAnalyticsTestCase ):
 
 		results = get_likes_for_users_topics( user1 )
 		assert_that( results, has_length( 1 ))
+		assert_that( results[0].ObjectCreator, is_( user1 ))
+		assert_that( results[0].user, is_( user2 ))
+
 		results = get_likes_for_users_comments( user2 )
 		assert_that( results, has_length( 0 ))
 		results = get_favorites_for_users_topics( user1 )
@@ -162,10 +167,15 @@ class TestComments( NTIAnalyticsTestCase ):
 
 		results = get_likes_for_users_topics( user1 )
 		assert_that( results, has_length( 1 ))
+
 		results = get_likes_for_users_comments( user2 )
 		assert_that( results, has_length( 0 ))
+
 		results = get_favorites_for_users_topics( user1 )
 		assert_that( results, has_length( 1 ))
+		assert_that( results[0].ObjectCreator, is_( user1 ))
+		assert_that( results[0].user, is_( user2 ))
+
 		results = get_favorites_for_users_comments( user2 )
 		assert_that( results, has_length( 0 ))
 
@@ -175,8 +185,12 @@ class TestComments( NTIAnalyticsTestCase ):
 
 		results = get_likes_for_users_topics( user1 )
 		assert_that( results, has_length( 1 ))
+
 		results = get_likes_for_users_comments( user2 )
 		assert_that( results, has_length( 1 ))
+		assert_that( results[0].ObjectCreator, is_( user2 ))
+		assert_that( results[0].user, is_( user1 ))
+
 		results = get_favorites_for_users_topics( user1 )
 		assert_that( results, has_length( 1 ))
 		results = get_favorites_for_users_comments( user2 )
@@ -192,5 +206,8 @@ class TestComments( NTIAnalyticsTestCase ):
 		assert_that( results, has_length( 1 ))
 		results = get_favorites_for_users_topics( user1 )
 		assert_that( results, has_length( 1 ))
+
 		results = get_favorites_for_users_comments( user2 )
 		assert_that( results, has_length( 1 ))
+		assert_that( results[0].ObjectCreator, is_( user2 ))
+		assert_that( results[0].user, is_( user1 ))

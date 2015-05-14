@@ -53,6 +53,8 @@ from nti.analytics.database.users import get_user_db_id
 from nti.analytics.database.root_context import get_root_context_id
 from nti.analytics.database.root_context import get_root_context
 
+from nti.analytics.database._utils import resolve_like
+from nti.analytics.database._utils import resolve_favorite
 from nti.analytics.database._utils import get_context_path
 from nti.analytics.database._utils import get_ratings_for_user_objects
 from nti.analytics.database._utils import get_replies_to_user as _get_replies_to_user
@@ -544,13 +546,14 @@ def flag_comment( comment, state ):
 	db_comment.is_flagged = state
 	db.session.flush()
 
-def _resolve_comment( row ):
+def _resolve_comment( row, user=None, course=None ):
 	# Detach this from the db, resolving objects as we go.
 	make_transient( row )
 	comment = CommentId.get_object( row.comment_id )
-	course = get_root_context( row.course_id )
-	user = get_user( row.user_id )
+	course = get_root_context( row.course_id ) if course is None else course
+	user = get_user( row.user_id ) if user is None else user
 	result = None
+
 	if 		comment is not None \
 		and user is not None \
 		and course is not None:
@@ -564,11 +567,11 @@ def _resolve_comment( row ):
 								RootContext=course )
 	return result
 
-def _resolve_topic( row ):
+def _resolve_topic( row, user=None, course=None ):
 	make_transient( row )
 	topic = TopicId.get_object( row.topic_ds_id )
-	course = get_root_context( row.course_id )
-	user = get_user( row.user_id )
+	course = get_root_context( row.course_id ) if course is None else course
+	user = get_user( row.user_id ) if user is None else user
 	result = None
 
 	if 		topic is not None \
@@ -580,12 +583,11 @@ def _resolve_topic( row ):
 								RootContext=course )
 	return result
 
-def _resolve_topic_view( row, topic=None ):
+def _resolve_topic_view( row, topic=None, user=None, course=None ):
 	make_transient( row )
-	if topic is None:
-		topic = _get_topic_from_db_id( row.topic_id )
-	course = get_root_context( row.course_id )
-	user = get_user( row.user_id )
+	topic = _get_topic_from_db_id( row.topic_id ) if topic is None else topic
+	course = get_root_context( row.course_id ) if course is None else course
+	user = get_user( row.user_id ) if user is None else user
 	result = None
 
 	if 		topic is not None \
@@ -666,7 +668,7 @@ def get_forum_comments_for_course(course):
 	results = db.session.query(ForumCommentsCreated).filter(
 								ForumCommentsCreated.course_id == course_id,
 								ForumCommentsCreated.deleted == None  ).all()
-	return resolve_objects( _resolve_comment, results )
+	return resolve_objects( _resolve_comment, results, course=course )
 
 def get_topics_created_for_course(course):
 	db = get_analytics_db()
@@ -674,7 +676,7 @@ def get_topics_created_for_course(course):
 	results = db.session.query(TopicsCreated).filter(
 								TopicsCreated.course_id == course_id,
 								TopicsCreated.deleted == None  ).all()
-	return resolve_objects( _resolve_topic, results )
+	return resolve_objects( _resolve_topic, results, course=course )
 
 
 def get_topic_view_count( topic ):
@@ -694,38 +696,44 @@ def get_user_replies_to_others( user, course=None, timestamp=None, get_deleted=F
 	"""
 	Fetch any replies our users provided, *after* the optionally given timestamp.
 	"""
-	return _get_user_replies_to_others( ForumCommentsCreated, user, course, timestamp, get_deleted )
+	results = _get_user_replies_to_others( ForumCommentsCreated, user, course, timestamp, get_deleted )
+	return resolve_objects( _resolve_comment, results, user=user, course=course )
 
 def get_replies_to_user( user, course=None, timestamp=None, get_deleted=False  ):
 	"""
 	Fetch any replies to our user, *after* the optionally given timestamp.
 	"""
-	return _get_replies_to_user( ForumCommentsCreated, user, course, timestamp, get_deleted )
+	results = _get_replies_to_user( ForumCommentsCreated, user, course, timestamp, get_deleted )
+	return resolve_objects( _resolve_comment, results, course=course )
 
 def get_likes_for_users_topics( user, course=None, timestamp=None ):
 	"""
 	Fetch any likes created for a user's topics *after* the optionally given
 	timestamp.  Optionally, can filter by course.
 	"""
-	return get_ratings_for_user_objects( TopicLikes, user, course, timestamp )
+	results = get_ratings_for_user_objects( TopicLikes, user, course, timestamp )
+	return resolve_objects( resolve_like, results, obj_creator=user)
 
 def get_favorites_for_users_topics( user, course=None, timestamp=None ):
 	"""
 	Fetch any favorites created for a user's topics *after* the optionally given
 	timestamp.  Optionally, can filter by course.
 	"""
-	return get_ratings_for_user_objects( TopicFavorites, user, course, timestamp )
+	results = get_ratings_for_user_objects( TopicFavorites, user, course, timestamp )
+	return resolve_objects( resolve_favorite, results, obj_creator=user)
 
 def get_likes_for_users_comments( user, course=None, timestamp=None ):
 	"""
 	Fetch any likes created for a user's topics *after* the optionally given
 	timestamp.  Optionally, can filter by course.
 	"""
-	return get_ratings_for_user_objects( ForumCommentLikes, user, course, timestamp )
+	results = get_ratings_for_user_objects( ForumCommentLikes, user, course, timestamp )
+	return resolve_objects( resolve_like, results, obj_creator=user)
 
 def get_favorites_for_users_comments( user, course=None, timestamp=None ):
 	"""
 	Fetch any favorites created for a user's topics *after* the optionally given
 	timestamp.  Optionally, can filter by course.
 	"""
-	return get_ratings_for_user_objects( ForumCommentFavorites, user, course, timestamp )
+	results = get_ratings_for_user_objects( ForumCommentFavorites, user, course, timestamp )
+	return resolve_objects( resolve_favorite, results, obj_creator=user)
