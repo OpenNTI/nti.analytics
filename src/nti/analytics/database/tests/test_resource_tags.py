@@ -185,7 +185,6 @@ class TestResourceTags(AnalyticsTestBase):
 
 		results = db_tags.get_notes_created_for_course( self.course_id )
 		assert_that( results, has_length( 1 ) )
-		assert_that( results[0].user_id, is_( note_db_id ))
 
 		results = self.session.query(NotesCreated).all()
 		assert_that( results, has_length( 1 ) )
@@ -222,8 +221,6 @@ class TestResourceTags(AnalyticsTestBase):
 
 		results = db_tags.get_notes_created_for_course( self.course_id )
 		assert_that( results, has_length( 2 ) )
-		result_owners = [x.user_id for x in results]
-		assert_that( result_owners, contains_inanyorder( note_db_id, parent_note_db_id ))
 
 		results = self.session.query(NotesCreated).all()
 		assert_that( results, has_length( 2 ) )

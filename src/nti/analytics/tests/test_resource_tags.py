@@ -72,6 +72,7 @@ class TestNotes( NTIAnalyticsTestCase ):
 		assert_that( note_record.IsReply, is_( False ) )
 		assert_that( note_record.RootContext, is_( course ) )
 		assert_that( note_record.NoteLength, is_( 7 ))
+		assert_that( note_record.user, is_( user ) )
 
 		results = get_notes( user, top_level_only=True )
 		assert_that( results, has_length( 1 ))
@@ -218,6 +219,10 @@ class TestHighlights( NTIAnalyticsTestCase ):
 
 		results = get_highlights( user )
 		assert_that( results, has_length( 1 ))
+		highlight_record = results[0]
+		assert_that( highlight_record.Highlight, is_( highlight ) )
+		assert_that( highlight_record.user, is_( user ) )
+		assert_that( highlight_record.RootContext, is_( course ) )
 
 
 class TestBookmarks( NTIAnalyticsTestCase ):
@@ -241,5 +246,9 @@ class TestBookmarks( NTIAnalyticsTestCase ):
 
 		results = get_bookmarks( user )
 		assert_that( results, has_length( 1 ))
+		bookmark_record = results[0]
+		assert_that( bookmark_record.Bookmark, is_( bookmark ) )
+		assert_that( bookmark_record.user, is_( user ) )
+		assert_that( bookmark_record.RootContext, is_( course ) )
 
 

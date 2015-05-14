@@ -23,6 +23,8 @@ from nti.analytics.read_interfaces import IAnalyticsAssignment
 from nti.analytics.read_interfaces import IAnalyticsForumComment
 from nti.analytics.read_interfaces import IAnalyticsAssignmentDetail
 from nti.analytics.read_interfaces import IAnalyticsNote
+from nti.analytics.read_interfaces import IAnalyticsHighlight
+from nti.analytics.read_interfaces import IAnalyticsBookmark
 from nti.analytics.read_interfaces import IAnalyticsResourceView
 from nti.analytics.read_interfaces import IAnalyticsVideoView
 from nti.analytics.read_interfaces import IAnalyticsVideoSkip
@@ -69,6 +71,17 @@ class AnalyticsNote(BaseAnalyticsMixin):
 	createDirectFieldProperties(IAnalyticsTopic)
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticsnote'
 
+@interface.implementer(IAnalyticsHighlight)
+@WithRepr
+class AnalyticsHighlight(BaseAnalyticsMixin):
+	createDirectFieldProperties(IAnalyticsHighlight)
+	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticshighlight'
+
+@interface.implementer(IAnalyticsBookmark)
+@WithRepr
+class AnalyticsBookmark(BaseAnalyticsMixin):
+	createDirectFieldProperties(IAnalyticsBookmark)
+	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticsbookmark'
 
 
 class BaseAnalyticsDurationMixin(SchemaConfigured):

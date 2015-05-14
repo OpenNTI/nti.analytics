@@ -30,6 +30,8 @@ from nti.dataserver.contenttypes.forums.interfaces import IPost
 from nti.dataserver.contenttypes.forums.interfaces import ITopic
 
 from nti.dataserver.interfaces import INote
+from nti.dataserver.interfaces import IHighlight
+from nti.dataserver.interfaces import IBookmark
 
 from nti.schema.field import Bool
 from nti.schema.field import Choice
@@ -157,7 +159,12 @@ class IAnalyticsAssignment(IAnalyticsObjectBase, ITimeLength, IRootContextMixin,
 
 	IsLate = Bool(title=u"Whether the submitted assignment was late.", required=False)
 
-class IAnalyticsNote(IAnalyticsObjectBase, IRootContextMixin, IAnalyticsRatings):
+class IAnalyticsTag(IAnalyticsObjectBase, IRootContextMixin):
+	"""
+	An analytics tag.
+	"""
+
+class IAnalyticsNote(IAnalyticsTag, IAnalyticsRatings):
 	"""
 	An analytics note.
 	"""
@@ -166,3 +173,14 @@ class IAnalyticsNote(IAnalyticsObjectBase, IRootContextMixin, IAnalyticsRatings)
 	Sharing = Choice(vocabulary=SHARING_VOCAB, title=u"A sharing enum", required=True)
 	IsReply = Bool(title=u"Whether the note is a reply to another note.", required=True)
 
+class IAnalyticsHighlight(IAnalyticsTag):
+	"""
+	An analytics highlight.
+	"""
+	Highlight = Object(IHighlight, title='The underlying highlight object.', required=True)
+
+class IAnalyticsBookmark(IAnalyticsTag):
+	"""
+	An analytics bookmark.
+	"""
+	Bookmark = Object(IBookmark, title='The underlying bookmark object.', required=True)

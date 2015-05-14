@@ -30,6 +30,8 @@ from nti.analytics.identifier import BookmarkId
 from nti.analytics.identifier import ResourceId
 
 from nti.analytics.read_models import AnalyticsNote
+from nti.analytics.read_models import AnalyticsHighlight
+from nti.analytics.read_models import AnalyticsBookmark
 
 from nti.analytics.database import Base
 from nti.analytics.database import get_analytics_db
@@ -497,7 +499,23 @@ def get_notes_created_for_course(course):
 	results = db.session.query(NotesCreated).filter(
 								NotesCreated.course_id == course_id,
 								NotesCreated.deleted == None  ).all()
-	return results
+	return resolve_objects( _resolve_note, results, course=course )
+
+def _resolve_highlight( row, user=None, course=None ):
+	make_transient( row )
+	highlight = HighlightId.get_object( row.highlight_ds_id )
+	course = get_root_context( row.course_id ) if course is None else course
+	user = get_user( row.user_id ) if user is None else user
+
+	result = None
+	if 		highlight is not None \
+		and user is not None \
+		and course is not None:
+		result = AnalyticsHighlight( Highlight=highlight,
+								user=user,
+								timestamp=row.timestamp,
+								RootContext=course )
+	return result
 
 def get_highlights( user, course=None, timestamp=None, get_deleted=False ):
 	"""
@@ -510,7 +528,7 @@ def get_highlights( user, course=None, timestamp=None, get_deleted=False ):
 		filters = (HighlightsCreated.deleted == None,)
 	results = get_filtered_records( user, HighlightsCreated, course=course,
 								timestamp=timestamp, filters=filters )
-	return results
+	return resolve_objects( _resolve_highlight, results, user=user, course=course )
 
 def get_highlights_created_for_course(course):
 	db = get_analytics_db()
@@ -519,6 +537,22 @@ def get_highlights_created_for_course(course):
 								HighlightsCreated.course_id == course_id,
 								HighlightsCreated.deleted == None  ).all()
 	return results
+
+def _resolve_bookmark( row, user=None, course=None ):
+	make_transient( row )
+	bookmark = BookmarkId.get_object( row.bookmark_ds_id )
+	course = get_root_context( row.course_id ) if course is None else course
+	user = get_user( row.user_id ) if user is None else user
+
+	result = None
+	if 		bookmark is not None \
+		and user is not None \
+		and course is not None:
+		result = AnalyticsBookmark( Bookmark=bookmark,
+								user=user,
+								timestamp=row.timestamp,
+								RootContext=course )
+	return result
 
 def get_bookmarks( user, course=None, timestamp=None, get_deleted=False ):
 	"""
@@ -531,7 +565,7 @@ def get_bookmarks( user, course=None, timestamp=None, get_deleted=False ):
 		filters = (BookmarksCreated.deleted == None,)
 	results = get_filtered_records( user, BookmarksCreated, course=course,
 								timestamp=timestamp, filters=filters )
-	return results
+	return resolve_objects( _resolve_bookmark, results, user=user, course=course )
 
 def get_note_view_count( note ):
 	"""
