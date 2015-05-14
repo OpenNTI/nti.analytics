@@ -30,6 +30,8 @@ from nti.analytics.read_interfaces import IAnalyticsVideoView
 from nti.analytics.read_interfaces import IAnalyticsVideoSkip
 from nti.analytics.read_interfaces import IAnalyticsLike
 from nti.analytics.read_interfaces import IAnalyticsFavorite
+from nti.analytics.read_interfaces import IAnalyticsSelfAssessmentView
+from nti.analytics.read_interfaces import IAnalyticsAssignmentView
 
 class BaseAnalyticsMixin(SchemaConfigured):
 	__external_can_create__ = False
@@ -123,6 +125,18 @@ class AnalyticsVideoSkip(BaseAnalyticsDurationMixin):
 class AnalyticsResourceView(BaseAnalyticsDurationMixin):
 	createDirectFieldProperties(IAnalyticsResourceView)
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticsresourceview'
+
+@interface.implementer(IAnalyticsSelfAssessmentView)
+@WithRepr
+class AnalyticsSelfAssessmentView(BaseAnalyticsDurationMixin):
+	createDirectFieldProperties(IAnalyticsSelfAssessmentView)
+	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticsselfassessmentview'
+
+@interface.implementer(IAnalyticsAssignmentView)
+@WithRepr
+class AnalyticsAssignmentView(BaseAnalyticsDurationMixin):
+	createDirectFieldProperties(IAnalyticsAssignmentView)
+	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticsassignmentview'
 
 @interface.implementer(IAnalyticsTopicView)
 @WithRepr

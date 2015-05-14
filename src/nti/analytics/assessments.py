@@ -90,7 +90,7 @@ def _self_assessment_taken( oid, nti_session=None ):
 
 		__traceback_info__ = submission.containerId
 		course = get_root_context( submission )
-		obj = db_assessments.create_self_assessment_taken(user, nti_session,
+		db_assessments.create_self_assessment_taken(user, nti_session,
 													timestamp, course, submission)
 		logger.debug("Self-assessment submitted (user=%s) (assignment=%s)",
 					 user, submission.questionSetId )

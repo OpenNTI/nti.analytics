@@ -47,6 +47,8 @@ from nti.analytics.common import get_created_timestamp
 from nti.analytics.read_models import AnalyticsAssessment
 from nti.analytics.read_models import AnalyticsAssignment
 from nti.analytics.read_models import AnalyticsAssignmentDetail
+from nti.analytics.read_models import AnalyticsSelfAssessmentView
+from nti.analytics.read_models import AnalyticsAssignmentView
 
 from nti.analytics.identifier import SessionId
 from nti.analytics.identifier import SubmissionId
@@ -788,6 +790,28 @@ def get_assignment_details_for_course(course, assignment_id):
 
 	return resolve_objects( _resolve_assignment_details, results )
 
+def _resolve_view( clazz, row, course, user ):
+	time_length = row.time_length
+	timestamp = row.timestamp
+	course = get_root_context( row.course_id ) if course is None else course
+	user = get_user( row.user_id ) if user is None else user
+
+	# We're returning the assignmentId here; we may want to return
+	# the actual page in the future.
+	resource_event = clazz(user=user,
+					timestamp=timestamp,
+					RootContext=course,
+					ResourceId=row.assignment_id,
+					Duration=time_length)
+
+	return resource_event
+
+def _resolve_self_assessment_view( row, user=None, course=None ):
+	return _resolve_view( AnalyticsSelfAssessmentView, row, course, user )
+
+def _resolve_assignment_view( row, user=None, course=None ):
+	return _resolve_view( AnalyticsAssignmentView, row, course, user )
+
 def get_self_assessment_views( user, course=None, timestamp=None ):
 	"""
 	Fetch any self assessment views for a user created *after* the optionally given
@@ -795,7 +819,7 @@ def get_self_assessment_views( user, course=None, timestamp=None ):
 	"""
 	results = get_filtered_records( user, SelfAssessmentViews,
 								course=course, timestamp=timestamp )
-	return results
+	return resolve_objects( _resolve_self_assessment_view, results, user=user, course=course )
 
 def get_assignment_views( user, course=None, timestamp=None ):
 	"""
@@ -804,4 +828,4 @@ def get_assignment_views( user, course=None, timestamp=None ):
 	"""
 	results = get_filtered_records( user, AssignmentViews,
 								course=course, timestamp=timestamp )
-	return results
+	return resolve_objects( _resolve_assignment_view, results, user=user, course=course )

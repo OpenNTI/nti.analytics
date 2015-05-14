@@ -168,5 +168,6 @@ def create_course_drop(user, nti_session, timestamp, course):
 def get_enrollments_for_course( course ):
 	db = get_analytics_db()
 	course_id = get_root_context_id( db, course )
-	enrollments = db.session.query( CourseEnrollments ).filter( CourseEnrollments.course_id == course_id ).all()
+	enrollments = db.session.query( CourseEnrollments ).filter(
+									CourseEnrollments.course_id == course_id ).all()
 	return enrollments

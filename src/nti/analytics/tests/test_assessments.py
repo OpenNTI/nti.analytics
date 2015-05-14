@@ -10,6 +10,7 @@ __docformat__ = "restructuredtext en"
 import time
 import fudge
 
+from hamcrest import is_
 from hamcrest import assert_that
 from hamcrest import has_length
 
@@ -56,8 +57,17 @@ class TestAssessments( NTIAnalyticsTestCase ):
 		_add_self_assessment_event( event )
 		results = get_self_assessment_views( user )
 		assert_that( results, has_length( 1 ))
+		assert_that( results[0].RootContext, is_( course ))
+		assert_that( results[0].user, is_( user ))
+		assert_that( results[0].Duration, is_( time_length ))
+		assert_that( results[0].ResourceId, is_( question_set_id ))
+
 		results = get_self_assessment_views( user, course=course )
 		assert_that( results, has_length( 1 ))
+		assert_that( results[0].RootContext, is_( course ))
+		assert_that( results[0].user, is_( user ))
+		assert_that( results[0].Duration, is_( time_length ))
+		assert_that( results[0].ResourceId, is_( question_set_id ))
 
 		# Filtered out
 		wrong_course = CourseInstance()
@@ -90,8 +100,17 @@ class TestAssessments( NTIAnalyticsTestCase ):
 		_add_assignment_event( event )
 		results = get_assignment_views( user )
 		assert_that( results, has_length( 1 ))
+		assert_that( results[0].RootContext, is_( course ))
+		assert_that( results[0].user, is_( user ))
+		assert_that( results[0].Duration, is_( time_length ))
+		assert_that( results[0].ResourceId, is_( assignment_id ))
+
 		results = get_assignment_views( user, course=course )
 		assert_that( results, has_length( 1 ))
+		assert_that( results[0].RootContext, is_( course ))
+		assert_that( results[0].user, is_( user ))
+		assert_that( results[0].Duration, is_( time_length ))
+		assert_that( results[0].ResourceId, is_( assignment_id ))
 
 		# Filtered out
 		wrong_course = CourseInstance()

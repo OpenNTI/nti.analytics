@@ -60,6 +60,16 @@ class IAnalyticsResourceView( IAnalyticsViewBase ):
 	An analytics resource view.
 	"""
 
+class IAnalyticsSelfAssessmentView( IAnalyticsViewBase ):
+	"""
+	An analytics self assessment view.
+	"""
+
+class IAnalyticsAssignmentView( IAnalyticsViewBase ):
+	"""
+	An analytics assignment view.
+	"""
+
 class IAnalyticsVideoBase( IAnalyticsViewBase ):
 	"""
 	An analytics video view.
