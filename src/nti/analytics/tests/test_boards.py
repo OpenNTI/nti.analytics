@@ -95,10 +95,16 @@ class TestComments( NTIAnalyticsTestCase ):
 		results = get_replies_to_user( user2 )
 		assert_that( results, has_length( 1 ))
 		assert_that( results[0].Comment, is_( comment2 ))
+		assert_that( results[0].IsReply, is_( True ))
+		assert_that( results[0].RootContext, is_( course ))
+		assert_that( results[0].user, is_( user1 ))
 
 		results = get_user_replies_to_others( user1 )
 		assert_that( results, has_length( 1 ))
 		assert_that( results[0].Comment, is_( comment2 ))
+		assert_that( results[0].IsReply, is_( True ))
+		assert_that( results[0].RootContext, is_( course ))
+		assert_that( results[0].user, is_( user1 ))
 
 		# The reverse is nothing
 		results = get_replies_to_user( user1 )

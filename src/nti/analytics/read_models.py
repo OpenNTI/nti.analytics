@@ -16,6 +16,8 @@ from nti.common.property import alias
 from nti.schema.field import SchemaConfigured
 from nti.schema.fieldproperty import createDirectFieldProperties
 
+from nti.analytics.read_interfaces import IAnalyticsBlog
+from nti.analytics.read_interfaces import IAnalyticsBlogComment
 from nti.analytics.read_interfaces import IAnalyticsTopic
 from nti.analytics.read_interfaces import IAnalyticsTopicView
 from nti.analytics.read_interfaces import IAnalyticsAssessment
@@ -98,6 +100,19 @@ class AnalyticsLike(BaseAnalyticsMixin):
 class AnalyticsFavorite(BaseAnalyticsMixin):
 	createDirectFieldProperties(IAnalyticsFavorite)
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticsfavorite'
+
+@interface.implementer(IAnalyticsBlog)
+@WithRepr
+class AnalyticsBlog(BaseAnalyticsMixin):
+	createDirectFieldProperties(IAnalyticsBlog)
+	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticsblog'
+
+@interface.implementer(IAnalyticsBlogComment)
+@WithRepr
+class AnalyticsBlogComment(BaseAnalyticsMixin):
+	createDirectFieldProperties(IAnalyticsBlogComment)
+	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticsblogcomment'
+
 
 
 class BaseAnalyticsDurationMixin(SchemaConfigured):

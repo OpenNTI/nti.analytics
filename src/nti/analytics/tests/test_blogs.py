@@ -19,7 +19,9 @@ from hamcrest import assert_that
 
 from nti.dataserver.users import User
 
+from nti.dataserver.contenttypes.forums.forum import PersonalBlog
 from nti.dataserver.contenttypes.forums.topic import PersonalBlogEntry
+from nti.dataserver.contenttypes.forums.post import PersonalBlogEntryPost
 from nti.dataserver.contenttypes.forums.post import PersonalBlogComment
 
 from nti.dataserver.tests.mock_dataserver import WithMockDSTrans
@@ -49,9 +51,13 @@ class TestBlogs( NTIAnalyticsTestCase ):
 		results = get_blogs( user )
 		assert_that( results, has_length( 0 ))
 
+		blog_container = PersonalBlog()
+
 		blog = PersonalBlogEntry()
 		blog._ds_intid = 888
 		blog.creator = user
+		blog.headline = PersonalBlogEntryPost()
+		blog.__parent__ = blog_container
 		mock_find_object.is_callable().returns( blog )
 		oid = 13
 
@@ -59,6 +65,9 @@ class TestBlogs( NTIAnalyticsTestCase ):
 
 		results = get_blogs( user )
 		assert_that( results, has_length( 1 ))
+		assert_that( results[0].Blog, is_( blog ))
+		assert_that( results[0].user, is_( user ))
+		assert_that( results[0].BlogLength, is_( 0 ))
 
 	@WithMockDSTrans
 	@fudge.patch( 'nti.ntiids.ntiids.find_object_with_ntiid' )
@@ -95,7 +104,7 @@ class TestBlogs( NTIAnalyticsTestCase ):
 		comment2._ds_intid = 9992
 		comment2.creator = user1
 		comment2.inReplyTo = comment1
-		comment2.__parent__ = comment1
+		comment2.__parent__ = blog
 		mock_find_object.is_callable().returns( comment2 )
 
 		_add_comment( comment2 )
@@ -104,11 +113,17 @@ class TestBlogs( NTIAnalyticsTestCase ):
 		# Replies to user; User replies to others
 		results = get_replies_to_user( user2 )
 		assert_that( results, has_length( 1 ))
-		assert_that( results[0].comment_id, is_( comment2._ds_intid ))
+		assert_that( results[0].Comment, is_( comment2 ))
+		assert_that( results[0].user, is_( user1 ))
+		assert_that( results[0].IsReply, is_( True ))
+		assert_that( results[0].CommentLength, is_( 0 ))
 
 		results = get_user_replies_to_others( user1 )
 		assert_that( results, has_length( 1 ))
-		assert_that( results[0].comment_id, is_( comment2._ds_intid ))
+		assert_that( results[0].Comment, is_( comment2 ))
+		assert_that( results[0].user, is_( user1 ))
+		assert_that( results[0].IsReply, is_( True ))
+		assert_that( results[0].CommentLength, is_( 0 ))
 
 		# The reverse is nothing
 		results = get_replies_to_user( user1 )

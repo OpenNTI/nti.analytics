@@ -447,6 +447,9 @@ def _resolve_note( row, user=None, course=None ):
 								RootContext=course,
 								NoteLength=row.note_length,
 								Sharing=row.sharing,
+								Flagged=row.is_flagged,
+								LikeCount=row.like_count,
+								FavoriteCount=row.favorite_count,
 								IsReply=is_reply )
 	return result
 

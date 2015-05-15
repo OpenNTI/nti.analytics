@@ -12,9 +12,10 @@ from sqlalchemy import Column
 from sqlalchemy import Integer
 from sqlalchemy import ForeignKey
 
-from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.schema import PrimaryKeyConstraint
 from sqlalchemy.schema import Sequence
+from sqlalchemy.orm.session import make_transient
+from sqlalchemy.ext.declarative import declared_attr
 
 from nti.analytics.common import get_creator
 from nti.analytics.common import get_created_timestamp
@@ -25,10 +26,14 @@ from nti.analytics.identifier import SessionId
 from nti.analytics.identifier import BlogId
 from nti.analytics.identifier import CommentId
 
+from nti.analytics.read_models import AnalyticsBlog
+from nti.analytics.read_models import AnalyticsBlogComment
+
 from nti.analytics.database import INTID_COLUMN_TYPE
 from nti.analytics.database import Base
 from nti.analytics.database import get_analytics_db
 from nti.analytics.database import should_update_event
+from nti.analytics.database import resolve_objects
 
 from nti.analytics.database.meta_mixins import BaseTableMixin
 from nti.analytics.database.meta_mixins import BaseViewMixin
@@ -38,8 +43,11 @@ from nti.analytics.database.meta_mixins import TimeLengthMixin
 from nti.analytics.database.meta_mixins import RatingsMixin
 from nti.analytics.database.meta_mixins import CreatorMixin
 
+from nti.analytics.database.users import get_user
 from nti.analytics.database.users import get_or_create_user
 
+from nti.analytics.database._utils import resolve_like
+from nti.analytics.database._utils import resolve_favorite
 from nti.analytics.database._utils import get_context_path
 from nti.analytics.database._utils import get_filtered_records
 from nti.analytics.database._utils import get_ratings_for_user_objects
@@ -128,6 +136,9 @@ def create_blog( user, nti_session, blog_entry ):
 	timestamp = get_created_timestamp( blog_entry )
 	blog_length = None
 
+	# TODO What about the headline?
+	# TODO We should probably capture text length when possible
+	# and marking if canvas or video are embedded.
 	try:
 		if blog_entry.description is not None:
 			blog_length = len( blog_entry.description )
@@ -409,6 +420,42 @@ def flag_comment( comment, state ):
 	db_comment.is_flagged = state
 	db.session.flush()
 
+def _resolve_blog( row, user=None ):
+	make_transient( row )
+	blog = BlogId.get_object( row.blog_ds_id )
+	user = get_user( row.user_id ) if user is None else user
+
+	result = None
+	if 		blog is not None \
+		and user is not None:
+		result = AnalyticsBlog( Blog=blog,
+								user=user,
+								timestamp=row.timestamp,
+								Flagged=row.is_flagged,
+								LikeCount=row.like_count,
+								FavoriteCount=row.favorite_count,
+								BlogLength=row.blog_length )
+	return result
+
+def _resolve_blog_comment( row, user=None ):
+	make_transient( row )
+	comment = CommentId.get_object( row.comment_id )
+	user = get_user( row.user_id ) if user is None else user
+	is_reply = row.parent_id is not None
+
+	result = None
+	if 		comment is not None \
+		and user is not None:
+		result = AnalyticsBlogComment( Comment=comment,
+								user=user,
+								timestamp=row.timestamp,
+								CommentLength=row.comment_length,
+								Flagged=row.is_flagged,
+								LikeCount=row.like_count,
+								FavoriteCount=row.favorite_count,
+								IsReply=is_reply )
+	return result
+
 def get_blogs( user, timestamp=None, get_deleted=False ):
 	"""
 	Fetch any blogs for a user created *after* the optionally given
@@ -419,21 +466,23 @@ def get_blogs( user, timestamp=None, get_deleted=False ):
 		filters.append( BlogsCreated.deleted == None )
 	results = get_filtered_records( user, BlogsCreated,
 								timestamp=timestamp, filters=filters )
-	return results
+	return resolve_objects( _resolve_blog, results, user=user )
 
 def get_user_replies_to_others( user, timestamp=None, get_deleted=False ):
 	"""
 	Fetch any replies our users provided, *after* the optionally given timestamp.
 	"""
-	return _get_user_replies_to_others( BlogCommentsCreated, user,
+	results = _get_user_replies_to_others( BlogCommentsCreated, user,
 									timestamp=timestamp, get_deleted=get_deleted )
+	return resolve_objects( _resolve_blog_comment, results, user=user )
 
 def get_replies_to_user( user, timestamp=None, get_deleted=False  ):
 	"""
 	Fetch any replies to our user, *after* the optionally given timestamp.
 	"""
-	return _get_replies_to_user( BlogCommentsCreated, user,
+	results = _get_replies_to_user( BlogCommentsCreated, user,
 								timestamp=timestamp, get_deleted=get_deleted )
+	return resolve_objects( _resolve_blog_comment, results )
 
 def get_likes_for_users_blogs( user, timestamp=None ):
 	"""
@@ -441,7 +490,8 @@ def get_likes_for_users_blogs( user, timestamp=None ):
 	timestamp.  Optionally, can filter by course and include/exclude
 	deleted.
 	"""
-	return get_ratings_for_user_objects( BlogLikes, user, timestamp=timestamp )
+	results = get_ratings_for_user_objects( BlogLikes, user, timestamp=timestamp )
+	return resolve_objects( resolve_like, results, obj_creator=user )
 
 def get_favorites_for_users_blogs( user, timestamp=None ):
 	"""
@@ -449,7 +499,8 @@ def get_favorites_for_users_blogs( user, timestamp=None ):
 	timestamp.  Optionally, can filter by course and include/exclude
 	deleted.
 	"""
-	return get_ratings_for_user_objects( BlogFavorites, user, timestamp=timestamp )
+	results = get_ratings_for_user_objects( BlogFavorites, user, timestamp=timestamp )
+	return resolve_objects( resolve_favorite, results, obj_creator=user )
 
 def get_likes_for_users_comments( user, timestamp=None ):
 	"""
@@ -457,11 +508,13 @@ def get_likes_for_users_comments( user, timestamp=None ):
 	timestamp.  Optionally, can filter by course and include/exclude
 	deleted.
 	"""
-	return get_ratings_for_user_objects( BlogCommentLikes, user, timestamp=timestamp )
+	results = get_ratings_for_user_objects( BlogCommentLikes, user, timestamp=timestamp )
+	return resolve_objects( resolve_like, results, obj_creator=user )
 
 def get_favorites_for_users_comments( user, timestamp=None ):
 	"""
 	Fetch any favorites created for a user's comments *after* the optionally given
 	timestamp.
 	"""
-	return get_ratings_for_user_objects( BlogCommentFavorites, user, timestamp=timestamp )
+	results = get_ratings_for_user_objects( BlogCommentFavorites, user, timestamp=timestamp )
+	return resolve_objects( resolve_favorite, results, obj_creator=user )

@@ -28,6 +28,8 @@ from nti.contenttypes.courses.interfaces import ICourseInstance
 
 from nti.dataserver.contenttypes.forums.interfaces import IGeneralForumComment
 from nti.dataserver.contenttypes.forums.interfaces import ITopic
+from nti.dataserver.contenttypes.forums.interfaces import IPersonalBlogComment
+from nti.dataserver.contenttypes.forums.interfaces import IPersonalBlogEntry
 
 from nti.dataserver.interfaces import IUser
 from nti.dataserver.interfaces import INote
@@ -106,7 +108,22 @@ class IAnalyticsRatedObject(interface.Interface):
 	FavoriteCount = Number(title=u"The number of favorites", default=0)
 	Flagged = Bool(title=u"Whether the object is flagged/reported.", default=False)
 
-class IAnalyticsTopic(IAnalyticsObjectBase, IRootContextMixin):
+class IAnalyticsBlog( IAnalyticsObjectBase, IAnalyticsRatedObject ):
+	"""
+	An analytics blog.
+	"""
+	BlogLength = Number(title=u"The character length of the blog.", default=0, required=False)
+	Blog = Object(IPersonalBlogEntry, title='The underlying blog object.', required=True)
+
+class IAnalyticsBlogComment(IAnalyticsObjectBase, IAnalyticsRatedObject):
+	"""
+	An analytics forum comment.
+	"""
+	CommentLength = Number(title=u"The character length of the comment.", default=0, required=False)
+	Comment = Object(IPersonalBlogComment, title=u"The underlying comment for this object.", required=True)
+	IsReply = Bool(title=u"Whether the comment is a reply to another comment.", required=True)
+
+class IAnalyticsTopic(IAnalyticsObjectBase, IRootContextMixin, IAnalyticsRatedObject):
 	"""
 	An analytics topic.
 	"""
@@ -124,6 +141,7 @@ class IAnalyticsForumComment(IAnalyticsObjectBase, IRootContextMixin, IAnalytics
 	"""
 	CommentLength = Number(title=u"The character length of the comment.", default=0, required=False)
 	Comment = Object(IGeneralForumComment, title=u"The underlying comment for this object.", required=True)
+	IsReply = Bool(title=u"Whether the comment is a reply to another comment.", required=True)
 
 class IAnalyticsAssessment(IAnalyticsObjectBase, ITimeLength, IRootContextMixin):
 	"""

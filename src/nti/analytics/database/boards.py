@@ -552,6 +552,7 @@ def _resolve_comment( row, user=None, course=None ):
 	comment = CommentId.get_object( row.comment_id )
 	course = get_root_context( row.course_id ) if course is None else course
 	user = get_user( row.user_id ) if user is None else user
+	is_reply = row.parent_id is not None
 	result = None
 
 	if 		comment is not None \
@@ -564,7 +565,8 @@ def _resolve_comment( row, user=None, course=None ):
 								Flagged=row.is_flagged,
 								LikeCount=row.like_count,
 								FavoriteCount=row.favorite_count,
-								RootContext=course )
+								RootContext=course,
+								IsReply=is_reply )
 	return result
 
 def _resolve_topic( row, user=None, course=None ):
