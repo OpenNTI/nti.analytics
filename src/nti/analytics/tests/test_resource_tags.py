@@ -74,11 +74,8 @@ class TestNotes( NTIAnalyticsTestCase ):
 		assert_that( note_record.NoteLength, is_( 7 ))
 		assert_that( note_record.user, is_( user ) )
 
-		results = get_notes( user, top_level_only=True )
+		results = get_notes( user )
 		assert_that( results, has_length( 1 ))
-
-		results = get_notes( user, replies_only=True )
-		assert_that( results, has_length( 0 ))
 
 		# Reply-to
 		note2 = Note()
@@ -92,12 +89,6 @@ class TestNotes( NTIAnalyticsTestCase ):
 
 		results = get_notes( user )
 		assert_that( results, has_length( 2 ))
-
-		results = get_notes( user, top_level_only=True )
-		assert_that( results, has_length( 1 ))
-
-		results = get_notes( user, replies_only=True )
-		assert_that( results, has_length( 1 ))
 
 	@WithMockDSTrans
 	@fudge.patch( 'nti.ntiids.ntiids.find_object_with_ntiid',

@@ -56,6 +56,7 @@ from nti.analytics.database.root_context import get_root_context
 from nti.analytics.database._utils import resolve_like
 from nti.analytics.database._utils import resolve_favorite
 from nti.analytics.database._utils import get_context_path
+from nti.analytics.database._utils import get_filtered_records
 from nti.analytics.database._utils import get_ratings_for_user_objects
 from nti.analytics.database._utils import get_replies_to_user as _get_replies_to_user
 from nti.analytics.database._utils import get_user_replies_to_others as _get_user_replies_to_others
@@ -602,30 +603,39 @@ def _resolve_topic_view( row, topic=None, user=None, course=None ):
 								Duration=row.time_length )
 	return result
 
-# StudentParticipationReport
-def get_forum_comments_for_user(user, course):
-	db = get_analytics_db()
-	uid = get_user_db_id( user )
-	course_id = get_root_context_id( db, course )
-	results = db.session.query(ForumCommentsCreated).filter(
-								ForumCommentsCreated.user_id == uid,
-								ForumCommentsCreated.course_id == course_id,
-								ForumCommentsCreated.deleted == None ).all()
+def get_forum_comments_for_user( user, course=None, timestamp=None, get_deleted=False, top_level_only=False ):
+	"""
+	Fetch any comments for a user created *after* the optionally given
+	timestamp.  Optionally, can filter by course and include/exclude
+	deleted, or whether the comment is top-level.
+	"""
+	filters = []
+	if not get_deleted:
+		filters.append( ForumCommentsCreated.deleted == None )
 
-	return resolve_objects( _resolve_comment, results )
+	if top_level_only:
+		filters.append( ForumCommentsCreated.parent_id == None )
 
-def get_topics_created_for_user(user, course):
-	db = get_analytics_db()
-	uid = get_user_db_id( user )
-	course_id = get_root_context_id( db, course )
-	results = db.session.query(TopicsCreated).filter(
-								TopicsCreated.user_id == uid,
-								TopicsCreated.course_id == course_id,
-								TopicsCreated.deleted == None  ).all()
+	results = get_filtered_records( user, ForumCommentsCreated, course=course,
+								timestamp=timestamp, filters=filters )
+	return resolve_objects( _resolve_comment, results, user=user, course=course )
+
+def get_topics_created_for_user( user, course=None, timestamp=None, get_deleted=False ):
+	"""
+	Fetch any topics for a user created *after* the optionally given
+	timestamp.  Optionally, can filter by course and include/exclude
+	deleted.
+	"""
+	filters = []
+	if not get_deleted:
+		filters.append( ForumCommentsCreated.deleted == None )
+
+	results = get_filtered_records( user, TopicsCreated, course=course,
+								timestamp=timestamp, filters=filters )
 
 	return resolve_objects( _resolve_topic, results )
 
-def get_topic_views(user, topic):
+def get_topic_views( user, topic ):
 	db = get_analytics_db()
 	uid = get_user_db_id( user )
 	topic_id = _get_topic_id_from_topic( db, topic )
@@ -635,7 +645,6 @@ def get_topic_views(user, topic):
 
 	return resolve_objects( _resolve_topic_view, results, topic=topic )
 
-#TopicReport
 def get_comments_for_topic( topic ):
 	db = get_analytics_db()
 	topic_id = _get_topic_id_from_topic( db, topic )
@@ -645,8 +654,7 @@ def get_comments_for_topic( topic ):
 	return resolve_objects( _resolve_comment, results )
 
 
-#ForumReport
-def get_forum_comments(forum):
+def get_forum_comments( forum ):
 	db = get_analytics_db()
 	forum_id = _get_forum_id_from_forum( db, forum )
 	results = db.session.query(ForumCommentsCreated).filter(
@@ -654,7 +662,7 @@ def get_forum_comments(forum):
 								ForumCommentsCreated.deleted == None  ).all()
 	return resolve_objects( _resolve_comment, results )
 
-def get_topics_created_for_forum(forum):
+def get_topics_created_for_forum( forum ):
 	db = get_analytics_db()
 	forum_id = _get_forum_id_from_forum( db, forum )
 	results = db.session.query(TopicsCreated).filter(
@@ -663,8 +671,8 @@ def get_topics_created_for_forum(forum):
 	return resolve_objects( _resolve_topic, results )
 
 
-#CourseReport
-def get_forum_comments_for_course(course):
+# CourseReport
+def get_forum_comments_for_course( course ):
 	db = get_analytics_db()
 	course_id = get_root_context_id( db, course )
 	results = db.session.query(ForumCommentsCreated).filter(
@@ -672,7 +680,7 @@ def get_forum_comments_for_course(course):
 								ForumCommentsCreated.deleted == None  ).all()
 	return resolve_objects( _resolve_comment, results, course=course )
 
-def get_topics_created_for_course(course):
+def get_topics_created_for_course( course ):
 	db = get_analytics_db()
 	course_id = get_root_context_id( db, course )
 	results = db.session.query(TopicsCreated).filter(

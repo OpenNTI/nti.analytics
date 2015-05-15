@@ -37,6 +37,7 @@ from ..boards import _favorite_comment
 from ..boards import get_replies_to_user
 from ..boards import get_user_replies_to_others
 from ..boards import get_likes_for_users_topics
+from ..boards import get_forum_comments_for_user
 from ..boards import get_likes_for_users_comments
 from ..boards import get_favorites_for_users_topics
 from ..boards import get_favorites_for_users_comments
@@ -51,6 +52,7 @@ class TestComments( NTIAnalyticsTestCase ):
 
 		intids = component.getUtility( zope.intid.IIntIds )
 		course = CourseInstance()
+		course._ds_intid = 123456
 
 		# Create forum/topic
 		# Should be lazily created
@@ -110,6 +112,39 @@ class TestComments( NTIAnalyticsTestCase ):
 		results = get_replies_to_user( user1 )
 		assert_that( results, has_length( 0 ))
 		results = get_user_replies_to_others( user2 )
+		assert_that( results, has_length( 0 ))
+
+		# Basic fetch
+		results = get_forum_comments_for_user( user2 )
+		assert_that( results[0].Comment, is_( comment1 ))
+		assert_that( results[0].IsReply, is_( False ))
+		assert_that( results[0].RootContext, is_( course ))
+		assert_that( results[0].user, is_( user2 ))
+
+		# Course filter
+		results = get_forum_comments_for_user( user2, course )
+		assert_that( results, has_length( 1 ))
+		assert_that( results[0].Comment, is_( comment1 ))
+		assert_that( results[0].IsReply, is_( False ))
+		assert_that( results[0].RootContext, is_( course ))
+		assert_that( results[0].user, is_( user2 ))
+
+		# Course filtered out
+		course2 = CourseInstance()
+		course2._ds_intid = 7891011
+		results = get_forum_comments_for_user( user2, course2 )
+		assert_that( results, has_length( 0 ))
+
+		# Top level
+		results = get_forum_comments_for_user( user2, course, top_level_only=True )
+		assert_that( results, has_length( 1 ))
+		assert_that( results[0].Comment, is_( comment1 ))
+		assert_that( results[0].IsReply, is_( False ))
+		assert_that( results[0].RootContext, is_( course ))
+		assert_that( results[0].user, is_( user2 ))
+
+		# Not top level
+		results = get_forum_comments_for_user( user1, course, top_level_only=True )
 		assert_that( results, has_length( 0 ))
 
 	@WithMockDSTrans

@@ -453,11 +453,11 @@ def _resolve_note( row, user=None, course=None ):
 								IsReply=is_reply )
 	return result
 
-def get_notes( user, course=None, timestamp=None, get_deleted=False, top_level_only=False, replies_only=False ):
+def get_notes( user, course=None, timestamp=None, get_deleted=False, top_level_only=False ):
 	"""
 	Fetch any notes for a user created *after* the optionally given
 	timestamp.  Optionally, can filter by course and include/exclude
-	deleted, or whether the note is a reply (or top-level).
+	deleted, or whether the note is top-level.
 	"""
 	filters = []
 	if not get_deleted:
@@ -465,8 +465,7 @@ def get_notes( user, course=None, timestamp=None, get_deleted=False, top_level_o
 
 	if top_level_only:
 		filters.append( NotesCreated.parent_id == None )
-	elif replies_only:
-		filters.append( NotesCreated.parent_id != None )
+
 	results = get_filtered_records( user, NotesCreated, course=course,
 								timestamp=timestamp, filters=filters )
 	return resolve_objects( _resolve_note, results, user=user, course=course )
@@ -494,7 +493,7 @@ def get_user_replies_to_others( user, course=None, timestamp=None, get_deleted=F
 	results = _get_user_replies_to_others( NotesCreated, user, course, timestamp, get_deleted )
 	return resolve_objects( _resolve_note, results, user=user, course=course )
 
-def get_replies_to_user( user, course=None, timestamp=None, get_deleted=False  ):
+def get_replies_to_user( user, course=None, timestamp=None, get_deleted=False ):
 	"""
 	Fetch any replies to our user, *after* the optionally given timestamp.
 	"""
