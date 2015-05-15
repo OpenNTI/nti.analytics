@@ -14,6 +14,7 @@ from sqlalchemy import ForeignKey
 
 from sqlalchemy.schema import Sequence
 from sqlalchemy.schema import PrimaryKeyConstraint
+from sqlalchemy.orm.session import make_transient
 
 from sqlalchemy.ext.declarative import declared_attr
 
@@ -25,6 +26,8 @@ from nti.analytics.identifier import ChatId
 from nti.analytics.identifier import DFLId
 from nti.analytics.identifier import FriendsListId
 
+from nti.analytics.read_models import AnalyticsContact
+
 from nti.analytics.database import INTID_COLUMN_TYPE
 from nti.analytics.database import Base
 from nti.analytics.database import get_analytics_db
@@ -32,9 +35,12 @@ from nti.analytics.database import get_analytics_db
 from nti.analytics.database.meta_mixins import BaseTableMixin
 from nti.analytics.database.meta_mixins import DeletedMixin
 
+from nti.analytics.database.users import get_user
 from nti.analytics.database.users import get_or_create_user
 
 from nti.analytics.database._utils import get_filtered_records
+
+from . import resolve_objects
 
 class DynamicFriendsListMixin(object):
 	@declared_attr
@@ -418,12 +424,23 @@ def update_friends_list( user, nti_session, timestamp, friends_list ):
 
 	return len( members_to_add ) - len( members_to_remove )
 
+def _resolve_contact( row, user=None ):
+	make_transient( row )
+	user = get_user( row.user_id ) if user is None else user
+	contact = get_user( row.target_id )
+
+	result = None
+	if 		contact is not None \
+		and user is not None:
+		result = AnalyticsContact( Contact=contact,
+								user=user,
+								timestamp=row.timestamp )
+	return result
+
 def get_contacts_added( user, timestamp=None ):
 	"""
 	Fetch any contacts added for a user *after* the optionally given
 	timestamp.
 	"""
-	filters = []
-	results = get_filtered_records( user, ContactsAdded,
-								timestamp=timestamp, filters=filters )
-	return results
+	results = get_filtered_records( user, ContactsAdded, timestamp=timestamp )
+	return resolve_objects( _resolve_contact, results, user=user )

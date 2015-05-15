@@ -12,6 +12,7 @@ import fudge
 
 from datetime import datetime
 
+from hamcrest import is_
 from hamcrest import has_length
 from hamcrest import assert_that
 
@@ -30,7 +31,10 @@ class TestSocial( NTIAnalyticsTestCase ):
 	@WithMockDSTrans
 	@fudge.patch( 'nti.ntiids.ntiids.find_object_with_ntiid' )
 	def test_add_contact(self, mock_find_object):
+		# We lose some precision
 		now = datetime.utcnow()
+		now = now.replace( microsecond=0 )
+
 		username1 = 'new_user1'
 		user = User.create_user( username=username1, dataserver=self.ds )
 		user2 = User.create_user( username='new_user2', dataserver=self.ds )
@@ -45,9 +49,12 @@ class TestSocial( NTIAnalyticsTestCase ):
 		oid = 13
 
 		# Add friend
-		_update_friends_list( oid )
+		_update_friends_list( oid, timestamp=now )
 		results = get_contacts_added( user )
 		assert_that( results, has_length( 1 ))
+		assert_that( results[0].Contact, is_( user2 ) )
+		assert_that( results[0].user, is_( user ) )
+		assert_that( results[0].timestamp, is_( now ) )
 
 		# Remove friend
 		fl.removeFriend( user2 )

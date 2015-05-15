@@ -603,7 +603,8 @@ def _resolve_topic_view( row, topic=None, user=None, course=None ):
 								Duration=row.time_length )
 	return result
 
-def get_forum_comments_for_user( user, course=None, timestamp=None, get_deleted=False, top_level_only=False ):
+def get_forum_comments_for_user( user, course=None, timestamp=None,
+								get_deleted=False, top_level_only=False ):
 	"""
 	Fetch any comments for a user created *after* the optionally given
 	timestamp.  Optionally, can filter by course and include/exclude

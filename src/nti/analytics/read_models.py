@@ -17,6 +17,7 @@ from nti.schema.field import SchemaConfigured
 from nti.schema.fieldproperty import createDirectFieldProperties
 
 from nti.analytics.read_interfaces import IAnalyticsBlog
+from nti.analytics.read_interfaces import IAnalyticsContact
 from nti.analytics.read_interfaces import IAnalyticsBlogComment
 from nti.analytics.read_interfaces import IAnalyticsTopic
 from nti.analytics.read_interfaces import IAnalyticsTopicView
@@ -113,6 +114,11 @@ class AnalyticsBlogComment(BaseAnalyticsMixin):
 	createDirectFieldProperties(IAnalyticsBlogComment)
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticsblogcomment'
 
+@interface.implementer(IAnalyticsContact)
+@WithRepr
+class AnalyticsContact(BaseAnalyticsMixin):
+	createDirectFieldProperties(IAnalyticsContact)
+	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticscontact'
 
 
 class BaseAnalyticsDurationMixin(SchemaConfigured):
@@ -158,4 +164,5 @@ class AnalyticsAssignmentView(BaseAnalyticsDurationMixin):
 class AnalyticsTopicView(BaseAnalyticsDurationMixin):
 	createDirectFieldProperties(IAnalyticsTopicView)
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticstopicview'
+
 

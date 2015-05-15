@@ -8,6 +8,8 @@ __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
+import time
+
 from geoip import geolite2
 
 from sqlalchemy import Column
@@ -22,12 +24,17 @@ from sqlalchemy.schema import Sequence
 
 from nti.analytics.common import timestamp_type
 
+from nti.analytics.model import AnalyticsSession
+
 from nti.analytics.database import SESSION_COLUMN_TYPE
 from nti.analytics.database import Base
 from nti.analytics.database import get_analytics_db
+
 from nti.analytics.database.users import get_or_create_user
 
 from nti.analytics.database._utils import get_filtered_records
+
+from . import resolve_objects
 
 class Sessions(Base):
 	__tablename__ = 'Sessions'
@@ -155,6 +162,19 @@ def get_session_by_id( session_id ):
 		make_transient( session_record )
 	return session_record
 
+def _get_timestamp( time_val ):
+	return time.mktime( time_val.timetuple() )
+
+def _resolve_session( row ):
+	make_transient( row )
+	start_time = _get_timestamp( row.start_time )
+	end_time = _get_timestamp( row.end_time )
+
+	result = AnalyticsSession( SessionID=row.session_id,
+							SessionStartTime=start_time,
+							SessionEndTime=end_time )
+	return result
+
 def get_user_sessions( user, timestamp=None ):
 	"""
 	Fetch any sessions for a user started *after* the optionally given timestamp.
@@ -162,4 +182,5 @@ def get_user_sessions( user, timestamp=None ):
 	filters = ()
 	if timestamp is not None:
 		filters = ( Sessions.start_time >= timestamp, )
-	return get_filtered_records( user, Sessions, filters=filters )
+	results = get_filtered_records( user, Sessions, filters=filters )
+	return resolve_objects( _resolve_session, results )

@@ -17,7 +17,6 @@ from dolmen.builtins.interfaces import IUnicode
 
 from nti.analytics.interfaces import ITimeLength
 from nti.analytics.interfaces import IAnalyticsViewEvent
-from nti.analytics.interfaces import IAnalyticsObjectBase
 
 from nti.app.assessment.interfaces import IUsersCourseAssignmentHistoryItem
 
@@ -41,12 +40,20 @@ from nti.schema.field import Choice
 from nti.schema.field import Number
 from nti.schema.field import Object
 from nti.schema.field import Variant
+from nti.schema.field import DateTime
 from nti.schema.field import DecodingValidTextLine as ValidTextLine
 from nti.schema.field import IndexedIterable as TypedIterable
 
 SHARING_ENUM = ( 'PUBLIC', 'COURSE', 'OTHER', 'UNKNOWN' )
 SHARING_VOCAB = \
 	vocabulary.SimpleVocabulary([vocabulary.SimpleTerm(_x) for _x in SHARING_ENUM])
+
+class IAnalyticsObjectBase(interface.Interface):
+	# Same as our inbound IAnalyticsObjectBase, except with a Datetime timestamp.
+	timestamp = DateTime(title=u"The timestamp when this event occurred.",
+						required=False)
+	user = ValidTextLine(title='User who created the event', required=False)
+	SessionID = Number(title=u"The analytics session id.", required=False)
 
 class IRootContextMixin(interface.Interface):
 	RootContext = Variant((	Object(ICourseInstance),
@@ -230,4 +237,10 @@ class IAnalyticsFavorite( IAnalyticsRating ):
 	"""
 	Describes a recorded favorite event..
 	"""
+
+class IAnalyticsContact( IAnalyticsObjectBase ):
+	"""
+	An analytics contact added..
+	"""
+	Contact = Object(IUser, title='The contact added.', required=True)
 
