@@ -24,7 +24,7 @@ from sqlalchemy.schema import Sequence
 
 from nti.analytics.common import timestamp_type
 
-from nti.analytics.model import AnalyticsSession
+from nti.analytics.read_models import AnalyticsSession
 
 from nti.analytics.database import SESSION_COLUMN_TYPE
 from nti.analytics.database import Base
@@ -162,17 +162,17 @@ def get_session_by_id( session_id ):
 		make_transient( session_record )
 	return session_record
 
-def _get_timestamp( time_val ):
-	return time.mktime( time_val.timetuple() )
-
 def _resolve_session( row ):
 	make_transient( row )
-	start_time = _get_timestamp( row.start_time )
-	end_time = _get_timestamp( row.end_time )
+	duration = None
+	if row.end_time:
+		duration = row.end_time - row.start_time
+		duration = duration.seconds
 
 	result = AnalyticsSession( SessionID=row.session_id,
-							SessionStartTime=start_time,
-							SessionEndTime=end_time )
+							SessionStartTime=row.start_time,
+							SessionEndTime=row.end_time,
+							Duration=duration )
 	return result
 
 def get_user_sessions( user, timestamp=None ):

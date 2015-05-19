@@ -35,6 +35,7 @@ from nti.analytics.read_interfaces import IAnalyticsLike
 from nti.analytics.read_interfaces import IAnalyticsFavorite
 from nti.analytics.read_interfaces import IAnalyticsSelfAssessmentView
 from nti.analytics.read_interfaces import IAnalyticsAssignmentView
+from nti.analytics.read_interfaces import IAnalyticsSession
 
 class BaseAnalyticsMixin(SchemaConfigured):
 	__external_can_create__ = False
@@ -121,6 +122,7 @@ class AnalyticsContact(BaseAnalyticsMixin):
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticscontact'
 
 
+
 class BaseAnalyticsDurationMixin(SchemaConfigured):
 	__external_can_create__ = False
 
@@ -165,4 +167,8 @@ class AnalyticsTopicView(BaseAnalyticsDurationMixin):
 	createDirectFieldProperties(IAnalyticsTopicView)
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticstopicview'
 
-
+@interface.implementer(IAnalyticsSession)
+@WithRepr
+class AnalyticsSession(BaseAnalyticsDurationMixin):
+	createDirectFieldProperties(IAnalyticsSession)
+	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticssession'

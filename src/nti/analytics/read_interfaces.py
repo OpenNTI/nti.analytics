@@ -29,6 +29,7 @@ from nti.dataserver.contenttypes.forums.interfaces import IGeneralForumComment
 from nti.dataserver.contenttypes.forums.interfaces import ITopic
 from nti.dataserver.contenttypes.forums.interfaces import IPersonalBlogComment
 from nti.dataserver.contenttypes.forums.interfaces import IPersonalBlogEntry
+from nti.dataserver.contenttypes.forums.interfaces import IPersonalBlogEntryPost
 
 from nti.dataserver.interfaces import IUser
 from nti.dataserver.interfaces import INote
@@ -55,6 +56,14 @@ class IAnalyticsObjectBase(interface.Interface):
 						required=False)
 	user = ValidTextLine(title='User who created the event', required=False)
 	SessionID = Number(title=u"The analytics session id.", required=False)
+
+class IAnalyticsSession(interface.Interface):
+	SessionID = Number(title=u"The analytics session id.", required=False)
+	SessionStartTime = DateTime(title=u"The timestamp when this session started.",
+							required=False)
+	SessionEndTime = DateTime(title=u"The timestamp when this session ended.",
+							required=False)
+	Duration = Number(title=u"The duration of the session, in seconds.", required=False)
 
 class IRootContextMixin(interface.Interface):
 	RootContext = Variant((	Object(ICourseInstance),
@@ -132,7 +141,9 @@ class IAnalyticsBlog( IAnalyticsObjectBase, IAnalyticsRatedObject ):
 	An analytics blog.
 	"""
 	BlogLength = Number(title=u"The character length of the blog.", default=0, required=False)
-	Blog = Object(IPersonalBlogEntry, title='The underlying blog object.', required=True)
+	Blog = Variant((Object(IPersonalBlogEntry),
+					Object(IPersonalBlogEntryPost)),
+					title='The underlying blog context', required=True)
 
 class IAnalyticsBlogComment(IAnalyticsObjectBase, IAnalyticsRatedObject):
 	"""

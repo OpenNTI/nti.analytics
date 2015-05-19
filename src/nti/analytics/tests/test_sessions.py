@@ -8,12 +8,11 @@ __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
-import time
-
 from datetime import datetime
 from datetime import timedelta
 
 from hamcrest import is_
+from hamcrest import none
 from hamcrest import has_length
 from hamcrest import assert_that
 
@@ -26,9 +25,6 @@ from . import NTIAnalyticsTestCase
 from ..sessions import _add_session
 from ..sessions import get_user_sessions
 
-def _get_timestamp( time_val ):
-	return time.mktime( time_val.timetuple() )
-
 class TestSessions( NTIAnalyticsTestCase ):
 
 	@WithMockDSTrans
@@ -36,7 +32,8 @@ class TestSessions( NTIAnalyticsTestCase ):
 		start = datetime( year=2007, month=3, day=6,
 							hour=6, minute=10, second=30 )
 		start2 = start + timedelta( seconds=30 )
-		end = start + timedelta( seconds=3600 )
+		duration = 3600
+		end = start2 + timedelta( seconds=duration )
 		user = User.create_user( username='new_user1', dataserver=self.ds )
 
 		# Empty
@@ -48,8 +45,9 @@ class TestSessions( NTIAnalyticsTestCase ):
 
 		records = get_user_sessions( user )
 		assert_that( records, has_length( 1 ) )
-		assert_that( records[0].SessionStartTime, is_( _get_timestamp( start ) ) )
-		assert_that( records[0].SessionEndTime, is_( _get_timestamp( start ) ) )
+		assert_that( records[0].SessionStartTime, is_( start ) )
+		assert_that( records[0].SessionEndTime, is_( start ) )
+		assert_that( records[0].Duration, is_( 0 ) )
 
 		# 30 seconds later, a longer session
 		_add_session( user.username, '', '', start_time=start2, end_time=end )
@@ -64,10 +62,18 @@ class TestSessions( NTIAnalyticsTestCase ):
 		# Split
 		records = get_user_sessions( user, timestamp=start + timedelta( seconds=1 ) )
 		assert_that( records, has_length( 1 ) )
-		assert_that( records[0].SessionStartTime, is_( _get_timestamp( start2 ) ) )
-		assert_that( records[0].SessionEndTime, is_( _get_timestamp( end ) ) )
+		assert_that( records[0].SessionStartTime, is_( start2 ) )
+		assert_that( records[0].SessionEndTime, is_( end ) )
+		assert_that( records[0].Duration, is_( duration ) )
 
 		# Timestamp after the fact
 		records = get_user_sessions( user, timestamp=end )
 		assert_that( records, has_length( 0 ) )
 
+		# Event with no end time
+		_add_session( user.username, '', '', start_time=end, end_time=None )
+		records = get_user_sessions( user, timestamp=end )
+		assert_that( records, has_length( 1 ) )
+		assert_that( records[0].SessionStartTime, is_( end ) )
+		assert_that( records[0].SessionEndTime, none() )
+		assert_that( records[0].Duration, none() )
