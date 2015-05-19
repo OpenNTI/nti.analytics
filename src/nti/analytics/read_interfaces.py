@@ -36,6 +36,7 @@ from nti.dataserver.interfaces import IHighlight
 from nti.dataserver.interfaces import IBookmark
 
 from nti.schema.field import Bool
+from nti.schema.field import List
 from nti.schema.field import Choice
 from nti.schema.field import Number
 from nti.schema.field import Object
@@ -59,6 +60,17 @@ class IRootContextMixin(interface.Interface):
 	RootContext = Variant((	Object(ICourseInstance),
 							Object(IContentPackage)),
 							title='The underlying root context', required=True)
+
+class IAnalyticsViewEvent(IAnalyticsObjectBase, ITimeLength):
+	"""
+	A basic analytics viewing event.
+	"""
+	context_path = List(title='Context path',
+						description='List of ntiid locations describing where the event occurred.',
+						min_length=0,
+						default=None,
+						required=False,
+						value_type=ValidTextLine(title='The ntiid context segment'))
 
 class IAnalyticsViewBase( IAnalyticsViewEvent, IRootContextMixin ):
 

@@ -654,11 +654,11 @@ def _resolve_self_assessment( row, course=None ):
 		and user is not None \
 		and course is not None:
 		result = AnalyticsAssessment( Submission=submission,
-										user=user,
-										timestamp=row.timestamp,
-										RootContext=course,
-										Duration=row.time_length,
-										AssessmentId=row.assignment_id )
+									user=user,
+									timestamp=row.timestamp,
+									RootContext=course,
+									Duration=row.time_length,
+									AssessmentId=row.assignment_id )
 	return result
 
 def _resolve_assignment( row, details=None ):

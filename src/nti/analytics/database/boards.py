@@ -636,13 +636,16 @@ def get_topics_created_for_user( user, course=None, timestamp=None, get_deleted=
 
 	return resolve_objects( _resolve_topic, results )
 
-def get_topic_views( user, topic ):
-	db = get_analytics_db()
-	uid = get_user_db_id( user )
-	topic_id = _get_topic_id_from_topic( db, topic )
-	results = db.session.query(TopicsViewed).filter(
-								TopicsViewed.user_id == uid,
-								TopicsViewed.topic_id == topic_id ).all()
+def get_topic_views( user, topic=None, course=None, timestamp=None ):
+
+	filters = []
+	if topic is not None:
+		db = get_analytics_db()
+		topic_id = _get_topic_id_from_topic( db, topic )
+		filters.append( TopicsViewed.topic_id == topic_id )
+
+	results = get_filtered_records( user, TopicsViewed, course=course,
+								timestamp=timestamp, filters=filters )
 
 	return resolve_objects( _resolve_topic_view, results, topic=topic )
 

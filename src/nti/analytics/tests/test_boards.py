@@ -4,12 +4,15 @@
 $Id$
 """
 from __future__ import print_function, unicode_literals, absolute_import, division
+
 __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
 import fudge
 import zope.intid
+
+from datetime import datetime
 
 from zope import component
 
@@ -34,6 +37,7 @@ from ..boards import _like_topic
 from ..boards import _like_comment
 from ..boards import _favorite_topic
 from ..boards import _favorite_comment
+from ..boards import get_topic_views
 from ..boards import get_replies_to_user
 from ..boards import get_user_replies_to_others
 from ..boards import get_likes_for_users_topics
@@ -41,6 +45,10 @@ from ..boards import get_forum_comments_for_user
 from ..boards import get_likes_for_users_comments
 from ..boards import get_favorites_for_users_topics
 from ..boards import get_favorites_for_users_comments
+
+from ..model import TopicViewEvent
+
+from ..resource_views import _add_topic_event
 
 class TestComments( NTIAnalyticsTestCase ):
 
@@ -252,3 +260,54 @@ class TestComments( NTIAnalyticsTestCase ):
 		assert_that( results, has_length( 1 ))
 		assert_that( results[0].ObjectCreator, is_( user2 ))
 		assert_that( results[0].user, is_( user1 ))
+
+	@WithMockDSTrans
+	@fudge.patch( 'nti.ntiids.ntiids.find_object_with_ntiid' )
+	def test_topic_views(self, mock_find_object):
+		user1 = User.create_user( username='new_user1', dataserver=self.ds )
+		intids = component.getUtility( zope.intid.IIntIds )
+		course = CourseInstance()
+		course._ds_intid = 123456
+
+		# Create forum/topic
+		# Should be lazily created
+		forum = GeneralForum()
+		forum.creator = user1
+		forum.__parent__ = course
+		intids.register( forum )
+
+		topic = GeneralTopic()
+		topic.creator = user1
+		topic.__parent__ = forum
+		intids.register( topic )
+
+		# Base
+		results = get_topic_views( user1 )
+		assert_that( results, has_length( 0 ))
+
+		# One View
+		time_length = 30
+		event = TopicViewEvent()
+		event.topic_id = 'tag:nextthought.com,2011-10:topic_ntiid'
+		event.RootContextID = 'tag:nextthought.com,2011-10:course_ntiid'
+		event.timestamp = now = datetime.utcnow()
+		now = now.replace( microsecond=0 )
+		event.user = user1.username
+		event.Duration = time_length
+		mock_find_object.is_callable().returns( topic )
+		_add_topic_event( event )
+
+		results = get_topic_views( user1 )
+		assert_that( results, has_length( 1 ))
+		assert_that( results[0].Topic, is_( topic ))
+		assert_that( results[0].user, is_( user1 ))
+		#Need to fake return course...
+		#assert_that( results[0].RootContext, is_( course ))
+		assert_that( results[0].timestamp, is_( now ) )
+
+		# Query with topic_id
+		results = get_topic_views( user1, topic )
+		assert_that( results, has_length( 1 ))
+
+		results = get_topic_views( user1, event.topic_id + 'xxx' )
+		assert_that( results, has_length( 0 ))
