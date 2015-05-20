@@ -35,6 +35,7 @@ from ..blogs import _like_blog
 from ..blogs import _favorite_blog
 from ..blogs import _like_comment
 from ..blogs import _favorite_comment
+from ..blogs import get_blog_comments
 from ..blogs import get_replies_to_user
 from ..blogs import get_user_replies_to_others
 from ..blogs import get_likes_for_users_blogs
@@ -98,6 +99,8 @@ class TestBlogs( NTIAnalyticsTestCase ):
 		assert_that( results, has_length( 0 ))
 		results = get_user_replies_to_others( user1 )
 		assert_that( results, has_length( 0 ))
+		results = get_blog_comments( user2 )
+		assert_that( results, has_length( 1 ))
 
 		# Reply-to
 		comment2 = PersonalBlogComment()
@@ -124,6 +127,12 @@ class TestBlogs( NTIAnalyticsTestCase ):
 		assert_that( results[0].user, is_( user1 ))
 		assert_that( results[0].IsReply, is_( True ))
 		assert_that( results[0].CommentLength, is_( 0 ))
+
+		# Test get comments
+		results = get_blog_comments( user2 )
+		assert_that( results, has_length( 1 ))
+		results = get_blog_comments( user1 )
+		assert_that( results, has_length( 1 ))
 
 		# The reverse is nothing
 		results = get_replies_to_user( user1 )

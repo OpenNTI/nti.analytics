@@ -43,7 +43,8 @@ def _create_resource( db, resource_val ):
 	return new_resource
 
 def _get_or_create_resource( db, resource_val ):
-	found_resource = db.session.query(Resources).filter( Resources.resource_ds_id == resource_val ).first()
+	found_resource = db.session.query(Resources).filter(
+									Resources.resource_ds_id == resource_val ).first()
 	if found_resource is not None:
 		if found_resource.resource_display_name is None:
 			# Lazy populate new field
@@ -55,11 +56,13 @@ def get_resource_id( db, resource_val, create=False ):
 	if create:
 		resource = _get_or_create_resource( db, resource_val )
 	else:
-		resource = db.session.query(Resources).filter( Resources.resource_ds_id == resource_val ).first()
+		resource = db.session.query(Resources).filter(
+									Resources.resource_ds_id == resource_val ).first()
 	return resource.resource_id if resource is not None else None
 
 def get_resource_val( resource_id ):
 	""" Returns the ds resource id (probably ntiid) for the given db id. """
 	db = get_analytics_db()
-	resource_record = db.session.query( Resources ).filter( Resources.resource_id == resource_id ).first()
+	resource_record = db.session.query( Resources ).filter(
+										Resources.resource_id == resource_id ).first()
 	return resource_record.resource_ds_id

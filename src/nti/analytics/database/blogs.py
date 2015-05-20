@@ -468,6 +468,18 @@ def get_blogs( user, timestamp=None, get_deleted=False ):
 								timestamp=timestamp, filters=filters )
 	return resolve_objects( _resolve_blog, results, user=user )
 
+def get_blog_comments( user, timestamp=None, get_deleted=False ):
+	"""
+	Fetch any blog comments a user created *after* the optionally given
+	timestamp.  Optionally, can include/exclude deleted.
+	"""
+	filters = []
+	if not get_deleted:
+		filters.append( BlogCommentsCreated.deleted == None )
+	results = get_filtered_records( user, BlogCommentsCreated,
+								timestamp=timestamp, filters=filters )
+	return resolve_objects( _resolve_blog_comment, results, user=user )
+
 def get_user_replies_to_others( user, timestamp=None, get_deleted=False ):
 	"""
 	Fetch any replies our users provided, *after* the optionally given timestamp.

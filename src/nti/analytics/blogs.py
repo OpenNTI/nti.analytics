@@ -46,6 +46,7 @@ from nti.analytics.identifier import BlogId
 from nti.analytics.identifier import CommentId
 
 get_blogs = db_blogs.get_blogs
+get_blog_comments = db_blogs.get_blog_comments
 get_replies_to_user = db_blogs.get_replies_to_user
 get_user_replies_to_others = db_blogs.get_user_replies_to_others
 get_likes_for_users_blogs = db_blogs.get_likes_for_users_blogs
