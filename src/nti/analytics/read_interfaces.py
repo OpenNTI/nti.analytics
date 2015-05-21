@@ -33,6 +33,7 @@ from nti.dataserver.contenttypes.forums.interfaces import IPersonalBlogEntryPost
 
 from nti.dataserver.interfaces import IUser
 from nti.dataserver.interfaces import INote
+from nti.dataserver.interfaces import IEntity
 from nti.dataserver.interfaces import IHighlight
 from nti.dataserver.interfaces import IBookmark
 
@@ -265,5 +266,5 @@ class IAnalyticsContact( IAnalyticsObjectBase ):
 	"""
 	An analytics contact added..
 	"""
-	Contact = Object(IUser, title='The contact added.', required=True)
+	Contact = Object(IEntity, title='The contact added.', required=True)
 
