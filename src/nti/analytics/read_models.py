@@ -76,7 +76,7 @@ class AnalyticsAssignmentDetail(BaseAnalyticsMixin):
 @interface.implementer(IAnalyticsNote)
 @WithRepr
 class AnalyticsNote(BaseAnalyticsMixin):
-	createDirectFieldProperties(IAnalyticsTopic)
+	createDirectFieldProperties(IAnalyticsNote)
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticsnote'
 
 @interface.implementer(IAnalyticsHighlight)
