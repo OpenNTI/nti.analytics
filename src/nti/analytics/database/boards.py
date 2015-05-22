@@ -49,7 +49,6 @@ from nti.analytics.database.meta_mixins import CreatorMixin
 
 from nti.analytics.database.users import get_or_create_user
 from nti.analytics.database.users import get_user
-from nti.analytics.database.users import get_user_db_id
 from nti.analytics.database.root_context import get_root_context_id
 from nti.analytics.database.root_context import get_root_context
 

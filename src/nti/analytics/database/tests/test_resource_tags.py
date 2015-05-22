@@ -46,8 +46,10 @@ class TestResourceTags(AnalyticsTestBase):
 		self.context_path_flat = 'dashboard'
 		self.context_path= [ 'dashboard' ]
 
-	@fudge.patch( 'nti.analytics.database.resource_tags._get_sharing_enum' )
-	def test_note(self, mock_sharing_enum):
+	@fudge.patch( 	'nti.analytics.database.resource_tags._get_sharing_enum',
+					'dm.zope.schema.schema.Object._validate'  )
+	def test_note(self, mock_sharing_enum, mock_validate):
+		mock_validate.is_callable().returns( True )
 		mock_sharing_enum.is_callable().returns( 'UNKNOWN' )
 		context_path = None
 
@@ -156,8 +158,10 @@ class TestResourceTags(AnalyticsTestBase):
 		results = self.session.query( NotesViewed ).all()
 		assert_that( results, has_length( 1 ) )
 
-	@fudge.patch( 'nti.analytics.database.resource_tags._get_sharing_enum' )
-	def test_lazy_note_create(self, mock_sharing_enum):
+	@fudge.patch( 	'nti.analytics.database.resource_tags._get_sharing_enum',
+					'dm.zope.schema.schema.Object._validate'  )
+	def test_lazy_note_create(self, mock_sharing_enum, mock_validate):
+		mock_validate.is_callable().returns( True )
 		mock_sharing_enum.is_callable().returns( 'UNKNOWN' )
 		context_path = None
 
@@ -190,8 +194,10 @@ class TestResourceTags(AnalyticsTestBase):
 		assert_that( results, has_length( 1 ) )
 		assert_that( results[0].user_id, is_( note_db_id ))
 
-	@fudge.patch( 'nti.analytics.database.resource_tags._get_sharing_enum' )
-	def test_lazy_note_create_parent(self, mock_sharing_enum):
+	@fudge.patch( 	'nti.analytics.database.resource_tags._get_sharing_enum',
+					'dm.zope.schema.schema.Object._validate'   )
+	def test_lazy_note_create_parent(self, mock_sharing_enum, mock_validate):
+		mock_validate.is_callable().returns( True )
 		mock_sharing_enum.is_callable().returns( 'UNKNOWN' )
 
 		results = self.session.query( NotesCreated ).all()
