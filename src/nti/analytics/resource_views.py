@@ -42,13 +42,13 @@ from nti.analytics.progress import get_progress_for_resource_views
 from nti.analytics.progress import get_progress_for_video_views
 from nti.analytics.progress import get_progress_for_resource_container
 
-from nti.analytics.recorded.interfaces import VideoSkipRecordedEvent
-from nti.analytics.recorded.interfaces import BlogViewedRecordedEvent
-from nti.analytics.recorded.interfaces import NoteViewedRecordedEvent
-from nti.analytics.recorded.interfaces import VideoWatchRecordedEvent
-from nti.analytics.recorded.interfaces import TopicViewedRecordedEvent
-from nti.analytics.recorded.interfaces import CatalogViewedRecordedEvent
-from nti.analytics.recorded.interfaces import ResourceViewedRecordedEvent
+from nti.analytics.recorded import VideoSkipRecordedEvent
+from nti.analytics.recorded import BlogViewedRecordedEvent
+from nti.analytics.recorded import NoteViewedRecordedEvent
+from nti.analytics.recorded import VideoWatchRecordedEvent
+from nti.analytics.recorded import TopicViewedRecordedEvent
+from nti.analytics.recorded import CatalogViewedRecordedEvent
+from nti.analytics.recorded import ResourceViewedRecordedEvent
 
 from nti.analytics import get_factory
 from nti.analytics import get_current_username

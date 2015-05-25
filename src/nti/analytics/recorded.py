@@ -162,4 +162,3 @@ class VideoWatchRecordedEvent(VideoRecordedEvent):
 @interface.implementer(IVideoSkipRecordedEvent)
 class VideoSkipRecordedEvent(VideoRecordedEvent):
 	pass
-

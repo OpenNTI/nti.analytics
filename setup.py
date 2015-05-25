@@ -38,7 +38,6 @@ setup(
 		'nti.app.products.courseware',
 		'nti.app.products.courseware_ims',
 		'nti.app.products.gradebook',
-		'predictionio',
 		'python-geoip',
 		'python-geoip-geolite2',
 		'sqlalchemy'
