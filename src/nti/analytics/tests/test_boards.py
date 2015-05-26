@@ -129,6 +129,18 @@ class TestComments( NTIAnalyticsTestCase ):
 		assert_that( results[0].RootContext, is_( course ))
 		assert_that( results[0].user, is_( user2 ))
 
+		# Topic filter
+		results = get_user_replies_to_others( user1, topic=topic )
+		assert_that( results, has_length( 1 ))
+		assert_that( results[0].Comment, is_( comment2 ))
+		assert_that( results[0].IsReply, is_( True ))
+		assert_that( results[0].RootContext, is_( course ))
+		assert_that( results[0].user, is_( user1 ))
+
+		# Topic filtered out
+		results = get_user_replies_to_others( user1, topic=GeneralTopic() )
+		assert_that( results, has_length( 0 ))
+
 		# Course filter
 		results = get_forum_comments_for_user( user2, course )
 		assert_that( results, has_length( 1 ))

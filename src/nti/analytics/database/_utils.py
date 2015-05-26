@@ -71,13 +71,15 @@ def get_filtered_records( user, table, timestamp=None, course=None, filters=None
 		result = _do_course_and_timestamp_filtering( table, timestamp, course, filters )
 	return result
 
-def get_user_replies_to_others( table, user, course=None, timestamp=None, get_deleted=False ):
+def get_user_replies_to_others( table, user, course=None, timestamp=None, get_deleted=False, filters=None ):
 	"""
 	Fetch any replies our users provided, *after* the optionally given timestamp.
 	"""
 	user_id = get_user_db_id( user )
-	filters = [ table.parent_user_id is not None,
-				table.parent_user_id != user_id ]
+
+	filters = [] if filters is None else list(filters)
+	filters.extend( ( table.parent_user_id is not None,
+					table.parent_user_id != user_id ) )
 
 	if not get_deleted:
 		filters.append( table.deleted == None )

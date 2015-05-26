@@ -705,11 +705,20 @@ def get_topic_view_count( topic ):
 									TopicsViewed.time_length > 0 ).count()
 	return result
 
-def get_user_replies_to_others( user, course=None, timestamp=None, get_deleted=False ):
+def get_user_replies_to_others( user, course=None, timestamp=None, get_deleted=False, topic=None ):
 	"""
 	Fetch any replies our users provided, *after* the optionally given timestamp.
 	"""
-	results = _get_user_replies_to_others( ForumCommentsCreated, user, course, timestamp, get_deleted )
+	filters = None
+	if topic is not None:
+		db = get_analytics_db()
+		topic_id = _get_topic_id_from_topic( db, topic )
+		if topic_id is not None:
+			filters = ( ForumCommentsCreated.topic_id == topic_id, )
+		else:
+			return ()
+	results = _get_user_replies_to_others( ForumCommentsCreated, user, course,
+										timestamp, get_deleted, filters=filters )
 	return resolve_objects( _resolve_comment, results, user=user, course=course )
 
 def get_replies_to_user( user, course=None, timestamp=None, get_deleted=False  ):
