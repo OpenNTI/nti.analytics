@@ -45,7 +45,10 @@ USERS_ANALYTICS = QUEUE_NAME + '++users'
 # Order is important here.  We happen to know that
 # nti.async processes these queues in order.  The boards (and blogs)
 # must come before the topics must come before the comments.
-# This implementation detail is only relevant at migration time.
+# This implementation detail is only relevant at migration time,
+# or when multiple processes are running.
+# -> Since we now are idempotent and can lazy create
+# 	 parent objects in most cases, this is no longer strictly necessary.
 QUEUE_NAMES = [ SESSIONS_ANALYTICS,
 				SOCIAL_ANALYTICS,
 				ASSESSMENTS_ANALYTICS,

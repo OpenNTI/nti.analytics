@@ -61,7 +61,7 @@ from nti.analytics import RESOURCE_VIEW_ANALYTICS
 
 get_user_resource_views = db_resource_views.get_user_resource_views
 get_user_resource_views_for_ntiid = db_resource_views.get_user_resource_views_for_ntiid
-get_user_video_events = db_resource_views.get_user_video_events
+get_user_video_views = db_resource_views.get_user_video_views
 
 def _has_href_fragment( node, children ):
 	def _has_frag( node ):
@@ -110,7 +110,7 @@ def get_video_progress_for_course( user, course ):
 	"""
 	For a given user/course, return a collection of progress for all videos we have on record.
 	"""
-	resource_views = get_user_video_events( user, course )
+	resource_views = get_user_video_views( user, course )
 	view_dict = {}
 
 	for resource_view in resource_views:

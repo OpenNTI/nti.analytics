@@ -321,8 +321,10 @@ def get_user_resource_views( user, course=None, timestamp=None ):
 								course=course, timestamp=timestamp )
 	return resolve_objects( _resolve_resource_view, results, user=user, course=course )
 
-def get_user_video_events( user, course=None, timestamp=None ):
+def get_user_video_views( user, course=None, timestamp=None ):
+	filters = ( VideoEvents.video_event_type == 'WATCH', )
 	results = get_filtered_records( user, VideoEvents,
-								course=course, timestamp=timestamp )
+								course=course, timestamp=timestamp,
+								filters=filters )
 	return resolve_objects( _resolve_video_view, results, user=user, course=course )
 

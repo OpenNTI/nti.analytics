@@ -127,7 +127,7 @@ class TestCourseResources(AnalyticsTestBase):
 		assert_that( results, has_length( 2 ) )
 
 	def test_video_view(self):
-		results = db_views.get_user_video_events( test_user_ds_id, self.course_id )
+		results = db_views.get_user_video_views( test_user_ds_id, self.course_id )
 		results = [x for x in results]
 		assert_that( results, has_length( 0 ) )
 		results = self.session.query( VideoEvents ).all()
@@ -167,7 +167,7 @@ class TestCourseResources(AnalyticsTestBase):
 		assert_that( resource_view.with_transcript )
 		assert_that( resource_view.play_speed, is_( str( play_speed )) )
 
-		results = db_views.get_user_video_events( test_user_ds_id, self.course_id )
+		results = db_views.get_user_video_views( test_user_ds_id, self.course_id )
 		results = [x for x in results]
 		assert_that( results, has_length( 1 ) )
 
@@ -202,7 +202,7 @@ class TestCourseResources(AnalyticsTestBase):
 		"""
 		Validate video start events (with missing data) can be entered.
 		"""
-		results = db_views.get_user_video_events( test_user_ds_id, self.course_id )
+		results = db_views.get_user_video_views( test_user_ds_id, self.course_id )
 		results = [x for x in results]
 		assert_that( results, has_length( 0 ) )
 		results = self.session.query( VideoEvents ).all()
