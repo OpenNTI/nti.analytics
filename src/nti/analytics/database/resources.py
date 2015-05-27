@@ -26,6 +26,8 @@ class Resources(Base):
 	resource_id = Column( 'resource_id', Integer, Sequence( 'resource_id_seq' ), index=True, nullable=False, primary_key=True )
 	resource_ds_id = Column( 'resource_ds_id', NTIID_COLUMN_TYPE, index=True, nullable=False  )
 	resource_display_name = Column( 'resource_display_name', String( 128 ), unique=False, nullable=True )
+	# Only applicable for videos
+	max_time_length = Column( 'max_time_length', Integer, nullable=True )
 
 def _get_resource_display_name( resource_val ):
 	content_unit = ntiids.find_object_with_ntiid( resource_val )
@@ -33,31 +35,37 @@ def _get_resource_display_name( resource_val ):
 	return display_name
 
 
-def _create_resource( db, resource_val ):
+def _create_resource( db, resource_val, max_time_length ):
 	display_name = _get_resource_display_name( resource_val )
 	new_resource = Resources( 	resource_ds_id=resource_val,
-								resource_display_name=display_name)
+								resource_display_name=display_name,
+								max_time_length=max_time_length )
 
 	db.session.add( new_resource )
 	db.session.flush()
 	return new_resource
 
-def _get_or_create_resource( db, resource_val ):
+def _get_or_create_resource( db, resource_val, max_time_length ):
 	found_resource = db.session.query(Resources).filter(
 									Resources.resource_ds_id == resource_val ).first()
 	if found_resource is not None:
 		if found_resource.resource_display_name is None:
 			# Lazy populate new field
 			found_resource.resource_display_name = _get_resource_display_name( resource_val )
-	return found_resource or _create_resource( db, resource_val )
+	return found_resource or _create_resource( db, resource_val, max_time_length )
 
-def get_resource_id( db, resource_val, create=False ):
-	""" Returns the db id for the given ds resource ntiid. """
+def get_resource_record( db, resource_val, create=False, max_time_length=None ):
+	""" Returns the resource for the given ds resource ntiid. """
 	if create:
-		resource = _get_or_create_resource( db, resource_val )
+		resource = _get_or_create_resource( db, resource_val, max_time_length )
 	else:
 		resource = db.session.query(Resources).filter(
 									Resources.resource_ds_id == resource_val ).first()
+	return resource
+
+def get_resource_id( db, resource_val, create=False, max_time_length=None ):
+	""" Returns the db id for the given ds resource ntiid. """
+	resource = get_resource_record( db, resource_val, create, max_time_length )
 	return resource.resource_id if resource is not None else None
 
 def get_resource_val( resource_id ):

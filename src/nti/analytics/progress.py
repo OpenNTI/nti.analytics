@@ -34,7 +34,7 @@ class DefaultProgress( object ):
 	progress_id = alias('ResourceID')
 	last_modified = alias('LastModified')
 
-	def __init__(self, progress_id, progress, max_progress, has_progress=False, last_modified=None ):
+	def __init__( self, progress_id, progress, max_progress, has_progress=False, last_modified=None ):
 		self.ResourceID = progress_id
 		self.AbsoluteProgress = progress
 		self.MaxPossibleProgress = max_progress

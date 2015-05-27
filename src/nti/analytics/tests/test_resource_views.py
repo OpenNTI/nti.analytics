@@ -75,7 +75,7 @@ class TestResourceViews(AnalyticsTestBase):
 		assert_that( progress, none() )
 
 		# Video view
-		self._create_video_event( test_user_ds_id, video_ntiid )
+		self._create_video_event( test_user_ds_id, video_ntiid, max_time_length=60 )
 
 		progress = get_progress_for_ntiid( test_user_ds_id, resource_ntiid )
 		assert_that( progress, not_none() )
@@ -85,12 +85,11 @@ class TestResourceViews(AnalyticsTestBase):
 		assert_that( progress, not_none() )
 		assert_that( progress.HasProgress, is_( True ) )
 		assert_that( progress.AbsoluteProgress, is_( 30 ) )
-		assert_that( progress.MaxPossibleProgress, none() )
+		assert_that( progress.MaxPossibleProgress, is_( 60 ) )
 
 		# Dupe does not change anything
-		# Specify max time length.
 		self._create_resource_view( test_user_ds_id, resource_ntiid )
-		self._create_video_event( test_user_ds_id, video_ntiid, max_time_length=60 )
+		self._create_video_event( test_user_ds_id, video_ntiid  )
 
 		progress = get_progress_for_ntiid( test_user_ds_id, resource_ntiid )
 		assert_that( progress, not_none() )

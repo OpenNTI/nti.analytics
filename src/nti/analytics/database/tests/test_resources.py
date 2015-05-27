@@ -163,7 +163,6 @@ class TestCourseResources(AnalyticsTestBase):
 		assert_that( resource_view.video_start_time, is_( video_start_time ) )
 		assert_that( resource_view.video_end_time, is_( video_end_time ) )
 		assert_that( resource_view.time_length, is_( time_length ) )
-		assert_that( resource_view.max_time_length, is_(max_time_length) )
 		assert_that( resource_view.with_transcript )
 		assert_that( resource_view.play_speed, is_( str( play_speed )) )
 

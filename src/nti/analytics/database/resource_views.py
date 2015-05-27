@@ -44,6 +44,7 @@ from nti.analytics.database.users import get_user_db_id
 from nti.analytics.database.root_context import get_root_context_id
 from nti.analytics.database.resources import get_resource_id
 from nti.analytics.database.resources import get_resource_val
+from nti.analytics.database.resources import get_resource_record
 
 from nti.analytics.database._utils import expand_context_path
 from nti.analytics.database._utils import get_context_path
@@ -64,8 +65,6 @@ class VideoEvents(Base,ResourceViewMixin,TimeLengthMixin):
 	video_start_time = Column('video_start_time', Integer, nullable=False )
 	video_end_time = Column('video_end_time', Integer, nullable=True )
 	with_transcript = Column('with_transcript', Boolean, nullable=False )
-	max_time_length = Column( 'max_time_length', Integer, nullable=True )
-
 	video_view_id = Column('video_view_id', Integer, Sequence( 'video_view_id_seq' ), primary_key=True )
 	play_speed = Column( 'play_speed', String( 16 ), nullable=True )
 
@@ -197,7 +196,7 @@ def create_video_event(	user,
 	uid = user.user_id
 	sid = SessionId.get_id( nti_session )
 	vid = ResourceId.get_id( video_resource )
-	vid = get_resource_id( db, vid, create=True )
+	vid = get_resource_id( db, vid, create=True, max_time_length=max_time_length )
 
 	course_id = get_root_context_id( db, course, create=True )
 	timestamp = timestamp_type( timestamp )
@@ -225,7 +224,6 @@ def create_video_event(	user,
 								context_path=context_path,
 								resource_id=vid,
 								time_length=time_length,
-								max_time_length=max_time_length,
 								video_event_type=video_event_type,
 								video_start_time=video_start_time,
 								video_end_time=video_end_time,
@@ -262,9 +260,8 @@ def _resolve_resource_view( record, course=None, user=None ):
 
 	return resource_event
 
-def _resolve_video_view( record, course=None, user=None ):
+def _resolve_video_view( record, course=None, user=None, max_time_length=None ):
 	time_length = record.time_length
-	max_time_length = record.max_time_length
 
 	# We could filter out time_length = 0 events, but they
 	# may be useful to determine if 'some' progress has possibly made.
@@ -298,23 +295,31 @@ def _resolve_video_view( record, course=None, user=None ):
 	return video_event
 
 def get_user_resource_views_for_ntiid( user, resource_ntiid ):
+	results = ()
 	db = get_analytics_db()
 	user_id = get_user_db_id( user )
 	resource_id = get_resource_id( db, resource_ntiid )
-	results = db.session.query( CourseResourceViews ).filter(
-								CourseResourceViews.user_id == user_id,
-								CourseResourceViews.resource_id == resource_id ).all()
-	return resolve_objects( _resolve_resource_view, results, user=user )
+	if resource_id is not None:
+		view_records = db.session.query( CourseResourceViews ).filter(
+										CourseResourceViews.user_id == user_id,
+										CourseResourceViews.resource_id == resource_id ).all()
+		results = resolve_objects( _resolve_resource_view, view_records, user=user )
+	return results
 
 def get_user_video_views_for_ntiid( user, resource_ntiid ):
+	results = ()
 	db = get_analytics_db()
 	user_id = get_user_db_id( user )
-	resource_id = get_resource_id( db, resource_ntiid )
-	results = db.session.query( VideoEvents ).filter(
-								VideoEvents.user_id == user_id,
-								VideoEvents.resource_id == resource_id,
-								VideoEvents.video_event_type == VIDEO_WATCH ).all()
-	return resolve_objects( _resolve_video_view, results, user=user )
+	resource_record = get_resource_record( db, resource_ntiid )
+	if resource_record is not None:
+		resource_id = resource_record.resource_id
+		max_time_length = resource_record.max_time_length
+		video_records = db.session.query( VideoEvents ).filter(
+										VideoEvents.user_id == user_id,
+										VideoEvents.resource_id == resource_id,
+										VideoEvents.video_event_type == VIDEO_WATCH ).all()
+		results = resolve_objects( _resolve_video_view, video_records, user=user, max_time_length=max_time_length )
+	return results
 
 def get_user_resource_views( user, course=None, timestamp=None ):
 	results = get_filtered_records( user, CourseResourceViews,
@@ -322,7 +327,7 @@ def get_user_resource_views( user, course=None, timestamp=None ):
 	return resolve_objects( _resolve_resource_view, results, user=user, course=course )
 
 def get_user_video_views( user, course=None, timestamp=None ):
-	filters = ( VideoEvents.video_event_type == 'WATCH', )
+	filters = ( VideoEvents.video_event_type == VIDEO_WATCH, )
 	results = get_filtered_records( user, VideoEvents,
 								course=course, timestamp=timestamp,
 								filters=filters )
