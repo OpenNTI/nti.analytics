@@ -52,6 +52,8 @@ def _get_or_create_resource( db, resource_val, max_time_length ):
 		if found_resource.resource_display_name is None:
 			# Lazy populate new field
 			found_resource.resource_display_name = _get_resource_display_name( resource_val )
+		if found_resource.max_time_length is None:
+			found_resource.max_time_length = max_time_length
 	return found_resource or _create_resource( db, resource_val, max_time_length )
 
 def get_resource_record( db, resource_val, create=False, max_time_length=None ):
