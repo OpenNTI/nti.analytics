@@ -13,6 +13,7 @@
 	<include package="." file="meta.zcml" />
 
 	<!-- Include any nti.analytics plugins -->
+	<include package="z3c.autoinclude" file="meta.zcml" />
 	<includePlugins package="." />
 
 	<!-- Job runner -->
