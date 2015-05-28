@@ -31,7 +31,7 @@ from nti.dataserver.contenttypes.forums.interfaces import IPersonalBlogComment
 from nti.dataserver.contenttypes.forums.interfaces import IPersonalBlogEntry
 from nti.dataserver.contenttypes.forums.interfaces import IPersonalBlogEntryPost
 
-from nti.dataserver.interfaces import IUser
+from nti.dataserver.interfaces import IUser, IFriendsList
 from nti.dataserver.interfaces import INote
 from nti.dataserver.interfaces import IEntity
 from nti.dataserver.interfaces import IHighlight
@@ -65,6 +65,12 @@ class IAnalyticsSession(interface.Interface):
 	SessionEndTime = DateTime(title=u"The timestamp when this session ended.",
 							required=False)
 	Duration = Number(title=u"The duration of the session, in seconds.", required=False)
+
+class IAnalyticsGroup( IAnalyticsObjectBase ):
+	"""
+	An analytics group.
+	"""
+	Group = Object(IFriendsList, title=u"The underlying group for this object.", required=True)
 
 class IRootContextMixin(interface.Interface):
 	RootContext = Variant((	Object(ICourseInstance),

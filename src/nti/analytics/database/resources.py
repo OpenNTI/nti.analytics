@@ -34,7 +34,6 @@ def _get_resource_display_name( resource_val ):
 	display_name = getattr( content_unit, 'label', None )
 	return display_name
 
-
 def _create_resource( db, resource_val, max_time_length ):
 	display_name = _get_resource_display_name( resource_val )
 	new_resource = Resources( 	resource_ds_id=resource_val,
@@ -49,8 +48,8 @@ def _get_or_create_resource( db, resource_val, max_time_length ):
 	found_resource = db.session.query(Resources).filter(
 									Resources.resource_ds_id == resource_val ).first()
 	if found_resource is not None:
+		# Lazy populate fields
 		if found_resource.resource_display_name is None:
-			# Lazy populate new field
 			found_resource.resource_display_name = _get_resource_display_name( resource_val )
 		if found_resource.max_time_length is None:
 			found_resource.max_time_length = max_time_length

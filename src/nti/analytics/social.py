@@ -48,6 +48,8 @@ from nti.analytics.identifier import FriendsListId
 from nti.analytics.identifier import DFLId
 
 get_contacts_added = db_social.get_contacts_added
+get_groups_created = db_social.get_groups_created
+get_groups_joined = db_social.get_groups_joined
 
 def _get_job_queue():
 	factory = get_factory()

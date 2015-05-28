@@ -26,6 +26,7 @@ from nti.analytics.identifier import ChatId
 from nti.analytics.identifier import DFLId
 from nti.analytics.identifier import FriendsListId
 
+from nti.analytics.read_models import AnalyticsGroup
 from nti.analytics.read_models import AnalyticsContact
 
 from nti.analytics.database import INTID_COLUMN_TYPE
@@ -36,6 +37,7 @@ from nti.analytics.database.meta_mixins import BaseTableMixin
 from nti.analytics.database.meta_mixins import DeletedMixin
 
 from nti.analytics.database.users import get_user
+from nti.analytics.database.users import get_user_db_id
 from nti.analytics.database.users import get_or_create_user
 
 from nti.analytics.database._utils import get_filtered_records
@@ -195,8 +197,13 @@ def update_chat( timestamp, chat, new_members ):
 	return len( members_to_add )
 
 # DFLs
+def _get_dfl( db, dfl_ds_id ):
+	dfl = db.session.query( DynamicFriendsListsCreated ).filter(
+							DynamicFriendsListsCreated.dfl_ds_id == dfl_ds_id ).first()
+	return dfl
+
 def _get_dfl_id( db, dfl_ds_id ):
-	dfl = db.session.query(DynamicFriendsListsCreated).filter( DynamicFriendsListsCreated.dfl_ds_id == dfl_ds_id ).first()
+	dfl = _get_dfl( db, dfl_ds_id )
 	return dfl and dfl.dfl_id
 
 _dfl_exists = _get_dfl_id
@@ -226,7 +233,8 @@ def create_dynamic_friends_list(user, nti_session, dynamic_friends_list):
 def remove_dynamic_friends_list(timestamp, dfl_ds_id):
 	db = get_analytics_db()
 	timestamp = timestamp_type( timestamp )
-	db_dfl = db.session.query(DynamicFriendsListsCreated).filter( DynamicFriendsListsCreated.dfl_ds_id==dfl_ds_id ).first()
+	db_dfl = db.session.query( DynamicFriendsListsCreated ).filter(
+								DynamicFriendsListsCreated.dfl_ds_id == dfl_ds_id ).first()
 	if not db_dfl:
 		logger.info( 'DFL never created (%s)', dfl_ds_id )
 		return
@@ -234,17 +242,17 @@ def remove_dynamic_friends_list(timestamp, dfl_ds_id):
 	db_dfl.dfl_ds_id = None
 	db.session.flush()
 
-def create_dynamic_friends_member(user, nti_session, timestamp, dynamic_friends_list, new_friend ):
+def create_dynamic_friends_member( user, nti_session, timestamp, dynamic_friends_list, new_friend ):
 	db = get_analytics_db()
 	if user is None:
 		uid = None
 	else:
-		user = get_or_create_user(user )
+		user = get_or_create_user( user )
 		uid = user.user_id
 	sid = SessionId.get_id( nti_session )
 	dfl_ds_id = DFLId.get_id( dynamic_friends_list )
 	dfl_id = _get_dfl_id( db, dfl_ds_id )
-	target = get_or_create_user(new_friend )
+	target = get_or_create_user( new_friend )
 	target_id = target.user_id
 	timestamp = timestamp_type( timestamp )
 
@@ -257,8 +265,8 @@ def create_dynamic_friends_member(user, nti_session, timestamp, dynamic_friends_
 
 def _delete_dynamic_friend_list_member( db, dfl_id, target_id ):
 	friend = db.session.query( DynamicFriendsListsMemberAdded ).filter(
-										DynamicFriendsListsMemberAdded.dfl_id==dfl_id,
-										DynamicFriendsListsMemberAdded.target_id==target_id ).first()
+										DynamicFriendsListsMemberAdded.dfl_id == dfl_id,
+										DynamicFriendsListsMemberAdded.target_id == target_id ).first()
 	db.session.delete( friend )
 
 def remove_dynamic_friends_member(user, nti_session, timestamp, dynamic_friends_list, target ):
@@ -444,3 +452,51 @@ def get_contacts_added( user, timestamp=None ):
 	"""
 	results = get_filtered_records( user, ContactsAdded, timestamp=timestamp )
 	return resolve_objects( _resolve_contact, results, user=user )
+
+def _resolve_group( row, user=None ):
+	make_transient( row )
+	user = get_user( row.user_id ) if user is None else user
+	group = DFLId.get_object( row.dfl_ds_id )
+
+	result = None
+	if 		group is not None \
+		and user is not None:
+		result = AnalyticsGroup( Group=group,
+								user=user,
+								timestamp=row.timestamp )
+	return result
+
+def _resolve_group_joined( row ):
+	# Just get our group record
+	_, group_row = row
+	group = _resolve_group( group_row )
+	return group
+
+def get_groups_created( user, timestamp=None ):
+	"""
+	Fetch any groups created by a user *after* the optionally given
+	timestamp.
+	"""
+	results = get_filtered_records( user, DynamicFriendsListsCreated, timestamp=timestamp )
+	return resolve_objects( _resolve_group, results, user=user )
+
+def get_groups_joined( user, timestamp=None ):
+	"""
+	Fetch any groups joined by a user *after* the optionally given
+	timestamp.
+	"""
+	# TODO Is this what we want? Or do we want groups that
+	# the user only joined themselves?
+	# Also, any groups this guy created will not be returned.
+	results = ()
+	db = get_analytics_db()
+	user_id = get_user_db_id( user )
+	if user_id:
+		filters = [ DynamicFriendsListsMemberAdded.target_id == user_id ]
+		if timestamp is not None:
+			filters.append( DynamicFriendsListsMemberAdded.timestamp >= timestamp )
+		groups = db.session.query( 	DynamicFriendsListsMemberAdded,
+									DynamicFriendsListsCreated ).join(
+												DynamicFriendsListsCreated ).filter( *filters ).all()
+		results = resolve_objects( _resolve_group_joined, groups )
+	return results

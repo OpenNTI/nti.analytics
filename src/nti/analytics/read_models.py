@@ -16,6 +16,7 @@ from nti.common.property import alias
 from nti.schema.field import SchemaConfigured
 from nti.schema.fieldproperty import createDirectFieldProperties
 
+from nti.analytics.read_interfaces import IAnalyticsGroup
 from nti.analytics.read_interfaces import IAnalyticsBlog
 from nti.analytics.read_interfaces import IAnalyticsContact
 from nti.analytics.read_interfaces import IAnalyticsBlogComment
@@ -121,6 +122,11 @@ class AnalyticsContact(BaseAnalyticsMixin):
 	createDirectFieldProperties(IAnalyticsContact)
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticscontact'
 
+@interface.implementer(IAnalyticsGroup)
+@WithRepr
+class AnalyticsGroup(BaseAnalyticsMixin):
+	createDirectFieldProperties(IAnalyticsGroup)
+	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticsgroup'
 
 
 class BaseAnalyticsDurationMixin(SchemaConfigured):
