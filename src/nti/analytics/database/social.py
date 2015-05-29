@@ -472,15 +472,20 @@ def _resolve_group_joined( row ):
 	group = _resolve_group( group_row )
 	return group
 
-def get_groups_created( user, timestamp=None ):
+def get_groups_created( user, timestamp=None, get_deleted=False ):
 	"""
 	Fetch any groups created by a user *after* the optionally given
 	timestamp.
 	"""
-	results = get_filtered_records( user, DynamicFriendsListsCreated, timestamp=timestamp )
+	filters = None
+	if not get_deleted:
+		filters = ( DynamicFriendsListsCreated.deleted == None, )
+
+	results = get_filtered_records( user, DynamicFriendsListsCreated, timestamp=timestamp,
+								filters=filters )
 	return resolve_objects( _resolve_group, results, user=user )
 
-def get_groups_joined( user, timestamp=None, get_deleted=False ):
+def get_groups_joined( user, timestamp=None ):
 	"""
 	Fetch any groups joined by a user *after* the optionally given
 	timestamp.
@@ -495,8 +500,6 @@ def get_groups_joined( user, timestamp=None, get_deleted=False ):
 		filters = [ DynamicFriendsListsMemberAdded.target_id == user_id ]
 		if timestamp is not None:
 			filters.append( DynamicFriendsListsMemberAdded.timestamp >= timestamp )
-		if not get_deleted:
-			filters.append( DynamicFriendsListsMemberAdded.deleted == None )
 		groups = db.session.query( 	DynamicFriendsListsMemberAdded,
 									DynamicFriendsListsCreated ).join(
 												DynamicFriendsListsCreated ).filter( *filters ).all()
