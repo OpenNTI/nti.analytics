@@ -10,7 +10,16 @@ logger = __import__('logging').getLogger(__name__)
 
 import csv
 
+from functools import partial
+
+from zope.component.hooks import getSite
+from zope.component.hooks import site, setHooks
+
+from nti.analytics.database import get_analytics_db
+
 from nti.analytics.database.resources import get_resource_record
+
+from nti.site.hostpolicy import run_job_in_all_host_sites
 
 resource_filename = __import__('pkg_resources').resource_filename
 
@@ -49,3 +58,34 @@ def store_video_duration_times( db, filename ):
 					# No time data
 					missing_count += 1
 	return count, missing_count
+
+def do_evolve( context, evolve_job, generation ):
+	"""
+	Run the given migration job in all host sites, if applicable.
+	"""
+	setHooks()
+
+	db = get_analytics_db( strict=False )
+
+	# Swap out ds_intids for ntiids
+	ds_folder = context.connection.root()['nti.dataserver']
+
+	def run_job():
+		# Want to abort if our site doesnt havent db
+		db = get_analytics_db( strict=False )
+
+		if db is None:
+			return
+		else:
+			site = getSite()
+			logger.info( '[%s] Running analytics evolve (%s)',
+						site.__name__, generation )
+			evolve_job()
+
+	with site( ds_folder ):
+		if db is None:
+			# Site specific dbs
+			run_job_in_all_host_sites( partial( run_job ) )
+		else:
+			# Global db
+			evolve_job()

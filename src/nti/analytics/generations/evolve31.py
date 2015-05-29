@@ -21,9 +21,11 @@ from alembic.operations import Operations
 from alembic.migration import MigrationContext
 
 from nti.analytics.database import get_analytics_db
+
+from ._utils import do_evolve
 from ._utils import mysql_column_exists
 
-def do_evolve():
+def evolve_job():
 	setHooks()
 	db = get_analytics_db()
 
@@ -46,9 +48,9 @@ def do_evolve():
 
 	logger.info( 'Finished analytics evolve (%s)', generation )
 
-def evolve(_):
+def evolve( context ):
 	"""
 	Move our max_time_length column from VideoEvents to Resources.
 	We're losing data, but we'll re-populate later.
 	"""
-	do_evolve()
+	do_evolve( context, evolve_job, generation )

@@ -23,9 +23,11 @@ from nti.analytics.database import get_analytics_db
 from nti.analytics.database.assessments import AssignmentViews
 from nti.analytics.database.assessments import SelfAssessmentViews
 
+from ._utils import do_evolve
+
 TABLES = [ AssignmentViews, SelfAssessmentViews ]
 
-def do_evolve():
+def evolve_job():
 	setHooks()
 	db = get_analytics_db()
 
@@ -43,8 +45,8 @@ def do_evolve():
 
 	logger.info( 'Finished analytics evolve (%s)', generation )
 
-def evolve(_):
+def evolve( context ):
 	"""
 	Make our resource_id column nullable.
 	"""
-	do_evolve()
+	do_evolve( context, evolve_job, generation )

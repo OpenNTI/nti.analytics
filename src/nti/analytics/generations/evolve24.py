@@ -61,6 +61,8 @@ from nti.analytics.database.resource_tags import NotesViewed
 from nti.analytics.database.resource_views import CourseResourceViews
 from nti.analytics.database.resource_views import VideoEvents
 
+from ._utils import do_evolve
+
 INDEX_EXISTS_QUERY = 	"""
 						SHOW INDEX FROM Analytics.%s
 						WHERE KEY_NAME = '%s';
@@ -123,7 +125,7 @@ def _column_exists( con, table, column ):
 	res = con.execute( COLUMN_EXISTS_QUERY % ( table, column ) )
 	return res.scalar()
 
-def do_evolve():
+def evolve_job():
 	setHooks()
 
 	db = get_analytics_db()
@@ -153,4 +155,4 @@ def evolve(context):
 	"""
 	Add timestamp indexes. Add 'is_late' column to assignments.
 	"""
-	do_evolve()
+	do_evolve( context, evolve_job, generation )

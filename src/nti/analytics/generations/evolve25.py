@@ -25,6 +25,8 @@ from nti.analytics.database.blogs import BlogCommentsCreated
 from nti.analytics.database.boards import ForumCommentsCreated
 from nti.analytics.database.resource_tags import NotesCreated
 
+from ._utils import do_evolve
+
 COLUMN_EXISTS_QUERY = 	"""
 						SELECT *
 						FROM information_schema.COLUMNS
@@ -37,7 +39,7 @@ def _column_exists( con, table, column ):
 	res = con.execute( COLUMN_EXISTS_QUERY % ( table, column ) )
 	return res.scalar()
 
-def do_evolve():
+def evolve_job():
 	setHooks()
 
 	db = get_analytics_db()
@@ -93,8 +95,8 @@ def do_evolve():
 
 	logger.info( 'Finished analytics evolve (%s) (updated_records=%s)', generation, updated )
 
-def evolve( _ ):
+def evolve( context ):
 	"""
 	Add 'parent_user_id' column to replyTo records, with data.
 	"""
-	do_evolve()
+	do_evolve( context, evolve_job, generation )

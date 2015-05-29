@@ -31,6 +31,8 @@ from nti.analytics.database.resource_tags import NotesCreated
 from nti.analytics.database.resource_tags import NoteLikes
 from nti.analytics.database.resource_tags import NoteFavorites
 
+from ._utils import do_evolve
+
 TABLES = [ ( ForumCommentLikes, ForumCommentsCreated, 'comment_id', ForumCommentsCreated.comment_id ),
 			( ForumCommentFavorites, ForumCommentsCreated, 'comment_id', ForumCommentsCreated.comment_id ),
 			( TopicLikes, TopicsCreated, 'topic_id', TopicsCreated.topic_id ),
@@ -50,7 +52,7 @@ def _column_exists( con, table, column ):
 	res = con.execute( COLUMN_EXISTS_QUERY % ( table, column ) )
 	return res.scalar()
 
-def do_evolve():
+def evolve_job():
 	setHooks()
 
 	db = get_analytics_db()
@@ -88,8 +90,8 @@ def do_evolve():
 
 	logger.info( 'Finished analytics evolve (%s) (updated_records=%s)', generation, updated )
 
-def evolve( _ ):
+def evolve( context ):
 	"""
 	Add 'course_id' column to denormalize likes/favorites.
 	"""
-	do_evolve()
+	do_evolve( context, evolve_job, generation )

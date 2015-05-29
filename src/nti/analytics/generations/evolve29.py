@@ -24,11 +24,12 @@ from nti.analytics.database import get_analytics_db
 from nti.analytics.database.assessments import AssignmentViews
 from nti.analytics.database.assessments import SelfAssessmentViews
 
+from ._utils import do_evolve
 from ._utils import mysql_column_exists
 
 TABLES = [ AssignmentViews, SelfAssessmentViews ]
 
-def do_evolve():
+def evolve_job():
 	setHooks()
 
 	db = get_analytics_db()
@@ -49,8 +50,8 @@ def do_evolve():
 
 	logger.info( 'Finished analytics evolve (%s)', generation )
 
-def evolve( _ ):
+def evolve( context ):
 	"""
 	Add 'assignment_id' column to assessment view tables.
 	"""
-	do_evolve()
+	do_evolve( context, evolve_job, generation )
