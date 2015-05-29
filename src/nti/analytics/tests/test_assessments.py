@@ -42,13 +42,13 @@ class TestAssessments( NTIAnalyticsTestCase ):
 		question_set_id = 'tag:nextthought.com,2011-10:OU-NAQ-CLC3403_LawAndJustice.naq.set.qset:QUIZ1_aristotle'
 		course = CourseInstance()
 		mock_find_object.is_callable().returns( course )
-		event = SelfAssessmentViewEvent( ResourceId=None,
+		event = SelfAssessmentViewEvent( ContentId=None,
 										user=user.username,
 										RootContextID='ntiid:fudge-lookup',
 										context_path=None,
 										Duration=time_length,
 										timestamp=timestamp,
-										QuestionSetId=question_set_id )
+										ResourceId=question_set_id )
 
 		results = get_self_assessment_views( user )
 		assert_that( results, has_length( 0 ))
@@ -85,13 +85,13 @@ class TestAssessments( NTIAnalyticsTestCase ):
 		course = CourseInstance()
 		course._ds_intid = 1111
 		mock_find_object.is_callable().returns( course )
-		event = AssignmentViewEvent( ResourceId=None,
+		event = AssignmentViewEvent( ContentId=None,
 									user=user.username,
 									RootContextID='ntiid:fudge-lookup',
 									context_path=None,
 									Duration=time_length,
 									timestamp=timestamp,
-									AssignmentId=assignment_id )
+									ResourceId=assignment_id )
 
 		results = get_assignment_views( user )
 		assert_that( results, has_length( 0 ))

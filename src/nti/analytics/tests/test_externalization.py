@@ -105,13 +105,13 @@ resource_kwargs = { 'user':user,
 resource_event = ResourceEvent( **resource_kwargs )
 
 self_assess_kwargs = dict( **resource_kwargs )
-self_assess_kwargs['ResourceId'] = self_assess_kwargs.pop( 'resource_id' )
-self_assess_kwargs['QuestionSetId'] = question_set_id = 'tag:nextthought,2011-05-01-selfasssessss1'
+self_assess_kwargs['ContentId'] = self_assess_kwargs.pop( 'resource_id' )
+self_assess_kwargs['ResourceId'] = question_set_id = 'tag:nextthought,2011-05-01-selfasssessss1'
 self_assessment_event = SelfAssessmentViewEvent( **self_assess_kwargs )
 
 assignment_kwargs = dict( **resource_kwargs )
 assignment_kwargs.pop( 'resource_id' )
-assignment_kwargs['AssignmentId'] = assignment_id = 'tag:nextthought,2011-05-01-assign1'
+assignment_kwargs['ResourceId'] = assignment_id = 'tag:nextthought,2011-05-01-assign1'
 assignment_event = AssignmentViewEvent( **assignment_kwargs )
 
 video_start_time = 13
@@ -279,7 +279,7 @@ class TestResourceEvents(NTIAnalyticsTestCase):
 		assert_that(new_io, has_property( 'timestamp', is_( timestamp )))
 		assert_that(new_io, has_property( 'RootContextID', is_( course )))
 		assert_that(new_io, has_property( 'context_path', is_( context_path )))
-		assert_that(new_io, has_property( 'ResourceId', is_( resource_id )))
+		assert_that(new_io, has_property( 'ContentId', is_( resource_id )))
 		assert_that(new_io, has_property( 'Duration', is_( time_length )))
 		assert_that( new_io, has_property( 'QuestionSetId', is_( question_set_id )))
 		assert_that( new_io, is_( SelfAssessmentViewEvent ) )
@@ -300,7 +300,7 @@ class TestResourceEvents(NTIAnalyticsTestCase):
 		assert_that(new_io, has_property( 'timestamp', is_( timestamp )))
 		assert_that(new_io, has_property( 'RootContextID', is_( course )))
 		assert_that(new_io, has_property( 'context_path', is_( context_path )))
-		assert_that(new_io, has_property( 'ResourceId', none()))
+		assert_that(new_io, has_property( 'ContentId', none()))
 		assert_that(new_io, has_property( 'Duration', is_( time_length )))
 		assert_that( new_io, has_property( 'AssignmentId', is_( assignment_id )))
 		assert_that( new_io, is_( AssignmentViewEvent ) )

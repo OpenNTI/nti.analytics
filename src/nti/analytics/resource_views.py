@@ -323,9 +323,8 @@ def _add_catalog_event( event, nti_session=None ):
 	notify(CatalogViewedRecordedEvent(user=user, context=course, timestamp=event.timestamp,
 									  session=nti_session))
 
-def _do_resource_view( to_call, event, nti_session=None, *args ):
+def _do_resource_view( to_call, event, resource_id, nti_session=None, *args ):
 	user = get_entity( event.user )
-	resource_id = event.resource_id
 	course = _get_course( event )
 
 	to_call( user, nti_session, event.timestamp, course,
@@ -356,7 +355,7 @@ def _add_resource_event( event, nti_session=None ):
 		return
 
 	_do_resource_view( db_resource_views.create_course_resource_view,
-						event, nti_session )
+						event, event.resource_id, nti_session )
 
 def _add_self_assessment_event( event, nti_session=None ):
 	try:
@@ -365,7 +364,7 @@ def _add_self_assessment_event( event, nti_session=None ):
 		logger.warn( 'Error while validating event (%s)', e )
 		return
 	_do_resource_view( db_assess_views.create_self_assessment_view,
-					event, nti_session, event.QuestionSetId )
+					event, event.content_id, nti_session, event.QuestionSetId )
 
 def _add_assignment_event( event, nti_session=None ):
 	try:
@@ -374,7 +373,7 @@ def _add_assignment_event( event, nti_session=None ):
 		logger.warn( 'Error while validating event (%s)', e )
 		return
 	_do_resource_view( db_assess_views.create_assignment_view,
-					event, nti_session, event.AssignmentId )
+					event, event.content_id, nti_session, event.AssignmentId )
 
 def _add_video_event( event, nti_session=None ):
 	try:

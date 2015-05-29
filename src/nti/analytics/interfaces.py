@@ -93,19 +93,19 @@ class IResourceEvent(IAnalyticsViewEvent, ICourseEvent):
 	"""
 	resource_id = ValidTextLine(title="The resource ntiid.")
 
-class ISelfAssessmentViewEvent(IAnalyticsViewEvent, ICourseEvent):
+class IAssessmentViewEvent( IAnalyticsViewEvent, ICourseEvent ):
+	ResourceId = ValidTextLine(title="The assessment ntiid.", required=True)
+	ContentId = ValidTextLine(title="The resource page ntiid.", required=False)
+
+class ISelfAssessmentViewEvent( IAssessmentViewEvent ):
 	"""
 	Describes a self-assessment viewing event.
 	"""
-	QuestionSetId = ValidTextLine(title="The question set ntiid.", required=True)
-	ResourceId = ValidTextLine(title="The resource ntiid.", required=False)
 
-class IAssignmentViewEvent(IAnalyticsViewEvent, ICourseEvent):
+class IAssignmentViewEvent( IAssessmentViewEvent ):
 	"""
 	Describes an assignment viewing event.
 	"""
-	AssignmentId = ValidTextLine(title="The assignment ntiid.", required=True)
-	ResourceId = ValidTextLine(title="The resource ntiid.", required=False)
 
 class INoteViewEvent(IAnalyticsViewEvent, ICourseEvent):
 	"""

@@ -81,7 +81,8 @@ class ResourceEvent(RootContextEvent):
 class SelfAssessmentViewEvent(RootContextEvent):
 	createDirectFieldProperties(ISelfAssessmentViewEvent)
 
-	resource_id = alias('ResourceId')
+	resource_id = QuestionSetId = alias('ResourceId')
+	content_id = alias('ContentId')
 
 	__external_class_name__ = "SelfAssessmentViewEvent"
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.selfassessmentviewevent'
@@ -90,7 +91,8 @@ class SelfAssessmentViewEvent(RootContextEvent):
 class AssignmentViewEvent(RootContextEvent):
 	createDirectFieldProperties(IAssignmentViewEvent)
 
-	resource_id = alias('ResourceId')
+	resource_id = AssignmentId = alias('ResourceId')
+	content_id = alias('ContentId')
 
 	__external_class_name__ = "AssignmentViewEvent"
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.assignmentviewevent'
