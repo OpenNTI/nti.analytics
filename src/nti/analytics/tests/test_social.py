@@ -10,6 +10,8 @@ logger = __import__('logging').getLogger(__name__)
 
 import fudge
 
+from calendar import timegm as _calendar_timegm
+
 from datetime import datetime
 
 from hamcrest import is_
@@ -79,6 +81,7 @@ class TestSocial( NTIAnalyticsTestCase ):
 		user2 = User.create_user( username='new_user2', dataserver=self.ds )
 		fl = DynamicFriendsList( username=username1 )
 		fl.creator = user
+		fl.createdTime = _calendar_timegm( now.timetuple() )
 		fl._ds_intid = 123456
 		oid = 13
 
@@ -102,7 +105,7 @@ class TestSocial( NTIAnalyticsTestCase ):
 		assert_that( results, has_length( 0 ))
 
 		# Add friend
-		_add_dfl_member( user2, fl )
+		_add_dfl_member( user2, fl, timestamp=now )
 		results = get_groups_created( user )
 		assert_that( results, has_length( 1 ))
 
