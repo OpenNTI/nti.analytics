@@ -12,23 +12,9 @@ logger = __import__('logging').getLogger(__name__)
 
 generation = 32
 
-from zope.component.hooks import setHooks
-from nti.analytics.database import get_analytics_db
-
-from ._utils import store_video_duration_times
-
-def do_evolve():
-	setHooks()
-	db = get_analytics_db()
-	# Only want this for Janux.
-	# This should be a script.
-	count, missing = store_video_duration_times( db, 'video_data_05152015.csv' )
-
-	logger.info( 'Finished analytics evolve (%s) (count=%s) (missing=%s)',
-				generation, count, missing )
-
 def evolve(_):
 	"""
 	Store max_time_length video values from csv file.
+	Now we use the nti_analytics_video_duration script.
 	"""
-	do_evolve()
+	pass
