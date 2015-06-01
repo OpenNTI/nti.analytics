@@ -67,6 +67,7 @@ def _get_comments_queue():
 
 get_topics_created_for_user = db_boards.get_topics_created_for_user
 get_forum_comments_for_user = db_boards.get_forum_comments_for_user
+get_forum_comments = db_boards.get_forum_comments
 get_topic_views = db_boards.get_topic_views
 get_topic_view_count = db_boards.get_topic_view_count
 get_replies_to_user = db_boards.get_replies_to_user

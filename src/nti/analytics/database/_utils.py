@@ -62,13 +62,17 @@ def get_filtered_records( user, table, timestamp=None, course=None, filters=None
 	Get the filtered records for the given user, table, timestamp (and course).
 	"""
 	result = []
-	user_id = get_user_db_id( user )
+	filters = list( filters ) if filters else []
 
-	if user_id is not None:
-		filters = list( filters ) if filters else []
-		filters.append( table.user_id == user_id )
+	if user is not None:
+		user_id = get_user_db_id( user )
+		if user_id is not None:
+			filters.append( table.user_id == user_id )
+		else:
+			# If we have a user, but no user_id (return empty)
+			return result
 
-		result = _do_course_and_timestamp_filtering( table, timestamp, course, filters )
+	result = _do_course_and_timestamp_filtering( table, timestamp, course, filters )
 	return result
 
 def get_user_replies_to_others( table, user, course=None, timestamp=None, get_deleted=False, filters=None ):

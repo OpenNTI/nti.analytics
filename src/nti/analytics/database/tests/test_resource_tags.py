@@ -70,7 +70,7 @@ class TestResourceTags(AnalyticsTestBase):
 		db_tags.create_note( test_user_ds_id,
 							test_session_id, self.course_id, my_note )
 
-		results = db_tags.get_notes_created_for_course( self.course_id )
+		results = db_tags.get_notes( course=self.course_id )
 		assert_that( results, has_length( 1 ) )
 
 		note = self.session.query(NotesCreated).one()
@@ -106,7 +106,7 @@ class TestResourceTags(AnalyticsTestBase):
 		results = self.session.query(NotesCreated).all()
 		assert_that( results, has_length( 1 ) )
 
-		results = db_tags.get_notes_created_for_course( self.course_id )
+		results = db_tags.get_notes( course=self.course_id )
 		assert_that( results, has_length( 0 ) )
 
 		note = self.session.query(NotesCreated).one()
@@ -187,7 +187,7 @@ class TestResourceTags(AnalyticsTestBase):
 
 		note_db_id = get_user_db_id( note_creator )
 
-		results = db_tags.get_notes_created_for_course( self.course_id )
+		results = db_tags.get_notes( course=self.course_id )
 		assert_that( results, has_length( 1 ) )
 
 		results = self.session.query(NotesCreated).all()
@@ -225,7 +225,7 @@ class TestResourceTags(AnalyticsTestBase):
 		note_db_id = get_user_db_id( '9999' )
 		parent_note_db_id = get_user_db_id( parent_note_creator )
 
-		results = db_tags.get_notes_created_for_course( self.course_id )
+		results = db_tags.get_notes( course=self.course_id )
 		assert_that( results, has_length( 2 ) )
 
 		results = self.session.query(NotesCreated).all()

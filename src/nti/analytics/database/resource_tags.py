@@ -453,7 +453,7 @@ def _resolve_note( row, user=None, course=None ):
 								IsReply=is_reply )
 	return result
 
-def get_notes( user, course=None, timestamp=None, get_deleted=False, top_level_only=False ):
+def get_notes( user=None, course=None, timestamp=None, get_deleted=False, top_level_only=False ):
 	"""
 	Fetch any notes for a user created *after* the optionally given
 	timestamp.  Optionally, can filter by course and include/exclude
@@ -498,14 +498,6 @@ def get_replies_to_user( user, course=None, timestamp=None, get_deleted=False ):
 	Fetch any replies to our user, *after* the optionally given timestamp.
 	"""
 	results = _get_replies_to_user( NotesCreated, user, course, timestamp, get_deleted )
-	return resolve_objects( _resolve_note, results, course=course )
-
-def get_notes_created_for_course(course):
-	db = get_analytics_db()
-	course_id = get_root_context_id( db, course )
-	results = db.session.query(NotesCreated).filter(
-								NotesCreated.course_id == course_id,
-								NotesCreated.deleted == None  ).all()
 	return resolve_objects( _resolve_note, results, course=course )
 
 def _resolve_highlight( row, user=None, course=None ):
