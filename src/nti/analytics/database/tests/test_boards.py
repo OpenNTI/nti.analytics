@@ -349,7 +349,7 @@ class TestForumComments(AnalyticsTestBase):
 	@fudge.patch( 'dm.zope.schema.schema.Object._validate' )
 	def test_comments(self, mock_validate):
 		mock_validate.is_callable().returns( True )
-		results = db_boards.get_forum_comments_for_user( test_user_ds_id, self.course_id )
+		results = db_boards.get_forum_comments( test_user_ds_id, self.course_id )
 		results = [x for x in results]
 		assert_that( results, has_length( 0 ) )
 
@@ -363,11 +363,11 @@ class TestForumComments(AnalyticsTestBase):
 		db_boards.create_forum_comment( test_user_ds_id, test_session_id, self.course_id,
 										self.topic, my_comment )
 
-		results = db_boards.get_forum_comments_for_user( test_user_ds_id, self.course_id )
+		results = db_boards.get_forum_comments( test_user_ds_id, self.course_id )
 		results = [x for x in results]
 		assert_that( results, has_length( 1 ) )
 
-		results = db_boards.get_forum_comments_for_course( self.course_id )
+		results = db_boards.get_forum_comments( course=self.course_id )
 		results = [x for x in results]
 		assert_that( results, has_length( 1 ) )
 
@@ -387,7 +387,7 @@ class TestForumComments(AnalyticsTestBase):
 	@fudge.patch( 'dm.zope.schema.schema.Object._validate' )
 	def test_idempotent(self, mock_validate):
 		mock_validate.is_callable().returns( True )
-		results = db_boards.get_forum_comments_for_user( test_user_ds_id, self.course_id )
+		results = db_boards.get_forum_comments( test_user_ds_id, self.course_id )
 		results = [x for x in results]
 		assert_that( results, has_length( 0 ) )
 
@@ -396,14 +396,14 @@ class TestForumComments(AnalyticsTestBase):
 		db_boards.create_forum_comment( test_user_ds_id, test_session_id, self.course_id,
 										self.topic, my_comment )
 
-		results = db_boards.get_forum_comments_for_user( test_user_ds_id, self.course_id )
+		results = db_boards.get_forum_comments( test_user_ds_id, self.course_id )
 		results = [x for x in results]
 		assert_that( results, has_length( 1 ) )
 
 		db_boards.create_forum_comment( test_user_ds_id, test_session_id, self.course_id,
 										self.topic, my_comment )
 
-		results = db_boards.get_forum_comments_for_user( test_user_ds_id, self.course_id )
+		results = db_boards.get_forum_comments( test_user_ds_id, self.course_id )
 		results = [x for x in results]
 		assert_that( results, has_length( 1 ) )
 
@@ -412,7 +412,7 @@ class TestForumComments(AnalyticsTestBase):
 		mock_validate.is_callable().returns( True )
 		results = self.session.query( ForumCommentsCreated ).all()
 		assert_that( results, has_length( 0 ) )
-		results = db_boards.get_forum_comments_for_user( test_user_ds_id, self.course_id )
+		results = db_boards.get_forum_comments( test_user_ds_id, self.course_id )
 		results = [x for x in results]
 		assert_that( results, has_length( 0 ) )
 
@@ -426,11 +426,11 @@ class TestForumComments(AnalyticsTestBase):
 										test_session_id, self.course_id,
 										self.topic, my_comment )
 
-		results = db_boards.get_forum_comments_for_user( test_user_ds_id, self.course_id )
+		results = db_boards.get_forum_comments( test_user_ds_id, self.course_id )
 		results = [x for x in results]
 		assert_that( results, has_length( 1 ) )
 
-		results = db_boards.get_forum_comments_for_course( self.course_id )
+		results = db_boards.get_forum_comments( course=self.course_id )
 		results = [x for x in results]
 		assert_that( results, has_length( 1 ) )
 
@@ -448,7 +448,7 @@ class TestForumComments(AnalyticsTestBase):
 	@fudge.patch( 'dm.zope.schema.schema.Object._validate' )
 	def test_multiple_comments(self, mock_validate):
 		mock_validate.is_callable().returns( True )
-		results = db_boards.get_forum_comments_for_user( test_user_ds_id, self.course_id )
+		results = db_boards.get_forum_comments( test_user_ds_id, self.course_id )
 		results = [x for x in results]
 		assert_that( results, has_length( 0 ) )
 
@@ -465,23 +465,23 @@ class TestForumComments(AnalyticsTestBase):
 										self.course_id,
 										self.topic, new_comment2 )
 
-		results = db_boards.get_forum_comments_for_user( test_user_ds_id, self.course_id )
+		results = db_boards.get_forum_comments( test_user_ds_id, self.course_id )
 		results = [x for x in results]
 		assert_that( results, has_length( 2 ) )
 
-		results = db_boards.get_forum_comments_for_course( self.course_id )
+		results = db_boards.get_forum_comments( course=self.course_id )
 		results = [x for x in results]
 		assert_that( results, has_length( 2 ) )
 
 		#Deleted comments not returned
 		db_boards.delete_forum_comment( datetime.now(), 20 )
 
-		results = db_boards.get_forum_comments_for_user( test_user_ds_id, self.course_id )
+		results = db_boards.get_forum_comments( test_user_ds_id, self.course_id )
 		results = [x for x in results]
 		assert_that( results, has_length( 1 ) )
 		assert_that( results[0].Comment, new_comment2 )
 
-		results = db_boards.get_forum_comments_for_course( self.course_id )
+		results = db_boards.get_forum_comments( course=self.course_id )
 		results = [x for x in results]
 		assert_that( results, has_length( 1 ) )
 		assert_that( results[0].Comment, new_comment2 )
@@ -489,7 +489,7 @@ class TestForumComments(AnalyticsTestBase):
 	@fudge.patch( 'dm.zope.schema.schema.Object._validate' )
 	def test_multiple_comments_users(self, mock_validate):
 		mock_validate.is_callable().returns( True )
-		results = db_boards.get_forum_comments_for_user( test_user_ds_id, self.course_id )
+		results = db_boards.get_forum_comments( test_user_ds_id, self.course_id )
 		results = [x for x in results]
 		assert_that( results, has_length( 0 ) )
 
@@ -524,12 +524,12 @@ class TestForumComments(AnalyticsTestBase):
 										self.topic, new_comment4 )
 
 		# Only non-deleted comment for user in course
-		results = db_boards.get_forum_comments_for_user( test_user_ds_id, self.course_id )
+		results = db_boards.get_forum_comments( test_user_ds_id, self.course_id )
 		results = [x for x in results]
 		assert_that( results, has_length( 1 ) )
 		assert_that( results[0].Comment, new_comment2 )
 
-		results = db_boards.get_forum_comments_for_course( self.course_id )
+		results = db_boards.get_forum_comments( course=self.course_id )
 		results = [x for x in results]
 		assert_that( results, has_length( 2 ) )
 		results = [x.Comment for x in results]
@@ -598,7 +598,7 @@ class TestLazyCreate(AnalyticsTestBase):
 	@fudge.patch( 'dm.zope.schema.schema.Object._validate' )
 	def test_comments(self, mock_validate):
 		mock_validate.is_callable().returns( True )
-		results = db_boards.get_forum_comments_for_user( test_user_ds_id, self.course_id )
+		results = db_boards.get_forum_comments( test_user_ds_id, self.course_id )
 		results = [x for x in results]
 		assert_that( results, has_length( 0 ) )
 
@@ -616,11 +616,11 @@ class TestLazyCreate(AnalyticsTestBase):
 		db_boards.create_forum_comment( test_user_ds_id, test_session_id, self.course_id,
 										self.topic, my_comment )
 
-		results = db_boards.get_forum_comments_for_user( test_user_ds_id, self.course_id )
+		results = db_boards.get_forum_comments( test_user_ds_id, self.course_id )
 		results = [x for x in results]
 		assert_that( results, has_length( 1 ) )
 
-		results = db_boards.get_forum_comments_for_course( self.course_id )
+		results = db_boards.get_forum_comments( course=self.course_id )
 		results = [x for x in results]
 		assert_that( results, has_length( 1 ) )
 

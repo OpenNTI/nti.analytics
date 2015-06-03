@@ -659,7 +659,7 @@ def get_comments_for_topic( topic ):
 	return resolve_objects( _resolve_comment, results )
 
 
-def get_forum_comments( forum ):
+def get_comments_for_forum( forum ):
 	db = get_analytics_db()
 	forum_id = _get_forum_id_from_forum( db, forum )
 	results = db.session.query(ForumCommentsCreated).filter(
@@ -674,16 +674,6 @@ def get_topics_created_for_forum( forum ):
 								TopicsCreated.forum_id == forum_id,
 								TopicsCreated.deleted == None  ).all()
 	return resolve_objects( _resolve_topic, results )
-
-
-# CourseReport
-def get_forum_comments_for_course( course ):
-	db = get_analytics_db()
-	course_id = get_root_context_id( db, course )
-	results = db.session.query(ForumCommentsCreated).filter(
-								ForumCommentsCreated.course_id == course_id,
-								ForumCommentsCreated.deleted == None  ).all()
-	return resolve_objects( _resolve_comment, results, course=course )
 
 def get_topics_created_for_course( course ):
 	db = get_analytics_db()
