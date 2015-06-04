@@ -11,6 +11,8 @@ logger = __import__('logging').getLogger(__name__)
 
 from collections import OrderedDict
 
+from nti.contenttypes.courses.interfaces import ICourseSubInstance
+
 from nti.analytics.read_models import AnalyticsLike
 from nti.analytics.read_models import AnalyticsFavorite
 
@@ -44,10 +46,21 @@ def _do_course_and_timestamp_filtering( table, timestamp=None, course=None, filt
 
 	if course is not None:
 		course_id = get_root_context_id( db, course )
-		if course_id is not None:
-			filters.append( table.course_id == course_id )
+		course_ids = [ course_id ]
+
+		# For courses with super-instances (e.g. History)
+		# we want to aggregate any data that may have been
+		# pinned on the super instance as well. I think we
+		# would want this for any scenario.
+		if ICourseSubInstance.providedBy( course ):
+			parent = course.__parent__.__parent__
+			parent_id = get_root_context_id( db, parent )
+			course_ids.append( parent_id )
+
+		if course_ids:
+			filters.append( table.course_id.in_( course_ids ) )
 		else:
-			# If we have course, but no course_id (return empty)
+			# If we have a course, but no course_id (return empty)
 			return result
 
 	if timestamp is not None:
