@@ -459,7 +459,7 @@ def _resolve_note( row, user=None, course=None, parent_user=None ):
 								RepliedToUser=parent_user )
 	return result
 
-def get_notes( user=None, course=None, timestamp=None, get_deleted=False, top_level_only=False ):
+def get_notes( user=None, course=None, timestamp=None, get_deleted=False, replies_only=False, top_level_only=False ):
 	"""
 	Fetch any notes for a user created *after* the optionally given
 	timestamp.  Optionally, can filter by course and include/exclude
@@ -469,11 +469,14 @@ def get_notes( user=None, course=None, timestamp=None, get_deleted=False, top_le
 	if not get_deleted:
 		filters.append( NotesCreated.deleted == None )
 
+	if replies_only and top_level_only:
+		return ()
+
 	if top_level_only:
 		filters.append( NotesCreated.parent_id == None )
 
 	results = get_filtered_records( user, NotesCreated, course=course,
-								timestamp=timestamp, filters=filters )
+								timestamp=timestamp, replies_only=replies_only, filters=filters )
 	return resolve_objects( _resolve_note, results, user=user, course=course )
 
 def get_likes_for_users_notes( user, course=None, timestamp=None ):

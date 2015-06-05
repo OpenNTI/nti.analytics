@@ -70,7 +70,7 @@ def _do_course_and_timestamp_filtering( table, timestamp=None, course=None, filt
 
 	return result
 
-def get_filtered_records( user, table, timestamp=None, course=None, filters=None ):
+def get_filtered_records( user, table, timestamp=None, course=None, replies_only=False, filters=None ):
 	"""
 	Get the filtered records for the given user, table, timestamp (and course).
 	"""
@@ -85,6 +85,9 @@ def get_filtered_records( user, table, timestamp=None, course=None, filters=None
 			# If we have a user, but no user_id (return empty)
 			return result
 
+	if replies_only:
+		filters.append( table.parent_user_id is not None )
+
 	result = _do_course_and_timestamp_filtering( table, timestamp, course, filters )
 	return result
 
@@ -95,8 +98,7 @@ def get_user_replies_to_others( table, user, course=None, timestamp=None, get_de
 	user_id = get_user_db_id( user )
 
 	filters = [] if filters is None else list(filters)
-	filters.extend( ( table.parent_user_id is not None,
-					table.parent_user_id != user_id ) )
+	filters.append( table.parent_user_id != user_id )
 
 	if not get_deleted:
 		filters.append( table.deleted == None )
