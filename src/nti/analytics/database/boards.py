@@ -546,18 +546,23 @@ def flag_comment( comment, state ):
 	db_comment.is_flagged = state
 	db.session.flush()
 
-def _resolve_comment( row, user=None, course=None ):
+def _resolve_comment( row, user=None, course=None, parent_user=None ):
 	# Detach this from the db, resolving objects as we go.
 	make_transient( row )
 	comment = CommentId.get_object( row.comment_id )
 	course = get_root_context( row.course_id ) if course is None else course
 	user = get_user( row.user_id ) if user is None else user
-	is_reply = row.parent_id is not None
 	result = None
 
 	if 		comment is not None \
 		and user is not None \
 		and course is not None:
+
+		is_reply = row.parent_id is not None
+		if 		parent_user is None \
+			and row.parent_user_id is not None:
+			parent_user = get_user( row.parent_user_id )
+
 		result = AnalyticsForumComment( Comment=comment,
 								user=user,
 								CommentLength=row.comment_length,
@@ -566,7 +571,8 @@ def _resolve_comment( row, user=None, course=None ):
 								LikeCount=row.like_count,
 								FavoriteCount=row.favorite_count,
 								RootContext=course,
-								IsReply=is_reply )
+								IsReply=is_reply,
+								RepliedToUser=parent_user )
 	return result
 
 def _resolve_topic( row, user=None, course=None ):
@@ -718,7 +724,7 @@ def get_replies_to_user( user, course=None, timestamp=None, get_deleted=False  )
 	Fetch any replies to our user, *after* the optionally given timestamp.
 	"""
 	results = _get_replies_to_user( ForumCommentsCreated, user, course, timestamp, get_deleted )
-	return resolve_objects( _resolve_comment, results, course=course )
+	return resolve_objects( _resolve_comment, results, course=course, parent_user=user )
 
 def get_likes_for_users_topics( user, course=None, timestamp=None ):
 	"""

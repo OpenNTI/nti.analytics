@@ -120,6 +120,7 @@ class TestBlogs( NTIAnalyticsTestCase ):
 		assert_that( results[0].user, is_( user1 ))
 		assert_that( results[0].IsReply, is_( True ))
 		assert_that( results[0].CommentLength, is_( 0 ))
+		assert_that( results[0].RepliedToUser, is_( user2 ))
 
 		results = get_user_replies_to_others( user1 )
 		assert_that( results, has_length( 1 ))
@@ -127,6 +128,7 @@ class TestBlogs( NTIAnalyticsTestCase ):
 		assert_that( results[0].user, is_( user1 ))
 		assert_that( results[0].IsReply, is_( True ))
 		assert_that( results[0].CommentLength, is_( 0 ))
+		assert_that( results[0].RepliedToUser, is_( user2 ))
 
 		# Test get comments
 		results = get_blog_comments( user2 )

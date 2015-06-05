@@ -152,13 +152,16 @@ class IAnalyticsBlog( IAnalyticsObjectBase, IAnalyticsRatedObject ):
 					Object(IPersonalBlogEntryPost)),
 					title='The underlying blog context', required=True)
 
-class IAnalyticsBlogComment(IAnalyticsObjectBase, IAnalyticsRatedObject):
+class IReplyToMixin( interface.Interface ):
+	IsReply = Bool(title=u"Whether the obj is a reply to another object.", required=True)
+	RepliedToUser = Object(IUser, title="The creator of the replied to object.", required=False)
+
+class IAnalyticsBlogComment(IAnalyticsObjectBase, IAnalyticsRatedObject, IReplyToMixin):
 	"""
 	An analytics forum comment.
 	"""
 	CommentLength = Number(title=u"The character length of the comment.", default=0, required=False)
 	Comment = Object(IPersonalBlogComment, title=u"The underlying comment for this object.", required=True)
-	IsReply = Bool(title=u"Whether the comment is a reply to another comment.", required=True)
 
 class IAnalyticsTopic(IAnalyticsObjectBase, IRootContextMixin, IAnalyticsRatedObject):
 	"""
@@ -172,13 +175,12 @@ class IAnalyticsTopicView(IAnalyticsViewBase, IRootContextMixin):
 	"""
 	Topic = Object(ITopic, title='The underlying topic object.', required=True)
 
-class IAnalyticsForumComment(IAnalyticsObjectBase, IRootContextMixin, IAnalyticsRatedObject):
+class IAnalyticsForumComment(IAnalyticsObjectBase, IRootContextMixin, IAnalyticsRatedObject, IReplyToMixin):
 	"""
 	An analytics forum comment.
 	"""
 	CommentLength = Number(title=u"The character length of the comment.", default=0, required=False)
 	Comment = Object(IGeneralForumComment, title=u"The underlying comment for this object.", required=True)
-	IsReply = Bool(title=u"Whether the comment is a reply to another comment.", required=True)
 
 class IAnalyticsAssessment(IAnalyticsObjectBase, ITimeLength, IRootContextMixin):
 	"""
@@ -230,14 +232,13 @@ class IAnalyticsTag(IAnalyticsObjectBase, IRootContextMixin):
 	An analytics tag.
 	"""
 
-class IAnalyticsNote(IAnalyticsTag, IAnalyticsRatedObject):
+class IAnalyticsNote(IAnalyticsTag, IAnalyticsRatedObject, IReplyToMixin):
 	"""
 	An analytics note.
 	"""
 	Note = Object(INote, title='The underlying note object.', required=True)
 	NoteLength = Number(title=u"The length of the body of the note.", required=True)
 	Sharing = Choice(vocabulary=SHARING_VOCAB, title=u"A sharing enum", required=True)
-	IsReply = Bool(title=u"Whether the note is a reply to another note.", required=True)
 
 class IAnalyticsHighlight(IAnalyticsTag):
 	"""

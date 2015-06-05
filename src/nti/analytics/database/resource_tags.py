@@ -430,17 +430,22 @@ def delete_bookmark(timestamp, bookmark_ds_id):
 	bookmark.bookmark_ds_id = None
 	db.session.flush()
 
-def _resolve_note( row, user=None, course=None ):
+def _resolve_note( row, user=None, course=None, parent_user=None ):
 	make_transient( row )
 	note = NoteId.get_object( row.note_ds_id )
 	course = get_root_context( row.course_id ) if course is None else course
 	user = get_user( row.user_id ) if user is None else user
-	is_reply = row.parent_id is not None
 
 	result = None
 	if 		note is not None \
 		and user is not None \
 		and course is not None:
+
+		is_reply = row.parent_id is not None
+		if 		parent_user is None \
+			and row.parent_user_id is not None:
+			parent_user = get_user( row.parent_user_id )
+
 		result = AnalyticsNote( Note=note,
 								user=user,
 								timestamp=row.timestamp,
@@ -450,7 +455,8 @@ def _resolve_note( row, user=None, course=None ):
 								Flagged=row.is_flagged,
 								LikeCount=row.like_count,
 								FavoriteCount=row.favorite_count,
-								IsReply=is_reply )
+								IsReply=is_reply,
+								RepliedToUser=parent_user )
 	return result
 
 def get_notes( user=None, course=None, timestamp=None, get_deleted=False, top_level_only=False ):
@@ -498,7 +504,7 @@ def get_replies_to_user( user, course=None, timestamp=None, get_deleted=False ):
 	Fetch any replies to our user, *after* the optionally given timestamp.
 	"""
 	results = _get_replies_to_user( NotesCreated, user, course, timestamp, get_deleted )
-	return resolve_objects( _resolve_note, results, course=course )
+	return resolve_objects( _resolve_note, results, course=course, parent_user=user )
 
 def _resolve_highlight( row, user=None, course=None ):
 	make_transient( row )

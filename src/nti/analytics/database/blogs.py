@@ -437,15 +437,20 @@ def _resolve_blog( row, user=None ):
 								BlogLength=row.blog_length )
 	return result
 
-def _resolve_blog_comment( row, user=None ):
+def _resolve_blog_comment( row, user=None, parent_user=None ):
 	make_transient( row )
 	comment = CommentId.get_object( row.comment_id )
 	user = get_user( row.user_id ) if user is None else user
-	is_reply = row.parent_id is not None
 
 	result = None
 	if 		comment is not None \
 		and user is not None:
+
+		is_reply = row.parent_id is not None
+		if 		parent_user is None \
+			and row.parent_user_id is not None:
+			parent_user = get_user( row.parent_user_id )
+
 		result = AnalyticsBlogComment( Comment=comment,
 								user=user,
 								timestamp=row.timestamp,
@@ -453,7 +458,8 @@ def _resolve_blog_comment( row, user=None ):
 								Flagged=row.is_flagged,
 								LikeCount=row.like_count,
 								FavoriteCount=row.favorite_count,
-								IsReply=is_reply )
+								IsReply=is_reply,
+								RepliedToUser=parent_user )
 	return result
 
 def get_blogs( user, timestamp=None, get_deleted=False ):
@@ -494,7 +500,7 @@ def get_replies_to_user( user, timestamp=None, get_deleted=False  ):
 	"""
 	results = _get_replies_to_user( BlogCommentsCreated, user,
 								timestamp=timestamp, get_deleted=get_deleted )
-	return resolve_objects( _resolve_blog_comment, results )
+	return resolve_objects( _resolve_blog_comment, results, parent_user=user )
 
 def get_likes_for_users_blogs( user, timestamp=None ):
 	"""
