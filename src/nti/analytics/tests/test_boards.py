@@ -39,6 +39,7 @@ from ..boards import _favorite_topic
 from ..boards import _favorite_comment
 from ..boards import get_topic_views
 from ..boards import get_replies_to_user
+from ..boards import get_forum_comments
 from ..boards import get_user_replies_to_others
 from ..boards import get_likes_for_users_topics
 from ..boards import get_forum_comments_for_user
@@ -85,6 +86,12 @@ class TestComments( NTIAnalyticsTestCase ):
 		mock_find_object.is_callable().returns( comment1 )
 		_add_comment( comment1 )
 
+		results = get_forum_comments( user2 )
+		assert_that( results, has_length( 1 ))
+		results = get_forum_comments( course=course )
+		assert_that( results, has_length( 1 ))
+		results = get_forum_comments( course=course, replies_only=True )
+		assert_that( results, has_length( 0 ))
 		results = get_replies_to_user( user2 )
 		assert_that( results, has_length( 0 ))
 		results = get_user_replies_to_others( user1 )
@@ -111,6 +118,13 @@ class TestComments( NTIAnalyticsTestCase ):
 		assert_that( results[0].RepliedToUser, is_( user2 ))
 
 		results = get_user_replies_to_others( user1 )
+		assert_that( results, has_length( 1 ))
+		assert_that( results[0].Comment, is_( comment2 ))
+		assert_that( results[0].IsReply, is_( True ))
+		assert_that( results[0].RootContext, is_( course ))
+		assert_that( results[0].user, is_( user1 ))
+
+		results = get_forum_comments( course=course, replies_only=True )
 		assert_that( results, has_length( 1 ))
 		assert_that( results[0].Comment, is_( comment2 ))
 		assert_that( results[0].IsReply, is_( True ))

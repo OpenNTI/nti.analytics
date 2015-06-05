@@ -86,7 +86,7 @@ def get_filtered_records( user, table, timestamp=None, course=None, replies_only
 			return result
 
 	if replies_only:
-		filters.append( table.parent_user_id is not None )
+		filters.append( table.parent_user_id != None )
 
 	result = _do_course_and_timestamp_filtering( table, timestamp, course, filters )
 	return result
