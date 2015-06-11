@@ -24,7 +24,7 @@ from nti.contentlibrary.interfaces import IContentPackage
 from nti.contentlibrary.interfaces import IContentPackageLibraryModifiedOnSyncEvent
 from nti.contentlibrary.indexed_data.interfaces import CONTAINER_IFACES
 
-from nti.dataserver.core.interfaces import IContainerContext
+from nti.dataserver_core.interfaces import IContainerContext
 
 from nti.externalization.externalization import to_external_ntiid_oid
 
