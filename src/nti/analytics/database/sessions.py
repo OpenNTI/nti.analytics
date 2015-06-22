@@ -8,8 +8,6 @@ __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
-import time
-
 from geoip import geolite2
 
 from sqlalchemy import Column
@@ -114,7 +112,8 @@ def end_session( user, session_id, timestamp ):
 
 def _create_ip_location( db, ip_addr, user_id ):
 	ip_info = geolite2.lookup( ip_addr )
-	if ip_info:
+	# In one case, we had ip_info but no lat/long.
+	if ip_info and ip_info.location and len( ip_info.location ) > 1:
 		ip_location = IpGeoLocation( ip_addr=ip_addr,
 									user_id=user_id,
  									country_code=ip_info.country,
