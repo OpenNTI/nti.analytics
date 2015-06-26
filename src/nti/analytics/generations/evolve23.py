@@ -19,11 +19,22 @@ from zope import component
 from zope.component.hooks import site, setHooks
 from zope.component.hooks import getSite
 
+from sqlalchemy import Column
+from sqlalchemy import Boolean
+from sqlalchemy import Integer
+
+from alembic.operations import Operations
+from alembic.migration import MigrationContext
+
 from nti.dataserver.liking import LIKE_CAT_NAME
 from nti.dataserver.liking import FAVR_CAT_NAME
 from nti.dataserver.rating import lookup_rating_for_read
 
 from nti.analytics.database import get_analytics_db
+from nti.analytics.database import NTIID_COLUMN_TYPE
+
+from nti.analytics.database.assessments import AssignmentViews
+from nti.analytics.database.assessments import SelfAssessmentViews
 
 from nti.analytics.database.boards import TopicLikes
 from nti.analytics.database.boards import TopicFavorites
@@ -136,6 +147,62 @@ def _update_topics( db, record, intids, users ):
 						TopicLikes,
 						 _create_topic_rating_record )
 
+TABLES = [ ( BlogLikes, BlogsCreated, 'blog_id', BlogsCreated.blog_id ),
+			( BlogFavorites, BlogsCreated, 'blog_id', BlogsCreated.blog_id ),
+			( BlogCommentLikes, BlogCommentsCreated, 'comment_id', BlogCommentsCreated.comment_id ),
+			( BlogCommentFavorites, BlogCommentsCreated, 'comment_id', BlogCommentsCreated.comment_id ),
+			( ForumCommentLikes, ForumCommentsCreated, 'comment_id', ForumCommentsCreated.comment_id ),
+			( ForumCommentFavorites, ForumCommentsCreated, 'comment_id', ForumCommentsCreated.comment_id ),
+			( TopicLikes, TopicsCreated, 'topic_id', TopicsCreated.topic_id ),
+			( TopicFavorites, TopicsCreated, 'topic_id', TopicsCreated.topic_id ),
+			( NoteLikes, NotesCreated, 'note_id', NotesCreated.note_id ),
+			( NoteFavorites, NotesCreated, 'note_id', NotesCreated.note_id ) ]
+
+COURSE_TABLES = [ ( ForumCommentLikes, ForumCommentsCreated, 'comment_id', ForumCommentsCreated.comment_id ),
+			( ForumCommentFavorites, ForumCommentsCreated, 'comment_id', ForumCommentsCreated.comment_id ),
+			( TopicLikes, TopicsCreated, 'topic_id', TopicsCreated.topic_id ),
+			( TopicFavorites, TopicsCreated, 'topic_id', TopicsCreated.topic_id ),
+			( NoteLikes, NotesCreated, 'note_id', NotesCreated.note_id ),
+			( NoteFavorites, NotesCreated, 'note_id', NotesCreated.note_id ) ]
+
+COLUMN_EXISTS_QUERY = 	"""
+						SELECT *
+						FROM information_schema.COLUMNS
+						WHERE TABLE_SCHEMA = 'Analytics'
+							AND TABLE_NAME = '%s'
+							AND COLUMN_NAME = '%s'
+						"""
+
+def _column_exists( con, table, column ):
+	res = con.execute( COLUMN_EXISTS_QUERY % ( table, column ) )
+	return res.scalar()
+
+def _add_future_evolve_columns( connection, op ):
+	for table in (BlogCommentsCreated,ForumCommentsCreated,NotesCreated):
+		if not _column_exists( connection, table.__tablename__, 'parent_user_id' ):
+			op.add_column( table.__tablename__, Column('parent_user_id', Integer, nullable=True) )
+
+	if not _column_exists( connection, 'AssignmentsTaken', 'is_late' ):
+		op.add_column( 'AssignmentsTaken', Column('is_late', Boolean, nullable=True) )
+
+	# Add our creator column
+	for table, _, _, _ in TABLES:
+		if not _column_exists( connection, table.__tablename__, 'creator_id' ):
+			op.add_column( table.__tablename__, Column('creator_id', Integer, nullable=False) )
+
+	# Add our course column
+	for table, _, _, _ in COURSE_TABLES:
+		if not _column_exists( connection, table.__tablename__, 'course_id' ):
+			op.add_column( table.__tablename__, Column('course_id', Integer, nullable=False) )
+
+	for table in [ AssignmentViews, SelfAssessmentViews ]:
+		if not _column_exists( connection, table.__tablename__, 'assignment_id' ):
+			op.add_column( table.__tablename__,
+						Column('assignment_id', NTIID_COLUMN_TYPE, nullable=False, index=True ) )
+
+	if not _column_exists( connection, 'Resources', 'max_time_length' ):
+		op.add_column( 'Resources', Column( 'max_time_length', Integer, nullable=True ) )
+
 def _evolve_job( intids=None, users=None ):
 	site = getSite()
 	db = get_analytics_db( strict=False )
@@ -147,6 +214,12 @@ def _evolve_job( intids=None, users=None ):
 		intids = component.getUtility( zope.intid.IIntIds )
 
 	total_faves = total_likes = total_missing = 0
+
+	# Cannot use transaction with alter table scripts and mysql
+	connection = db.engine.connect()
+	mc = MigrationContext.configure( connection )
+	op = Operations(mc)
+	_add_future_evolve_columns( db, connection, op )
 
 	for table, _to_call in [	( ForumCommentsCreated, _update_forum_comments ),
 								( BlogsCreated, _update_blogs ),
