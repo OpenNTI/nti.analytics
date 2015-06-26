@@ -219,7 +219,7 @@ def _evolve_job( intids=None, users=None ):
 	connection = db.engine.connect()
 	mc = MigrationContext.configure( connection )
 	op = Operations(mc)
-	_add_future_evolve_columns( db, connection, op )
+	_add_future_evolve_columns( connection, op )
 
 	for table, _to_call in [	( ForumCommentsCreated, _update_forum_comments ),
 								( BlogsCreated, _update_blogs ),
