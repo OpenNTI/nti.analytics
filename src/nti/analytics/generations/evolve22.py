@@ -22,6 +22,8 @@ from alembic.migration import MigrationContext
 from sqlalchemy import Column
 from sqlalchemy import String
 
+from ._utils import do_evolve
+
 COLUMN_EXISTS_QUERY = 	"""
 						SELECT *
 						FROM information_schema.COLUMNS
@@ -34,7 +36,7 @@ def _column_exists( con, table, column ):
 	res = con.execute( COLUMN_EXISTS_QUERY % ( table, column ) )
 	return res.scalar()
 
-def do_evolve():
+def evolve_job():
 	setHooks()
 
 	db = get_analytics_db()
@@ -58,4 +60,4 @@ def evolve(context):
 	"""
 	Add play_speed column.
 	"""
-	do_evolve()
+	do_evolve( context, evolve_job, generation )

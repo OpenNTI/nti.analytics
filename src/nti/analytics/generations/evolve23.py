@@ -50,6 +50,8 @@ from nti.analytics.database.resource_tags import _create_note_rating_record
 
 from nti.site.hostpolicy import run_job_in_all_host_sites
 
+from ._utils import do_evolve
+
 def _get_ratings( obj, rating_name ):
 	return lookup_rating_for_read( obj, rating_name, safe=True )
 
@@ -165,7 +167,7 @@ def _evolve_job( intids=None, users=None ):
 	logger.info( '[%s] Added ratings (like=%s) (favorites=%s) (missing=%s)',
 				site.__name__, total_likes, total_faves, total_missing )
 
-def do_evolve( context ):
+def evolve_job( context ):
 	setHooks()
 
 	db = get_analytics_db( strict=False )
@@ -193,4 +195,4 @@ def evolve(context):
 	making sure we add the detailed records to the new
 	like/favorite tables.
 	"""
-	do_evolve( context )
+	do_evolve( context, evolve_job, generation )

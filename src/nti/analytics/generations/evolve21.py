@@ -19,6 +19,8 @@ from alembic.migration import MigrationContext
 
 from nti.analytics.database import get_analytics_db
 
+from ._utils import do_evolve
+
 INDEX_EXISTS_QUERY = 	"""
 						SHOW INDEX FROM Analytics.%s
 						WHERE KEY_NAME = '%s';
@@ -28,7 +30,7 @@ def _index_exists( con, ix_name, table ):
 	res = con.execute( INDEX_EXISTS_QUERY % ( table, ix_name ) )
 	return res.scalar()
 
-def do_evolve():
+def evolve_job():
 	setHooks()
 
 	db = get_analytics_db()
@@ -52,4 +54,4 @@ def evolve(context):
 	"""
 	Evolve to generation 21
 	"""
-	do_evolve()
+	do_evolve( context, evolve_job, generation )
