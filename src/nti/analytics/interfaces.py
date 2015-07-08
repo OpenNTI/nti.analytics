@@ -79,7 +79,9 @@ class ICourseEvent(interface.Interface):
 	"""
 	A course event.
 	"""
-	RootContextID = ValidTextLine(title='Course ntiid')
+	# TODO Do we want to extend this field to
+	# represent users/communities?
+	RootContextID = ValidTextLine(title='Course ntiid', required=False)
 
 class ITopicViewEvent(IAnalyticsViewEvent, ICourseEvent):
 	"""
