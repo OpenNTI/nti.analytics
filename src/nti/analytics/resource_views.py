@@ -127,6 +127,7 @@ def _get_course( event ):
 	result = _get_object( event.RootContextID )
 	# Course catalog views may resolve to catalog entries
 	# If not a course, return what we have (e.g. ContentPackage)
+	# TODO This may be a user/community (use find_object_with_ntiid)
 	return ICourseInstance( result, result )
 
 def _validate_analytics_event( event, object_id ):

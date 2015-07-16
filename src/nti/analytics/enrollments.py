@@ -86,6 +86,8 @@ def _handle_event( record, to_call ):
 
 @component.adapter( ICourseInstanceEnrollmentRecord, IIntIdAddedEvent )
 def _enrolled( record, event ):
+	# TODO This does not handle if we manually migrate users from
+	# one super course to many sectioned courses.
 	_handle_event( record, _add_enrollment )
 
 @component.adapter( ICourseInstanceEnrollmentRecord, IIntIdRemovedEvent )

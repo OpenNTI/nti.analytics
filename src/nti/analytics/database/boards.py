@@ -639,14 +639,14 @@ def get_topics_created_for_user( user, course=None, timestamp=None, get_deleted=
 	"""
 	filters = []
 	if not get_deleted:
-		filters.append( ForumCommentsCreated.deleted == None )
+		filters.append( TopicsCreated.deleted == None )
 
 	results = get_filtered_records( user, TopicsCreated, course=course,
 								timestamp=timestamp, filters=filters )
 
 	return resolve_objects( _resolve_topic, results )
 
-def get_topic_views( user, topic=None, course=None, timestamp=None ):
+def get_topic_views( user=None, topic=None, course=None, timestamp=None ):
 
 	filters = []
 	if topic is not None:
@@ -691,20 +691,6 @@ def get_topics_created_for_course( course ):
 								TopicsCreated.course_id == course_id,
 								TopicsCreated.deleted == None  ).all()
 	return resolve_objects( _resolve_topic, results, course=course )
-
-
-def get_topic_view_count( topic ):
-	"""
-	Return the number of times this topic has been viewed.
-	"""
-	result = 0
-	db = get_analytics_db()
-	topic_id = _get_topic_id_from_topic( db, topic )
-	if topic_id is not None:
-		result = db.session.query(TopicsViewed).filter(
-									TopicsViewed.topic_id == topic_id,
-									TopicsViewed.time_length > 0 ).count()
-	return result
 
 def get_user_replies_to_others( user, course=None, timestamp=None, get_deleted=False, topic=None ):
 	"""

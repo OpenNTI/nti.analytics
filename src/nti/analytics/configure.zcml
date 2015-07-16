@@ -86,8 +86,6 @@
 	<subscriber handler=".enrollments._enrolled" />
 	<subscriber handler=".enrollments._dropped" />
 
-	<subscriber handler=".resolvers._library_sync" />
-
 	<!-- utils -->
 
 	<utility component=".blogs" provides=".interfaces.IObjectProcessor" name="blogs"/>
@@ -148,14 +146,6 @@
 
 	<!-- Research -->
 	<adapter factory=".model._UserResearchStatus" />
-
-	<!-- View count adapters -->
-	<adapter factory=".adapters._note_view_count" />
-	<adapter factory=".adapters._topic_view_count" />
-
-	<!-- Progress adapters -->
-	<adapter factory=".adapters._assignment_progress_for_user" />
-	<adapter factory=".adapters._assessment_progress_for_user" />
 
 	<configure zcml:condition="have devmode">
 

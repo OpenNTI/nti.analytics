@@ -34,6 +34,7 @@ setup(
 	install_requires=[
 		'alembic',
 		'setuptools',
+		'geopy',
 		'nti.async',
 		'nti.app.assessment',
 		'nti.app.products.courseware',

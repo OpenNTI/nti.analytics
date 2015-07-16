@@ -27,6 +27,7 @@ from nti.analytics.read_interfaces import IAnalyticsAssignment
 from nti.analytics.read_interfaces import IAnalyticsForumComment
 from nti.analytics.read_interfaces import IAnalyticsAssignmentDetail
 from nti.analytics.read_interfaces import IAnalyticsNote
+from nti.analytics.read_interfaces import IAnalyticsNoteView
 from nti.analytics.read_interfaces import IAnalyticsHighlight
 from nti.analytics.read_interfaces import IAnalyticsBookmark
 from nti.analytics.read_interfaces import IAnalyticsResourceView
@@ -172,6 +173,12 @@ class AnalyticsAssignmentView(BaseAnalyticsDurationMixin):
 class AnalyticsTopicView(BaseAnalyticsDurationMixin):
 	createDirectFieldProperties(IAnalyticsTopicView)
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticstopicview'
+
+@interface.implementer(IAnalyticsNoteView)
+@WithRepr
+class AnalyticsNoteView(BaseAnalyticsDurationMixin):
+	createDirectFieldProperties(IAnalyticsNoteView)
+	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticsnoteview'
 
 @interface.implementer(IAnalyticsSession)
 @WithRepr

@@ -30,6 +30,7 @@ from nti.analytics.identifier import BookmarkId
 from nti.analytics.identifier import ResourceId
 
 from nti.analytics.read_models import AnalyticsNote
+from nti.analytics.read_models import AnalyticsNoteView
 from nti.analytics.read_models import AnalyticsHighlight
 from nti.analytics.read_models import AnalyticsBookmark
 
@@ -430,6 +431,14 @@ def delete_bookmark(timestamp, bookmark_ds_id):
 	bookmark.bookmark_ds_id = None
 	db.session.flush()
 
+def _get_note_from_db_id( note_id ):
+	"Return the actual note object represented by the given db id."
+	db = get_analytics_db()
+	note = db.session.query(NotesCreated).filter(
+							NotesCreated.note_id == note_id ).first()
+	note = NoteId.get_object( note.note_ds_id )
+	return note
+
 def _resolve_note( row, user=None, course=None, parent_user=None ):
 	make_transient( row )
 	note = NoteId.get_object( row.note_ds_id )
@@ -478,6 +487,36 @@ def get_notes( user=None, course=None, timestamp=None, get_deleted=False, replie
 	results = get_filtered_records( user, NotesCreated, course=course,
 								timestamp=timestamp, replies_only=replies_only, filters=filters )
 	return resolve_objects( _resolve_note, results, user=user, course=course )
+
+def _resolve_note_view( row, note=None, user=None, course=None ):
+	make_transient( row )
+	note = _get_note_from_db_id( row.note_id ) if note is None else note
+	course = get_root_context( row.course_id ) if course is None else course
+	user = get_user( row.user_id ) if user is None else user
+	result = None
+
+	if 		note is not None \
+		and user is not None \
+		and course is not None:
+		result = AnalyticsNoteView( Note=note,
+								user=user,
+								timestamp=row.timestamp,
+								RootContext=course )
+	return result
+
+def get_note_views( user=None, note=None, course=None, timestamp=None ):
+	filters = []
+	if note is not None:
+		db = get_analytics_db()
+		note_ds_id = NoteId.get_id( note )
+		note_id = _get_note_id( db, note_ds_id )
+		filters.append( NotesViewed.note_id == note_id )
+
+	results = get_filtered_records( user, NotesViewed, course=course,
+								timestamp=timestamp, filters=filters )
+
+	return resolve_objects( _resolve_note_view, results, note=note )
+
 
 def get_likes_for_users_notes( user, course=None, timestamp=None ):
 	"""
@@ -574,17 +613,4 @@ def get_bookmarks( user, course=None, timestamp=None, get_deleted=False ):
 	results = get_filtered_records( user, BookmarksCreated, course=course,
 								timestamp=timestamp, filters=filters )
 	return resolve_objects( _resolve_bookmark, results, user=user, course=course )
-
-def get_note_view_count( note ):
-	"""
-	Return the number of times this note has been viewed.
-	"""
-	result = 0
-	db = get_analytics_db()
-	note_ds_id = NoteId.get_id( note )
-	note_id = _get_note_id( db, note_ds_id )
-	if note_id is not None:
-		result = db.session.query(NotesViewed).filter(
-								NotesViewed.note_id == note_id ).count()
-	return result
 

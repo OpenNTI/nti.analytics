@@ -240,6 +240,12 @@ class IAnalyticsNote(IAnalyticsTag, IAnalyticsRatedObject, IReplyToMixin):
 	NoteLength = Number(title=u"The length of the body of the note.", required=True)
 	Sharing = Choice(vocabulary=SHARING_VOCAB, title=u"A sharing enum", required=True)
 
+class IAnalyticsNoteView(IAnalyticsViewBase, IRootContextMixin):
+	"""
+	An analytics note view.
+	"""
+	Note = Object(INote, title='The underlying note object.', required=True)
+
 class IAnalyticsHighlight(IAnalyticsTag):
 	"""
 	An analytics highlight.
