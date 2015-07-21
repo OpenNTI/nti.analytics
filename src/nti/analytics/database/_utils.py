@@ -4,7 +4,7 @@
 $Id$
 """
 from __future__ import print_function, unicode_literals, absolute_import, division
-from nti.analytics.database.root_context import get_root_context_id
+
 __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
@@ -13,6 +13,8 @@ from collections import OrderedDict
 
 from nti.contenttypes.courses.interfaces import ICourseSubInstance
 
+from nti.dataserver.interfaces import IEntity
+
 from nti.analytics.read_models import AnalyticsLike
 from nti.analytics.read_models import AnalyticsFavorite
 
@@ -20,6 +22,10 @@ from . import get_analytics_db
 
 from .users import get_user
 from .users import get_user_db_id
+from .users import get_or_create_user
+
+from .root_context import get_root_context
+from .root_context import get_root_context_id
 
 def get_context_path( context_path ):
 	# Note: we could also sub these resource_ids for the actual
@@ -39,6 +45,25 @@ def get_context_path( context_path ):
 
 def expand_context_path( context_path ):
 	return context_path.split( '/' )
+
+def get_root_context_ids( root_context ):
+	course_id = entity_root_context_id = None
+	if IEntity.providedBy( root_context ):
+		entity = get_or_create_user( root_context )
+		entity_root_context_id = entity.user_id
+	else:
+		db = get_analytics_db()
+		course_id = get_root_context_id( db, root_context, create=True )
+	return course_id, entity_root_context_id
+
+def get_root_context_obj( root_context_record ):
+	course_id = root_context_record.course_id
+	if course_id:
+		root_context = get_root_context( course_id )
+	else:
+		entity_root_context_id = root_context_record.entity_root_context_id
+		root_context = get_user( entity_root_context_id )
+	return root_context
 
 def _do_course_and_timestamp_filtering( table, timestamp=None, course=None, filters=None ):
 	db = get_analytics_db()

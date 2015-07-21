@@ -4,6 +4,7 @@
 $Id$
 """
 from __future__ import print_function, unicode_literals, absolute_import, division
+
 __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
@@ -15,6 +16,11 @@ from zope.event import notify
 from nti.ntiids import ntiids
 
 from nti.contenttypes.courses.interfaces import ICourseInstance
+
+from nti.contentlibrary.interfaces import IContentPackage
+from nti.contentlibrary.interfaces import IContentPackageBundle
+
+from nti.dataserver.interfaces import IEntity
 
 from nti.analytics.interfaces import IVideoEvent
 from nti.analytics.interfaces import IBlogViewEvent
@@ -61,6 +67,7 @@ from nti.analytics import RESOURCE_VIEW_ANALYTICS
 
 get_user_resource_views = db_resource_views.get_user_resource_views
 get_user_resource_views_for_ntiid = db_resource_views.get_user_resource_views_for_ntiid
+get_video_views = db_resource_views.get_user_video_views
 get_user_video_views = db_resource_views.get_user_video_views
 
 def _has_href_fragment( node, children ):
@@ -105,7 +112,6 @@ def get_progress_for_ntiid( user, resource_ntiid ):
 
 	return result
 
-
 def get_video_progress_for_course( user, course ):
 	"""
 	For a given user/course, return a collection of progress for all videos we have on record.
@@ -127,8 +133,13 @@ def _get_course( event ):
 	result = _get_object( event.RootContextID )
 	# Course catalog views may resolve to catalog entries
 	# If not a course, return what we have (e.g. ContentPackage)
-	# TODO This may be a user/community (use find_object_with_ntiid)
 	return ICourseInstance( result, result )
+
+def _get_root_context( event ):
+	result = _get_object( event.RootContextID )
+	if not IEntity.providedBy( result ):
+		result = _get_course( event )
+	return result
 
 def _validate_analytics_event( event, object_id ):
 	""" Validate our events, sanitizing as we go. """
@@ -161,21 +172,40 @@ def _validate_analytics_event( event, object_id ):
 
 	event.time_length = time_length and int( time_length )
 
+def _valid_course_type( obj ):
+	return ICourseInstance.providedBy( obj ) \
+		or IContentPackageBundle.providedBy( obj ) \
+		or IContentPackage.providedBy( obj )
+
+def _valid_root_context_type( obj ):
+	return IEntity.providedBy( obj ) \
+		or _valid_course_type( obj )
+
+def _validate_root_context_event( event, object_id=None ):
+	""" Validate we have a root context (course or entity)."""
+	_validate_analytics_event( event, object_id )
+
+	root_context = _get_root_context( event )
+	if 		root_context is None \
+		or 	not _valid_root_context_type( root_context ):
+		raise ValueError( """Event received with non-existent root context id
+							(user=%s) (RootContextID=%s) (event=%s)""" %
+							( event.user, event.RootContextID, event ) )
+
 def _validate_course_event( event, object_id=None ):
-	""" Validate our events, sanitizing as we go. """
+	""" Validate we have a course."""
 	_validate_analytics_event( event, object_id )
 
 	course = _get_course( event )
-	if course is None:
-		# We could potentially recover from this in the future.
-		raise ValueError( """Event received with non-existent root context id
+	if 		course is None \
+		or 	not _valid_course_type( course ):
+		raise ValueError( """Event received with non-existent course id
 							(user=%s) (course=%s) (event=%s)""" %
-							( event.user, event.course, event ) )
-
+							( event.user, event.RootContextID, event ) )
 
 def _validate_resource_event( event ):
 	""" Validate our events, sanitizing as we go. """
-	_validate_course_event( event )
+	_validate_root_context_event( event )
 
 	if not ntiids.is_valid_ntiid_string( event.resource_id ):
 		raise UnrecoverableAnalyticsError(
@@ -227,13 +257,13 @@ def _validate_video_event( event ):
 
 def _add_note_event( event, nti_session=None ):
 	try:
-		_validate_course_event( event, object_id=event.note_id )
+		_validate_root_context_event( event, object_id=event.note_id )
 	except UnrecoverableAnalyticsError as e:
 		logger.warn( 'Error while validating event (%s)', e )
 		return
 
 	user = get_entity( event.user )
-	course = _get_course( event )
+	root_context = _get_root_context( event )
 	note = _get_object( event.note_id )
 
 	db_resource_tags.create_note_view(
@@ -241,42 +271,42 @@ def _add_note_event( event, nti_session=None ):
 								nti_session,
 								event.timestamp,
 								event.context_path,
-								course,
+								root_context,
 								note )
 
-	logger.debug( 	"Course note view event (user=%s) (course=%s)",
+	logger.debug( 	"Course note view event (user=%s) (root_context=%s)",
 					user,
-					getattr( course, '__name__', course ) )
+					getattr( root_context, '__name__', root_context ) )
 
 	notify(NoteViewedRecordedEvent(	user=user, note=note, timestamp=event.timestamp,
-									context=course, session=nti_session))
+									context=root_context, session=nti_session))
 
 def _add_topic_event( event, nti_session=None ):
 	try:
-		_validate_course_event( event, object_id=event.topic_id )
+		_validate_root_context_event( event, object_id=event.topic_id )
 	except UnrecoverableAnalyticsError as e:
 		logger.warn( 'Error while validating event (%s)', e )
 		return
 
 	user = get_entity( event.user )
-	course = _get_course( event )
+	root_context = _get_root_context( event )
 	topic = _get_object( event.topic_id )
 
 	db_boards.create_topic_view(user,
 								nti_session,
 								event.timestamp,
-								course,
+								root_context,
 								event.context_path,
 								topic,
 								event.time_length )
-	logger.debug( 	"Course topic view event (user=%s) (course=%s) (topic=%s) (time_length=%s)",
+	logger.debug( 	"Course topic view event (user=%s) (root_context=%s) (topic=%s) (time_length=%s)",
 					user,
-					getattr( course, '__name__', course ),
+					getattr( root_context, '__name__', root_context ),
 					getattr( topic, '__name__', topic ),
 					event.time_length )
 
 	notify(TopicViewedRecordedEvent(user=user, topic=topic, timestamp=event.timestamp,
-									context=course, session=nti_session))
+									context=root_context, session=nti_session))
 
 def _add_blog_event( event, nti_session=None ):
 	try:
@@ -326,21 +356,21 @@ def _add_catalog_event( event, nti_session=None ):
 
 def _do_resource_view( to_call, event, resource_id, nti_session=None, *args ):
 	user = get_entity( event.user )
-	course = _get_course( event )
+	root_context = _get_root_context( event )
 
-	to_call( user, nti_session, event.timestamp, course,
+	to_call( user, nti_session, event.timestamp, root_context,
 			event.context_path, resource_id, event.time_length, *args )
-	logger.debug( 	"Resource view event (user=%s) (course=%s) (resource=%s) (time_length=%s)",
+	logger.debug( 	"Resource view event (user=%s) (root_context=%s) (resource=%s) (time_length=%s)",
 					user,
-					getattr( course, '__name__', course ),
+					getattr( root_context, '__name__', root_context ),
 					resource_id,
 					event.time_length )
 
-	notify(ResourceViewedRecordedEvent(user=user, resource=resource_id, context=course,
+	notify(ResourceViewedRecordedEvent(user=user, resource=resource_id, context=root_context,
 									   timestamp=event.timestamp, session=nti_session))
 
 def _validate_assessment_event( event, assess_id ):
-	_validate_course_event( event )
+	_validate_root_context_event( event )
 
 	if not ntiids.is_valid_ntiid_string( assess_id ):
 		raise UnrecoverableAnalyticsError(
@@ -385,12 +415,12 @@ def _add_video_event( event, nti_session=None ):
 
 	user = get_entity( event.user )
 	resource_id = event.resource_id
-	course = _get_course( event )
+	root_context = _get_root_context( event )
 
 	db_resource_views.create_video_event( user,
 						nti_session,
 						event.timestamp,
-						course,
+						root_context,
 						event.context_path,
 						resource_id,
 						event.time_length,
@@ -400,9 +430,9 @@ def _add_video_event( event, nti_session=None ):
 						event.video_end_time,
 						event.with_transcript,
 						event.PlaySpeed )
-	logger.debug( 	"Video event (user=%s) (course=%s) (resource=%s) (type=%s) (start=%s) (end=%s) (time_length=%s)",
+	logger.debug( 	"Video event (user=%s) (root_context=%s) (resource=%s) (type=%s) (start=%s) (end=%s) (time_length=%s)",
 					user,
-					getattr( course, '__name__', course ),
+					getattr( root_context, '__name__', root_context ),
 					resource_id,
 					event.event_type, event.video_start_time,
 					event.video_end_time, event.time_length )
@@ -414,7 +444,7 @@ def _add_video_event( event, nti_session=None ):
 		clazz = VideoSkipRecordedEvent
 
 	notify(clazz(user=user, video=resource_id,
-				 context=course,
+				 context=root_context,
 				 session=nti_session,
 				 timestamp=event.timestamp,
 				 context_path=event.context_path,
@@ -432,20 +462,20 @@ def _add_play_speed_event( event, nti_session=None ):
 
 	user = get_entity( event.user )
 	resource_id = event.ResourceId
-	course = _get_course( event )
+	root_context = _get_root_context( event )
 	video_time = event.VideoTime
 
 	db_resource_views.create_play_speed_event( user,
 						nti_session,
 						event.timestamp,
-						course,
+						root_context,
 						resource_id,
 						video_time,
 						event.OldPlaySpeed,
 						event.NewPlaySpeed )
-	logger.debug( 	"PlaySpeed event (user=%s) (course=%s) (resource=%s) (old=%s) (new=%s)",
+	logger.debug( 	"PlaySpeed event (user=%s) (root_context=%s) (resource=%s) (old=%s) (new=%s)",
 					user,
-					getattr( course, '__name__', course ),
+					getattr( root_context, '__name__', root_context ),
 					resource_id,
 					event.OldPlaySpeed,
 					event.NewPlaySpeed )

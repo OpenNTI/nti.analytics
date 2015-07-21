@@ -71,6 +71,7 @@ from nti.analytics.database.meta_mixins import BaseTableMixin
 from nti.analytics.database.meta_mixins import BaseViewMixin
 from nti.analytics.database.meta_mixins import CourseMixin
 from nti.analytics.database.meta_mixins import DeletedMixin
+from nti.analytics.database.meta_mixins import RootContextMixin
 from nti.analytics.database.meta_mixins import TimeLengthMixin
 
 from nti.analytics.database.resources import get_resource_id
@@ -193,7 +194,7 @@ class SelfAssessmentDetails(Base,BaseTableMixin,DetailMixin,GradeDetailMixin):
 	self_assessment_details_id = Column('self_assessment_details_id', Integer,
 							Sequence( 'self_assessment_details_seq' ), primary_key=True )
 
-class AssignmentViewMixin(AssignmentIdMixin, CourseMixin, BaseViewMixin, TimeLengthMixin):
+class AssignmentViewMixin(AssignmentIdMixin, RootContextMixin, BaseViewMixin, TimeLengthMixin):
 	@declared_attr
 	def resource_id(cls):
 		return Column('resource_id', Integer, nullable=True)

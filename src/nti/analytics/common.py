@@ -113,7 +113,7 @@ def get_course( obj ):
 	# If so, this needs to change.
 	result = get_object_root( obj, ICourseInstance )
 	__traceback_info__ = result, obj
-	return ICourseInstance( result )
+	return ICourseInstance( result, result )
 
 def get_created_timestamp(obj):
 	result = getattr( obj, 'createdTime', None )

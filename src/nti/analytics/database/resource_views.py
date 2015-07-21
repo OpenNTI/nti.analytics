@@ -41,13 +41,14 @@ from nti.analytics.database.meta_mixins import TimeLengthMixin
 
 from nti.analytics.database.users import get_or_create_user
 from nti.analytics.database.users import get_user_db_id
-from nti.analytics.database.root_context import get_root_context_id
 from nti.analytics.database.resources import get_resource_id
 from nti.analytics.database.resources import get_resource_val
 from nti.analytics.database.resources import get_resource_record
 
 from nti.analytics.database._utils import expand_context_path
 from nti.analytics.database._utils import get_context_path
+from nti.analytics.database._utils import get_root_context_ids
+from nti.analytics.database._utils import get_root_context_obj
 
 class CourseResourceViews(Base,ResourceViewMixin,TimeLengthMixin):
 	__tablename__ = 'CourseResourceViews'
@@ -86,7 +87,7 @@ def _resource_view_exists( db, table, user_id, resource_id, timestamp ):
 							table.resource_id == resource_id,
 							table.timestamp == timestamp ).first()
 
-def _create_view( table, user, nti_session, timestamp, course, context_path, resource, time_length ):
+def _create_view( table, user, nti_session, timestamp, root_context, context_path, resource, time_length ):
 	"""
 	Create a basic view event, if necessary.  Also if necessary, may update existing
 	events with appropriate data.
@@ -97,8 +98,6 @@ def _create_view( table, user, nti_session, timestamp, course, context_path, res
 	sid = SessionId.get_id( nti_session )
 	rid = ResourceId.get_id( resource )
 	rid = get_resource_id( db, rid, create=True )
-
-	course_id = get_root_context_id( db, course, create=True )
 	timestamp = timestamp_type( timestamp )
 
 	existing_record = _resource_view_exists( db, table, uid, rid, timestamp )
@@ -111,11 +110,13 @@ def _create_view( table, user, nti_session, timestamp, course, context_path, res
 						table.__tablename__, user, rid, timestamp )
 			return
 	context_path = get_context_path( context_path )
+	course_id, entity_root_context_id = get_root_context_ids( root_context )
 
 	new_object = table( user_id=uid,
 						session_id=sid,
 						timestamp=timestamp,
 						course_id=course_id,
+						entity_root_context_id=entity_root_context_id,
 						context_path=context_path,
 						resource_id=rid,
 						time_length=time_length )
@@ -139,7 +140,7 @@ def _video_play_speed_exists( db, user_id, resource_id, timestamp, video_time ):
 							VideoPlaySpeedEvents.timestamp == timestamp,
 							VideoPlaySpeedEvents.video_time == video_time ).first()
 
-def create_play_speed_event( user, nti_session, timestamp, course, resource_id,
+def create_play_speed_event( user, nti_session, timestamp, root_context, resource_id,
 							video_time, old_play_speed, new_play_speed ):
 	db = get_analytics_db()
 	user = get_or_create_user( user )
@@ -148,7 +149,6 @@ def create_play_speed_event( user, nti_session, timestamp, course, resource_id,
 	vid = ResourceId.get_id( resource_id )
 	vid = get_resource_id( db, vid, create=True )
 
-	course_id = get_root_context_id( db, course, create=True )
 	timestamp = timestamp_type( timestamp )
 
 	existing_record = _video_play_speed_exists( db, uid, vid, timestamp, video_time )
@@ -160,6 +160,7 @@ def create_play_speed_event( user, nti_session, timestamp, course, resource_id,
 					user, video_time, timestamp )
 		return
 
+	course_id, entity_root_context_id = get_root_context_ids( root_context )
 	video_record = _video_view_exists( db, uid, vid, timestamp, 'WATCH' )
 	video_view_id = video_record.video_view_id if video_record else None
 
@@ -167,6 +168,7 @@ def create_play_speed_event( user, nti_session, timestamp, course, resource_id,
 								session_id=sid,
 								timestamp=timestamp,
 								course_id=course_id,
+								entity_root_context_id=entity_root_context_id,
 								resource_id=vid,
 								video_view_id=video_view_id,
 								video_time=video_time,
@@ -182,7 +184,7 @@ def _get_video_play_speed( db, user_id, resource_id, timestamp ):
 
 def create_video_event(	user,
 						nti_session, timestamp,
-						course, context_path,
+						root_context, context_path,
 						video_resource,
 						time_length,
 						max_time_length,
@@ -198,7 +200,6 @@ def create_video_event(	user,
 	vid = ResourceId.get_id( video_resource )
 	vid = get_resource_id( db, vid, create=True, max_time_length=max_time_length )
 
-	course_id = get_root_context_id( db, course, create=True )
 	timestamp = timestamp_type( timestamp )
 
 	existing_record = _video_view_exists( db, uid, vid, timestamp, video_event_type )
@@ -216,11 +217,13 @@ def create_video_event(	user,
 			return
 
 	context_path = get_context_path( context_path )
+	course_id, entity_root_context_id = get_root_context_ids( root_context )
 
 	new_object = VideoEvents(	user_id=uid,
 								session_id=sid,
 								timestamp=timestamp,
 								course_id=course_id,
+								entity_root_context_id=entity_root_context_id,
 								context_path=context_path,
 								resource_id=vid,
 								time_length=time_length,
@@ -247,13 +250,14 @@ def _resolve_resource_view( record, course=None, user=None ):
 	timestamp = record.timestamp
 	context_path = record.context_path
 	context_path = expand_context_path( context_path )
+	root_context = get_root_context_obj( record ) if course is None else course
 
 	resource_id = record.resource_id
 	resource_ntiid = get_resource_val( resource_id )
 
 	resource_event = AnalyticsResourceView(user=user,
 					timestamp=timestamp,
-					RootContext=course,
+					RootContext=root_context,
 					context_path=context_path,
 					ResourceId=resource_ntiid,
 					Duration=time_length)
@@ -270,6 +274,7 @@ def _resolve_video_view( record, course=None, user=None, max_time_length=None ):
 	timestamp = record.timestamp
 	context_path = record.context_path
 	context_path = expand_context_path( context_path )
+	root_context = get_root_context_obj( record ) if course is None else course
 
 	resource_id = record.resource_id
 	resource_ntiid = get_resource_val( resource_id )
@@ -284,7 +289,7 @@ def _resolve_video_view( record, course=None, user=None, max_time_length=None ):
 
 	video_event = video_type(user=user,
 				timestamp=timestamp,
-				RootContext=course,
+				RootContext=root_context,
 				context_path=context_path,
 				ResourceId=resource_ntiid,
 				Duration=time_length,
@@ -326,10 +331,11 @@ def get_user_resource_views( user, course=None, timestamp=None ):
 								course=course, timestamp=timestamp )
 	return resolve_objects( _resolve_resource_view, results, user=user, course=course )
 
-def get_user_video_views( user, course=None, timestamp=None ):
+def get_user_video_views( user=None, course=None, timestamp=None ):
 	filters = ( VideoEvents.video_event_type == VIDEO_WATCH, )
 	results = get_filtered_records( user, VideoEvents,
 								course=course, timestamp=timestamp,
 								filters=filters )
 	return resolve_objects( _resolve_video_view, results, user=user, course=course )
 
+get_video_views = get_user_video_views

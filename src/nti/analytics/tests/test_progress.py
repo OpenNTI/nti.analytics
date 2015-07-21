@@ -9,17 +9,19 @@ __docformat__ = "restructuredtext en"
 
 import time
 import fudge
+import zope.intid
 
-from unittest import TestCase
+from zope import component
 
 from hamcrest import is_
 from hamcrest import assert_that
 from hamcrest import none
 from hamcrest import not_none
 
+from unittest import TestCase
+
 from nti.analytics.common import timestamp_type
 
-from nti.analytics.database.root_context import _create_course
 from nti.analytics.database.boards import create_topic_view
 from nti.analytics.database.boards import create_topic
 from nti.analytics.database.users import create_user
@@ -37,10 +39,10 @@ from nti.dataserver.users import User
 from nti.dataserver.tests.mock_dataserver import WithMockDSTrans
 
 from nti.dataserver.contenttypes.forums.topic import CommunityHeadlineTopic
+from nti.dataserver.contenttypes.forums.forum import CommunityForum
 
 from nti.testing.time import time_monotonically_increases
 
-from . import AnalyticsTestBase
 from . import NTIAnalyticsTestCase
 
 class MockDBRecord( object ):
@@ -79,13 +81,10 @@ class TestProgress( TestCase ):
 		assert_that( result.LastModified, is_( 10 ))
 		assert_that( result.ResourceID, is_( 'test' ))
 
-class TestTopicProgress( AnalyticsTestBase ):
+class TestTopicProgress( NTIAnalyticsTestCase ):
 
 	def setUp(self):
 		super( TestTopicProgress, self ).setUp()
-		self._install_course()
-		self._install_user()
-		self._install_topic()
 
 	def _install_user(self):
 		self.user = 1
@@ -93,22 +92,35 @@ class TestTopicProgress( AnalyticsTestBase ):
 		return self.user
 
 	def _install_course(self):
-		course_id = 1
+		intids = component.getUtility( zope.intid.IIntIds )
 		self.course = new_course = CourseInstance()
-		setattr( new_course, '_ds_intid', course_id )
-		_create_course( self.db, new_course, course_id )
+		intids.register( new_course )
 		return new_course
 
 	def _install_topic(self):
+		forum = CommunityForum()
+		forum.creator = self.user
+		forum.NTIID = 'tag:nextthought.com,2011-10:imaforum'
+		forum.__parent__ = self.course
+		intids = component.getUtility( zope.intid.IIntIds )
+		intids.register( forum )
+
 		self.topic = CommunityHeadlineTopic()
 		self.topic.NTIID = 'tag:ntiid1'
-		create_topic( self.user, None, self.course, self.topic)
+		self.topic.__parent__ = forum
+		intids.register( self.topic )
+		create_topic( self.user, None, self.topic)
 
 	def _install_event(self, timestamp, time_length=None):
 		create_topic_view(self.user, None, timestamp, self.course, None, self.topic, time_length)
 
+	@WithMockDSTrans
 	@time_monotonically_increases
 	def test_topic_progress(self):
+		self._install_course()
+		self._install_user()
+		self._install_topic()
+
 		# Nothing
 		result = get_topic_progress( self.user, self.topic )
 		assert_that( result, none() )

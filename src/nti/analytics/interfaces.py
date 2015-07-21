@@ -75,27 +75,25 @@ class IBlogViewEvent(IAnalyticsViewEvent):
 	"""
 	blog_id = ValidTextLine(title="The blog ntiid.")
 
-class ICourseEvent(interface.Interface):
+class IRootContextEvent(interface.Interface):
 	"""
-	A course event.
+	An event rooted in a root context, typically an entity or course.
 	"""
-	# TODO Do we want to extend this field to
-	# represent users/communities?
-	RootContextID = ValidTextLine(title='Course ntiid', required=False)
+	RootContextID = ValidTextLine(title='Object ntiid', required=False)
 
-class ITopicViewEvent(IAnalyticsViewEvent, ICourseEvent):
+class ITopicViewEvent(IAnalyticsViewEvent, IRootContextEvent):
 	"""
 	A topic viewing event.
 	"""
 	topic_id = ValidTextLine(title='Topic ntiid')
 
-class IResourceEvent(IAnalyticsViewEvent, ICourseEvent):
+class IResourceEvent(IAnalyticsViewEvent, IRootContextEvent):
 	"""
 	Describes a resource viewing event.
 	"""
 	resource_id = ValidTextLine(title="The resource ntiid.")
 
-class IAssessmentViewEvent( IAnalyticsViewEvent, ICourseEvent ):
+class IAssessmentViewEvent( IAnalyticsViewEvent, IRootContextEvent ):
 	ResourceId = ValidTextLine(title="The assessment ntiid.", required=True)
 	ContentId = ValidTextLine(title="The resource page ntiid.", required=False)
 
@@ -109,7 +107,7 @@ class IAssignmentViewEvent( IAssessmentViewEvent ):
 	Describes an assignment viewing event.
 	"""
 
-class INoteViewEvent(IAnalyticsViewEvent, ICourseEvent):
+class INoteViewEvent(IAnalyticsViewEvent, IRootContextEvent):
 	"""
 	A note viewing event.
 	"""
@@ -135,7 +133,7 @@ class IVideoEvent(IResourceEvent):
 
 	PlaySpeed = Number(title="The play speed of the video", required=False)
 
-class IVideoPlaySpeedChangeEvent(IAnalyticsEvent, ICourseEvent):
+class IVideoPlaySpeedChangeEvent(IAnalyticsEvent, IRootContextEvent):
 	"""
 	Describes when a user changes the video play speed.
 	"""
@@ -147,6 +145,12 @@ class IVideoPlaySpeedChangeEvent(IAnalyticsEvent, ICourseEvent):
 
 	VideoTime = Number(title="The point at which the video play speed changes, in seconds.",
 						required=True)
+
+class ICourseEvent(interface.Interface):
+	"""
+	A course event.
+	"""
+	RootContextID = ValidTextLine(title='Course ntiid', required=True)
 
 class ICourseCatalogViewEvent(IAnalyticsViewEvent, ICourseEvent):
 	"""

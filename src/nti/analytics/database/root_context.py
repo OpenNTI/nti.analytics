@@ -177,7 +177,6 @@ def get_root_context_id( db, context_object, create=False ):
 		if ICourseInstance.providedBy( context_object ):
 			root_context_object = _get_or_create_course( db, context_object, context_ds_id )
 		else:
-			# TODO Assert content package? Raise if not?
 			root_context_object = _get_or_create_content_package( db, context_object, context_ds_id )
 	else:
 		if ICourseInstance.providedBy( context_object ):

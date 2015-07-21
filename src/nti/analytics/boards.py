@@ -38,7 +38,6 @@ from nti.analytics.sessions import get_nti_session_id
 from nti.analytics.common import get_creator
 from nti.analytics.common import get_deleted_time
 from nti.analytics.common import get_object_root
-from nti.analytics.common import get_course
 from nti.analytics.common import process_event
 from nti.analytics.common import get_rating_from_event
 
@@ -94,13 +93,11 @@ def _add_comment( oid, nti_session=None ):
 	if comment is not None:
 		user = get_creator( comment )
 		topic = get_object_root( comment, ITopic )
-		course = get_course( topic )
 		if topic is not None:
-			db_boards.create_forum_comment( user, nti_session, course, topic, comment )
-			logger.debug( 	"Forum comment created (user=%s) (topic=%s) (course=%s)",
+			db_boards.create_forum_comment( user, nti_session, topic, comment )
+			logger.debug( 	"Forum comment created (user=%s) (topic=%s)",
 							user,
-							getattr( topic, '__name__', topic ),
-							getattr( course, '__name__', course ) )
+							getattr( topic, '__name__', topic ) )
 
 def _remove_comment( comment_id, timestamp ):
 	db_boards.delete_forum_comment( timestamp, comment_id )
@@ -148,8 +145,7 @@ def _add_topic( oid, nti_session=None ):
 	topic = ntiids.find_object_with_ntiid( oid )
 	if topic is not None:
 		user = get_creator( topic )
-		course = get_course( topic )
-		db_boards.create_topic( user, nti_session, course, topic )
+		db_boards.create_topic( user, nti_session, topic )
 		logger.debug( "Topic created (user=%s) (topic=%s)",
 					user,
 					getattr( topic, '__name__', topic ))
@@ -236,12 +232,10 @@ def _add_forum( oid, nti_session=None ):
 	forum = ntiids.find_object_with_ntiid( oid )
 	if forum is not None:
 		user = get_creator( forum )
-		course = get_course( forum )
-		db_boards.create_forum( user, nti_session, course, forum )
-		logger.debug( 	"Forum created (user=%s) (forum=%s) (course=%s)",
+		db_boards.create_forum( user, nti_session, forum )
+		logger.debug( 	"Forum created (user=%s) (forum=%s)",
 						user,
-						getattr( forum, '__name__', forum ),
-						getattr( course, '__name__', course ) )
+						getattr( forum, '__name__', forum ) )
 
 @component.adapter( IForum, IIntIdAddedEvent )
 def _forum_added( forum, _ ):

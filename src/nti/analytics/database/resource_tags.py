@@ -34,6 +34,8 @@ from nti.analytics.read_models import AnalyticsNoteView
 from nti.analytics.read_models import AnalyticsHighlight
 from nti.analytics.read_models import AnalyticsBookmark
 
+from nti.analytics.resolvers import get_root_context
+
 from nti.analytics.database import Base
 from nti.analytics.database import get_analytics_db
 from nti.analytics.database import INTID_COLUMN_TYPE
@@ -44,18 +46,19 @@ from nti.analytics.database.meta_mixins import DeletedMixin
 from nti.analytics.database.meta_mixins import ResourceMixin
 from nti.analytics.database.meta_mixins import RatingsMixin
 from nti.analytics.database.meta_mixins import CreatorMixin
-from nti.analytics.database.meta_mixins import CourseMixin
+from nti.analytics.database.meta_mixins import RootContextMixin
 
 from nti.analytics.database.users import get_user
 from nti.analytics.database.users import get_or_create_user
-from nti.analytics.database.root_context import get_root_context
 from nti.analytics.database.root_context import get_root_context_id
 from nti.analytics.database.resources import get_resource_id
 
 from nti.analytics.database._utils import resolve_like
 from nti.analytics.database._utils import resolve_favorite
+from nti.analytics.database._utils import get_root_context_obj
 from nti.analytics.database._utils import get_filtered_records
 from nti.analytics.database._utils import get_context_path
+from nti.analytics.database._utils import get_root_context_ids
 from nti.analytics.database._utils import get_ratings_for_user_objects
 from nti.analytics.database._utils import get_replies_to_user as _get_replies_to_user
 from nti.analytics.database._utils import get_user_replies_to_others as _get_user_replies_to_others
@@ -68,16 +71,18 @@ class NoteMixin(ResourceMixin):
 	def note_id(cls):
 		return Column('note_id', Integer, ForeignKey("NotesCreated.note_id"), nullable=False, index=True )
 
-
 class NotesCreated(Base,BaseTableMixin,ResourceMixin,DeletedMixin,RatingsMixin):
 	__tablename__ = 'NotesCreated'
-	note_ds_id = Column('note_ds_id', INTID_COLUMN_TYPE, index=True, nullable=True, unique=False, autoincrement=False )
-	note_id = Column('note_id', Integer, Sequence( 'note_seq' ), index=True, nullable=False, primary_key=True )
+	note_ds_id = Column('note_ds_id', INTID_COLUMN_TYPE, index=True, nullable=True,
+					unique=False, autoincrement=False )
+	note_id = Column('note_id', Integer, Sequence( 'note_seq' ), index=True,
+					nullable=False, primary_key=True )
 
 	# Parent-id should be other notes; top-level notes will have null parent_ids
 	parent_id = Column('parent_id', Integer, nullable=True)
 	parent_user_id = Column('parent_user_id', Integer, index=True, nullable=True)
-	sharing = Column('sharing', Enum( 'PUBLIC', 'COURSE', 'OTHER', 'UNKNOWN' ), nullable=False )
+	sharing = Column('sharing', Enum( 'PUBLIC', 'COURSE', 'OTHER', 'UNKNOWN' ),
+					 nullable=False )
 	note_length = Column('note_length', Integer, nullable=True )
 
 class NotesViewed(Base,BaseViewMixin,NoteMixin):
@@ -87,12 +92,11 @@ class NotesViewed(Base,BaseViewMixin,NoteMixin):
         PrimaryKeyConstraint('note_id', 'user_id', 'timestamp'),
     )
 
-class NoteRatingMixin(CreatorMixin, CourseMixin):
+class NoteRatingMixin(CreatorMixin, RootContextMixin):
 
 	@declared_attr
 	def note_id(cls):
 		return Column('note_id', Integer, ForeignKey("NotesCreated.note_id"), nullable=False, index=True )
-
 
 class NoteFavorites(Base,BaseTableMixin,NoteRatingMixin):
 	__tablename__ = 'NoteFavorites'
@@ -164,7 +168,7 @@ def _get_note_id( db, note_ds_id ):
 
 _note_exists = _get_note_id
 
-def create_note(user, nti_session, course, note):
+def create_note(user, nti_session, note):
 	db = get_analytics_db()
 	user_record = get_or_create_user( user )
 	uid = user_record.user_id
@@ -179,6 +183,7 @@ def create_note(user, nti_session, course, note):
 					note_ds_id, user )
 		return
 
+	course = get_root_context( note )
 	course_id = get_root_context_id( db, course, create=True )
 	timestamp = get_created_timestamp( note )
 	sharing = _get_sharing_enum( note, course )
@@ -199,7 +204,7 @@ def create_note(user, nti_session, course, note):
 		else:
 			# We need to create our parent record
 			note_creator = get_creator( parent_note )
-			new_note = create_note( note_creator, None, course, parent_note )
+			new_note = create_note( note_creator, None, parent_note )
 			parent_id = new_note.note_id
 			parent_user_id = new_note.user_id
 			logger.info( 'Created parent note (user=%s) (note=%s)', note_creator, parent_note )
@@ -239,7 +244,7 @@ def _get_note_rating_record( db, table, user_id, note_id ):
 									table.note_id == note_id ).first()
 	return note_rating_record
 
-def _create_note_rating_record( db, table, user, session_id, timestamp, note_id, delta, creator_id, course_id ):
+def _create_note_rating_record( db, table, user, session_id, timestamp, delta, note_record ):
 	"""
 	Creates a like or favorite record, based on given table. If
 	the delta is negative, we delete the like or favorite record.
@@ -247,6 +252,10 @@ def _create_note_rating_record( db, table, user, session_id, timestamp, note_id,
 	if user is not None:
 		user_record = get_or_create_user( user )
 		user_id = user_record.user_id
+		creator_id = note_record.user_id
+		note_id = note_record.note_id
+		course_id = note_record.course_id
+		entity_root_context_id = note_record.entity_root_context_id
 
 		note_rating_record = _get_note_rating_record( db, table,
 													user_id, note_id )
@@ -259,7 +268,8 @@ def _create_note_rating_record( db, table, user, session_id, timestamp, note_id,
 								timestamp=timestamp,
 								session_id=session_id,
 								creator_id=creator_id,
-								course_id=course_id )
+								course_id=course_id,
+								entity_root_context_id=entity_root_context_id )
 			db.session.add( note_rating_record )
 		elif note_rating_record and delta < 0:
 			# Delete
@@ -274,12 +284,9 @@ def like_note( note, user, session_id, timestamp, delta ):
 	if db_note is not None:
 		db_note.like_count += delta
 		db.session.flush()
-		creator_id = db_note.user_id
-		note_id = db_note.note_id
-		course_id = db_note.course_id
 		_create_note_rating_record( db, NoteLikes, user,
 								session_id, timestamp,
-								note_id, delta, creator_id, course_id )
+								delta, db_note )
 
 def favorite_note( note, user, session_id, timestamp, delta ):
 	db = get_analytics_db()
@@ -290,12 +297,9 @@ def favorite_note( note, user, session_id, timestamp, delta ):
 	if db_note is not None:
 		db_note.favorite_count += delta
 		db.session.flush()
-		creator_id = db_note.user_id
-		note_id = db_note.note_id
-		course_id = db_note.course_id
 		_create_note_rating_record( db, NoteFavorites, user,
 								session_id, timestamp,
-								note_id, delta, creator_id, course_id )
+								delta, db_note )
 
 def flag_note( note, state ):
 	db = get_analytics_db()
@@ -311,7 +315,7 @@ def _note_view_exists( db, note_id, user_id, timestamp ):
 							NotesViewed.user_id == user_id,
 							NotesViewed.timestamp == timestamp ).first()
 
-def create_note_view(user, nti_session, timestamp, context_path, course, note):
+def create_note_view(user, nti_session, timestamp, context_path, root_context, note):
 	db = get_analytics_db()
 	user_record = get_or_create_user( user )
 	uid = user_record.user_id
@@ -323,11 +327,10 @@ def create_note_view(user, nti_session, timestamp, context_path, course, note):
 	note_id = _get_note_id( db, note_ds_id )
 	if note_id is None:
 		note_creator = get_creator( note )
-		new_note = create_note( note_creator, None, course, note )
+		new_note = create_note( note_creator, None, note )
 		note_id = new_note.note_id
 		logger.info( 'Created note (user=%s) (note=%s)', note_creator, note_id )
 
-	course_id = get_root_context_id( db, course, create=True )
 	timestamp = timestamp_type( timestamp )
 
 	if _note_view_exists( db, note_id, uid, timestamp ):
@@ -336,11 +339,13 @@ def create_note_view(user, nti_session, timestamp, context_path, course, note):
 		return
 
 	context_path = get_context_path( context_path )
+	course_id, entity_root_context_id = get_root_context_ids( root_context )
 
 	new_object = NotesViewed( 	user_id=uid,
 								session_id=sid,
 								timestamp=timestamp,
 								course_id=course_id,
+								entity_root_context_id=entity_root_context_id,
 								context_path=context_path,
 								resource_id=rid,
 								note_id=note_id )
@@ -350,7 +355,7 @@ def _highlight_exists( db, highlight_ds_id ):
 	return db.session.query( HighlightsCreated ).filter(
 							HighlightsCreated.highlight_ds_id == highlight_ds_id ).count()
 
-def create_highlight(user, nti_session, course, highlight):
+def create_highlight(user, nti_session, highlight):
 	db = get_analytics_db()
 	user_record = get_or_create_user( user )
 	uid = user_record.user_id
@@ -365,6 +370,7 @@ def create_highlight(user, nti_session, course, highlight):
 					highlight_ds_id, user )
 		return
 
+	course = get_root_context( highlight )
 	course_id = get_root_context_id( db, course, create=True )
 	timestamp = get_created_timestamp( highlight )
 
@@ -393,7 +399,7 @@ def _bookmark_exists( db, bookmark_ds_id ):
 	return db.session.query( BookmarksCreated ).filter(
 							BookmarksCreated.bookmark_ds_id == bookmark_ds_id ).count()
 
-def create_bookmark(user, nti_session, course, bookmark):
+def create_bookmark(user, nti_session, bookmark):
 	db = get_analytics_db()
 	user_record = get_or_create_user( user )
 	uid = user_record.user_id
@@ -408,6 +414,7 @@ def create_bookmark(user, nti_session, course, bookmark):
 					bookmark_ds_id, user )
 		return
 
+	course = get_root_context( bookmark )
 	course_id = get_root_context_id( db, course, create=True )
 	timestamp = get_created_timestamp( bookmark )
 
@@ -442,13 +449,13 @@ def _get_note_from_db_id( note_id ):
 def _resolve_note( row, user=None, course=None, parent_user=None ):
 	make_transient( row )
 	note = NoteId.get_object( row.note_ds_id )
-	course = get_root_context( row.course_id ) if course is None else course
+	root_context = get_root_context_obj( row ) if course is None else course
 	user = get_user( row.user_id ) if user is None else user
 
 	result = None
 	if 		note is not None \
 		and user is not None \
-		and course is not None:
+		and root_context is not None:
 
 		is_reply = row.parent_id is not None
 		if 		parent_user is None \
@@ -458,7 +465,7 @@ def _resolve_note( row, user=None, course=None, parent_user=None ):
 		result = AnalyticsNote( Note=note,
 								user=user,
 								timestamp=row.timestamp,
-								RootContext=course,
+								RootContext=root_context,
 								NoteLength=row.note_length,
 								Sharing=row.sharing,
 								Flagged=row.is_flagged,
@@ -491,7 +498,7 @@ def get_notes( user=None, course=None, timestamp=None, get_deleted=False, replie
 def _resolve_note_view( row, note=None, user=None, course=None ):
 	make_transient( row )
 	note = _get_note_from_db_id( row.note_id ) if note is None else note
-	course = get_root_context( row.course_id ) if course is None else course
+	course = get_root_context_obj( row.course_id ) if course is None else course
 	user = get_user( row.user_id ) if user is None else user
 	result = None
 
@@ -551,17 +558,17 @@ def get_replies_to_user( user, course=None, timestamp=None, get_deleted=False ):
 def _resolve_highlight( row, user=None, course=None ):
 	make_transient( row )
 	highlight = HighlightId.get_object( row.highlight_ds_id )
-	course = get_root_context( row.course_id ) if course is None else course
+	root_context = get_root_context_obj( row ) if course is None else course
 	user = get_user( row.user_id ) if user is None else user
 
 	result = None
 	if 		highlight is not None \
 		and user is not None \
-		and course is not None:
+		and root_context is not None:
 		result = AnalyticsHighlight( Highlight=highlight,
 								user=user,
 								timestamp=row.timestamp,
-								RootContext=course )
+								RootContext=root_context )
 	return result
 
 def get_highlights( user, course=None, timestamp=None, get_deleted=False ):
@@ -588,17 +595,17 @@ def get_highlights_created_for_course(course):
 def _resolve_bookmark( row, user=None, course=None ):
 	make_transient( row )
 	bookmark = BookmarkId.get_object( row.bookmark_ds_id )
-	course = get_root_context( row.course_id ) if course is None else course
+	root_context = get_root_context_obj( row ) if course is None else course
 	user = get_user( row.user_id ) if user is None else user
 
 	result = None
 	if 		bookmark is not None \
 		and user is not None \
-		and course is not None:
+		and root_context is not None:
 		result = AnalyticsBookmark( Bookmark=bookmark,
 								user=user,
 								timestamp=row.timestamp,
-								RootContext=course )
+								RootContext=root_context )
 	return result
 
 def get_bookmarks( user, course=None, timestamp=None, get_deleted=False ):

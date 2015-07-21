@@ -13,6 +13,7 @@ import fudge
 import zope.intid
 
 from datetime import datetime
+from datetime import timedelta
 
 from zope import component
 
@@ -21,6 +22,7 @@ from hamcrest import has_length
 from hamcrest import assert_that
 
 from nti.dataserver.users import User
+from nti.dataserver.users import Community
 
 from nti.contenttypes.courses.courses import CourseInstance
 
@@ -37,9 +39,11 @@ from ..boards import _like_topic
 from ..boards import _like_comment
 from ..boards import _favorite_topic
 from ..boards import _favorite_comment
+from ..boards import _add_topic
 from ..boards import get_topic_views
 from ..boards import get_replies_to_user
 from ..boards import get_forum_comments
+from ..boards import get_topics_created_for_user
 from ..boards import get_user_replies_to_others
 from ..boards import get_likes_for_users_topics
 from ..boards import get_forum_comments_for_user
@@ -291,11 +295,13 @@ class TestComments( NTIAnalyticsTestCase ):
 
 	@WithMockDSTrans
 	@fudge.patch( 'nti.ntiids.ntiids.find_object_with_ntiid' )
-	def test_topic_views(self, mock_find_object):
+	@fudge.patch( 'nti.analytics.resource_views._get_root_context' )
+	def test_topics(self, mock_find_object, mock_root_context):
 		user1 = User.create_user( username='new_user1', dataserver=self.ds )
 		intids = component.getUtility( zope.intid.IIntIds )
 		course = CourseInstance()
 		course._ds_intid = 123456
+		mock_root_context.is_callable().returns( course )
 
 		# Create forum/topic
 		# Should be lazily created
@@ -339,3 +345,32 @@ class TestComments( NTIAnalyticsTestCase ):
 
 		results = get_topic_views( user1, event.topic_id + 'xxx' )
 		assert_that( results, has_length( 0 ))
+
+		# View topic on entity stream
+		community = Community.create_community( username='community_name' )
+		mock_root_context.is_callable().returns( community )
+		event.timestamp = now + timedelta( minutes=5 )
+		_add_topic_event( event )
+
+		results = get_topic_views( user1 )
+		assert_that( results, has_length( 2 ))
+
+		results = get_topic_views( user1, course=course )
+		assert_that( results, has_length( 1 ))
+
+		# A topic created on entity
+		user2 = User.create_user( username='new_user2', dataserver=self.ds )
+		forum = GeneralForum()
+		forum.creator = user2
+		intids.register( forum )
+
+		topic = GeneralTopic()
+		topic.creator = user2
+		topic.__parent__ = forum
+		intids.register( topic )
+		forum.__parent__ = community
+		mock_find_object.is_callable().returns( topic )
+		_add_topic( topic )
+		topics = get_topics_created_for_user( user2 )
+		assert_that( topics, has_length( 1 ))
+		assert_that( topics[0].RootContext, is_( community ))

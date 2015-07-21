@@ -34,8 +34,6 @@ from nti.analytics.common import get_creator
 from nti.analytics.common import process_event
 from nti.analytics.common import get_rating_from_event
 
-from nti.analytics.resolvers import get_root_context
-
 from nti.analytics.database import resource_tags as db_resource_tags
 
 from nti.analytics.identifier import NoteId
@@ -58,21 +56,14 @@ def _get_job_queue():
 	factory = get_factory()
 	return factory.get_queue( TAGS_ANALYTICS )
 
-def _get_course( obj ):
-	__traceback_info__ = obj.containerId
-	result = get_root_context( obj )
-	return result
-
 # Notes
 def _add_note( oid, nti_session=None ):
 	note = ntiids.find_object_with_ntiid( oid )
 	if note is not None:
 		user = get_creator( note )
-		course = _get_course( note )
-		db_resource_tags.create_note( user, nti_session, course, note )
-		logger.debug( 	"Note created (user=%s) (course=%s) (note=%s)",
+		db_resource_tags.create_note( user, nti_session, note )
+		logger.debug( 	"Note created (user=%s) (note=%s)",
 						user,
-						getattr( course, '__name__', course ),
 						note )
 
 def _remove_note( note_id, timestamp=None ):
@@ -141,11 +132,8 @@ def _add_highlight( oid, nti_session=None ):
 	highlight = ntiids.find_object_with_ntiid( oid )
 	if highlight is not None:
 		user = get_creator( highlight )
-		course = _get_course( highlight )
-		db_resource_tags.create_highlight( user, nti_session, course, highlight )
-		logger.debug( "Highlight created (user=%s) (course=%s)",
-					user,
-					getattr( course, '__name__', course ) )
+		db_resource_tags.create_highlight( user, nti_session, highlight )
+		logger.debug( "Highlight created (user=%s)", user )
 
 def _remove_highlight( highlight_id, timestamp=None ):
 	db_resource_tags.delete_highlight( timestamp, highlight_id )
@@ -164,17 +152,13 @@ def _highlight_removed( obj, _ ):
 		highlight_id = HighlightId.get_id( obj )
 		process_event( _get_job_queue, _remove_highlight, highlight_id=highlight_id, timestamp=timestamp )
 
-
 # Bookmarks
 def _add_bookmark( oid, nti_session=None ):
 	bookmark = ntiids.find_object_with_ntiid( oid )
 	if bookmark is not None:
 		user = get_creator( bookmark )
-		course = _get_course( bookmark )
-		db_resource_tags.create_bookmark( user, nti_session, course, bookmark )
-		logger.debug( "Bookmark created (user=%s) (course=%s)",
-					user,
-					getattr( course, '__name__', course ) )
+		db_resource_tags.create_bookmark( user, nti_session, bookmark )
+		logger.debug( "Bookmark created (user=%s)", user )
 
 def _remove_bookmark( bookmark_id, timestamp=None ):
 	db_resource_tags.delete_bookmark( timestamp, bookmark_id )

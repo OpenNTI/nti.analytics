@@ -22,7 +22,6 @@ from nti.analytics.database import SESSION_COLUMN_TYPE
 from nti.analytics.database import INTID_COLUMN_TYPE
 
 class BaseTableMixin(object):
-
 	# For migrating data, we may not have sessions (or timestamps); thus this is optional.
 	@declared_attr
 	def session_id(cls):
@@ -61,7 +60,12 @@ class CourseMixin(object):
 	def __table_args__(cls):
 		return (Index('ix_%s_user_course' % cls.__tablename__, 'user_id', 'course_id'),)
 
-class ResourceMixin(CourseMixin):
+class RootContextMixin(object):
+	entity_root_context_id = Column('entity_root_context_id', Integer,
+									nullable=True, index=True, autoincrement=False)
+	course_id = Column('course_id', Integer, nullable=True, index=True, autoincrement=False)
+
+class ResourceMixin(RootContextMixin):
 
 	@declared_attr
 	def resource_id(cls):

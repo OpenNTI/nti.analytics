@@ -18,7 +18,11 @@ from sqlalchemy.schema import Sequence
 from sqlalchemy.schema import PrimaryKeyConstraint
 from sqlalchemy.ext.declarative import declared_attr
 
+from nti.dataserver.interfaces import IEntity
+
+from nti.analytics.common import get_course
 from nti.analytics.common import get_creator
+from nti.analytics.common import get_object_root
 from nti.analytics.common import get_created_timestamp
 from nti.analytics.common import timestamp_type
 from nti.analytics.common import get_ratings
@@ -41,17 +45,18 @@ from nti.analytics.database import should_update_event
 from nti.analytics.database.meta_mixins import BaseTableMixin
 from nti.analytics.database.meta_mixins import BaseViewMixin
 from nti.analytics.database.meta_mixins import CommentsMixin
-from nti.analytics.database.meta_mixins import CourseMixin
 from nti.analytics.database.meta_mixins import DeletedMixin
 from nti.analytics.database.meta_mixins import TimeLengthMixin
 from nti.analytics.database.meta_mixins import RatingsMixin
+from nti.analytics.database.meta_mixins import RootContextMixin
 from nti.analytics.database.meta_mixins import CreatorMixin
 
 from nti.analytics.database.users import get_or_create_user
 from nti.analytics.database.users import get_user
 from nti.analytics.database.root_context import get_root_context_id
-from nti.analytics.database.root_context import get_root_context
 
+from nti.analytics.database._utils import get_root_context_obj
+from nti.analytics.database._utils import get_root_context_ids
 from nti.analytics.database._utils import resolve_like
 from nti.analytics.database._utils import resolve_favorite
 from nti.analytics.database._utils import get_context_path
@@ -60,7 +65,7 @@ from nti.analytics.database._utils import get_ratings_for_user_objects
 from nti.analytics.database._utils import get_replies_to_user as _get_replies_to_user
 from nti.analytics.database._utils import get_user_replies_to_others as _get_user_replies_to_others
 
-class ForumMixin(CourseMixin):
+class ForumMixin(RootContextMixin):
 	@declared_attr
 	def forum_id(cls):
 		return Column('forum_id', Integer, ForeignKey("ForumsCreated.forum_id"), nullable=False, index=True )
@@ -70,12 +75,10 @@ class TopicMixin(ForumMixin):
 	def topic_id(cls):
 		return Column('topic_id', Integer, ForeignKey("TopicsCreated.topic_id"), nullable=False, index=True )
 
-
-class ForumsCreated(Base,BaseTableMixin,CourseMixin,DeletedMixin):
+class ForumsCreated(Base,BaseTableMixin,RootContextMixin,DeletedMixin):
 	__tablename__ = 'ForumsCreated'
 	forum_ds_id = Column('forum_ds_id', INTID_COLUMN_TYPE, nullable=True, index=True, autoincrement=False)
 	forum_id = Column('forum_id', Integer, Sequence( 'forum_seq' ), index=True, nullable=False, primary_key=True )
-
 
 class TopicsCreated(Base,BaseTableMixin,ForumMixin,DeletedMixin,RatingsMixin):
 	__tablename__ = 'TopicsCreated'
@@ -96,19 +99,19 @@ class TopicsViewed(Base,BaseViewMixin,TopicMixin,TimeLengthMixin):
         PrimaryKeyConstraint('user_id', 'topic_id', 'timestamp'),
     )
 
-class TopicRatingMixin(CreatorMixin, CourseMixin):
+class TopicRatingMixin(BaseTableMixin,CreatorMixin, RootContextMixin):
 	@declared_attr
 	def topic_id(cls):
 		return Column('topic_id', Integer, ForeignKey("TopicsCreated.topic_id"), nullable=False, index=True )
 
-class TopicFavorites(Base,BaseTableMixin,TopicRatingMixin):
+class TopicFavorites(Base,TopicRatingMixin):
 	__tablename__ = 'TopicFavorites'
 
 	__table_args__ = (
         PrimaryKeyConstraint('user_id', 'topic_id'),
     )
 
-class TopicLikes(Base,BaseTableMixin,TopicRatingMixin):
+class TopicLikes(Base,TopicRatingMixin):
 	__tablename__ = 'TopicLikes'
 
 	__table_args__ = (
@@ -122,22 +125,33 @@ class ForumCommentMixin(object):
 		return Column('comment_id', INTID_COLUMN_TYPE, ForeignKey("ForumCommentsCreated.comment_id"), nullable=False, index=True)
 
 
-class ForumCommentFavorites(Base,BaseTableMixin,ForumCommentMixin,CreatorMixin,CourseMixin):
+class ForumCommentFavorites(Base,BaseTableMixin,ForumCommentMixin,CreatorMixin,RootContextMixin):
 	__tablename__ = 'ForumCommentFavorites'
 
 	__table_args__ = (
         PrimaryKeyConstraint('user_id', 'comment_id'),
     )
 
-class ForumCommentLikes(Base,BaseTableMixin,ForumCommentMixin,CreatorMixin,CourseMixin):
+class ForumCommentLikes(Base,BaseTableMixin,ForumCommentMixin,CreatorMixin,RootContextMixin):
 	__tablename__ = 'ForumCommentLikes'
 
 	__table_args__ = (
         PrimaryKeyConstraint('user_id', 'comment_id'),
     )
 
+def _get_root_context_ids( obj ):
+	"""
+	For the given object, return the root context ids (tuple of context_id/entity_context_id),
+	creating records if needed.
+	"""
+	root_context = get_course( obj )
+	if root_context is None:
+		root_context = get_object_root( obj, IEntity )
+	return get_root_context_ids( root_context )
+
 def _get_forum( db, forum_ds_id ):
-	forum = db.session.query(ForumsCreated).filter( ForumsCreated.forum_ds_id == forum_ds_id ).first()
+	forum = db.session.query(ForumsCreated).filter(
+							ForumsCreated.forum_ds_id == forum_ds_id ).first()
 	return forum
 
 def _get_forum_id( db, forum_ds_id ):
@@ -173,7 +187,7 @@ def _get_topic_from_db_id( topic_id ):
 	topic = TopicId.get_object( topic.topic_ds_id )
 	return topic
 
-def create_forum(user, nti_session, course, forum):
+def create_forum(user, nti_session, forum):
 	db = get_analytics_db()
 	user_record = get_or_create_user( user )
 	uid = user_record.user_id
@@ -184,7 +198,7 @@ def create_forum(user, nti_session, course, forum):
 		logger.warn( 'Forum already exists (ds_id=%s) (user=%s)', forum_ds_id, user )
 		return
 
-	course_id = get_root_context_id( db, course, create=True )
+	course_id, entity_root_context_id = _get_root_context_ids( forum )
 
 	timestamp = get_created_timestamp( forum )
 
@@ -192,6 +206,7 @@ def create_forum(user, nti_session, course, forum):
 								session_id=sid,
 								timestamp=timestamp,
 								course_id=course_id,
+								entity_root_context_id=entity_root_context_id,
 								forum_ds_id=forum_ds_id )
 	db.session.add( new_object )
 	db.session.flush()
@@ -200,12 +215,9 @@ def create_forum(user, nti_session, course, forum):
 def delete_forum(timestamp, forum_ds_id):
 	db = get_analytics_db()
 	timestamp = timestamp_type( timestamp )
-	db_forum = db.session.query(ForumsCreated).filter( ForumsCreated.forum_ds_id==forum_ds_id ).first()
+	db_forum = db.session.query(ForumsCreated).filter(
+								ForumsCreated.forum_ds_id==forum_ds_id ).first()
 	if db_forum is None:
-		# This only occurs in tests (e.g nti.app.products.ou) when tearing down layers.
-		# Not really much we can do about it anyway; so log and forget.
-		# Could also happen with race conditions (the forum was never created in db).
-		logger.info( 'Attempted to delete forum (%s) that does not exist', forum_ds_id )
 		return
 
 	db_forum.deleted=timestamp
@@ -222,7 +234,7 @@ def delete_forum(timestamp, forum_ds_id):
 							{ ForumCommentsCreated.deleted : timestamp } )
 	db.session.flush()
 
-def create_topic(user, nti_session, course, topic):
+def create_topic(user, nti_session, topic):
 	db = get_analytics_db()
 	user_record = get_or_create_user( user )
 	uid = user_record.user_id
@@ -236,17 +248,17 @@ def create_topic(user, nti_session, course, topic):
 		return
 
 	fid = _get_forum_id_from_forum( db, topic.__parent__ )
+	forum = topic.__parent__
 
 	if not fid:
 		# Ok, create our forum.
-		forum = topic.__parent__
 		forum_creator = get_creator( forum )
-		new_forum = create_forum( forum_creator, None, course, forum )
-		logger.info( 'Created forum (forum=%s) (user=%s) (course=%s)',
-					forum, forum_creator, course )
+		new_forum = create_forum( forum_creator, None, forum )
+		logger.info( 'Created forum (forum=%s) (user=%s)',
+					forum, forum_creator )
 		fid = new_forum.forum_id
 
-	course_id = get_root_context_id( db, course, create=True )
+	course_id, entity_root_context_id = _get_root_context_ids( forum )
 
 	timestamp = get_created_timestamp( topic )
 	like_count, favorite_count, is_flagged = get_ratings( topic )
@@ -255,6 +267,7 @@ def create_topic(user, nti_session, course, topic):
 									session_id=sid,
 									timestamp=timestamp,
 									course_id=course_id,
+									entity_root_context_id=entity_root_context_id,
 									forum_id=fid,
 									topic_ds_id=topic_ds_id,
 									like_count=like_count,
@@ -287,7 +300,7 @@ def _get_topic_rating_record( db, table, user_id, topic_id ):
 									table.topic_id == topic_id ).first()
 	return topic_rating_record
 
-def _create_topic_rating_record( db, table, user, session_id, timestamp, topic_id, delta, creator_id, course_id ):
+def _create_topic_rating_record( db, table, user, session_id, timestamp, topic_id, delta, creator_id, course_id, entity_root_context_id ):
 	"""
 	Creates a like or favorite record, based on given table. If
 	the delta is negative, we delete the like or favorite record.
@@ -307,7 +320,8 @@ def _create_topic_rating_record( db, table, user, session_id, timestamp, topic_i
 								timestamp=timestamp,
 								session_id=session_id,
 								creator_id=creator_id,
-								course_id=course_id )
+								course_id=course_id,
+								entity_root_context_id=entity_root_context_id )
 			db.session.add( topic_rating_record )
 		elif topic_rating_record and delta < 0:
 			# Delete
@@ -326,9 +340,10 @@ def like_topic( topic, user, session_id, timestamp, delta ):
 		topic_id = db_topic.topic_id
 		creator_id = db_topic.user_id
 		course_id = db_topic.course_id
+		entity_root_context_id = db_topic.entity_root_context_id
 		_create_topic_rating_record( db, TopicLikes, user,
 								session_id, timestamp, topic_id, delta,
-								creator_id, course_id )
+								creator_id, course_id, entity_root_context_id )
 
 def favorite_topic( topic, user, session_id, timestamp, delta ):
 	db = get_analytics_db()
@@ -342,9 +357,10 @@ def favorite_topic( topic, user, session_id, timestamp, delta ):
 		topic_id = db_topic.topic_id
 		creator_id = db_topic.user_id
 		course_id = db_topic.course_id
+		entity_root_context_id = db_topic.entity_root_context_id
 		_create_topic_rating_record( db, TopicFavorites, user,
 								session_id, timestamp, topic_id, delta,
-								creator_id, course_id )
+								creator_id, course_id, entity_root_context_id )
 
 def flag_topic( topic, state ):
 	db = get_analytics_db()
@@ -361,7 +377,7 @@ def _topic_view_exists( db, user_id, topic_id, timestamp ):
 							TopicsViewed.topic_id == topic_id,
 							TopicsViewed.timestamp == timestamp ).first()
 
-def create_topic_view(user, nti_session, timestamp, course, context_path, topic, time_length):
+def create_topic_view(user, nti_session, timestamp, root_context, context_path, topic, time_length):
 	db = get_analytics_db()
 	user_record = get_or_create_user( user )
 	uid = user_record.user_id
@@ -372,14 +388,14 @@ def create_topic_view(user, nti_session, timestamp, course, context_path, topic,
 	if not did:
 		# Create our topic (and forum) if necessary.
 		topic_creator = get_creator( topic )
-		new_topic = create_topic( topic_creator, None, course, topic )
-		logger.info( 'Created topic (topic=%s) (user=%s) (course=%s)',
-					topic, topic_creator, course )
+		new_topic = create_topic( topic_creator, None, topic )
+		logger.info( 'Created topic (topic=%s) (user=%s)',
+					topic, topic_creator )
 		did = new_topic.topic_id
 
 	fid = _get_forum_id_from_forum( db, topic.__parent__ )
 
-	course_id = get_root_context_id( db, course, create=True )
+	course_id, entity_root_context_id = get_root_context_ids( root_context )
 	timestamp = timestamp_type( timestamp )
 
 	existing_record = _topic_view_exists( db, uid, did, timestamp )
@@ -399,6 +415,7 @@ def create_topic_view(user, nti_session, timestamp, course, context_path, topic,
 								session_id=sid,
 								timestamp=timestamp,
 								course_id=course_id,
+								entity_root_context_id=entity_root_context_id,
 								context_path=context_path,
 								forum_id=fid,
 								topic_id=did,
@@ -409,7 +426,7 @@ def _comment_exists( db, comment_id ):
 	return db.session.query( ForumCommentsCreated ).filter(
 							ForumCommentsCreated.comment_id == comment_id ).count()
 
-def create_forum_comment(user, nti_session, course, topic, comment):
+def create_forum_comment(user, nti_session, topic, comment):
 	db = get_analytics_db()
 	user_record = get_or_create_user( user )
 	uid = user_record.user_id
@@ -421,9 +438,9 @@ def create_forum_comment(user, nti_session, course, topic, comment):
 	if not topic_id:
 		# Create our topic (and forum) if necessary.
 		topic_creator = get_creator( topic )
-		new_topic = create_topic( topic_creator, None, course, topic )
-		logger.info( 'Created topic (topic=%s) (user=%s) (course=%s)',
-					topic, topic_creator, course )
+		new_topic = create_topic( topic_creator, None, topic )
+		logger.info( 'Created topic (topic=%s) (user=%s)',
+					topic, topic_creator )
 		topic_id = new_topic.topic_id
 
 	fid = _get_forum_id_from_forum( db, forum )
@@ -433,7 +450,7 @@ def create_forum_comment(user, nti_session, course, topic, comment):
 					user, cid )
 		return
 
-	course_id = get_root_context_id( db, course, create=True )
+	course_id, entity_root_context_id = _get_root_context_ids( forum )
 	pid = parent_user_id = None
 	timestamp = get_created_timestamp( comment )
 	like_count, favorite_count, is_flagged = get_ratings( comment )
@@ -451,6 +468,7 @@ def create_forum_comment(user, nti_session, course, topic, comment):
 										session_id=sid,
 										timestamp=timestamp,
 										course_id=course_id,
+										entity_root_context_id=entity_root_context_id,
 										forum_id=fid,
 										topic_id=topic_id,
 										parent_id=pid,
@@ -479,7 +497,7 @@ def _get_comment_rating_record( db, table, user_id, comment_id ):
 									table.comment_id == comment_id ).first()
 	return comment_rating_record
 
-def _create_forum_comment_rating_record( db, table, user, session_id, timestamp, comment_id, delta, creator_id, course_id ):
+def _create_forum_comment_rating_record( db, table, user, session_id, timestamp, comment_id, delta, creator_id, course_id, entity_root_context_id ):
 	"""
 	Creates a like or favorite record, based on given table. If
 	the delta is negative, we delete the like or favorite record.
@@ -499,7 +517,8 @@ def _create_forum_comment_rating_record( db, table, user, session_id, timestamp,
 								timestamp=timestamp,
 								session_id=session_id,
 								creator_id=creator_id,
-								course_id=course_id )
+								course_id=course_id,
+								entity_root_context_id=entity_root_context_id )
 			db.session.add( comment_rating_record )
 		elif comment_rating_record and delta < 0:
 			# Delete
@@ -518,9 +537,10 @@ def like_comment( comment, user, session_id, timestamp, delta ):
 		creator_id = db_comment.user_id
 		comment_id = db_comment.comment_id
 		course_id = db_comment.course_id
+		entity_root_context_id = db_comment.entity_root_context_id
 		_create_forum_comment_rating_record( db, ForumCommentLikes, user,
 								session_id, timestamp, comment_id, delta,
-								creator_id, course_id )
+								creator_id, course_id, entity_root_context_id )
 
 def favorite_comment( comment, user, session_id, timestamp, delta ):
 	db = get_analytics_db()
@@ -534,9 +554,10 @@ def favorite_comment( comment, user, session_id, timestamp, delta ):
 		creator_id = db_comment.user_id
 		comment_id = db_comment.comment_id
 		course_id = db_comment.course_id
+		entity_root_context_id = db_comment.entity_root_context_id
 		_create_forum_comment_rating_record( db, ForumCommentFavorites, user,
 								session_id, timestamp, comment_id, delta,
-								creator_id, course_id )
+								creator_id, course_id, entity_root_context_id )
 
 def flag_comment( comment, state ):
 	db = get_analytics_db()
@@ -550,13 +571,13 @@ def _resolve_comment( row, user=None, course=None, parent_user=None ):
 	# Detach this from the db, resolving objects as we go.
 	make_transient( row )
 	comment = CommentId.get_object( row.comment_id )
-	course = get_root_context( row.course_id ) if course is None else course
+	root_context = get_root_context_obj( row ) if course is None else course
 	user = get_user( row.user_id ) if user is None else user
 	result = None
 
 	if 		comment is not None \
 		and user is not None \
-		and course is not None:
+		and root_context is not None:
 
 		is_reply = row.parent_id is not None
 		if 		parent_user is None \
@@ -570,7 +591,7 @@ def _resolve_comment( row, user=None, course=None, parent_user=None ):
 								Flagged=row.is_flagged,
 								LikeCount=row.like_count,
 								FavoriteCount=row.favorite_count,
-								RootContext=course,
+								RootContext=root_context,
 								IsReply=is_reply,
 								RepliedToUser=parent_user )
 	return result
@@ -578,33 +599,33 @@ def _resolve_comment( row, user=None, course=None, parent_user=None ):
 def _resolve_topic( row, user=None, course=None ):
 	make_transient( row )
 	topic = TopicId.get_object( row.topic_ds_id )
-	course = get_root_context( row.course_id ) if course is None else course
+	root_context = get_root_context_obj( row ) if course is None else course
 	user = get_user( row.user_id ) if user is None else user
 	result = None
 
 	if 		topic is not None \
 		and user is not None \
-		and course is not None:
+		and root_context is not None:
 		result = AnalyticsTopic( Topic=topic,
 								user=user,
 								timestamp=row.timestamp,
-								RootContext=course )
+								RootContext=root_context )
 	return result
 
 def _resolve_topic_view( row, topic=None, user=None, course=None ):
 	make_transient( row )
 	topic = _get_topic_from_db_id( row.topic_id ) if topic is None else topic
-	course = get_root_context( row.course_id ) if course is None else course
+	root_context = get_root_context_obj( row ) if course is None else course
 	user = get_user( row.user_id ) if user is None else user
 	result = None
 
 	if 		topic is not None \
 		and user is not None \
-		and course is not None:
+		and root_context is not None:
 		result = AnalyticsTopicView( Topic=topic,
 								user=user,
 								timestamp=row.timestamp,
-								RootContext=course,
+								RootContext=root_context,
 								Duration=row.time_length )
 	return result
 
