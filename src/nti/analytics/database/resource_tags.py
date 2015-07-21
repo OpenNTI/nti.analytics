@@ -498,7 +498,7 @@ def get_notes( user=None, course=None, timestamp=None, get_deleted=False, replie
 def _resolve_note_view( row, note=None, user=None, course=None ):
 	make_transient( row )
 	note = _get_note_from_db_id( row.note_id ) if note is None else note
-	course = get_root_context_obj( row.course_id ) if course is None else course
+	course = get_root_context_obj( row ) if course is None else course
 	user = get_user( row.user_id ) if user is None else user
 	result = None
 
