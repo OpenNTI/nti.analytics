@@ -31,12 +31,16 @@ from nti.analytics.interfaces import ICourseCatalogViewEvent
 from nti.analytics.interfaces import IVideoPlaySpeedChangeEvent
 from nti.analytics.interfaces import IAssignmentViewEvent
 from nti.analytics.interfaces import ISelfAssessmentViewEvent
+from nti.analytics.interfaces import IProfileViewEvent
+from nti.analytics.interfaces import IProfileActivityViewEvent
+from nti.analytics.interfaces import IProfileMembershipViewEvent
 
 from nti.analytics.common import get_entity
 from nti.analytics.common import process_event
 
 from nti.analytics.sessions import get_nti_session_id
 
+from nti.analytics.database import users as db_users
 from nti.analytics.database import blogs as db_blogs
 from nti.analytics.database import boards as db_boards
 from nti.analytics.database import enrollments as db_enrollments
@@ -58,6 +62,7 @@ from nti.analytics.recorded import ResourceViewedRecordedEvent
 
 from nti.analytics import get_factory
 from nti.analytics import get_current_username
+from nti.analytics import SOCIAL_ANALYTICS
 from nti.analytics import BLOG_VIEW_ANALYTICS
 from nti.analytics import NOTE_VIEW_ANALYTICS
 from nti.analytics import TOPIC_VIEW_ANALYTICS
@@ -141,7 +146,7 @@ def _get_root_context( event ):
 		result = _get_course( event )
 	return result
 
-def _validate_analytics_event( event, object_id ):
+def _validate_analytics_event( event, object_id=None ):
 	""" Validate our events, sanitizing as we go. """
 	if object_id:
 		# Cannot do much without an object; probably deleted.
@@ -437,7 +442,6 @@ def _add_video_event( event, nti_session=None ):
 					event.event_type, event.video_start_time,
 					event.video_end_time, event.time_length )
 
-
 	if event.event_type == 'WATCH':
 		clazz = VideoWatchRecordedEvent
 	else:
@@ -479,6 +483,35 @@ def _add_play_speed_event( event, nti_session=None ):
 					resource_id,
 					event.OldPlaySpeed,
 					event.NewPlaySpeed )
+
+def _validate_profile_event( event ):
+	_validate_analytics_event( event )
+	profile_entity = get_entity( event.ProfileEntity )
+	if profile_entity is None:
+		raise UnrecoverableAnalyticsError(
+							'Event received with non-existent profile user (user=%s) (event=%s)' %
+							( event.ProfileEntity, event ) )
+
+def _do_add_profile_event( event, to_call, nti_session=None ):
+	try:
+		_validate_profile_event( event )
+	except UnrecoverableAnalyticsError as e:
+		logger.warn( 'Error while validating event (%s)', e )
+		return
+	to_call( event, nti_session )
+
+def _add_profile_event( event, nti_session=None ):
+	_do_add_profile_event( db_users.create_profile_view, event, nti_session )
+
+def _add_profile_activity_event( event, nti_session=None ):
+	_do_add_profile_event( db_users.create_profile_activity_view, event, nti_session )
+
+def _add_profile_membership_event( event, nti_session=None ):
+	_do_add_profile_event( db_users.create_profile_membership_view, event, nti_session )
+
+def _get_profile_queue():
+	factory = get_factory()
+	return factory.get_queue( SOCIAL_ANALYTICS )
 
 def _get_resource_queue():
 	factory = get_factory()
@@ -533,6 +566,12 @@ def handle_events( batch_events ):
 			process_event( _get_catalog_queue, _add_catalog_event, event=event, nti_session=nti_session )
 		elif IVideoPlaySpeedChangeEvent.providedBy( event ):
 			process_event( _get_video_queue, _add_play_speed_event, event=event, nti_session=nti_session )
+		elif IProfileActivityViewEvent.providedBy( event ):
+			process_event( _get_profile_queue, _add_profile_activity_event, event=event, nti_session=nti_session )
+		elif IProfileMembershipViewEvent.providedBy( event ):
+			process_event( _get_profile_queue, _add_profile_membership_event, event=event, nti_session=nti_session )
+		elif IProfileViewEvent.providedBy( event ):
+			process_event( _get_profile_queue, _add_profile_event, event=event, nti_session=nti_session )
 	# If we validated early, we could return something meaningful.
 	# But we'd have to handle all validation exceptions as to not lose the valid
 	# events. The nti.async.processor does this and at least drops the bad

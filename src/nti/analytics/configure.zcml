@@ -113,7 +113,10 @@
 						 .interfaces.IAnalyticsClientParams
 						 .interfaces.ISelfAssessmentViewEvent
 						 .interfaces.IAssignmentViewEvent
-						 .interfaces.IVideoPlaySpeedChangeEvent"
+						 .interfaces.IVideoPlaySpeedChangeEvent
+						 .interfaces.IProfileViewEvent
+						 .interfaces.IProfileActivityViewEvent
+						 .interfaces.IProfileMembershipViewEvent"
 		modules=".model" />
 
 	<adapter factory=".internalization._ResourceEventUpdater"

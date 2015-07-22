@@ -36,6 +36,9 @@ from nti.analytics.model import VideoPlaySpeedChangeEvent
 from nti.analytics.model import AnalyticsClientParams
 from nti.analytics.model import SelfAssessmentViewEvent
 from nti.analytics.model import AssignmentViewEvent
+from nti.analytics.model import ProfileViewEvent
+from nti.analytics.model import ProfileActivityViewEvent
+from nti.analytics.model import ProfileMembershipViewEvent
 
 from nti.analytics.interfaces import IVideoEvent
 from nti.analytics.interfaces import IResourceEvent
@@ -45,6 +48,9 @@ from nti.analytics.interfaces import ITopicViewEvent
 from nti.analytics.interfaces import IAnalyticsSessions
 from nti.analytics.interfaces import IBatchResourceEvents
 from nti.analytics.interfaces import ICourseCatalogViewEvent
+from nti.analytics.interfaces import IProfileViewEvent
+from nti.analytics.interfaces import IProfileActivityViewEvent
+from nti.analytics.interfaces import IProfileMembershipViewEvent
 from nti.analytics.interfaces import IVideoPlaySpeedChangeEvent
 from nti.analytics.interfaces import ISelfAssessmentViewEvent
 from nti.analytics.interfaces import IAssignmentViewEvent
@@ -63,6 +69,7 @@ from nti.analytics.tests import NTIAnalyticsTestCase
 
 timestamp = time.mktime( datetime.utcnow().timetuple() )
 user = 'jzuech@nextthought.com'
+entity = 'ou.nextthought.com'
 course = 'CS1300'
 context_path = ['ntiid:lesson1']
 resource_id = 'ntiid:lesson1_chapter1'
@@ -159,6 +166,21 @@ play_speed_event = VideoPlaySpeedChangeEvent(
 				OldPlaySpeed=old_play_speed,
 				NewPlaySpeed=new_play_speed,
 				VideoTime=video_start_time )
+
+profile_event = ProfileViewEvent(user=user,
+					timestamp=timestamp,
+					ProfileEntity=entity,
+					Duration=time_length)
+
+profile_activity_event = ProfileActivityViewEvent(user=user,
+					timestamp=timestamp,
+					ProfileEntity=entity,
+					Duration=time_length)
+
+profile_membership_event = ProfileMembershipViewEvent(user=user,
+					timestamp=timestamp,
+					ProfileEntity=entity,
+					Duration=time_length)
 
 session = AnalyticsSession( SessionStartTime=timestamp, SessionEndTime=timestamp+1 )
 
@@ -476,6 +498,32 @@ class TestResourceEvents(NTIAnalyticsTestCase):
 		f_new = pickle.loads(f_string)
 		assert_that(f_new, has_property('Duration', 10))
 		assert_that(f_new, has_property('RootContextID', 'foo'))
+
+	def _do_test_profile(self, event, event_type):
+		assert_that(event, verifiably_provides( event_type ) )
+		ext_obj = toExternalObject(event)
+		assert_that(ext_obj, has_entry('Class', event.__external_class_name__ ))
+		assert_that(ext_obj, has_entry('MimeType', event.mimeType ))
+
+		factory = internalization.find_factory_for(ext_obj)
+		assert_that(factory, is_(not_none()))
+
+		new_io = factory()
+		internalization.update_from_external_object(new_io, ext_obj)
+		assert_that(new_io, has_property('user', is_( user )))
+		assert_that(new_io, has_property('timestamp', is_( timestamp )))
+		assert_that(new_io, has_property('context_path', none()))
+		assert_that(new_io, has_property('Duration', is_( time_length ) ))
+		assert_that(new_io, has_property('ProfileEntity', is_( entity )))
+
+	def test_profile(self):
+		self._do_test_profile( profile_event, IProfileViewEvent )
+
+	def test_profile_activity(self):
+		self._do_test_profile( profile_activity_event, IProfileActivityViewEvent )
+
+	def test_profile_membership(self):
+		self._do_test_profile( profile_membership_event, IProfileMembershipViewEvent )
 
 class TestProgress(NTIAnalyticsTestCase):
 

@@ -113,6 +113,22 @@ class INoteViewEvent(IAnalyticsViewEvent, IRootContextEvent):
 	"""
 	note_id = ValidTextLine(title="The note ntiid.")
 
+class IProfileViewEvent(IAnalyticsViewEvent):
+	"""
+	A profile viewing event.
+	"""
+	ProfileEntity = ValidTextLine(title="The profile entity username.", required=True)
+
+class IProfileActivityViewEvent(IProfileViewEvent):
+	"""
+	A profile activity viewing event.
+	"""
+
+class IProfileMembershipViewEvent(IProfileViewEvent):
+	"""
+	A profile membership viewing event.
+	"""
+
 class IVideoEvent(IResourceEvent):
 	"""
 	Describes a video event.

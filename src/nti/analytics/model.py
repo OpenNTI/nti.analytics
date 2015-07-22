@@ -39,6 +39,9 @@ from nti.analytics.interfaces import IAnalyticsClientParams
 from nti.analytics.interfaces import IVideoPlaySpeedChangeEvent
 from nti.analytics.interfaces import ISelfAssessmentViewEvent
 from nti.analytics.interfaces import IAssignmentViewEvent
+from nti.analytics.interfaces import IProfileViewEvent
+from nti.analytics.interfaces import IProfileActivityViewEvent
+from nti.analytics.interfaces import IProfileMembershipViewEvent
 
 from nti.dataserver.interfaces import IUser
 
@@ -156,6 +159,42 @@ class VideoPlaySpeedChangeEvent(SchemaConfigured):
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.videoplayspeedchange'
 
 	resource_id = alias('ResourceId')
+
+	def __init__(self, *args, **kwargs):
+		SchemaConfigured.__init__(self, *args, **kwargs)
+
+@interface.implementer(IProfileViewEvent)
+class ProfileViewEvent(SchemaConfigured):
+	createDirectFieldProperties(IProfileViewEvent)
+
+	__external_can_create__ = True
+	__external_class_name__ = "ProfileViewEvent"
+	mime_type = mimeType = 'application/vnd.nextthought.analytics.profileviewevent'
+	time_length = alias('Duration')
+
+	def __init__(self, *args, **kwargs):
+		SchemaConfigured.__init__(self, *args, **kwargs)
+
+@interface.implementer(IProfileActivityViewEvent)
+class ProfileActivityViewEvent(SchemaConfigured):
+	createDirectFieldProperties(IProfileActivityViewEvent)
+
+	__external_can_create__ = True
+	__external_class_name__ = "ProfileActivityViewEvent"
+	mime_type = mimeType = 'application/vnd.nextthought.analytics.profileactivityviewevent'
+	time_length = alias('Duration')
+
+	def __init__(self, *args, **kwargs):
+		SchemaConfigured.__init__(self, *args, **kwargs)
+
+@interface.implementer(IProfileMembershipViewEvent)
+class ProfileMembershipViewEvent(SchemaConfigured):
+	createDirectFieldProperties(IProfileMembershipViewEvent)
+
+	__external_can_create__ = True
+	__external_class_name__ = "ProfileMembershipViewEvent"
+	mime_type = mimeType = 'application/vnd.nextthought.analytics.profilemembershipviewevent'
+	time_length = alias('Duration')
 
 	def __init__(self, *args, **kwargs):
 		SchemaConfigured.__init__(self, *args, **kwargs)
