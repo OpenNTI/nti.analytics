@@ -288,6 +288,7 @@ def _resolve_video_view( record, course=None, user=None, max_time_length=None ):
 		video_type = AnalyticsVideoSkip
 
 	video_event = video_type(user=user,
+				SessionID=record.session_id,
 				timestamp=timestamp,
 				RootContext=root_context,
 				context_path=context_path,
@@ -332,7 +333,8 @@ def get_user_resource_views( user, course=None, timestamp=None ):
 	return resolve_objects( _resolve_resource_view, results, user=user, course=course )
 
 def get_user_video_views( user=None, course=None, timestamp=None ):
-	filters = ( VideoEvents.video_event_type == VIDEO_WATCH, )
+	filters = ( VideoEvents.video_event_type == VIDEO_WATCH,
+				VideoEvents.time_length > 1 )
 	results = get_filtered_records( user, VideoEvents,
 								course=course, timestamp=timestamp,
 								filters=filters )
