@@ -69,9 +69,14 @@ def get_resource_id( db, resource_val, create=False, max_time_length=None ):
 	resource = get_resource_record( db, resource_val, create, max_time_length )
 	return resource.resource_id if resource is not None else None
 
-def get_resource_val( resource_id ):
-	""" Returns the ds resource id (probably ntiid) for the given db id. """
+def get_resource_record_from_id( resource_id ):
+	""" Returns the ds resource for the given db id. """
 	db = get_analytics_db()
 	resource_record = db.session.query( Resources ).filter(
 										Resources.resource_id == resource_id ).first()
-	return resource_record.resource_ds_id
+	return resource_record
+
+def get_resource_val( resource_id ):
+	""" Returns the ds resource id (probably ntiid) for the given db id. """
+	resource_record = get_resource_record_from_id( resource_id )
+	return resource_record and resource_record.resource_ds_id

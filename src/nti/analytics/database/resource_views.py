@@ -46,6 +46,7 @@ from nti.analytics.database.users import get_user_db_id
 from nti.analytics.database.resources import get_resource_id
 from nti.analytics.database.resources import get_resource_val
 from nti.analytics.database.resources import get_resource_record
+from nti.analytics.database.resources import get_resource_record_from_id
 
 from nti.analytics.database._utils import expand_context_path
 from nti.analytics.database._utils import get_context_path
@@ -285,6 +286,10 @@ def _resolve_video_view( record, course=None, user=None, max_time_length=None ):
 	video_start_time = record.video_start_time
 	video_end_time = record.video_end_time
 	with_transcript = record.with_transcript
+
+	if max_time_length is None:
+		resource_record = get_resource_record_from_id( record.resource_id )
+		max_time_length = resource_record.max_time_length
 
 	if record.video_event_type == 'WATCH':
 		video_type = AnalyticsVideoView
