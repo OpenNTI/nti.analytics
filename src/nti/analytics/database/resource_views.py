@@ -39,8 +39,10 @@ from nti.analytics.database.meta_mixins import BaseTableMixin
 from nti.analytics.database.meta_mixins import ResourceViewMixin
 from nti.analytics.database.meta_mixins import TimeLengthMixin
 
+from nti.analytics.database.users import get_user
 from nti.analytics.database.users import get_or_create_user
 from nti.analytics.database.users import get_user_db_id
+
 from nti.analytics.database.resources import get_resource_id
 from nti.analytics.database.resources import get_resource_val
 from nti.analytics.database.resources import get_resource_record
@@ -251,6 +253,7 @@ def _resolve_resource_view( record, course=None, user=None ):
 	context_path = record.context_path
 	context_path = expand_context_path( context_path )
 	root_context = get_root_context_obj( record ) if course is None else course
+	user = get_user( record.user_id ) if user is None else user
 
 	resource_id = record.resource_id
 	resource_ntiid = get_resource_val( resource_id )
@@ -275,6 +278,7 @@ def _resolve_video_view( record, course=None, user=None, max_time_length=None ):
 	context_path = record.context_path
 	context_path = expand_context_path( context_path )
 	root_context = get_root_context_obj( record ) if course is None else course
+	user = get_user( record.user_id ) if user is None else user
 
 	resource_id = record.resource_id
 	resource_ntiid = get_resource_val( resource_id )
