@@ -8,7 +8,9 @@ from __future__ import print_function, unicode_literals, absolute_import, divisi
 __docformat__ = "restructuredtext en"
 
 from zope import interface
+
 from zope.container.interfaces import IContained
+
 from zope.interface.interfaces import ObjectEvent, IObjectEvent
 
 from dolmen.builtins import IString
@@ -24,19 +26,26 @@ from nti.dataserver.interfaces import IUser
 from nti.dataserver.contenttypes.forums.interfaces import ITopic
 
 from nti.schema.field import Bool
+from nti.schema.field import List
 from nti.schema.field import Number
 from nti.schema.field import Object
 from nti.schema.field import Variant
+from nti.schema.field import ValidTextLine
 
 class IObjectRecordedEvent(IObjectEvent):
 	user = Object(IUser, title="user that viewed object")
-	timestamp = Number(	title=u"The timestamp when this event occurred",
+	timestamp = Number(title=u"The timestamp when this event occurred",
 						default=0.0,
-						required=False )
+						required=False)
 	session = interface.Attribute("analytics session")
 
 class IObjectViewedRecordedEvent(IObjectRecordedEvent):
-	pass
+	context_path = List(title='Context path',
+						description='List of ntiid locations describing where the event occurred.',
+						min_length=0,
+						default=None,
+						required=False,
+						value_type=ValidTextLine(title='The ntiid context segment'))
 
 class INoteViewedRecordedEvent(IObjectViewedRecordedEvent):
 	object = Object(INote, title="note viewed", required=True)
@@ -66,7 +75,6 @@ class IResourceViewedRecordedEvent(IObjectViewedRecordedEvent):
 
 class IVideoRecordedEvent(IObjectViewedRecordedEvent):
 	object = Object(IString, title="video id", required=True)
-	context_path = Object(IString, title="context path", required=False)
 	duration = Number(title="Time length duration", required=False, default=0)
 	video_start_time = Number(title="Start time (secs)", required=False, default=0)
 	video_end_time = Number(title="End time (secs)", required=False, default=0)
@@ -82,6 +90,15 @@ class IVideoWatchRecordedEvent(IVideoRecordedEvent):
 class IVideoSkipRecordedEvent(IVideoRecordedEvent):
 	pass
 
+class IProfileViewedRecordedEvent(IObjectViewedRecordedEvent):
+	profile = ValidTextLine(title="The profile entity username.", required=True)
+
+class IProfileActivityViewedRecordedEvent(IProfileViewedRecordedEvent):
+	pass
+
+class IProfileMembershipViewedRecordedEvent(IProfileViewedRecordedEvent):
+	pass
+
 @interface.implementer(IObjectRecordedEvent)
 class ObjectRecordedEvent(ObjectEvent):
 
@@ -93,15 +110,20 @@ class ObjectRecordedEvent(ObjectEvent):
 		self.session = session
 		self.timestamp = timestamp or 0.0
 
-ObjectViewedRecordedEvent = ObjectRecordedEvent
+@interface.implementer(IObjectRecordedEvent)
+class ObjectViewedRecordedEvent(ObjectRecordedEvent):
+
+	def __init__(self, user, obj, timestamp=None, session=None, context_path=None):
+		super(ObjectViewedRecordedEvent, self).__init__(user, obj, timestamp, session)
+		self.context_path = context_path
 
 @interface.implementer(INoteViewedRecordedEvent)
 class NoteViewedRecordedEvent(ObjectViewedRecordedEvent):
 
 	note = alias('object')
 
-	def __init__(self, user, note, context=None, timestamp=None, session=None):
-		super(NoteViewedRecordedEvent, self).__init__(user, note, timestamp, session)
+	def __init__(self, user, note, context=None, timestamp=None, session=None, context_path=None):
+		super(NoteViewedRecordedEvent, self).__init__(user, note, timestamp, session, context_path)
 		self.context = context
 
 @interface.implementer(ITopicViewedRecordedEvent)
@@ -109,8 +131,8 @@ class TopicViewedRecordedEvent(ObjectViewedRecordedEvent):
 
 	topic = alias('object')
 
-	def __init__(self, user, topic, context=None, timestamp=None, session=None):
-		super(TopicViewedRecordedEvent, self).__init__(user, topic, timestamp, session)
+	def __init__(self, user, topic, context=None, timestamp=None, session=None, context_path=None):
+		super(TopicViewedRecordedEvent, self).__init__(user, topic, timestamp, session, context_path)
 		self.context = context
 
 @interface.implementer(IBlogViewedRecordedEvent)
@@ -118,24 +140,24 @@ class BlogViewedRecordedEvent(ObjectViewedRecordedEvent):
 
 	blog = alias('object')
 
-	def __init__(self, user, blog, timestamp=None, session=None):
-		super(BlogViewedRecordedEvent, self).__init__(user, blog, timestamp, session)
+	def __init__(self, user, blog, timestamp=None, session=None, context_path=None):
+		super(BlogViewedRecordedEvent, self).__init__(user, blog, timestamp, session, context_path)
 
 @interface.implementer(ICatalogViewedRecordedEvent)
 class CatalogViewedRecordedEvent(ObjectViewedRecordedEvent):
 
 	catalog = course = alias('object')
 
-	def __init__(self, user, context, timestamp=None, session=None):
-		super(CatalogViewedRecordedEvent, self).__init__(user, context, timestamp, session)
+	def __init__(self, user, context, timestamp=None, session=None, context_path=None):
+		super(CatalogViewedRecordedEvent, self).__init__(user, context, timestamp, session, context_path)
 
 @interface.implementer(IResourceViewedRecordedEvent)
 class ResourceViewedRecordedEvent(ObjectViewedRecordedEvent):
 
 	resource = alias('object')
 
-	def __init__(self, user, resource, context=None, timestamp=None, session=None):
-		super(ResourceViewedRecordedEvent, self).__init__(user, resource, timestamp, session)
+	def __init__(self, user, resource, context=None, timestamp=None, session=None, context_path=None):
+		super(ResourceViewedRecordedEvent, self).__init__(user, resource, timestamp, session, context_path)
 		self.context = context
 
 @interface.implementer(IVideoRecordedEvent)
@@ -147,10 +169,9 @@ class VideoRecordedEvent(ObjectViewedRecordedEvent):
 	def __init__(self, user, video, context=None, timestamp=None, session=None,
 				 context_path=None, duration=0, video_start_time=0,
 				 video_end_time=0, with_transcript=False):
-		super(VideoRecordedEvent, self).__init__(user, video, timestamp, session)
+		super(VideoRecordedEvent, self).__init__(user, video, timestamp, session, context_path)
 		self.context = context
 		self.duration = duration
-		self.context_path = context_path
 		self.video_end_time = video_end_time
 		self.with_transcript = with_transcript
 		self.video_start_time = video_start_time
@@ -161,4 +182,20 @@ class VideoWatchRecordedEvent(VideoRecordedEvent):
 
 @interface.implementer(IVideoSkipRecordedEvent)
 class VideoSkipRecordedEvent(VideoRecordedEvent):
+	pass
+
+@interface.implementer(IProfileViewedRecordedEvent)
+class ProfileViewedRecordedEvent(ObjectViewedRecordedEvent):
+
+	profile = alias('object')
+
+	def __init__(self, user, profile, timestamp=None, session=None, context_path=None):
+		super(ProfileViewedRecordedEvent, self).__init__(user, profile, timestamp, session, context_path)
+
+@interface.implementer(IProfileActivityViewedRecordedEvent)
+class ProfileActivityViewedRecordedEvent(ProfileViewedRecordedEvent):
+	pass
+
+@interface.implementer(IProfileMembershipViewedRecordedEvent)
+class ProfileMembershipViewedRecordedEvent(ProfileViewedRecordedEvent):
 	pass
