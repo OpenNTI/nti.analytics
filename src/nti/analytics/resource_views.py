@@ -57,8 +57,11 @@ from nti.analytics.recorded import BlogViewedRecordedEvent
 from nti.analytics.recorded import NoteViewedRecordedEvent
 from nti.analytics.recorded import VideoWatchRecordedEvent
 from nti.analytics.recorded import TopicViewedRecordedEvent
+from nti.analytics.recorded import ProfileViewedRecordedEvent
 from nti.analytics.recorded import CatalogViewedRecordedEvent
 from nti.analytics.recorded import ResourceViewedRecordedEvent
+from nti.analytics.recorded import ProfileActivityViewedRecordedEvent
+from nti.analytics.recorded import ProfileMembershipViewedRecordedEvent
 
 from nti.analytics import get_factory
 from nti.analytics import get_current_username
@@ -284,7 +287,8 @@ def _add_note_event( event, nti_session=None ):
 					getattr( root_context, '__name__', root_context ) )
 
 	notify(NoteViewedRecordedEvent(	user=user, note=note, timestamp=event.timestamp,
-									context=root_context, session=nti_session))
+									context=root_context, session=nti_session,
+									context_path=event.context_path))
 
 def _add_topic_event( event, nti_session=None ):
 	try:
@@ -311,7 +315,8 @@ def _add_topic_event( event, nti_session=None ):
 					event.time_length )
 
 	notify(TopicViewedRecordedEvent(user=user, topic=topic, timestamp=event.timestamp,
-									context=root_context, session=nti_session))
+									context=root_context, session=nti_session,
+									context_path=event.context_path))
 
 def _add_blog_event( event, nti_session=None ):
 	try:
@@ -333,7 +338,7 @@ def _add_blog_event( event, nti_session=None ):
 					user, blog, event.time_length )
 
 	notify(BlogViewedRecordedEvent(user=user, blog=blog, timestamp=event.timestamp,
-								   session=nti_session))
+								   session=nti_session, context_path=event.context_path))
 
 def _add_catalog_event( event, nti_session=None ):
 	try:
@@ -357,7 +362,7 @@ def _add_catalog_event( event, nti_session=None ):
 					event.time_length )
 
 	notify(CatalogViewedRecordedEvent(user=user, context=course, timestamp=event.timestamp,
-									  session=nti_session))
+									  session=nti_session, context_path=event.context_path))
 
 def _do_resource_view( to_call, event, resource_id, nti_session=None, *args ):
 	user = get_entity( event.user )
@@ -372,7 +377,8 @@ def _do_resource_view( to_call, event, resource_id, nti_session=None, *args ):
 					event.time_length )
 
 	notify(ResourceViewedRecordedEvent(user=user, resource=resource_id, context=root_context,
-									   timestamp=event.timestamp, session=nti_session))
+									   timestamp=event.timestamp, session=nti_session,
+									   context_path=event.context_path))
 
 def _validate_assessment_event( event, assess_id ):
 	_validate_root_context_event( event )
@@ -492,22 +498,36 @@ def _validate_profile_event( event ):
 							'Event received with non-existent profile user (user=%s) (event=%s)' %
 							( event.ProfileEntity, event ) )
 
-def _do_add_profile_event( event, to_call, nti_session=None ):
+def _do_add_profile_event( event, to_call, nti_session=None, recorded=None):
 	try:
 		_validate_profile_event( event )
 	except UnrecoverableAnalyticsError as e:
 		logger.warn( 'Error while validating event (%s)', e )
 		return
 	to_call( event, nti_session )
-
+	
+	if recorded is not None:
+		user = get_entity( event.user )
+		notify(recorded(user=user, profile=event.ProfileEntity, timestamp=event.timestamp,
+						session=nti_session, context_path=event.context_path))
+	
 def _add_profile_event( event, nti_session=None ):
-	_do_add_profile_event( db_users.create_profile_view, event, nti_session )
-
+	_do_add_profile_event( db_users.create_profile_view, 
+						   event, 
+						   nti_session,
+						   ProfileViewedRecordedEvent )
+	
 def _add_profile_activity_event( event, nti_session=None ):
-	_do_add_profile_event( db_users.create_profile_activity_view, event, nti_session )
+	_do_add_profile_event( db_users.create_profile_activity_view, 
+						   event, 
+						   nti_session,
+						   ProfileActivityViewedRecordedEvent )
 
 def _add_profile_membership_event( event, nti_session=None ):
-	_do_add_profile_event( db_users.create_profile_membership_view, event, nti_session )
+	_do_add_profile_event( db_users.create_profile_membership_view, 
+						   event,
+						   nti_session,
+						   ProfileMembershipViewedRecordedEvent )
 
 def _get_profile_queue():
 	factory = get_factory()
