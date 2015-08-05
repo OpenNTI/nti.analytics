@@ -65,7 +65,7 @@ def get_root_context_obj( root_context_record ):
 		root_context = get_user( entity_root_context_id )
 	return root_context
 
-def _do_course_and_timestamp_filtering( table, timestamp=None, course=None, filters=None ):
+def _do_course_and_timestamp_filtering( table, timestamp=None, max_timestamp=None, course=None, filters=None ):
 	db = get_analytics_db()
 	result = []
 
@@ -91,11 +91,14 @@ def _do_course_and_timestamp_filtering( table, timestamp=None, course=None, filt
 	if timestamp is not None:
 		filters.append( table.timestamp >= timestamp )
 
+	if max_timestamp is not None:
+		filters.append( table.timestamp <= max_timestamp )
+
 	result = db.session.query( table ).filter( *filters ).all()
 
 	return result
 
-def get_filtered_records( user, table, timestamp=None, course=None, replies_only=False, filters=None ):
+def get_filtered_records( user, table, replies_only=False, filters=None, **kwargs ):
 	"""
 	Get the filtered records for the given user, table, timestamp (and course).
 	"""
@@ -113,10 +116,10 @@ def get_filtered_records( user, table, timestamp=None, course=None, replies_only
 	if replies_only:
 		filters.append( table.parent_user_id != None )
 
-	result = _do_course_and_timestamp_filtering( table, timestamp, course, filters )
+	result = _do_course_and_timestamp_filtering( table, filters=filters, **kwargs )
 	return result
 
-def get_user_replies_to_others( table, user, course=None, timestamp=None, get_deleted=False, filters=None ):
+def get_user_replies_to_others( table, user, get_deleted=False, filters=None, **kwargs ):
 	"""
 	Fetch any replies our users provided, *after* the optionally given timestamp.
 	"""
@@ -128,10 +131,9 @@ def get_user_replies_to_others( table, user, course=None, timestamp=None, get_de
 	if not get_deleted:
 		filters.append( table.deleted == None )
 
-	return get_filtered_records( user, table, course=course,
-								timestamp=timestamp, filters=filters )
+	return get_filtered_records( user, table, filters=filters, **kwargs )
 
-def get_replies_to_user( table, user, course=None, timestamp=None, get_deleted=False  ):
+def get_replies_to_user( table, user,get_deleted=False, **kwargs  ):
 	"""
 	Fetch any replies to our user, *after* the optionally given timestamp.
 	"""
@@ -146,11 +148,11 @@ def get_replies_to_user( table, user, course=None, timestamp=None, get_deleted=F
 		filters.append( table.deleted == None )
 
 	if user_id is not None:
-		result = _do_course_and_timestamp_filtering( table, timestamp, course, filters )
+		result = _do_course_and_timestamp_filtering( table, filters=filters, **kwargs )
 
 	return result
 
-def get_ratings_for_user_objects( table, user, course=None, timestamp=None ):
+def get_ratings_for_user_objects( table, user, **kwargs ):
 	"""
 	Fetch any ratings for a user's objects, optionally filtering by date,
 	course.
@@ -163,7 +165,7 @@ def get_ratings_for_user_objects( table, user, course=None, timestamp=None ):
 	filters = [ table.creator_id == user_id ]
 
 	if user_id is not None:
-		result = _do_course_and_timestamp_filtering( table, timestamp, course, filters )
+		result = _do_course_and_timestamp_filtering( table, filters=filters, **kwargs )
 
 	return result
 

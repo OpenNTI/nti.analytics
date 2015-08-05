@@ -337,17 +337,16 @@ def get_user_video_views_for_ntiid( user, resource_ntiid ):
 		results = resolve_objects( _resolve_video_view, video_records, user=user, max_time_length=max_time_length )
 	return results
 
-def get_user_resource_views( user, course=None, timestamp=None ):
+def get_user_resource_views( user, course=None, **kwargs ):
 	results = get_filtered_records( user, CourseResourceViews,
-								course=course, timestamp=timestamp )
+								course=course, **kwargs )
 	return resolve_objects( _resolve_resource_view, results, user=user, course=course )
 
-def get_user_video_views( user=None, course=None, timestamp=None ):
+def get_user_video_views( user=None, course=None, **kwargs  ):
 	filters = ( VideoEvents.video_event_type == VIDEO_WATCH,
 				VideoEvents.time_length > 1 )
 	results = get_filtered_records( user, VideoEvents,
-								course=course, timestamp=timestamp,
-								filters=filters )
+								course=course, filters=filters, **kwargs )
 	return resolve_objects( _resolve_video_view, results, user=user, course=course )
 
 get_video_views = get_user_video_views

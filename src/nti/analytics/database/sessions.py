@@ -174,12 +174,17 @@ def _resolve_session( row ):
 							Duration=duration )
 	return result
 
-def get_user_sessions( user, timestamp=None ):
+def get_user_sessions( user, timestamp=None, max_timestamp=None ):
 	"""
 	Fetch any sessions for a user started *after* the optionally given timestamp.
 	"""
-	filters = ()
+	filters = []
 	if timestamp is not None:
-		filters = ( Sessions.start_time >= timestamp, )
+		filters.append( Sessions.start_time >= timestamp, )
+
+	if max_timestamp is not None:
+		filters.append( Sessions.start_time <= max_timestamp )
+
+
 	results = get_filtered_records( user, Sessions, filters=filters )
 	return resolve_objects( _resolve_session, results )

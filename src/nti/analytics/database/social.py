@@ -445,12 +445,12 @@ def _resolve_contact( row, user=None ):
 								timestamp=row.timestamp )
 	return result
 
-def get_contacts_added( user, timestamp=None ):
+def get_contacts_added( user, **kwargs ):
 	"""
 	Fetch any contacts added for a user *after* the optionally given
 	timestamp.
 	"""
-	results = get_filtered_records( user, ContactsAdded, timestamp=timestamp )
+	results = get_filtered_records( user, ContactsAdded, **kwargs )
 	return resolve_objects( _resolve_contact, results, user=user )
 
 def _resolve_group( row, user=None ):
@@ -472,7 +472,7 @@ def _resolve_group_joined( row ):
 	group = _resolve_group( group_row )
 	return group
 
-def get_groups_created( user, timestamp=None, get_deleted=False ):
+def get_groups_created( user, get_deleted=False, **kwargs ):
 	"""
 	Fetch any groups created by a user *after* the optionally given
 	timestamp.
@@ -481,11 +481,11 @@ def get_groups_created( user, timestamp=None, get_deleted=False ):
 	if not get_deleted:
 		filters = ( DynamicFriendsListsCreated.deleted == None, )
 
-	results = get_filtered_records( user, DynamicFriendsListsCreated, timestamp=timestamp,
-								filters=filters )
+	results = get_filtered_records( user, DynamicFriendsListsCreated,
+								filters=filters, **kwargs )
 	return resolve_objects( _resolve_group, results, user=user )
 
-def get_groups_joined( user, timestamp=None ):
+def get_groups_joined( user, timestamp=None, max_timestamp=None ):
 	"""
 	Fetch any groups joined by a user *after* the optionally given
 	timestamp.
@@ -500,6 +500,8 @@ def get_groups_joined( user, timestamp=None ):
 		filters = [ DynamicFriendsListsMemberAdded.target_id == user_id ]
 		if timestamp is not None:
 			filters.append( DynamicFriendsListsMemberAdded.timestamp >= timestamp )
+		if max_timestamp is not None:
+			filters.append( DynamicFriendsListsMemberAdded.timestamp <= max_timestamp )
 		groups = db.session.query( 	DynamicFriendsListsMemberAdded,
 									DynamicFriendsListsCreated ).join(
 												DynamicFriendsListsCreated ).filter( *filters ).all()

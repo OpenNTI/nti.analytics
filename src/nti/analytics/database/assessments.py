@@ -255,7 +255,6 @@ def _load_response( value ):
 	"For a database response value, transform it into a useable state."
 	response = json.loads( value )
 	if isinstance( response, dict ):
-		# Map
 		# Convert to int keys, if possible.
 		# We currently do not handle mixed types of keys.
 		try:
@@ -643,12 +642,13 @@ def create_assignment_view( user, nti_session, timestamp, course, context_path, 
 	return _create_assessment_view( AssignmentViews, user, nti_session, timestamp,
 						course, context_path, resource, time_length, assignment_id )
 
-def _resolve_self_assessment( row, course=None ):
+def _resolve_self_assessment( row, user=None, course=None ):
 	make_transient( row )
 	submission = SubmissionId.get_object( row.submission_id )
 	if course is None:
 		course = get_root_context( row.course_id )
-	user = get_user( row.user_id )
+	if user is None:
+		user = get_user( row.user_id )
 
 	result = None
 	if 		submission is not None \
@@ -662,7 +662,7 @@ def _resolve_self_assessment( row, course=None ):
 									AssessmentId=row.assignment_id )
 	return result
 
-def _resolve_assignment( row, details=None ):
+def _resolve_assignment( row, details=None, user=None, course=None ):
 	# We may have multiple assignment records here at one point.
 	submission_record = row
 	grade_record = submission_record.grade
@@ -676,8 +676,10 @@ def _resolve_assignment( row, details=None ):
 		grader = grade_record.grader
 
 	submission = SubmissionId.get_object( submission_record.submission_id )
-	course = get_root_context( submission_record.course_id )
-	user = get_user( submission_record.user_id )
+	if course is None:
+		course = get_root_context( submission_record.course_id )
+	if user is None:
+		user = get_user( submission_record.user_id )
 	result = None
 	if 		submission is not None \
 		and user is not None \
@@ -725,10 +727,10 @@ def _resolve_assignment_details( row ):
 		details.append( result )
 	return _resolve_assignment( submission_record, details=details )
 
-def get_self_assessments_for_user(user, course=None, timestamp=None):
+def get_self_assessments_for_user(user, course=None, **kwargs ):
 	"Retrieves all self-assessments for the given user and course."
-	results = get_filtered_records( user, SelfAssessmentsTaken, course=course, timestamp=timestamp )
-	return resolve_objects( _resolve_self_assessment, results )
+	results = get_filtered_records( user, SelfAssessmentsTaken, course=course, **kwargs )
+	return resolve_objects( _resolve_self_assessment, results, course=course )
 
 def get_self_assessments_for_user_and_id(user, assessment_id):
 	"Pulls all assessment records for the given user matching the passed in assessment id."
@@ -750,10 +752,10 @@ def get_assignment_for_user( user, assignment_id ):
 
 	return resolve_objects( _resolve_assignment, results )
 
-def get_assignments_for_user(user, course=None, timestamp=None):
+def get_assignments_for_user(user, course=None, **kwargs):
 	"Retrieves all assignments for the given user and course."
-	results = get_filtered_records( user, AssignmentsTaken, course=course, timestamp=timestamp )
-	return resolve_objects( _resolve_assignment, results )
+	results = get_filtered_records( user, AssignmentsTaken, course=course, **kwargs )
+	return resolve_objects( _resolve_assignment, results, course=course )
 
 def get_self_assessments_for_course(course):
 	db = get_analytics_db()
@@ -813,20 +815,20 @@ def _resolve_self_assessment_view( row, user=None, course=None ):
 def _resolve_assignment_view( row, user=None, course=None ):
 	return _resolve_view( AnalyticsAssignmentView, row, course, user )
 
-def get_self_assessment_views( user, course=None, timestamp=None ):
+def get_self_assessment_views( user, course=None, **kwargs ):
 	"""
 	Fetch any self assessment views for a user created *after* the optionally given
 	timestamp.  Optionally, can filter by course.
 	"""
 	results = get_filtered_records( user, SelfAssessmentViews,
-								course=course, timestamp=timestamp )
+								course=course, **kwargs )
 	return resolve_objects( _resolve_self_assessment_view, results, user=user, course=course )
 
-def get_assignment_views( user, course=None, timestamp=None ):
+def get_assignment_views( user, course=None, **kwargs ):
 	"""
 	Fetch any assignment views for a user created *after* the optionally given
 	timestamp.  Optionally, can filter by course.
 	"""
 	results = get_filtered_records( user, AssignmentViews,
-								course=course, timestamp=timestamp )
+								course=course, **kwargs )
 	return resolve_objects( _resolve_assignment_view, results, user=user, course=course )

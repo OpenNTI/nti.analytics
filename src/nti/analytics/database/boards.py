@@ -629,8 +629,9 @@ def _resolve_topic_view( row, topic=None, user=None, course=None ):
 								Duration=row.time_length )
 	return result
 
-def get_forum_comments_for_user( user=None, course=None, timestamp=None,
-						get_deleted=False, top_level_only=False, replies_only=False ):
+def get_forum_comments_for_user( user=None, course=None,
+						get_deleted=False, top_level_only=False,
+						replies_only=False, **kwargs ):
 	"""
 	Fetch any comments for a user created *after* the optionally given
 	timestamp.  Optionally, can filter by course and include/exclude
@@ -647,12 +648,12 @@ def get_forum_comments_for_user( user=None, course=None, timestamp=None,
 		filters.append( ForumCommentsCreated.parent_id == None )
 
 	results = get_filtered_records( user, ForumCommentsCreated, course=course,
-								timestamp=timestamp, replies_only=replies_only, filters=filters )
+								replies_only=replies_only, filters=filters, **kwargs )
 	return resolve_objects( _resolve_comment, results, user=user, course=course )
 
 get_forum_comments = get_forum_comments_for_user
 
-def get_topics_created_for_user( user, course=None, timestamp=None, get_deleted=False ):
+def get_topics_created_for_user( user, course=None, get_deleted=False, **kwargs ):
 	"""
 	Fetch any topics for a user created *after* the optionally given
 	timestamp.  Optionally, can filter by course and include/exclude
@@ -663,11 +664,11 @@ def get_topics_created_for_user( user, course=None, timestamp=None, get_deleted=
 		filters.append( TopicsCreated.deleted == None )
 
 	results = get_filtered_records( user, TopicsCreated, course=course,
-								timestamp=timestamp, filters=filters )
+								filters=filters, **kwargs )
 
-	return resolve_objects( _resolve_topic, results )
+	return resolve_objects( _resolve_topic, results, course=course )
 
-def get_topic_views( user=None, topic=None, course=None, timestamp=None ):
+def get_topic_views( user=None, topic=None, course=None, **kwargs ):
 
 	filters = []
 	if topic is not None:
@@ -676,9 +677,9 @@ def get_topic_views( user=None, topic=None, course=None, timestamp=None ):
 		filters.append( TopicsViewed.topic_id == topic_id )
 
 	results = get_filtered_records( user, TopicsViewed, course=course,
-								timestamp=timestamp, filters=filters )
+								filters=filters, **kwargs )
 
-	return resolve_objects( _resolve_topic_view, results, topic=topic )
+	return resolve_objects( _resolve_topic_view, results, topic=topic, course=course )
 
 def get_comments_for_topic( topic ):
 	db = get_analytics_db()
@@ -713,7 +714,7 @@ def get_topics_created_for_course( course ):
 								TopicsCreated.deleted == None  ).all()
 	return resolve_objects( _resolve_topic, results, course=course )
 
-def get_user_replies_to_others( user, course=None, timestamp=None, get_deleted=False, topic=None ):
+def get_user_replies_to_others( user, course=None, topic=None, **kwargs ):
 	"""
 	Fetch any replies our users provided, *after* the optionally given timestamp.
 	"""
@@ -726,44 +727,44 @@ def get_user_replies_to_others( user, course=None, timestamp=None, get_deleted=F
 		else:
 			return ()
 	results = _get_user_replies_to_others( ForumCommentsCreated, user, course,
-										timestamp, get_deleted, filters=filters )
+										filters=filters, **kwargs )
 	return resolve_objects( _resolve_comment, results, user=user, course=course )
 
-def get_replies_to_user( user, course=None, timestamp=None, get_deleted=False  ):
+def get_replies_to_user( user, course=None, **kwargs  ):
 	"""
 	Fetch any replies to our user, *after* the optionally given timestamp.
 	"""
-	results = _get_replies_to_user( ForumCommentsCreated, user, course, timestamp, get_deleted )
+	results = _get_replies_to_user( ForumCommentsCreated, user, **kwargs )
 	return resolve_objects( _resolve_comment, results, course=course, parent_user=user )
 
-def get_likes_for_users_topics( user, course=None, timestamp=None ):
+def get_likes_for_users_topics( user, **kwargs ):
 	"""
 	Fetch any likes created for a user's topics *after* the optionally given
 	timestamp.  Optionally, can filter by course.
 	"""
-	results = get_ratings_for_user_objects( TopicLikes, user, course, timestamp )
+	results = get_ratings_for_user_objects( TopicLikes, user, **kwargs )
 	return resolve_objects( resolve_like, results, obj_creator=user)
 
-def get_favorites_for_users_topics( user, course=None, timestamp=None ):
+def get_favorites_for_users_topics( user, **kwargs ):
 	"""
 	Fetch any favorites created for a user's topics *after* the optionally given
 	timestamp.  Optionally, can filter by course.
 	"""
-	results = get_ratings_for_user_objects( TopicFavorites, user, course, timestamp )
+	results = get_ratings_for_user_objects( TopicFavorites, user, **kwargs )
 	return resolve_objects( resolve_favorite, results, obj_creator=user)
 
-def get_likes_for_users_comments( user, course=None, timestamp=None ):
+def get_likes_for_users_comments( user, **kwargs ):
 	"""
 	Fetch any likes created for a user's topics *after* the optionally given
 	timestamp.  Optionally, can filter by course.
 	"""
-	results = get_ratings_for_user_objects( ForumCommentLikes, user, course, timestamp )
+	results = get_ratings_for_user_objects( ForumCommentLikes, user, **kwargs)
 	return resolve_objects( resolve_like, results, obj_creator=user)
 
-def get_favorites_for_users_comments( user, course=None, timestamp=None ):
+def get_favorites_for_users_comments( user, **kwargs ):
 	"""
 	Fetch any favorites created for a user's topics *after* the optionally given
 	timestamp.  Optionally, can filter by course.
 	"""
-	results = get_ratings_for_user_objects( ForumCommentFavorites, user, course, timestamp )
+	results = get_ratings_for_user_objects( ForumCommentFavorites, user, **kwargs )
 	return resolve_objects( resolve_favorite, results, obj_creator=user)

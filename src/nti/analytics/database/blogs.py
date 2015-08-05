@@ -462,7 +462,7 @@ def _resolve_blog_comment( row, user=None, parent_user=None ):
 								RepliedToUser=parent_user )
 	return result
 
-def get_blogs( user, timestamp=None, get_deleted=False ):
+def get_blogs( user, get_deleted=False, **kwargs ):
 	"""
 	Fetch any blogs for a user created *after* the optionally given
 	timestamp.  Optionally, can include/exclude deleted.
@@ -471,10 +471,10 @@ def get_blogs( user, timestamp=None, get_deleted=False ):
 	if not get_deleted:
 		filters.append( BlogsCreated.deleted == None )
 	results = get_filtered_records( user, BlogsCreated,
-								timestamp=timestamp, filters=filters )
+								filters=filters, **kwargs )
 	return resolve_objects( _resolve_blog, results, user=user )
 
-def get_blog_comments( user, timestamp=None, replies_only=False, get_deleted=False ):
+def get_blog_comments( user, get_deleted=False, **kwargs ):
 	"""
 	Fetch any blog comments a user created *after* the optionally given
 	timestamp.  Optionally, can include/exclude deleted.
@@ -483,56 +483,54 @@ def get_blog_comments( user, timestamp=None, replies_only=False, get_deleted=Fal
 	if not get_deleted:
 		filters.append( BlogCommentsCreated.deleted == None )
 	results = get_filtered_records( user, BlogCommentsCreated,
-								timestamp=timestamp, replies_only=replies_only, filters=filters )
+								filters=filters, **kwargs )
 	return resolve_objects( _resolve_blog_comment, results, user=user )
 
-def get_user_replies_to_others( user, timestamp=None, get_deleted=False ):
+def get_user_replies_to_others( user, **kwargs ):
 	"""
 	Fetch any replies our users provided, *after* the optionally given timestamp.
 	"""
-	results = _get_user_replies_to_others( BlogCommentsCreated, user,
-									timestamp=timestamp, get_deleted=get_deleted )
+	results = _get_user_replies_to_others( BlogCommentsCreated, user, **kwargs )
 	return resolve_objects( _resolve_blog_comment, results, user=user )
 
-def get_replies_to_user( user, timestamp=None, get_deleted=False  ):
+def get_replies_to_user( user, **kwargs  ):
 	"""
 	Fetch any replies to our user, *after* the optionally given timestamp.
 	"""
-	results = _get_replies_to_user( BlogCommentsCreated, user,
-								timestamp=timestamp, get_deleted=get_deleted )
+	results = _get_replies_to_user( BlogCommentsCreated, user, **kwargs )
 	return resolve_objects( _resolve_blog_comment, results, parent_user=user )
 
-def get_likes_for_users_blogs( user, timestamp=None ):
+def get_likes_for_users_blogs( user, **kwargs ):
 	"""
 	Fetch any likes created for a user's blogs *after* the optionally given
 	timestamp.  Optionally, can filter by course and include/exclude
 	deleted.
 	"""
-	results = get_ratings_for_user_objects( BlogLikes, user, timestamp=timestamp )
+	results = get_ratings_for_user_objects( BlogLikes, user, **kwargs )
 	return resolve_objects( resolve_like, results, obj_creator=user )
 
-def get_favorites_for_users_blogs( user, timestamp=None ):
+def get_favorites_for_users_blogs( user, **kwargs ):
 	"""
 	Fetch any favorites created for a user's blogs *after* the optionally given
 	timestamp.  Optionally, can filter by course and include/exclude
 	deleted.
 	"""
-	results = get_ratings_for_user_objects( BlogFavorites, user, timestamp=timestamp )
+	results = get_ratings_for_user_objects( BlogFavorites, user, **kwargs )
 	return resolve_objects( resolve_favorite, results, obj_creator=user )
 
-def get_likes_for_users_comments( user, timestamp=None ):
+def get_likes_for_users_comments( user, **kwargs ):
 	"""
 	Fetch any likes created for a user's comments *after* the optionally given
 	timestamp.  Optionally, can filter by course and include/exclude
 	deleted.
 	"""
-	results = get_ratings_for_user_objects( BlogCommentLikes, user, timestamp=timestamp )
+	results = get_ratings_for_user_objects( BlogCommentLikes, user, **kwargs )
 	return resolve_objects( resolve_like, results, obj_creator=user )
 
-def get_favorites_for_users_comments( user, timestamp=None ):
+def get_favorites_for_users_comments( user, **kwargs ):
 	"""
 	Fetch any favorites created for a user's comments *after* the optionally given
 	timestamp.
 	"""
-	results = get_ratings_for_user_objects( BlogCommentFavorites, user, timestamp=timestamp )
+	results = get_ratings_for_user_objects( BlogCommentFavorites, user, **kwargs )
 	return resolve_objects( resolve_favorite, results, obj_creator=user )

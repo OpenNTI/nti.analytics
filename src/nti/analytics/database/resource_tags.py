@@ -475,7 +475,7 @@ def _resolve_note( row, user=None, course=None, parent_user=None ):
 								RepliedToUser=parent_user )
 	return result
 
-def get_notes( user=None, course=None, timestamp=None, get_deleted=False, replies_only=False, top_level_only=False ):
+def get_notes( user=None, course=None, get_deleted=False, replies_only=False, top_level_only=False, **kwargs ):
 	"""
 	Fetch any notes for a user created *after* the optionally given
 	timestamp.  Optionally, can filter by course and include/exclude
@@ -492,7 +492,7 @@ def get_notes( user=None, course=None, timestamp=None, get_deleted=False, replie
 		filters.append( NotesCreated.parent_id == None )
 
 	results = get_filtered_records( user, NotesCreated, course=course,
-								timestamp=timestamp, replies_only=replies_only, filters=filters )
+								replies_only=replies_only, filters=filters, **kwargs )
 	return resolve_objects( _resolve_note, results, user=user, course=course )
 
 def _resolve_note_view( row, note=None, user=None, course=None ):
@@ -511,7 +511,7 @@ def _resolve_note_view( row, note=None, user=None, course=None ):
 								RootContext=course )
 	return result
 
-def get_note_views( user=None, note=None, course=None, timestamp=None ):
+def get_note_views( user=None, note=None, course=None, **kwargs ):
 	filters = []
 	if note is not None:
 		db = get_analytics_db()
@@ -520,39 +520,39 @@ def get_note_views( user=None, note=None, course=None, timestamp=None ):
 		filters.append( NotesViewed.note_id == note_id )
 
 	results = get_filtered_records( user, NotesViewed, course=course,
-								timestamp=timestamp, filters=filters )
+								filters=filters, **kwargs )
 
-	return resolve_objects( _resolve_note_view, results, note=note )
+	return resolve_objects( _resolve_note_view, results, note=note, user=user, course=course )
 
 
-def get_likes_for_users_notes( user, course=None, timestamp=None ):
+def get_likes_for_users_notes( user, course=None, **kwargs ):
 	"""
 	Fetch any likes created for a user's notes *after* the optionally given
 	timestamp.  Optionally, can filter by course.
 	"""
-	results = get_ratings_for_user_objects( NoteLikes, user, course, timestamp )
+	results = get_ratings_for_user_objects( NoteLikes, user, course=course, **kwargs )
 	return resolve_objects( resolve_like, results, obj_creator=user)
 
-def get_favorites_for_users_notes( user, course=None, timestamp=None ):
+def get_favorites_for_users_notes( user, course=None, **kwargs ):
 	"""
 	Fetch any favorites created for a user's notes *after* the optionally given
 	timestamp.  Optionally, can filter by course.
 	"""
-	results = get_ratings_for_user_objects( NoteFavorites, user, course, timestamp )
+	results = get_ratings_for_user_objects( NoteFavorites, user, course=course, **kwargs )
 	return resolve_objects( resolve_favorite, results, obj_creator=user )
 
-def get_user_replies_to_others( user, course=None, timestamp=None, get_deleted=False ):
+def get_user_replies_to_others( user, course=None, **kwargs ):
 	"""
 	Fetch any replies our users provided, *after* the optionally given timestamp.
 	"""
-	results = _get_user_replies_to_others( NotesCreated, user, course, timestamp, get_deleted )
+	results = _get_user_replies_to_others( NotesCreated, user, course, **kwargs )
 	return resolve_objects( _resolve_note, results, user=user, course=course )
 
-def get_replies_to_user( user, course=None, timestamp=None, get_deleted=False ):
+def get_replies_to_user( user, course=None, **kwargs ):
 	"""
 	Fetch any replies to our user, *after* the optionally given timestamp.
 	"""
-	results = _get_replies_to_user( NotesCreated, user, course, timestamp, get_deleted )
+	results = _get_replies_to_user( NotesCreated, user, course, **kwargs )
 	return resolve_objects( _resolve_note, results, course=course, parent_user=user )
 
 def _resolve_highlight( row, user=None, course=None ):
@@ -571,7 +571,7 @@ def _resolve_highlight( row, user=None, course=None ):
 								RootContext=root_context )
 	return result
 
-def get_highlights( user, course=None, timestamp=None, get_deleted=False ):
+def get_highlights( user=None, course=None, get_deleted=False, **kwargs ):
 	"""
 	Fetch any highlights for a user created *after* the optionally given
 	timestamp.  Optionally, can filter by course and include/exclude
@@ -581,16 +581,11 @@ def get_highlights( user, course=None, timestamp=None, get_deleted=False ):
 	if not get_deleted:
 		filters = (HighlightsCreated.deleted == None,)
 	results = get_filtered_records( user, HighlightsCreated, course=course,
-								timestamp=timestamp, filters=filters )
+								filters=filters, **kwargs )
 	return resolve_objects( _resolve_highlight, results, user=user, course=course )
 
 def get_highlights_created_for_course(course):
-	db = get_analytics_db()
-	course_id = get_root_context_id( db, course )
-	results = db.session.query(HighlightsCreated).filter(
-								HighlightsCreated.course_id == course_id,
-								HighlightsCreated.deleted == None  ).all()
-	return resolve_objects( _resolve_highlight, results, course=course )
+	return get_highlights( course=course )
 
 def _resolve_bookmark( row, user=None, course=None ):
 	make_transient( row )
@@ -608,7 +603,7 @@ def _resolve_bookmark( row, user=None, course=None ):
 								RootContext=root_context )
 	return result
 
-def get_bookmarks( user, course=None, timestamp=None, get_deleted=False ):
+def get_bookmarks( user, course=None, get_deleted=False, **kwargs ):
 	"""
 	Fetch any bookmarks for a user started *after* the optionally given
 	timestamp.  Optionally, can filter by course and include/exclude
@@ -618,6 +613,6 @@ def get_bookmarks( user, course=None, timestamp=None, get_deleted=False ):
 	if not get_deleted:
 		filters = (BookmarksCreated.deleted == None,)
 	results = get_filtered_records( user, BookmarksCreated, course=course,
-								timestamp=timestamp, filters=filters )
+								filters=filters, **kwargs )
 	return resolve_objects( _resolve_bookmark, results, user=user, course=course )
 
