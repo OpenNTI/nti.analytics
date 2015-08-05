@@ -47,6 +47,7 @@ from nti.analytics.database import enrollments as db_enrollments
 from nti.analytics.database import resource_tags as db_resource_tags
 from nti.analytics.database import resource_views as db_resource_views
 from nti.analytics.database import assessments as db_assess_views
+from nti.analytics.database import profile_views as db_profile_views
 
 from nti.analytics.progress import get_progress_for_resource_views
 from nti.analytics.progress import get_progress_for_video_views
@@ -505,26 +506,26 @@ def _do_add_profile_event( event, to_call, nti_session=None, recorded=None):
 		logger.warn( 'Error while validating event (%s)', e )
 		return
 	to_call( event, nti_session )
-	
+
 	if recorded is not None:
 		user = get_entity( event.user )
 		notify(recorded(user=user, profile=event.ProfileEntity, timestamp=event.timestamp,
 						session=nti_session, context_path=event.context_path))
-	
+
 def _add_profile_event( event, nti_session=None ):
-	_do_add_profile_event( db_users.create_profile_view, 
-						   event, 
+	_do_add_profile_event( db_profile_views.create_profile_view,
+						   event,
 						   nti_session,
 						   ProfileViewedRecordedEvent )
-	
+
 def _add_profile_activity_event( event, nti_session=None ):
-	_do_add_profile_event( db_users.create_profile_activity_view, 
-						   event, 
+	_do_add_profile_event( db_profile_views.create_profile_activity_view,
+						   event,
 						   nti_session,
 						   ProfileActivityViewedRecordedEvent )
 
 def _add_profile_membership_event( event, nti_session=None ):
-	_do_add_profile_event( db_users.create_profile_membership_view, 
+	_do_add_profile_event( db_profile_views.create_profile_membership_view,
 						   event,
 						   nti_session,
 						   ProfileMembershipViewedRecordedEvent )
