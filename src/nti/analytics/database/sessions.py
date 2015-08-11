@@ -80,7 +80,7 @@ class UserAgents(Base):
 	# or should we rely on a full column scan before inserting (perhaps also expensive)?
 	# Another alternative would be to hash this value in another column and just check that.
 	# If we do so, would we have to worry about collisions between unequal user-agents?
-	user_agent = Column('user_agent', String(200), unique=True, index=True, nullable=False )
+	user_agent = Column('user_agent', String(512), unique=True, index=True, nullable=False )
 
 def _create_user_agent( db, user_agent ):
 	new_agent = UserAgents( user_agent=user_agent )
@@ -171,10 +171,6 @@ def _check_geo_location( db, lat_str, long_str, ip_id ):
 		
 def _create_geo_location( db, lat_str, long_str, ip_id ):
 	
-# 	#Convert lat and long to strings 
-# 	lat_str = str(round(lat, 4))
-# 	long_str = str(round(long, 4))
-	
 	def _encode( val ):
 		try:
 			return str( val ) if val else ''
@@ -202,7 +198,7 @@ def _create_geo_location( db, lat_str, long_str, ip_id ):
 	new_location = Location( latitude=lat_str, longitude=long_str, city=_city, state=_state, country=_country )
 	db.session.add( new_location )
 	
-	# Point the foreign key in IpGeoLocations to the row we just created
+	# Point the location_id in IpGeoLocations to the row we just created
 	ip_row = db.session.query( IpGeoLocation ).filter( IpGeoLocation.ip_id == ip_id ).first()
 	ip_row.location_id = new_location.location_id
 		
