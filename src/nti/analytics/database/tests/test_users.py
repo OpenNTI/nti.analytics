@@ -31,7 +31,7 @@ class TestUsers(unittest.TestCase):
 		self.db = AnalyticsDB( dburi='sqlite://', testmode=True )
 		component.getGlobalSiteManager().registerUtility( self.db, IAnalyticsDB )
 		self.session = self.db.session
-		assert_that( self.db.engine.table_names(), has_length( 58 ) )
+		assert_that( self.db.engine.table_names(), has_length( 59 ) )
 
 	def tearDown(self):
 		component.getGlobalSiteManager().unregisterUtility( self.db )

@@ -14,6 +14,7 @@ from zope import component
 
 from hamcrest import is_
 from hamcrest import none
+from hamcrest import equal_to
 from hamcrest import not_none
 from hamcrest import has_length
 from hamcrest import assert_that
@@ -29,6 +30,7 @@ from nti.analytics.database import sessions as db_sessions
 
 from nti.analytics.database.users import Users
 from nti.analytics.database.sessions import Sessions
+from nti.analytics.database.sessions import Location
 from nti.analytics.database.sessions import UserAgents
 from nti.analytics.database.sessions import IpGeoLocation
 from nti.analytics.database.sessions import _check_ip_location
@@ -145,11 +147,26 @@ class TestSessions(unittest.TestCase):
 		results = self.session.query(IpGeoLocation).all()
 		assert_that( results, has_length( 1 ) )
 		assert_that( results[0].country_code, is_( 'US' ))
-		assert_that( results[0].latitude, not_none())
-		assert_that( results[0].longitude, not_none())
+		
+		assert_that( results[0].location_id, not_none())
+		location_results = self.session.query(Location).all()
+		assert_that( results[0].location_id, equal_to(location_results[0].location_id))
+		assert_that( location_results[0].latitude, not_none() )
+		assert_that( location_results[0].longitude, not_none() )
 
 		# Dupe for user does not add
 		_check_ip_location( self.db, ip_addr, test_user_ds_id )
 
 		results = self.session.query(IpGeoLocation).all()
+		location_results = self.session.query(Location).all()
 		assert_that( results, has_length( 1 ) )
+		assert_that( location_results, has_length( 1 ) )
+		
+		# A different IP for the same user should add rows appropriately
+		another_ip = '8.8.8.8' # google
+		_check_ip_location( self.db, another_ip, test_user_ds_id )
+		ip_results = self.session.query(IpGeoLocation).all()
+		location_results = self.session.query(Location).all()
+		assert_that( ip_results, has_length( 2 ) )
+		assert_that( location_results, has_length( 2 ) )
+		
