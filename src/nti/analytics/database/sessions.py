@@ -9,6 +9,7 @@ __docformat__ = "restructuredtext en"
 logger = __import__('logging').getLogger(__name__)
 
 from geoip import geolite2
+from geopy import geocoders
 
 from sqlalchemy import Column
 from sqlalchemy import Integer
@@ -57,6 +58,20 @@ class IpGeoLocation(Base):
 	country_code = Column('country_code', String(8))
 	latitude = Column( 'latitude', Float() )
 	longitude = Column( 'longitude', Float() )
+	location_id = Column( 'location_id', Integer, nullable=True, index=True )
+	
+class Location(Base):
+	__tablename__ = 'Location'
+	
+	# Stores a list of distinct locations of users, 
+	# by lat/long coordinates.
+	# Each location has a unique ID. 
+	location_id = Column( 'location_id', Integer, Sequence('location_id_seq'), primary_key=True )
+	latitude = Column( 'latitude', String(64) )
+	longitude = Column( 'longitude', String(64) )
+	city = Column( 'city', String(64) )
+	state = Column( 'state', String(64) )
+	country = Column( 'country', String(64) )
 
 class UserAgents(Base):
 	__tablename__ = 'UserAgents'
@@ -65,7 +80,7 @@ class UserAgents(Base):
 	# or should we rely on a full column scan before inserting (perhaps also expensive)?
 	# Another alternative would be to hash this value in another column and just check that.
 	# If we do so, would we have to worry about collisions between unequal user-agents?
-	user_agent = Column('user_agent', String(512), unique=True, index=True, nullable=False )
+	user_agent = Column('user_agent', String(200), unique=True, index=True, nullable=False )
 
 def _create_user_agent( db, user_agent ):
 	new_agent = UserAgents( user_agent=user_agent )
@@ -116,10 +131,13 @@ def _create_ip_location( db, ip_addr, user_id ):
 	if ip_info and ip_info.location and len( ip_info.location ) > 1:
 		ip_location = IpGeoLocation( ip_addr=ip_addr,
 									user_id=user_id,
- 									country_code=ip_info.country,
-									latitude=ip_info.location[0],
-									longitude=ip_info.location[1] )
+ 									country_code=ip_info.country)
 		db.session.add( ip_location )
+		db.session.flush()
+		_check_geo_location(db, 
+						str(round(ip_info.location[0], 4)), 
+						str(round(ip_info.location[1], 4)), 
+						ip_location.ip_id)
 
 def _check_ip_location( db, ip_addr, user_id ):
 	# Should only be null in tests.
@@ -129,6 +147,65 @@ def _check_ip_location( db, ip_addr, user_id ):
 										IpGeoLocation.user_id == user_id ).first()
 		if not old_ip_location:
 			_create_ip_location( db, ip_addr, user_id )
+		else: 
+			old_location_data = db.session.query( Location ).filter( 
+												Location.location_id == old_ip_location.location_id ).first()
+			_check_geo_location(db, 
+								old_location_data.latitude, 
+								old_location_data.longitude, 
+								old_ip_location.ip_id)
+			
+def _check_geo_location( db, lat_str, long_str, ip_id ):
+	
+	existing_location = db.session.query( Location ).filter( Location.latitude == lat_str, 
+															Location.longitude == long_str ).first()
+	
+	if not existing_location:
+ 		# We've never seen this location before, so create a new row for it in Locations
+		_create_geo_location( db, lat_str, long_str, ip_id )
+		
+	else:
+		# There is already a row for this Location, so link the IpGeolocations row to it
+		ip_row = db.session.query( IpGeoLocation ).filter( IpGeoLocation.ip_id == ip_id ).first()
+		ip_row.location_id = existing_location.location_id
+		
+def _create_geo_location( db, lat_str, long_str, ip_id ):
+	
+# 	#Convert lat and long to strings 
+# 	lat_str = str(round(lat, 4))
+# 	long_str = str(round(long, 4))
+	
+	def _encode( val ):
+		try:
+			return str( val ) if val else ''
+		except:
+			return '' 
+		
+	lat = float(lat_str)
+	long = float(long_str)
+	
+	geolocator = geocoders.Nominatim() # initialize geolocation service
+	# Try to look up the location and add it as a new location.
+	# If the lookup fails for any reason, just add the location 
+	# without the names of city, state, and country
+	try:
+		location = geolocator.reverse( ( lat, long ), timeout=30)
+		location_address = location.raw.get( 'address' )
+		_city = _encode( location_address.get( 'city' ) )
+		_state = _encode( location_address.get( 'state' ) )
+		_country = _encode( location_address.get( 'country' ) )
+	except:
+		_city = ''
+		_state = ''
+		_country = ''
+	
+	new_location = Location( latitude=lat_str, longitude=long_str, city=_city, state=_state, country=_country )
+	db.session.add( new_location )
+	
+	# Point the foreign key in IpGeoLocations to the row we just created
+	ip_row = db.session.query( IpGeoLocation ).filter( IpGeoLocation.ip_id == ip_id ).first()
+	ip_row.location_id = new_location.location_id
+		
 
 def create_session( user, user_agent, start_time, ip_addr, end_time=None ):
 	db = get_analytics_db()
