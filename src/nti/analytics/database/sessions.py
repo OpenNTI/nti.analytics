@@ -45,6 +45,10 @@ class Sessions(Base):
 	end_time = Column('end_time', DateTime)
 
 class IpGeoLocation(Base):
+	# FIXME: Since there is a table dedicated to storing locations, it would
+	# make sense to rename this table to IpLocation or something similar, to
+	# indicate that this table stores a list of distinct IPs, but not their
+	# geographical locations.
 	__tablename__ = 'IpGeoLocation'
 
 	# Store ip_addr and country code, with lat/long.
@@ -134,10 +138,17 @@ def _create_ip_location( db, ip_addr, user_id ):
  									country_code=ip_info.country)
 		db.session.add( ip_location )
 		db.session.flush()
-		_check_geo_location(db, 
-						str(round(ip_info.location[0], 4)), 
-						str(round(ip_info.location[1], 4)), 
-						ip_location.ip_id)
+		# We truncate location coordinates to 4 decimal places
+		# and converting to strings. This way we have a consistent
+		# level of precision, and comparing as strings instead of 
+		# floats ensures the accuracy of comparisons. Everything is
+		# stored as strings except if we need to do a lookup,
+		# in which case they are converted to floats for the lookup
+		ip_location.location_id = _get_location_id(db, 
+													str(round(ip_info.location[0], 4)), 
+													str(round(ip_info.location[1], 4)),
+													ip_location.ip_id)
+		db.session.flush()
 
 def _check_ip_location( db, ip_addr, user_id ):
 	# Should only be null in tests.
@@ -146,30 +157,36 @@ def _check_ip_location( db, ip_addr, user_id ):
 										IpGeoLocation.ip_addr == ip_addr,
 										IpGeoLocation.user_id == user_id ).first()
 		if not old_ip_location:
+			# This is a new IP location
 			_create_ip_location( db, ip_addr, user_id )
+			
 		else: 
 			old_location_data = db.session.query( Location ).filter( 
 												Location.location_id == old_ip_location.location_id ).first()
-			_check_geo_location(db, 
-								old_location_data.latitude, 
-								old_location_data.longitude, 
-								old_ip_location.ip_id)
+			old_ip_location.location_id = _get_location_id(db, 
+														old_location_data.latitude, 
+														old_location_data.longitude, 
+														old_ip_location.ip_id)
 			
-def _check_geo_location( db, lat_str, long_str, ip_id ):
+def _get_location_id( db, lat_str, long_str, ip_id ):
 	
 	existing_location = db.session.query( Location ).filter( Location.latitude == lat_str, 
 															Location.longitude == long_str ).first()
 	
 	if not existing_location:
- 		# We've never seen this location before, so create a new row for it in Locations
-		_create_geo_location( db, lat_str, long_str, ip_id )
+ 		# We've never seen this location before, so create 
+ 		# a new row for it in the Location table and return location_id
+		new_location = _create_new_location( db, lat_str, long_str, ip_id )
+		# need to flush here so that our new location will be assigned a location_id
+		db.session.flush()
+		return new_location.location_id
 		
 	else:
-		# There is already a row for this Location, so link the IpGeolocations row to it
-		ip_row = db.session.query( IpGeoLocation ).filter( IpGeoLocation.ip_id == ip_id ).first()
-		ip_row.location_id = existing_location.location_id
+		# This Location already exists, so return its location_id
+		return existing_location.location_id
 		
-def _create_geo_location( db, lat_str, long_str, ip_id ):
+def _create_new_location( db, lat_str, long_str, ip_id ):
+	# Returns the location_id of the row created in the Location table 
 	
 	def _encode( val ):
 		try:
@@ -180,17 +197,23 @@ def _create_geo_location( db, lat_str, long_str, ip_id ):
 	lat = float(lat_str)
 	long = float(long_str)
 	
-	geolocator = geocoders.Nominatim() # initialize geolocation service
+	# Using Nominatim as our lookup service for now, because
+	# they don't require registration or an API key. The downside
+	# is that they have a usage limit of 1 lookup/second.
+	# See http://wiki.openstreetmap.org/wiki/Nominatim_usage_policy
+	# for more details on the usage policy.	
+	geolocator = geocoders.Nominatim() 
 	# Try to look up the location and add it as a new location.
 	# If the lookup fails for any reason, just add the location 
 	# without the names of city, state, and country
 	try:
-		location = geolocator.reverse( ( lat, long ), timeout=30)
+		location = geolocator.reverse( ( lat, long ))
 		location_address = location.raw.get( 'address' )
 		_city = _encode( location_address.get( 'city' ) )
 		_state = _encode( location_address.get( 'state' ) )
 		_country = _encode( location_address.get( 'country' ) )
 	except:
+		logger.info('Reverse geolookup for %s, %s failed.' % (lat, long))
 		_city = ''
 		_state = ''
 		_country = ''
@@ -198,9 +221,8 @@ def _create_geo_location( db, lat_str, long_str, ip_id ):
 	new_location = Location( latitude=lat_str, longitude=long_str, city=_city, state=_state, country=_country )
 	db.session.add( new_location )
 	
-	# Point the location_id in IpGeoLocations to the row we just created
-	ip_row = db.session.query( IpGeoLocation ).filter( IpGeoLocation.ip_id == ip_id ).first()
-	ip_row.location_id = new_location.location_id
+	# Return the row we just created
+	return new_location
 		
 
 def create_session( user, user_agent, start_time, ip_addr, end_time=None ):
