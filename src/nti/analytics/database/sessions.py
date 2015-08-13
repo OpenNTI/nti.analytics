@@ -146,8 +146,7 @@ def _create_ip_location( db, ip_addr, user_id ):
 		# in which case they are converted to floats for the lookup
 		ip_location.location_id = _get_location_id(db, 
 													str(round(ip_info.location[0], 4)), 
-													str(round(ip_info.location[1], 4)),
-													ip_location.ip_id)
+													str(round(ip_info.location[1], 4)))
 		db.session.flush()
 
 def _check_ip_location( db, ip_addr, user_id ):
@@ -165,10 +164,9 @@ def _check_ip_location( db, ip_addr, user_id ):
 												Location.location_id == old_ip_location.location_id ).first()
 			old_ip_location.location_id = _get_location_id(db, 
 														old_location_data.latitude, 
-														old_location_data.longitude, 
-														old_ip_location.ip_id)
+														old_location_data.longitude)
 			
-def _get_location_id( db, lat_str, long_str, ip_id ):
+def _get_location_id( db, lat_str, long_str ):
 	
 	existing_location = db.session.query( Location ).filter( Location.latitude == lat_str, 
 															Location.longitude == long_str ).first()
@@ -176,16 +174,31 @@ def _get_location_id( db, lat_str, long_str, ip_id ):
 	if not existing_location:
  		# We've never seen this location before, so create 
  		# a new row for it in the Location table and return location_id
-		new_location = _create_new_location( db, lat_str, long_str, ip_id )
-		# need to flush here so that our new location will be assigned a location_id
-		db.session.flush()
+		new_location = _create_new_location( db, lat_str, long_str )
 		return new_location.location_id
 		
 	else:
-		# This Location already exists, so return its location_id
+		# This Location already exists, so make sure its fields are all
+		# filled out if possible, then return its location_id
+		if existing_location.city == '' and existing_location.state == '' and existing_location.country == '':
+			_create_new_location(db, lat_str, long_str, existing_location)
 		return existing_location.location_id
+	
+def _lookup_location(lat, long):
+	# Using Nominatim as our lookup service for now, because
+	# they don't require registration or an API key. The downside
+	# is that they have a usage limit of 1 lookup/second.
+	# See http://wiki.openstreetmap.org/wiki/Nominatim_usage_policy
+	# for more details on the usage policy.	
+	geolocator = geocoders.Nominatim() 
+	location = geolocator.reverse( ( lat, long ))
+	location_address = location.raw.get( 'address' )
+	_city = _encode( location_address.get( 'city' ) )
+	_state = _encode( location_address.get( 'state' ) )
+	_country = _encode( location_address.get( 'country' ) )
+	return (_city, _state, _country)
 		
-def _create_new_location( db, lat_str, long_str, ip_id ):
+def _create_new_location( db, lat_str, long_str, existing_location=None ):
 	# Returns the location_id of the row created in the Location table 
 	
 	def _encode( val ):
@@ -197,32 +210,31 @@ def _create_new_location( db, lat_str, long_str, ip_id ):
 	lat = float(lat_str)
 	long = float(long_str)
 	
-	# Using Nominatim as our lookup service for now, because
-	# they don't require registration or an API key. The downside
-	# is that they have a usage limit of 1 lookup/second.
-	# See http://wiki.openstreetmap.org/wiki/Nominatim_usage_policy
-	# for more details on the usage policy.	
-	geolocator = geocoders.Nominatim() 
 	# Try to look up the location and add it as a new location.
 	# If the lookup fails for any reason, just add the location 
 	# without the names of city, state, and country
+		
 	try:
-		location = geolocator.reverse( ( lat, long ))
-		location_address = location.raw.get( 'address' )
-		_city = _encode( location_address.get( 'city' ) )
-		_state = _encode( location_address.get( 'state' ) )
-		_country = _encode( location_address.get( 'country' ) )
+		_city, _state, _country = _lookup_location(lat, long)
 	except:
 		logger.info('Reverse geolookup for %s, %s failed.' % (lat, long))
 		_city = ''
 		_state = ''
 		_country = ''
 	
-	new_location = Location( latitude=lat_str, longitude=long_str, city=_city, state=_state, country=_country )
-	db.session.add( new_location )
-	
-	# Return the row we just created
-	return new_location
+	# If we got an existing location, update the data
+	# instead of creating a new location
+	if existing_location:
+		existing_location.city = _city
+		existing_location.state = _state
+		existing_location.country = _country
+		return existing_location
+	else:
+		new_location = Location( latitude=lat_str, longitude=long_str, city=_city, state=_state, country=_country )
+		db.session.add( new_location )
+		# need to flush here so that our new location will be assigned a location_id
+		db.session.flush()
+		return new_location
 		
 
 def create_session( user, user_agent, start_time, ip_addr, end_time=None ):

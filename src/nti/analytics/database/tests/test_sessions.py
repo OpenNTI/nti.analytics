@@ -7,8 +7,9 @@ __docformat__ = "restructuredtext en"
 # disable: accessing protected members, too many methods
 # pylint: disable=W0212,R0904
 
-import unittest
 import time
+import fudge
+import unittest
 
 from zope import component
 
@@ -137,24 +138,63 @@ class TestSessions(unittest.TestCase):
 		assert_that( user_agent_record.user_agent, has_length( less_than_or_equal_to( 512 )) )
 		assert_that( user_agent_record.user_agent_id, is_( 1 ) )
 
-	def test_ip_geolocation(self):
+	@fudge.patch('nti.analytics.database.sessions._lookup_location')
+	def test_ip_geolocation(self, fakeLocationLookup):
+		(fakeLocationLookup.expects_call()
+							.with_arg_count(2)
+							.raises(Exception('Lookup failed for some reason'))
+							.next_call()
+							.with_arg_count(2)
+							.returns(('Norman', 'Oklahoma', 'United States'))
+							)
+		
+		
+		# Tables should be empty to start with
 		results = self.session.query(IpGeoLocation).all()
 		assert_that( results, has_length( 0 ) )
+		location_results = self.session.query(Location).all()
+		assert_that( location_results, has_length( 0 ) )
 
 		ip_addr = '156.110.241.13' # alpha
+		# Our fake web service will throw an exception on the first lookup.
+		# So we should get a location back, with empty city, state, and country.
+		# Everything else should work normally.
 		_check_ip_location( self.db, ip_addr, test_user_ds_id )
 
 		results = self.session.query(IpGeoLocation).all()
 		assert_that( results, has_length( 1 ) )
 		assert_that( results[0].country_code, is_( 'US' ))
-		
 		assert_that( results[0].location_id, not_none())
+		
 		location_results = self.session.query(Location).all()
+		assert_that( results[0].location_id, equal_to(location_results[0].location_id))
+		assert_that( location_results, has_length( 1 ) )
+		assert_that( location_results[0].latitude, not_none() )
+		assert_that( location_results[0].longitude, not_none() )
+		assert_that( location_results[0].city, is_( '' ) )
+		assert_that( location_results[0].state, is_( '' ) )
+		assert_that( location_results[0].country, is_( '' ) )
+		
+		# The next lookup works, so we should have the same location_id
+		# but with the information filled in. No new Location should be added.
+		_check_ip_location( self.db, ip_addr, test_user_ds_id )
+		results = self.session.query(IpGeoLocation).all()
+		assert_that( results, has_length( 1 ) )
+		assert_that( results[0].country_code, is_( 'US' ))
+		assert_that( results[0].location_id, not_none())
+		
+		location_results = self.session.query(Location).all()
+		assert_that( location_results, has_length( 1 ) )
 		assert_that( results[0].location_id, equal_to(location_results[0].location_id))
 		assert_that( location_results[0].latitude, not_none() )
 		assert_that( location_results[0].longitude, not_none() )
+		assert_that( location_results[0].city, is_( 'Norman' ) )
+		assert_that( location_results[0].state, is_( 'Oklahoma' ) )
+		assert_that( location_results[0].country, is_( 'United States' ) )
+		
+		# Future calls will work normally with the fake web service.
 
-		# Dupe for user does not add
+		# Dupe for user with filled-in information
 		_check_ip_location( self.db, ip_addr, test_user_ds_id )
 
 		results = self.session.query(IpGeoLocation).all()
