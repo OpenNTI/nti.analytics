@@ -65,6 +65,8 @@
 	<subscriber handler=".social._meeting_created" />
 	<subscriber handler=".social._meeting_joined" />
 
+	<subscriber handler=".surveys._inquiry_taken" />
+
 	<subscriber handler=".resource_tags._note_added" />
 	<subscriber handler=".resource_tags._note_removed" />
 	<subscriber handler=".resource_tags._highlight_added" />
