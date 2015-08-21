@@ -22,6 +22,8 @@ from nti.contenttypes.courses.interfaces import ICourseInstance
 
 from nti.contentlibrary.interfaces import IContentPackage
 from nti.contentlibrary.interfaces import IContentPackageLibraryModifiedOnSyncEvent
+
+from nti.contentlibrary.indexed_data import get_catalog
 from nti.contentlibrary.indexed_data.interfaces import CONTAINER_IFACES
 
 from nti.dataserver_core.interfaces import IContainerContext
@@ -296,6 +298,27 @@ def get_container_context_legacy( obj ):
 
 	return result
 
+def get_root_context_from_index( obj ):
+	"""
+	See if our container has an indexed course.  Grab the first
+	course we find (arbitrarily).
+	"""
+	catalog = get_catalog()
+	ntiid = getattr( obj, 'containerId',
+					getattr( obj, 'ntiid', None ))
+	obj = find_object_with_ntiid( ntiid )
+	if obj is not None:
+		entries = catalog.get_containers( obj )
+
+		for ntiid in entries or ():
+			context = find_object_with_ntiid(ntiid)
+			# Only bother with CPs for speed
+			if IContentPackage.providedBy(context):
+				result = ICourseInstance( context, None )
+				if result is not None:
+					return result
+	return None
+
 def get_root_context( obj ):
 	"""
 	Given a object, attempt to find the root context, typically
@@ -304,7 +327,9 @@ def get_root_context( obj ):
 	result = get_container_context( obj )
 
 	if result is None:
-		logger.info( 'Object does not have expected context annotation (%s)', obj )
-		result = get_container_context_legacy( obj )
+		result = get_root_context_from_index( obj )
+		if result is None:
+			logger.info( 'Object does not have expected context annotation (%s)', obj )
+			result = get_container_context_legacy( obj )
 
 	return result
