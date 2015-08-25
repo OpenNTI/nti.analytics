@@ -142,7 +142,7 @@ class TestSessions(unittest.TestCase):
 	def test_ip_geolocation(self, fakeLocationLookup):
 		(fakeLocationLookup.expects_call()
 							.with_arg_count(2)
-							.raises(Exception('Lookup failed for some reason'))
+							.returns(('', '', ''))
 							.next_call()
 							.with_arg_count(2)
 							.returns(('Norman', 'Oklahoma', 'United States'))

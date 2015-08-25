@@ -189,23 +189,28 @@ def _lookup_location(lat, long):
 	# they don't require registration or an API key. The downside
 	# is that they have a usage limit of 1 lookup/second.
 	# See http://wiki.openstreetmap.org/wiki/Nominatim_usage_policy
-	# for more details on the usage policy.	
-	geolocator = geocoders.Nominatim() 
-	location = geolocator.reverse( ( lat, long ))
-	location_address = location.raw.get( 'address' )
-	_city = _encode( location_address.get( 'city' ) )
-	_state = _encode( location_address.get( 'state' ) )
-	_country = _encode( location_address.get( 'country' ) )
-	return (_city, _state, _country)
+	# for more details on the usage policy.
 		
-def _create_new_location( db, lat_str, long_str, existing_location=None ):
-	# Returns the location_id of the row created in the Location table 
-	
 	def _encode( val ):
 		try:
 			return str( val ) if val else ''
 		except:
-			return '' 
+			return ''
+		
+	try:
+		geolocator = geocoders.Nominatim() 
+		location = geolocator.reverse( ( lat, long ))
+		location_address = location.raw.get( 'address' )
+		_city = _encode( location_address.get( 'city' ) )
+		_state = _encode( location_address.get( 'state' ) )
+		_country = _encode( location_address.get( 'country' ) )
+	except:
+		logger.info('Reverse geolookup for %s, %s failed.' % (lat, long))
+		_city = _state = _country = ''
+	return (_city, _state, _country)
+		
+def _create_new_location( db, lat_str, long_str, existing_location=None ):
+	# Returns the location_id of the row created in the Location table 
 		
 	lat = float(lat_str)
 	long = float(long_str)
@@ -218,9 +223,7 @@ def _create_new_location( db, lat_str, long_str, existing_location=None ):
 		_city, _state, _country = _lookup_location(lat, long)
 	except:
 		logger.info('Reverse geolookup for %s, %s failed.' % (lat, long))
-		_city = ''
-		_state = ''
-		_country = ''
+		_city = _state = _country = ''
 	
 	# If we got an existing location, update the data
 	# instead of creating a new location
