@@ -149,6 +149,18 @@
 			 for=".interfaces.IAnalyticsSession"
 			 provides="nti.externalization.interfaces.IInternalObjectUpdater" />
 
+	<adapter factory=".internalization._ProfileViewEvent"
+			 for=".interfaces.IProfileViewEvent"
+			 provides="nti.externalization.interfaces.IInternalObjectUpdater" />
+
+	<adapter factory=".internalization._ProfileActivityViewEvent"
+			 for=".interfaces.IProfileActivityViewEvent"
+			 provides="nti.externalization.interfaces.IInternalObjectUpdater" />
+
+	<adapter factory=".internalization._ProfileMembershipViewEvent"
+			 for=".interfaces.IProfileMembershipViewEvent"
+			 provides="nti.externalization.interfaces.IInternalObjectUpdater" />
+
 	<!-- Research -->
 	<adapter factory=".model._UserResearchStatus" />
 

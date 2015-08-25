@@ -40,7 +40,6 @@ from nti.analytics.common import process_event
 
 from nti.analytics.sessions import get_nti_session_id
 
-from nti.analytics.database import users as db_users
 from nti.analytics.database import blogs as db_blogs
 from nti.analytics.database import boards as db_boards
 from nti.analytics.database import enrollments as db_enrollments
@@ -499,7 +498,7 @@ def _validate_profile_event( event ):
 							'Event received with non-existent profile user (user=%s) (event=%s)' %
 							( event.ProfileEntity, event ) )
 
-def _do_add_profile_event( event, to_call, nti_session=None, recorded=None):
+def _do_add_profile_event( to_call, event, nti_session=None, recorded=None):
 	try:
 		_validate_profile_event( event )
 	except UnrecoverableAnalyticsError as e:

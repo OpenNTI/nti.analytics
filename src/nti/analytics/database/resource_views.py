@@ -281,11 +281,10 @@ def _resolve_video_view( record, course=None, user=None, max_time_length=None ):
 	root_context = get_root_context_obj( record ) if course is None else course
 	user = get_user( record.user_id ) if user is None else user
 	resource_record = get_resource_record_from_id( record.resource_id )
-	
+
 	if max_time_length is None:
 		max_time_length = resource_record.max_time_length
-		
-	resource_id = record.resource_id
+
 	resource_ntiid = resource_record.resource_ds_id
 	video_start_time = record.video_start_time
 	video_end_time = record.video_end_time

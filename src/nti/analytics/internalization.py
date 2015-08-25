@@ -21,6 +21,9 @@ from nti.analytics.interfaces import IBlogViewEvent
 from nti.analytics.interfaces import INoteViewEvent
 from nti.analytics.interfaces import ITopicViewEvent
 from nti.analytics.interfaces import IAnalyticsSession
+from nti.analytics.interfaces import IProfileViewEvent
+from nti.analytics.interfaces import IProfileActivityViewEvent
+from nti.analytics.interfaces import IProfileMembershipViewEvent
 
 @interface.implementer(IInternalObjectUpdater)
 class _NTIAnalyticsModelUpdater(object):
@@ -81,3 +84,24 @@ class _TopicViewEventUpdater(_NTIAnalyticsModelUpdater):
 class _AnalyticsSessionUpdater(_NTIAnalyticsModelUpdater):
 
 	model_interface = IAnalyticsSession
+
+# TODO Why do we need distinct updaters since we implement
+# the same base class?
+
+@interface.implementer(IInternalObjectUpdater)
+@component.adapter(IProfileViewEvent)
+class _ProfileViewEvent(_NTIAnalyticsModelUpdater):
+
+	model_interface = IProfileViewEvent
+
+@interface.implementer(IInternalObjectUpdater)
+@component.adapter(IProfileActivityViewEvent)
+class _ProfileActivityViewEvent(_NTIAnalyticsModelUpdater):
+
+	model_interface = IProfileActivityViewEvent
+
+@interface.implementer(IInternalObjectUpdater)
+@component.adapter(IProfileMembershipViewEvent)
+class _ProfileMembershipViewEvent(_NTIAnalyticsModelUpdater):
+
+	model_interface = IProfileMembershipViewEvent

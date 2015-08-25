@@ -164,40 +164,25 @@ class VideoPlaySpeedChangeEvent(SchemaConfigured):
 		SchemaConfigured.__init__(self, *args, **kwargs)
 
 @interface.implementer(IProfileViewEvent)
-class ProfileViewEvent(SchemaConfigured):
+class ProfileViewEvent(ViewEvent):
 	createDirectFieldProperties(IProfileViewEvent)
 
-	__external_can_create__ = True
 	__external_class_name__ = "ProfileViewEvent"
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.profileviewevent'
-	time_length = alias('Duration')
-
-	def __init__(self, *args, **kwargs):
-		SchemaConfigured.__init__(self, *args, **kwargs)
 
 @interface.implementer(IProfileActivityViewEvent)
-class ProfileActivityViewEvent(SchemaConfigured):
+class ProfileActivityViewEvent(ViewEvent):
 	createDirectFieldProperties(IProfileActivityViewEvent)
 
-	__external_can_create__ = True
 	__external_class_name__ = "ProfileActivityViewEvent"
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.profileactivityviewevent'
-	time_length = alias('Duration')
-
-	def __init__(self, *args, **kwargs):
-		SchemaConfigured.__init__(self, *args, **kwargs)
 
 @interface.implementer(IProfileMembershipViewEvent)
-class ProfileMembershipViewEvent(SchemaConfigured):
+class ProfileMembershipViewEvent(ViewEvent):
 	createDirectFieldProperties(IProfileMembershipViewEvent)
 
-	__external_can_create__ = True
 	__external_class_name__ = "ProfileMembershipViewEvent"
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.profilemembershipviewevent'
-	time_length = alias('Duration')
-
-	def __init__(self, *args, **kwargs):
-		SchemaConfigured.__init__(self, *args, **kwargs)
 
 @interface.implementer(IBatchResourceEvents)
 @WithRepr
