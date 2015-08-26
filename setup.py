@@ -42,7 +42,8 @@ setup(
 		'nti.app.products.gradebook',
 		'python-geoip',
 		'python-geoip-geolite2',
-		'sqlalchemy'
+		'sqlalchemy',
+		'user-agents'
 	],
 	entry_points=entry_points
 )
