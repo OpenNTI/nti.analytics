@@ -93,6 +93,8 @@ class RootContextId(_NtiidIdentifier):
 	@classmethod
 	def get_id( cls, root_context ):
 		""" Could be a course or content-package."""
+		# TODO It seems external OID would be preferrable,
+		# perhaps much faster lookups.
 		catalog_entry = ICourseCatalogEntry( root_context, None )
 		result = getattr( catalog_entry, 'ntiid', None )
 
