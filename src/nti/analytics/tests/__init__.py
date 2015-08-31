@@ -170,10 +170,17 @@ class NTIAnalyticsTestCase(AnalyticsTestBase):
 
 class NTIAnalyticsApplicationTestLayer(ApplicationTestLayer):
 
-	@classmethod
-	def setUp(cls):
-		pass
+	# This was a little strange.  The tests in decorators and workspaces
+	# started failing because of a missing db. This was after a test was
+	# added to the views. Previously, this setup/teardown only passed.
+	# Perhaps there was some layer interaction between the two, or a
+	# closed dataserver?
 
 	@classmethod
-	def tearDown(cls):
-		pass
+	def setUp(self):
+		self.db = AnalyticsDB( dburi='sqlite://' )
+		component.getGlobalSiteManager().registerUtility( self.db, IAnalyticsDB )
+
+	@classmethod
+	def tearDown(self):
+		component.getGlobalSiteManager().unregisterUtility( self.db )
