@@ -12,13 +12,8 @@ import time
 
 from zope import component
 
-from nti.app.assessment.interfaces import ICourseAssessmentItemCatalog
-from nti.app.assessment.interfaces import ICourseAssignmentCatalog
 from nti.assessment.interfaces import IQAssignment
 from nti.assessment.interfaces import IQuestionSet
-
-from nti.contenttypes.courses.interfaces import ICourseCatalog
-from nti.contenttypes.courses.interfaces import ICourseInstance
 
 from nti.contentlibrary.interfaces import IContentPackage
 from nti.contentlibrary.interfaces import IContentPackageLibraryModifiedOnSyncEvent
@@ -26,15 +21,20 @@ from nti.contentlibrary.interfaces import IContentPackageLibraryModifiedOnSyncEv
 from nti.contentlibrary.indexed_data import get_catalog
 from nti.contentlibrary.indexed_data.interfaces import CONTAINER_IFACES
 
+from nti.contenttypes.courses.interfaces import ICourseCatalog
+from nti.contenttypes.courses.interfaces import ICourseInstance
+from nti.contenttypes.courses.interfaces import ICourseAssignmentCatalog
+from nti.contenttypes.courses.interfaces import ICourseAssessmentItemCatalog
+
 from nti.dataserver_core.interfaces import IContainerContext
 
 from nti.externalization.externalization import to_external_ntiid_oid
 
-from nti.ntiids.ntiids import find_object_with_ntiid
 from nti.ntiids.ntiids import TYPE_OID
 from nti.ntiids.ntiids import TYPE_UUID
 from nti.ntiids.ntiids import TYPE_INTID
 from nti.ntiids.ntiids import is_ntiid_of_types
+from nti.ntiids.ntiids import find_object_with_ntiid
 
 from nti.analytics import get_factory
 from nti.analytics import SESSIONS_ANALYTICS
