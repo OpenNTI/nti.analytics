@@ -8,7 +8,7 @@ locations of users within a course.
 
 from nti.analytics.database import get_analytics_db
 from nti.analytics.database.sessions import IpGeoLocation, Location
-from nti.app.products.coursewarereports.views import ALL_USERS
+from nti.app.products.courseware_reports.views import ALL_USERS
 from nti.dataserver.interfaces import IEnumerableEntityContainer
 from nti.dataserver.users.users import User
 

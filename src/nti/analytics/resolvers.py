@@ -45,7 +45,7 @@ def _get_job_queue():
 	factory = get_factory()
 	return factory.get_queue( SESSIONS_ANALYTICS )
 
-# XXX: Copied from nti.app.products.coursewarereports
+# XXX: Copied from nti.app.products.courseware_reports
 def _get_self_assessments_for_course(course):
 	"""
 	Given an :class:`.ICourseInstance`, return a list of all

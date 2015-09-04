@@ -132,7 +132,7 @@ class BookmarksCreated(Base,BaseTableMixin,ResourceMixin,DeletedMixin):
 
 
 def _get_sharing_enum( note, course ):
-	# Logic duped in coursewarereports.views.admin_views
+	# Logic duped in courseware_reports.views.admin_views
 	# We may have many values here (course subinstance + parent)
 
 	# Note: we could also do private if not shared at all
