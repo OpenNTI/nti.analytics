@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*
 """
-$Id$
+.. $Id$
 """
+
 from __future__ import print_function, unicode_literals, absolute_import, division
 __docformat__ = "restructuredtext en"
 
@@ -104,7 +105,6 @@ def _process_end_session( username, session_id, timestamp ):
 						username=username,
 						session_id=session_id,
 						timestamp=timestamp )
-
 
 @component.adapter( IUserLogoutEvent )
 def _user_logout_event( event ):

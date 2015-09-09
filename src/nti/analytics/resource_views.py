@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*
 """
-$Id$
+.. $Id$
 """
-from __future__ import print_function, unicode_literals, absolute_import, division
 
+from __future__ import print_function, unicode_literals, absolute_import, division
 __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
@@ -288,7 +288,8 @@ def _add_note_event( event, nti_session=None ):
 
 	notify(NoteViewedRecordedEvent(	user=user, note=note, timestamp=event.timestamp,
 									context=root_context, session=nti_session,
-									context_path=event.context_path))
+									context_path=event.context_path,
+									duration=getattr(event, 'time_length', 1)))
 
 def _add_topic_event( event, nti_session=None ):
 	try:
@@ -316,6 +317,7 @@ def _add_topic_event( event, nti_session=None ):
 
 	notify(TopicViewedRecordedEvent(user=user, topic=topic, timestamp=event.timestamp,
 									context=root_context, session=nti_session,
+									duration=event.time_length,
 									context_path=event.context_path))
 
 def _add_blog_event( event, nti_session=None ):
@@ -338,7 +340,9 @@ def _add_blog_event( event, nti_session=None ):
 					user, blog, event.time_length )
 
 	notify(BlogViewedRecordedEvent(user=user, blog=blog, timestamp=event.timestamp,
-								   session=nti_session, context_path=event.context_path))
+								   session=nti_session, 
+								   duration=event.time_length,
+								   context_path=event.context_path))
 
 def _add_catalog_event( event, nti_session=None ):
 	try:
@@ -362,7 +366,9 @@ def _add_catalog_event( event, nti_session=None ):
 					event.time_length )
 
 	notify(CatalogViewedRecordedEvent(user=user, context=course, timestamp=event.timestamp,
-									  session=nti_session, context_path=event.context_path))
+									  session=nti_session, 
+									  duration=event.time_length,
+									  context_path=event.context_path))
 
 def _do_resource_view( to_call, event, resource_id, nti_session=None, *args ):
 	user = get_entity( event.user )
@@ -378,6 +384,7 @@ def _do_resource_view( to_call, event, resource_id, nti_session=None, *args ):
 
 	notify(ResourceViewedRecordedEvent(user=user, resource=resource_id, context=root_context,
 									   timestamp=event.timestamp, session=nti_session,
+									   duration=event.time_length,
 									   context_path=event.context_path))
 
 def _validate_assessment_event( event, assess_id ):
@@ -405,8 +412,8 @@ def _add_self_assessment_event( event, nti_session=None ):
 	except UnrecoverableAnalyticsError as e:
 		logger.warn( 'Error while validating event (%s)', e )
 		return
-	_do_resource_view( db_assess_views.create_self_assessment_view,
-					event, event.content_id, nti_session, event.QuestionSetId )
+	_do_resource_view(db_assess_views.create_self_assessment_view,
+					  event, event.content_id, nti_session, event.QuestionSetId )
 
 def _add_assignment_event( event, nti_session=None ):
 	try:

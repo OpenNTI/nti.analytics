@@ -40,6 +40,7 @@ class IObjectRecordedEvent(IObjectEvent):
 	session = interface.Attribute("analytics session")
 
 class IObjectViewedRecordedEvent(IObjectRecordedEvent):
+	duration = Number(title="Time length duration", required=False, default=0)
 	context_path = List(title='Context path',
 						description='List of ntiid locations describing where the event occurred.',
 						min_length=0,
@@ -75,7 +76,6 @@ class IResourceViewedRecordedEvent(IObjectViewedRecordedEvent):
 
 class IVideoRecordedEvent(IObjectViewedRecordedEvent):
 	object = Object(IString, title="video id", required=True)
-	duration = Number(title="Time length duration", required=False, default=0)
 	video_start_time = Number(title="Start time (secs)", required=False, default=0)
 	video_end_time = Number(title="End time (secs)", required=False, default=0)
 	with_transcript = Bool(title="Viewed with a trascript", required=False, default=False)
@@ -113,8 +113,12 @@ class ObjectRecordedEvent(ObjectEvent):
 @interface.implementer(IObjectRecordedEvent)
 class ObjectViewedRecordedEvent(ObjectRecordedEvent):
 
-	def __init__(self, user, obj, timestamp=None, session=None, context_path=None):
-		super(ObjectViewedRecordedEvent, self).__init__(user, obj, timestamp, session)
+	def __init__(self, user, obj, timestamp=None, session=None, duration=None, context_path=None):
+		super(ObjectViewedRecordedEvent, self).__init__(user, obj, 
+														session=session,
+														duration=duration,
+														timestamp=timestamp)
+		self.duration = duration
 		self.context_path = context_path
 
 @interface.implementer(INoteViewedRecordedEvent)
@@ -122,8 +126,12 @@ class NoteViewedRecordedEvent(ObjectViewedRecordedEvent):
 
 	note = alias('object')
 
-	def __init__(self, user, note, context=None, timestamp=None, session=None, context_path=None):
-		super(NoteViewedRecordedEvent, self).__init__(user, note, timestamp, session, context_path)
+	def __init__(self, user, note, context=None, timestamp=None, session=None, duration=None, context_path=None):
+		super(NoteViewedRecordedEvent, self).__init__(user, note,
+													  session=session,
+													  duration=duration,
+													  timestamp=timestamp,
+													  context_path=context_path)
 		self.context = context
 
 @interface.implementer(ITopicViewedRecordedEvent)
@@ -131,8 +139,12 @@ class TopicViewedRecordedEvent(ObjectViewedRecordedEvent):
 
 	topic = alias('object')
 
-	def __init__(self, user, topic, context=None, timestamp=None, session=None, context_path=None):
-		super(TopicViewedRecordedEvent, self).__init__(user, topic, timestamp, session, context_path)
+	def __init__(self, user, topic, context=None, timestamp=None, session=None, duration=None, context_path=None):
+		super(TopicViewedRecordedEvent, self).__init__(user, topic,
+													   session=session,
+													   duration=duration,
+													   timestamp=timestamp,
+													   context_path=context_path)
 		self.context = context
 
 @interface.implementer(IBlogViewedRecordedEvent)
@@ -140,24 +152,36 @@ class BlogViewedRecordedEvent(ObjectViewedRecordedEvent):
 
 	blog = alias('object')
 
-	def __init__(self, user, blog, timestamp=None, session=None, context_path=None):
-		super(BlogViewedRecordedEvent, self).__init__(user, blog, timestamp, session, context_path)
+	def __init__(self, user, blog, timestamp=None, session=None, duration=None, context_path=None):
+		super(BlogViewedRecordedEvent, self).__init__(user, blog,
+													  session=session,
+													  duration=duration,
+													  timestamp=timestamp,
+													  context_path=context_path)
 
 @interface.implementer(ICatalogViewedRecordedEvent)
 class CatalogViewedRecordedEvent(ObjectViewedRecordedEvent):
 
 	catalog = course = alias('object')
 
-	def __init__(self, user, context, timestamp=None, session=None, context_path=None):
-		super(CatalogViewedRecordedEvent, self).__init__(user, context, timestamp, session, context_path)
+	def __init__(self, user, context, timestamp=None, session=None, duration=None, context_path=None):
+		super(CatalogViewedRecordedEvent, self).__init__(user, context, 
+														 session=session,
+													  	 duration=duration,
+													  	 timestamp=timestamp,
+													  	 context_path=context_path)
 
 @interface.implementer(IResourceViewedRecordedEvent)
 class ResourceViewedRecordedEvent(ObjectViewedRecordedEvent):
 
 	resource = alias('object')
 
-	def __init__(self, user, resource, context=None, timestamp=None, session=None, context_path=None):
-		super(ResourceViewedRecordedEvent, self).__init__(user, resource, timestamp, session, context_path)
+	def __init__(self, user, resource, context=None, timestamp=None, session=None, duration=None, context_path=None):
+		super(ResourceViewedRecordedEvent, self).__init__(user, resource, 
+														  session=session,
+													  	  duration=duration,
+													  	  timestamp=timestamp,
+													  	  context_path=context_path)
 		self.context = context
 
 @interface.implementer(IVideoRecordedEvent)
