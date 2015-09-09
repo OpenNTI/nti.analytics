@@ -116,7 +116,6 @@ class ObjectViewedRecordedEvent(ObjectRecordedEvent):
 	def __init__(self, user, obj, timestamp=None, session=None, duration=None, context_path=None):
 		super(ObjectViewedRecordedEvent, self).__init__(user, obj, 
 														session=session,
-														duration=duration,
 														timestamp=timestamp)
 		self.duration = duration
 		self.context_path = context_path
