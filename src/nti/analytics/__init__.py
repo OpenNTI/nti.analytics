@@ -3,10 +3,14 @@
 """
 .. $Id$
 """
+
 from __future__ import print_function, unicode_literals, absolute_import, division
 __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
+
+import zope.i18nmessageid
+MessageFactory = zope.i18nmessageid.MessageFactory('nti.analytics')
 
 from zope import component
 
@@ -69,7 +73,7 @@ QUEUE_NAMES = [ SESSIONS_ANALYTICS,
 
 def has_analytics():
 	"Determines whether our current site is configured for analytics."
-	return get_analytics_db( strict=False ) is not None
+	return get_analytics_db(strict=False) is not None
 
 def get_factory():
 	return component.getUtility(IAnalyticsQueueFactory)
