@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*
 """
-$Id$
+.. $Id$
 """
+
 from __future__ import print_function, unicode_literals, absolute_import, division
 __docformat__ = "restructuredtext en"
 
@@ -14,16 +15,17 @@ import os
 import ConfigParser
 
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.pool import StaticPool
+from sqlalchemy.orm import sessionmaker, scoped_session
 
 from zope import interface
+
 from zope.sqlalchemy import ZopeTransactionExtension
 
 from nti.common.property import Lazy
 
-from nti.analytics.database.interfaces import IAnalyticsDB
-from nti.analytics.database.metadata import AnalyticsMetadata
+from .interfaces import IAnalyticsDB
+from .metadata import AnalyticsMetadata
 
 @interface.implementer(IAnalyticsDB)
 class AnalyticsDB(object):
@@ -32,7 +34,8 @@ class AnalyticsDB(object):
 	max_overflow = 10
 	pool_recycle = 300
 
-	def __init__( self, dburi=None, twophase=False, autocommit=False, defaultSQLite=False, testmode=False, config=None ):
+	def __init__(self, dburi=None, twophase=False, autocommit=False, defaultSQLite=False,
+				 testmode=False, config=None):
 		self.dburi = dburi
 		self.twophase = twophase
 		self.autocommit = autocommit
@@ -40,9 +43,9 @@ class AnalyticsDB(object):
 		self.defaultSQLite = defaultSQLite
 
 		if defaultSQLite and not dburi:
-			data_dir = os.getenv( 'DATASERVER_DATA_DIR' ) or '/tmp'
-			data_dir = os.path.expanduser( data_dir )
-			data_file = os.path.join( data_dir, 'analytics-sqlite.db' )
+			data_dir = os.getenv('DATASERVER_DATA_DIR') or '/tmp'
+			data_dir = os.path.expanduser(data_dir)
+			data_file = os.path.join(data_dir, 'analytics-sqlite.db')
 			self.dburi = "sqlite:///%s" % data_file
 		elif config:
 			config_name = os.path.expandvars(config)
@@ -55,9 +58,9 @@ class AnalyticsDB(object):
 			if parser.has_option('analytics', 'autocommit'):
 				self.autocommit = parser.getboolean('analytics', 'autocommit')
 
-		logger.info( "Connecting to database at '%s' (twophase=%s) (testmode=%s)",
-					self.dburi, self.twophase, self.testmode )
-		self.metadata = AnalyticsMetadata( self.engine )
+		logger.info("Connecting to database at '%s' (twophase=%s) (testmode=%s)",
+					self.dburi, self.twophase, self.testmode)
+		self.metadata = AnalyticsMetadata(self.engine)
 
 	@Lazy
 	def engine(self):
@@ -67,17 +70,17 @@ class AnalyticsDB(object):
 				# them share a db connection to avoid missing metadata issues.
 				# Only for devmode.
 				result = create_engine(	self.dburi,
-                   				connect_args={'check_same_thread':False},
-                   	    		poolclass=StaticPool )
+				   						connect_args={'check_same_thread':False},
+				   						poolclass=StaticPool)
 
 			else:
-				result = create_engine(self.dburi,
-							   	   pool_size=self.pool_size,
-							   	   max_overflow=self.max_overflow,
-							   	   pool_recycle=self.pool_recycle )
+				result = create_engine(	self.dburi,
+							   	   		pool_size=self.pool_size,
+							   	   		max_overflow=self.max_overflow,
+							   	   		pool_recycle=self.pool_recycle)
 		except TypeError:
 			# SQLite does not use pooling anymore.
-			result = create_engine( self.dburi )
+			result = create_engine(self.dburi)
 		return result
 
 	@Lazy
@@ -90,14 +93,13 @@ class AnalyticsDB(object):
 			result = sessionmaker(bind=self.engine,
 								  autoflush=True,
 							  	  twophase=self.twophase,
-							  	  extension=ZopeTransactionExtension() )
-
+							  	  extension=ZopeTransactionExtension())
 		return result
 
 	@Lazy
 	def session(self):
 		# This property proxies into a thread-local session.
-		return scoped_session( self.sessionmaker )
+		return scoped_session(self.sessionmaker)
 
 	def savepoint(self):
 		if not self.testmode and not self.defaultSQLite:
