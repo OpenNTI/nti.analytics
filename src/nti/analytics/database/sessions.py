@@ -26,9 +26,9 @@ from nti.analytics.common import timestamp_type
 
 from nti.analytics.read_models import AnalyticsSession
 
-from nti.analytics.database import SESSION_COLUMN_TYPE
 from nti.analytics.database import Base
 from nti.analytics.database import get_analytics_db
+from nti.analytics.database import SESSION_COLUMN_TYPE
 
 from nti.analytics.database.users import get_or_create_user
 
@@ -145,7 +145,7 @@ def _create_ip_location(db, ip_addr, user_id):
 		# floats ensures the accuracy of comparisons. Everything is
 		# stored as strings except if we need to do a lookup,
 		# in which case they are converted to floats for the lookup
-		ip_location.location_id = _get_location_id(db,
+		ip_location.location_id = _get_location_id(	db,
 													str(round(ip_info.location[0], 4)),
 													str(round(ip_info.location[1], 4)))
 		db.session.flush()
@@ -163,9 +163,9 @@ def _check_ip_location(db, ip_addr, user_id):
 		else:
 			old_location_data = db.session.query(Location).filter(
 												Location.location_id == old_ip_location.location_id).first()
-			old_ip_location.location_id = _get_location_id(db,
-														old_location_data.latitude,
-														old_location_data.longitude)
+			old_ip_location.location_id = _get_location_id(	db,
+															old_location_data.latitude,
+															old_location_data.longitude)
 
 def _get_location_id(db, lat_str, long_str):
 
@@ -181,7 +181,9 @@ def _get_location_id(db, lat_str, long_str):
 	else:
 		# This Location already exists, so make sure its fields are all
 		# filled out if possible, then return its location_id
-		if existing_location.city == '' and existing_location.state == '' and existing_location.country == '':
+		if 		existing_location.city == '' \
+			and existing_location.state == '' \
+			and existing_location.country == '':
 			_create_new_location(db, lat_str, long_str, existing_location)
 		return existing_location.location_id
 
@@ -195,7 +197,7 @@ def _lookup_location(lat, long_):
 	def _encode(val):
 		try:
 			return str(val) if val else u''
-		except:
+		except Exception:
 			return u''
 
 	try:
@@ -241,7 +243,6 @@ def _create_new_location(db, lat_str, long_str, existing_location=None):
 		db.session.flush()
 		return new_location
 
-
 def create_session(user, user_agent, start_time, ip_addr, end_time=None):
 	db = get_analytics_db()
 	user = get_or_create_user(user)
@@ -251,7 +252,7 @@ def create_session(user, user_agent, start_time, ip_addr, end_time=None):
 	user_agent = _get_user_agent(user_agent)
 	user_agent_id = _get_user_agent_id(db, user_agent)
 
-	new_session = Sessions(user_id=uid,
+	new_session = Sessions(	user_id=uid,
 							start_time=start_time,
 							end_time=end_time,
 							ip_addr=ip_addr,
@@ -281,9 +282,9 @@ def _resolve_session(row):
 		duration = duration.seconds
 
 	result = AnalyticsSession(SessionID=row.session_id,
-							SessionStartTime=row.start_time,
-							SessionEndTime=row.end_time,
-							Duration=duration)
+							  SessionStartTime=row.start_time,
+							  SessionEndTime=row.end_time,
+							  Duration=duration)
 	return result
 
 def get_user_sessions(user, timestamp=None, max_timestamp=None):
@@ -296,7 +297,6 @@ def get_user_sessions(user, timestamp=None, max_timestamp=None):
 
 	if max_timestamp is not None:
 		filters.append(Sessions.start_time <= max_timestamp)
-
 
 	results = get_filtered_records(user, Sessions, filters=filters)
 	return resolve_objects(_resolve_session, results)
