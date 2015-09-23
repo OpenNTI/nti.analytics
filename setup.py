@@ -17,7 +17,7 @@ setup(
 	version=VERSION,
 	author='Josh Zuech',
 	author_email='josh.zuech@nextthought.com',
-	description="NTI analytics",
+	description="NTI Analytics",
 	long_description=codecs.open('README.rst', encoding='utf-8').read(),
 	license='Proprietary',
 	keywords='pyramid preference',
@@ -32,18 +32,19 @@ setup(
 	package_dir={'': 'src'},
 	namespace_packages=['nti'],
 	install_requires=[
-		'alembic',
 		'setuptools',
+		'alembic',
 		'geopy',
-		'nti.async',
-		'nti.app.assessment',
-		'nti.app.products.courseware',
-		'nti.app.products.courseware_ims',
-		'nti.app.products.gradebook',
 		'python-geoip',
 		'python-geoip-geolite2',
 		'sqlalchemy',
 		'user-agents'
+		'nti.analytics_database',
+		'nti.async',
+		'nti.app.assessment',
+		'nti.app.products.courseware',
+		'nti.app.products.courseware_ims',
+		'nti.app.products.gradebook'
 	],
 	entry_points=entry_points
 )
