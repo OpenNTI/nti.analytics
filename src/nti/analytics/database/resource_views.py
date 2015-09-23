@@ -1,88 +1,47 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*
 """
-$Id$
+.. $Id$
 """
+
 from __future__ import print_function, unicode_literals, absolute_import, division
 __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
-from sqlalchemy import Column
-from sqlalchemy import Integer
-from sqlalchemy import Boolean
-from sqlalchemy import Enum
-from sqlalchemy import String
+from nti.analytics_database.resource_views import VideoEvents
+from nti.analytics_database.resource_views import CourseResourceViews
+from nti.analytics_database.resource_views import VideoPlaySpeedEvents
 
-from sqlalchemy.schema import Sequence
+from ..common import timestamp_type
 
-from nti.analytics.common import timestamp_type
+from ..identifier import SessionId
+from ..identifier import ResourceId
 
-from nti.analytics.identifier import SessionId
-from nti.analytics.identifier import ResourceId
+from ..interfaces import VIDEO_WATCH
 
-from nti.analytics.interfaces import VIDEO_WATCH
+from ..read_models import AnalyticsVideoSkip
+from ..read_models import AnalyticsVideoView
+from ..read_models import AnalyticsResourceView
 
-from nti.analytics.read_models import AnalyticsResourceView
-from nti.analytics.read_models import AnalyticsVideoSkip
-from nti.analytics.read_models import AnalyticsVideoView
+from ._utils import get_context_path
+from ._utils import expand_context_path
+from ._utils import get_root_context_ids
+from ._utils import get_root_context_obj
+from ._utils import get_filtered_records
 
-from nti.analytics.database import Base
-from nti.analytics.database import get_analytics_db
-from nti.analytics.database import resolve_objects
-from nti.analytics.database import should_update_event
+from .users import get_user
+from .users import get_or_create_user
+from .users import get_user_db_id
 
-from nti.analytics.database._utils import get_filtered_records
+from .resources import get_resource_id
+from .resources import get_resource_val
+from .resources import get_resource_record
+from .resources import get_resource_record_from_id
 
-from nti.analytics.database.meta_mixins import ResourceMixin
-from nti.analytics.database.meta_mixins import BaseTableMixin
-from nti.analytics.database.meta_mixins import ResourceViewMixin
-from nti.analytics.database.meta_mixins import TimeLengthMixin
-
-from nti.analytics.database.users import get_user
-from nti.analytics.database.users import get_or_create_user
-from nti.analytics.database.users import get_user_db_id
-
-from nti.analytics.database.resources import get_resource_id
-from nti.analytics.database.resources import get_resource_val
-from nti.analytics.database.resources import get_resource_record
-from nti.analytics.database.resources import get_resource_record_from_id
-
-from nti.analytics.database._utils import expand_context_path
-from nti.analytics.database._utils import get_context_path
-from nti.analytics.database._utils import get_root_context_ids
-from nti.analytics.database._utils import get_root_context_obj
-
-class CourseResourceViews(Base,ResourceViewMixin,TimeLengthMixin):
-	__tablename__ = 'CourseResourceViews'
-
-	# Need to have a seq primary key that we will not use to work around primary key limits
-	# in mysql, or we could put our resource_ids into another table to conserve space (we did).
-	# We'll probably just pull all of these events by indexed course; so, to avoid a join,
-	# let's try this.
-	resource_view_id = Column('resource_view_id', Integer, Sequence( 'resource_view_id_seq' ), primary_key=True )
-
-class VideoEvents(Base,ResourceViewMixin,TimeLengthMixin):
-	__tablename__ = 'VideoEvents'
-	video_event_type = Column('video_event_type', Enum( 'WATCH', 'SKIP' ), nullable=False )
-	# seconds from beginning of video (time 0s)
-	video_start_time = Column('video_start_time', Integer, nullable=False )
-	video_end_time = Column('video_end_time', Integer, nullable=True )
-	with_transcript = Column('with_transcript', Boolean, nullable=False )
-	video_view_id = Column('video_view_id', Integer, Sequence( 'video_view_id_seq' ), primary_key=True )
-	play_speed = Column( 'play_speed', String( 16 ), nullable=True )
-
-class VideoPlaySpeedEvents(Base,BaseTableMixin,ResourceMixin):
-	__tablename__ = 'VideoPlaySpeedEvents'
-
-	video_play_speed_id = Column('video_play_speed_id', Integer,
-								Sequence( 'video_play_speed_id_seq' ), primary_key=True )
-	old_play_speed = Column( 'old_play_speed', String( 16 ), nullable=False )
-	new_play_speed = Column( 'new_play_speed', String( 16 ), nullable=False )
-	video_time = Column('video_time', Integer, nullable=False )
-
-	# Optionally link to an actual video event, if possible.
-	video_view_id = Column('video_view_id', Integer, nullable=True, index=True )
+from . import resolve_objects
+from . import get_analytics_db
+from . import should_update_event
 
 def _resource_view_exists( db, table, user_id, resource_id, timestamp ):
 	return db.session.query( table ).filter(
@@ -126,7 +85,7 @@ def _create_view( table, user, nti_session, timestamp, root_context, context_pat
 	db.session.add( new_object )
 
 def create_course_resource_view( user, nti_session, timestamp, course, context_path, resource, time_length):
-	return _create_view( CourseResourceViews, user, nti_session, timestamp,
+	return _create_view(CourseResourceViews, user, nti_session, timestamp,
 						course, context_path, resource, time_length)
 
 def _video_view_exists( db, user_id, resource_id, timestamp, event_type ):

@@ -12,80 +12,23 @@ logger = __import__('logging').getLogger(__name__)
 from geoip import geolite2
 from geopy import geocoders
 
-from sqlalchemy import Float
-from sqlalchemy import Column
-from sqlalchemy import String
-from sqlalchemy import Integer
-from sqlalchemy import DateTime
-from sqlalchemy import ForeignKey
+from nti.analytics_database.sessions import Location
+from nti.analytics_database.sessions import Sessions
+from nti.analytics_database.sessions import UserAgents
+from nti.analytics_database.sessions import IpGeoLocation
 
 from sqlalchemy.orm.session import make_transient
-from sqlalchemy.schema import Sequence
 
-from nti.analytics.common import timestamp_type
+from ..common import timestamp_type
 
-from nti.analytics.read_models import AnalyticsSession
+from ..read_models import AnalyticsSession
 
-from nti.analytics.database import Base
-from nti.analytics.database import get_analytics_db
-from nti.analytics.database import SESSION_COLUMN_TYPE
+from ._utils import get_filtered_records
 
-from nti.analytics.database.users import get_or_create_user
-
-from nti.analytics.database._utils import get_filtered_records
+from .users import get_or_create_user
 
 from . import resolve_objects
-
-class Sessions(Base):
-	__tablename__ = 'Sessions'
-	session_id = Column('session_id', SESSION_COLUMN_TYPE, Sequence('session_id_seq'), index=True, primary_key=True)
-	user_id = Column('user_id', Integer, ForeignKey("Users.user_id"), index=True, nullable=False)
-	ip_addr = Column('ip_addr', String(64))
-	user_agent_id = Column('user_agent_id', Integer)
-	start_time = Column('start_time', DateTime)
-	end_time = Column('end_time', DateTime)
-
-class IpGeoLocation(Base):
-	# FIXME: Since there is a table dedicated to storing locations, it would
-	# make sense to rename this table to IpLocation or something similar, to
-	# indicate that this table stores a list of distinct IPs, but not their
-	# geographical locations.
-	__tablename__ = 'IpGeoLocation'
-
-	# Store ip_addr and country code, with lat/long.
-	# We can use 'geopy.geocoders' to lookup state/postal_code data
-	# from lat/long.  It may make sense to gather this information at
-	# read time.
-	# Store by user_id for ease of lookup.
-	ip_id = Column('ip_id', Integer, Sequence('ip_id_seq'), index=True, primary_key=True)
-	user_id = Column('user_id', Integer, ForeignKey("Users.user_id"), index=True, nullable=False)
-	ip_addr = Column('ip_addr', String(64), index=True)
-	country_code = Column('country_code', String(8))
-	latitude = Column('latitude', Float())
-	longitude = Column('longitude', Float())
-	location_id = Column('location_id', Integer, nullable=True, index=True)
-
-class Location(Base):
-	__tablename__ = 'Location'
-
-	# Stores a list of distinct locations of users,
-	# by lat/long coordinates.
-	# Each location has a unique ID.
-	location_id = Column('location_id', Integer, Sequence('location_id_seq'), primary_key=True)
-	latitude = Column('latitude', String(64))
-	longitude = Column('longitude', String(64))
-	city = Column('city', String(64))
-	state = Column('state', String(64))
-	country = Column('country', String(64))
-
-class UserAgents(Base):
-	__tablename__ = 'UserAgents'
-	user_agent_id = Column('user_agent_id', Integer, Sequence('user_agent_id_seq'), index=True, primary_key=True)
-	# Indexing this large column could be fairly expensive.  Does it get us anything,
-	# or should we rely on a full column scan before inserting (perhaps also expensive)?
-	# Another alternative would be to hash this value in another column and just check that.
-	# If we do so, would we have to worry about collisions between unequal user-agents?
-	user_agent = Column('user_agent', String(512), unique=True, index=True, nullable=False)
+from . import get_analytics_db
 
 def _create_user_agent(db, user_agent):
 	new_agent = UserAgents(user_agent=user_agent)
@@ -145,7 +88,7 @@ def _create_ip_location(db, ip_addr, user_id):
 		# floats ensures the accuracy of comparisons. Everything is
 		# stored as strings except if we need to do a lookup,
 		# in which case they are converted to floats for the lookup
-		ip_location.location_id = _get_location_id(	db,
+		ip_location.location_id = _get_location_id(db,
 													str(round(ip_info.location[0], 4)),
 													str(round(ip_info.location[1], 4)))
 		db.session.flush()
@@ -163,7 +106,7 @@ def _check_ip_location(db, ip_addr, user_id):
 		else:
 			old_location_data = db.session.query(Location).filter(
 												Location.location_id == old_ip_location.location_id).first()
-			old_ip_location.location_id = _get_location_id(	db,
+			old_ip_location.location_id = _get_location_id(db,
 															old_location_data.latitude,
 															old_location_data.longitude)
 
@@ -236,7 +179,7 @@ def _create_new_location(db, lat_str, long_str, existing_location=None):
 		existing_location.country = _country
 		return existing_location
 	else:
-		new_location = Location(latitude=lat_str, longitude=long_str, 
+		new_location = Location(latitude=lat_str, longitude=long_str,
 								city=_city, state=_state, country=_country)
 		db.session.add(new_location)
 		# need to flush here so that our new location will be assigned a location_id
@@ -252,7 +195,7 @@ def create_session(user, user_agent, start_time, ip_addr, end_time=None):
 	user_agent = _get_user_agent(user_agent)
 	user_agent_id = _get_user_agent_id(db, user_agent)
 
-	new_session = Sessions(	user_id=uid,
+	new_session = Sessions(user_id=uid,
 							start_time=start_time,
 							end_time=end_time,
 							ip_addr=ip_addr,

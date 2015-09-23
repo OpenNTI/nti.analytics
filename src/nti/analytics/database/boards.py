@@ -1,143 +1,61 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*
 """
-$Id$
+.. $Id$
 """
+
 from __future__ import print_function, unicode_literals, absolute_import, division
 __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
-from sqlalchemy import Column
-from sqlalchemy import Integer
-from sqlalchemy import ForeignKey
-
 from sqlalchemy.orm.session import make_transient
 
-from sqlalchemy.schema import Sequence
-from sqlalchemy.schema import PrimaryKeyConstraint
-from sqlalchemy.ext.declarative import declared_attr
+from nti.analytics_database.boards import TopicLikes
+from nti.analytics_database.boards import TopicsViewed
+from nti.analytics_database.boards import ForumsCreated
+from nti.analytics_database.boards import TopicsCreated
+from nti.analytics_database.boards import TopicFavorites
+from nti.analytics_database.boards import ForumCommentLikes
+from nti.analytics_database.boards import ForumCommentsCreated
+from nti.analytics_database.boards import ForumCommentFavorites
 
 from nti.dataserver.interfaces import IEntity
 
-from nti.analytics.common import get_course
-from nti.analytics.common import get_creator
-from nti.analytics.common import get_object_root
-from nti.analytics.common import get_created_timestamp
-from nti.analytics.common import timestamp_type
-from nti.analytics.common import get_ratings
+from ..common import get_course
+from ..common import get_creator
+from ..common import get_ratings
+from ..common import timestamp_type
+from ..common import get_object_root
+from ..common import get_created_timestamp
 
-from nti.analytics.read_models import AnalyticsForumComment
-from nti.analytics.read_models import AnalyticsTopic
-from nti.analytics.read_models import AnalyticsTopicView
+from ..identifier import ForumId
+from ..identifier import TopicId
+from ..identifier import CommentId
+from ..identifier import SessionId
 
-from nti.analytics.identifier import SessionId
-from nti.analytics.identifier import CommentId
-from nti.analytics.identifier import ForumId
-from nti.analytics.identifier import TopicId
+from ..read_models import AnalyticsTopic
+from ..read_models import AnalyticsTopicView
+from ..read_models import AnalyticsForumComment
 
-from nti.analytics.database import resolve_objects
-from nti.analytics.database import INTID_COLUMN_TYPE
-from nti.analytics.database import Base
-from nti.analytics.database import get_analytics_db
-from nti.analytics.database import should_update_event
+from ._utils import resolve_like
+from ._utils import resolve_favorite
+from ._utils import get_context_path
+from ._utils import get_root_context_obj
+from ._utils import get_root_context_ids
+from ._utils import get_filtered_records
+from ._utils import get_ratings_for_user_objects
+from ._utils import get_replies_to_user as _get_replies_to_user
+from ._utils import get_user_replies_to_others as _get_user_replies_to_others
 
-from nti.analytics.database.meta_mixins import BaseTableMixin
-from nti.analytics.database.meta_mixins import BaseViewMixin
-from nti.analytics.database.meta_mixins import CommentsMixin
-from nti.analytics.database.meta_mixins import DeletedMixin
-from nti.analytics.database.meta_mixins import TimeLengthMixin
-from nti.analytics.database.meta_mixins import RatingsMixin
-from nti.analytics.database.meta_mixins import RootContextMixin
-from nti.analytics.database.meta_mixins import CreatorMixin
+from .root_context import get_root_context_id
 
-from nti.analytics.database.users import get_or_create_user
-from nti.analytics.database.users import get_user
-from nti.analytics.database.root_context import get_root_context_id
+from .users import get_user
+from .users import get_or_create_user
 
-from nti.analytics.database._utils import get_root_context_obj
-from nti.analytics.database._utils import get_root_context_ids
-from nti.analytics.database._utils import resolve_like
-from nti.analytics.database._utils import resolve_favorite
-from nti.analytics.database._utils import get_context_path
-from nti.analytics.database._utils import get_filtered_records
-from nti.analytics.database._utils import get_ratings_for_user_objects
-from nti.analytics.database._utils import get_replies_to_user as _get_replies_to_user
-from nti.analytics.database._utils import get_user_replies_to_others as _get_user_replies_to_others
-
-class ForumMixin(RootContextMixin):
-	@declared_attr
-	def forum_id(cls):
-		return Column('forum_id', Integer, ForeignKey("ForumsCreated.forum_id"), nullable=False, index=True )
-
-class TopicMixin(ForumMixin):
-	@declared_attr
-	def topic_id(cls):
-		return Column('topic_id', Integer, ForeignKey("TopicsCreated.topic_id"), nullable=False, index=True )
-
-class ForumsCreated(Base,BaseTableMixin,RootContextMixin,DeletedMixin):
-	__tablename__ = 'ForumsCreated'
-	forum_ds_id = Column('forum_ds_id', INTID_COLUMN_TYPE, nullable=True, index=True, autoincrement=False)
-	forum_id = Column('forum_id', Integer, Sequence( 'forum_seq' ), index=True, nullable=False, primary_key=True )
-
-class TopicsCreated(Base,BaseTableMixin,ForumMixin,DeletedMixin,RatingsMixin):
-	__tablename__ = 'TopicsCreated'
-	topic_ds_id = Column('topic_ds_id', INTID_COLUMN_TYPE, nullable=True, autoincrement=False, index=True )
-	topic_id = Column('topic_id', Integer, Sequence( 'topic_seq' ), index=True, nullable=False, primary_key=True )
-
-class ForumCommentsCreated(Base,CommentsMixin,TopicMixin,RatingsMixin):
-	__tablename__ = 'ForumCommentsCreated'
-
-	__table_args__ = (
-        PrimaryKeyConstraint('comment_id'),
-    )
-
-class TopicsViewed(Base,BaseViewMixin,TopicMixin,TimeLengthMixin):
-	__tablename__ = 'TopicsViewed'
-
-	__table_args__ = (
-        PrimaryKeyConstraint('user_id', 'topic_id', 'timestamp'),
-    )
-
-class TopicRatingMixin(BaseTableMixin,CreatorMixin, RootContextMixin):
-	@declared_attr
-	def topic_id(cls):
-		return Column('topic_id', Integer, ForeignKey("TopicsCreated.topic_id"), nullable=False, index=True )
-
-class TopicFavorites(Base,TopicRatingMixin):
-	__tablename__ = 'TopicFavorites'
-
-	__table_args__ = (
-        PrimaryKeyConstraint('user_id', 'topic_id'),
-    )
-
-class TopicLikes(Base,TopicRatingMixin):
-	__tablename__ = 'TopicLikes'
-
-	__table_args__ = (
-        PrimaryKeyConstraint('user_id', 'topic_id'),
-    )
-
-class ForumCommentMixin(object):
-
-	@declared_attr
-	def comment_id(cls):
-		return Column('comment_id', INTID_COLUMN_TYPE, ForeignKey("ForumCommentsCreated.comment_id"), nullable=False, index=True)
-
-
-class ForumCommentFavorites(Base,BaseTableMixin,ForumCommentMixin,CreatorMixin,RootContextMixin):
-	__tablename__ = 'ForumCommentFavorites'
-
-	__table_args__ = (
-        PrimaryKeyConstraint('user_id', 'comment_id'),
-    )
-
-class ForumCommentLikes(Base,BaseTableMixin,ForumCommentMixin,CreatorMixin,RootContextMixin):
-	__tablename__ = 'ForumCommentLikes'
-
-	__table_args__ = (
-        PrimaryKeyConstraint('user_id', 'comment_id'),
-    )
+from . import resolve_objects
+from . import get_analytics_db
+from . import should_update_event
 
 def _get_root_context_ids( obj ):
 	"""
@@ -151,7 +69,7 @@ def _get_root_context_ids( obj ):
 
 def _get_forum( db, forum_ds_id ):
 	forum = db.session.query(ForumsCreated).filter(
-							ForumsCreated.forum_ds_id == forum_ds_id ).first()
+							 ForumsCreated.forum_ds_id == forum_ds_id ).first()
 	return forum
 
 def _get_forum_id( db, forum_ds_id ):
@@ -166,7 +84,7 @@ def _get_forum_id_from_forum( db, forum ):
 
 def _get_topic( db, topic_ds_id ):
 	topic = db.session.query(TopicsCreated).filter(
-							TopicsCreated.topic_ds_id == topic_ds_id ).first()
+							 TopicsCreated.topic_ds_id == topic_ds_id ).first()
 	return topic
 
 def _get_topic_id( db, topic_ds_id ):
@@ -183,7 +101,7 @@ def _get_topic_from_db_id( topic_id ):
 	"Return the actual topic object represented by the given db id."
 	db = get_analytics_db()
 	topic = db.session.query(TopicsCreated).filter(
-							TopicsCreated.topic_id == topic_id ).first()
+							 TopicsCreated.topic_id == topic_id ).first()
 	topic = TopicId.get_object( topic.topic_ds_id )
 	return topic
 
@@ -226,9 +144,9 @@ def delete_forum(timestamp, forum_ds_id):
 
 	# Get our topics and comments
 	db.session.query( TopicsCreated ).filter(
-						TopicsCreated.forum_id == forum_id ).update(
+					  TopicsCreated.forum_id == forum_id ).update(
 							{ TopicsCreated.deleted : timestamp,
-							 TopicsCreated.topic_ds_id : None } )
+							  TopicsCreated.topic_ds_id : None } )
 	db.session.query( ForumCommentsCreated ).filter(
 						ForumCommentsCreated.forum_id == forum_id ).update(
 							{ ForumCommentsCreated.deleted : timestamp } )
@@ -290,7 +208,7 @@ def delete_topic(timestamp, topic_ds_id):
 	topic_id = db_topic.topic_id
 
 	db.session.query( ForumCommentsCreated ).filter(
-						ForumCommentsCreated.topic_id == topic_id ).update(
+					  ForumCommentsCreated.topic_id == topic_id ).update(
 											{ ForumCommentsCreated.deleted : timestamp } )
 	db.session.flush()
 
@@ -372,7 +290,7 @@ def flag_topic( topic, state ):
 
 
 def _topic_view_exists( db, user_id, topic_id, timestamp ):
-	return db.session.query( TopicsViewed ).filter(
+	return db.session.query(TopicsViewed ).filter(
 							TopicsViewed.user_id == user_id,
 							TopicsViewed.topic_id == topic_id,
 							TopicsViewed.timestamp == timestamp ).first()

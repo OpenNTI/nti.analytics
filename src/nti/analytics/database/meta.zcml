@@ -11,8 +11,8 @@
 
 	<meta:directives namespace="http://nextthought.com/analytics/database">
 		<meta:directive	name="registerAnalyticsDB"
-						schema="nti.analytics.database.zcml.IRegisterAnalyticsDB"
-						handler="nti.analytics.database.zcml.registerAnalyticsDB" />
+						schema=".zcml.IRegisterAnalyticsDB"
+						handler=".zcml.registerAnalyticsDB" />
 	</meta:directives>
 
 </configure>

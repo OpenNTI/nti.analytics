@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*
 """
-$Id$
+.. $Id$
 """
+
 from __future__ import print_function, unicode_literals, absolute_import, division
 __docformat__ = "restructuredtext en"
 
@@ -13,18 +14,17 @@ import json
 from six import string_types
 from six import integer_types
 
-from sqlalchemy import Column
-from sqlalchemy import Integer
-from sqlalchemy import Float
-from sqlalchemy import String
-from sqlalchemy import ForeignKey
-from sqlalchemy import Boolean
-from sqlalchemy import Text
-
-from sqlalchemy.schema import Sequence
-from sqlalchemy.orm import relationship
 from sqlalchemy.orm.session import make_transient
-from sqlalchemy.ext.declarative import declared_attr
+
+from nti.analytics_database.assessments import AssignmentViews
+from nti.analytics_database.assessments import AssignmentGrades
+from nti.analytics_database.assessments import AssignmentsTaken
+from nti.analytics_database.assessments import AssignmentDetails
+from nti.analytics_database.assessments import AssignmentFeedback
+from nti.analytics_database.assessments import SelfAssessmentViews
+from nti.analytics_database.assessments import SelfAssessmentsTaken
+from nti.analytics_database.assessments import SelfAssessmentDetails
+from nti.analytics_database.assessments import AssignmentDetailGrades
 
 from nti.app.products.gradebook.interfaces import IGrade
 
@@ -39,176 +39,38 @@ from nti.assessment.randomized.interfaces import IQRandomizedPart
 
 from nti.ntiids.ntiids import find_object_with_ntiid
 
-from nti.analytics.common import timestamp_type
-from nti.analytics.common import get_creator
-from nti.analytics.common import get_course as get_course_from_object
-from nti.analytics.common import get_created_timestamp
+from ..common import get_creator
+from ..common import timestamp_type
+from ..common import get_created_timestamp
+from ..common import get_course as get_course_from_object
 
-from nti.analytics.read_models import AnalyticsAssessment
-from nti.analytics.read_models import AnalyticsAssignment
-from nti.analytics.read_models import AnalyticsAssignmentDetail
-from nti.analytics.read_models import AnalyticsSelfAssessmentView
-from nti.analytics.read_models import AnalyticsAssignmentView
+from ..identifier import SessionId
+from ..identifier import SubmissionId
+from ..identifier import QuestionSetId
+from ..identifier import FeedbackId
+from ..identifier import ResourceId
 
-from nti.analytics.identifier import SessionId
-from nti.analytics.identifier import SubmissionId
-from nti.analytics.identifier import QuestionSetId
-from nti.analytics.identifier import FeedbackId
-from nti.analytics.identifier import ResourceId
+from ..read_models import AnalyticsAssessment
+from ..read_models import AnalyticsAssignment
+from ..read_models import AnalyticsAssignmentView
+from ..read_models import AnalyticsAssignmentDetail
+from ..read_models import AnalyticsSelfAssessmentView
 
-from nti.analytics.database.users import get_or_create_user
-from nti.analytics.database.users import get_user
-from nti.analytics.database.users import get_user_db_id
+from ._utils import get_context_path
+from ._utils import get_filtered_records
 
-from nti.analytics.database import Base
-from nti.analytics.database import resolve_objects
-from nti.analytics.database import NTIID_COLUMN_TYPE
-from nti.analytics.database import INTID_COLUMN_TYPE
-from nti.analytics.database import get_analytics_db
-from nti.analytics.database import should_update_event
+from .resources import get_resource_id
 
-from nti.analytics.database.meta_mixins import BaseTableMixin
-from nti.analytics.database.meta_mixins import BaseViewMixin
-from nti.analytics.database.meta_mixins import CourseMixin
-from nti.analytics.database.meta_mixins import DeletedMixin
-from nti.analytics.database.meta_mixins import RootContextMixin
-from nti.analytics.database.meta_mixins import TimeLengthMixin
+from .root_context import get_root_context
+from .root_context import get_root_context_id
 
-from nti.analytics.database.resources import get_resource_id
+from .users import get_user
+from .users import get_user_db_id
+from .users import get_or_create_user
 
-from nti.analytics.database.root_context import get_root_context_id
-from nti.analytics.database.root_context import get_root_context
-
-from nti.analytics.database._utils import get_context_path
-from nti.analytics.database._utils import get_filtered_records
-
-class AssignmentIdMixin(object):
-	@declared_attr
-	def assignment_id(cls):
-		return Column('assignment_id', NTIID_COLUMN_TYPE, nullable=False, index=True )
-
-class AssignmentMixin(BaseTableMixin,CourseMixin,TimeLengthMixin,AssignmentIdMixin):
-	pass
-
-class AssignmentsTaken(Base,AssignmentMixin):
-	__tablename__ = 'AssignmentsTaken'
-	submission_id = Column('submission_id', INTID_COLUMN_TYPE, nullable=True, index=True, autoincrement=False )
-
-	assignment_taken_id = Column('assignment_taken_id', Integer, Sequence( 'assignments_taken_seq' ),
-								index=True, nullable=False, primary_key=True )
-
-	# We may have multiple grades in the future.
-	grade = relationship( 'AssignmentGrades', uselist=False, lazy='joined' )
-
-	is_late = Column('is_late', Boolean, nullable=True)
-
-class AssignmentSubmissionMixin(BaseTableMixin):
-	@declared_attr
-	def assignment_taken_id(cls):
-		return Column('assignment_taken_id', Integer, ForeignKey("AssignmentsTaken.assignment_taken_id"), nullable=False, index=True)
-
-
-class DetailMixin(TimeLengthMixin):
-	# Counting on these parts/ids being integers.
-	# Max length of 114 as of 8.1.14
-	@declared_attr
-	def question_id(cls):
-		return Column('question_id', NTIID_COLUMN_TYPE, nullable=False, index=True)
-
-	@declared_attr
-	def question_part_id(cls):
-		return Column('question_part_id', INTID_COLUMN_TYPE, nullable=False, autoincrement=False, index=True )
-
-	@declared_attr
-	def submission(cls):
-		# Null if left blank
-		return Column('submission', Text, nullable=True) #(Freeform|MapEntry|Index|List)
-
-class GradeMixin(object):
-	# Could be a lot of types: 7, 7/10, 95, 95%, A-, 90 A
-	@declared_attr
-	def grade(cls):
-		return Column('grade', String(32), nullable=True )
-
-	# For easy aggregation
-	@declared_attr
-	def grade_num(cls):
-		return Column('grade_num', Float, nullable=True )
-
-	# 'Null' for auto-graded parts.
-	@declared_attr
-	def grader(cls):
-		return Column('grader', Integer, ForeignKey("Users.user_id"), nullable=True, index=True )
-
-class GradeDetailMixin(GradeMixin):
-	# For multiple choice types
-	@declared_attr
-	def is_correct(cls):
-		return Column('is_correct', Boolean, nullable=True )
-
-class AssignmentDetails(Base,DetailMixin,AssignmentSubmissionMixin):
-	__tablename__ = 'AssignmentDetails'
-
-	assignment_details_id = Column('assignment_details_id', Integer,
-								Sequence( 'assignment_details_seq' ), primary_key=True )
-	grade = relationship( 'AssignmentDetailGrades', uselist=False, lazy='joined' )
-
-class AssignmentGrades(Base,AssignmentSubmissionMixin,GradeMixin):
-	__tablename__ = 'AssignmentGrades'
-	grade_id = Column('grade_id', Integer, Sequence( 'assignment_grade_id_seq' ), primary_key=True, index=True )
-
-class AssignmentDetailGrades(Base,GradeDetailMixin,AssignmentSubmissionMixin):
-	__tablename__ = 'AssignmentDetailGrades'
-	# We cannot use foreign keys since the parent key must be unique, and
-	# we cannot have this as part of a primary key due to its size (mysql).
-	question_id = Column('question_id', NTIID_COLUMN_TYPE, nullable=False)
-	question_part_id = Column('question_part_id', INTID_COLUMN_TYPE, nullable=True, autoincrement=False)
-
-	assignment_details_id = Column('assignment_details_id', Integer,
-								ForeignKey("AssignmentDetails.assignment_details_id"), unique=True, primary_key=True )
-
-# Each feedback 'tree' should have an associated grade with it.
-class AssignmentFeedback(Base,AssignmentSubmissionMixin,DeletedMixin):
-	__tablename__ = 'AssignmentFeedback'
-	feedback_ds_id = Column( 'feedback_ds_id', INTID_COLUMN_TYPE, nullable=True, unique=False )
-	feedback_id = Column('feedback_id', Integer, Sequence( 'feedback_id_seq' ), primary_key=True )
-
-	feedback_length = Column( 'feedback_length', Integer, nullable=True )
-	# Tie our feedback to our submission and grader.
-	grade_id = Column('grade_id', Integer, ForeignKey("AssignmentGrades.grade_id"), nullable=False )
-
-class SelfAssessmentsTaken(Base,AssignmentMixin):
-	__tablename__ = 'SelfAssessmentsTaken'
-	submission_id = Column('submission_id', INTID_COLUMN_TYPE, nullable=True, index=True, autoincrement=False )
-	self_assessment_id = Column('self_assessment_id', Integer, Sequence( 'self_assessment_seq' ),
-								index=True, nullable=False, primary_key=True )
-
-
-# SelfAssessments will not have feedback or multiple graders
-class SelfAssessmentDetails(Base,BaseTableMixin,DetailMixin,GradeDetailMixin):
-	__tablename__ = 'SelfAssessmentDetails'
-	self_assessment_id = Column('self_assessment_id', Integer,
-							ForeignKey("SelfAssessmentsTaken.self_assessment_id"),
-							nullable=False, index=True)
-
-	self_assessment_details_id = Column('self_assessment_details_id', Integer,
-							Sequence( 'self_assessment_details_seq' ), primary_key=True )
-
-class AssignmentViewMixin(AssignmentIdMixin, RootContextMixin, BaseViewMixin, TimeLengthMixin):
-	@declared_attr
-	def resource_id(cls):
-		return Column('resource_id', Integer, nullable=True)
-
-class SelfAssessmentViews(Base, AssignmentViewMixin):
-	__tablename__ = 'SelfAssessmentViews'
-	self_assessment_view_id = Column('self_assessment_view_id', Integer,
-									Sequence( 'self_assessment_view_id_seq' ), primary_key=True )
-
-class AssignmentViews(Base, AssignmentViewMixin):
-	__tablename__ = 'AssignmentViews'
-	assignment_view_id = Column('assignment_view_id', Integer,
-							Sequence( 'assignment_view_id_seq' ), primary_key=True )
-
+from . import resolve_objects
+from . import get_analytics_db
+from . import should_update_event
 
 def _get_duration( submission ):
 	"""
@@ -801,12 +663,11 @@ def _resolve_view( clazz, row, course, user ):
 
 	# We're returning the assignmentId here; we may want to return
 	# the actual page in the future.
-	resource_event = clazz(user=user,
-					timestamp=timestamp,
-					RootContext=course,
-					ResourceId=row.assignment_id,
-					Duration=time_length)
-
+	resource_event = clazz(	user=user,
+							timestamp=timestamp,
+							RootContext=course,
+							ResourceId=row.assignment_id,
+							Duration=time_length)
 	return resource_event
 
 def _resolve_self_assessment_view( row, user=None, course=None ):
@@ -830,5 +691,5 @@ def get_assignment_views( user, course=None, **kwargs ):
 	timestamp.  Optionally, can filter by course.
 	"""
 	results = get_filtered_records( user, AssignmentViews,
-								course=course, **kwargs )
+								 	course=course, **kwargs )
 	return resolve_objects( _resolve_assignment_view, results, user=user, course=course )

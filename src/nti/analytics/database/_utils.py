@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*
 """
-$Id$
+.. $Id$
 """
-from __future__ import print_function, unicode_literals, absolute_import, division
 
+from __future__ import print_function, unicode_literals, absolute_import, division
 __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
@@ -15,17 +15,17 @@ from nti.contenttypes.courses.interfaces import ICourseSubInstance
 
 from nti.dataserver.interfaces import IEntity
 
-from nti.analytics.read_models import AnalyticsLike
-from nti.analytics.read_models import AnalyticsFavorite
+from ..read_models import AnalyticsLike
+from ..read_models import AnalyticsFavorite
 
-from . import get_analytics_db
+from .root_context import get_root_context
+from .root_context import get_root_context_id
 
 from .users import get_user
 from .users import get_user_db_id
 from .users import get_or_create_user
 
-from .root_context import get_root_context
-from .root_context import get_root_context_id
+from . import get_analytics_db
 
 def get_context_path( context_path ):
 	# Note: we could also sub these resource_ids for the actual

@@ -1,119 +1,50 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*
 """
-$Id$
+.. $Id$
 """
+
 from __future__ import print_function, unicode_literals, absolute_import, division
 __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
-from sqlalchemy import Column
-from sqlalchemy import Integer
-from sqlalchemy import ForeignKey
-
-from sqlalchemy.schema import PrimaryKeyConstraint
-from sqlalchemy.schema import Sequence
 from sqlalchemy.orm.session import make_transient
-from sqlalchemy.ext.declarative import declared_attr
 
-from nti.analytics.common import get_creator
-from nti.analytics.common import get_created_timestamp
-from nti.analytics.common import timestamp_type
-from nti.analytics.common import get_ratings
+from nti.analytics_database.blogs import BlogLikes
+from nti.analytics_database.blogs import BlogsViewed
+from nti.analytics_database.blogs import BlogsCreated
+from nti.analytics_database.blogs import BlogFavorites
+from nti.analytics_database.blogs import BlogCommentLikes
+from nti.analytics_database.blogs import BlogCommentsCreated
+from nti.analytics_database.blogs import BlogCommentFavorites
 
-from nti.analytics.identifier import SessionId
-from nti.analytics.identifier import BlogId
-from nti.analytics.identifier import CommentId
+from ..common import get_creator
+from ..common import get_ratings
+from ..common import timestamp_type
+from ..common import get_created_timestamp
 
-from nti.analytics.read_models import AnalyticsBlog
-from nti.analytics.read_models import AnalyticsBlogComment
+from ..identifier import BlogId
+from ..identifier import CommentId
+from ..identifier import SessionId
 
-from nti.analytics.database import INTID_COLUMN_TYPE
-from nti.analytics.database import Base
-from nti.analytics.database import get_analytics_db
-from nti.analytics.database import should_update_event
-from nti.analytics.database import resolve_objects
+from ..read_models import AnalyticsBlog
+from ..read_models import AnalyticsBlogComment
 
-from nti.analytics.database.meta_mixins import BaseTableMixin
-from nti.analytics.database.meta_mixins import BaseViewMixin
-from nti.analytics.database.meta_mixins import DeletedMixin
-from nti.analytics.database.meta_mixins import CommentsMixin
-from nti.analytics.database.meta_mixins import TimeLengthMixin
-from nti.analytics.database.meta_mixins import RatingsMixin
-from nti.analytics.database.meta_mixins import CreatorMixin
+from ._utils import resolve_like
+from ._utils import resolve_favorite
+from ._utils import get_context_path
+from ._utils import get_filtered_records
+from ._utils import get_ratings_for_user_objects
+from ._utils import get_replies_to_user as _get_replies_to_user
+from ._utils import get_user_replies_to_others as _get_user_replies_to_others
 
-from nti.analytics.database.users import get_user
-from nti.analytics.database.users import get_or_create_user
+from .users import get_user
+from .users import get_or_create_user
 
-from nti.analytics.database._utils import resolve_like
-from nti.analytics.database._utils import resolve_favorite
-from nti.analytics.database._utils import get_context_path
-from nti.analytics.database._utils import get_filtered_records
-from nti.analytics.database._utils import get_ratings_for_user_objects
-from nti.analytics.database._utils import get_replies_to_user as _get_replies_to_user
-from nti.analytics.database._utils import get_user_replies_to_others as _get_user_replies_to_others
-
-class BlogMixin(object):
-
-	@declared_attr
-	def blog_id(cls):
-		return Column('blog_id', Integer, ForeignKey("BlogsCreated.blog_id"), nullable=False, index=True)
-
-class BlogsCreated(Base,BaseTableMixin,DeletedMixin,RatingsMixin):
-	__tablename__ = 'BlogsCreated'
-	blog_ds_id = Column('blog_ds_id', INTID_COLUMN_TYPE, nullable=True, autoincrement=False )
-	blog_length = Column('blog_length', Integer, nullable=True, autoincrement=False)
-	blog_id = Column('blog_id', Integer, Sequence( 'blog_seq' ), index=True, nullable=False, primary_key=True )
-
-class BlogsViewed(Base,BaseViewMixin,BlogMixin,TimeLengthMixin):
-	__tablename__ = 'BlogsViewed'
-
-	__table_args__ = (
-        PrimaryKeyConstraint('user_id', 'blog_id', 'timestamp'),
-    )
-
-class BlogCommentsCreated(Base,CommentsMixin,BlogMixin,RatingsMixin):
-	__tablename__ = 'BlogCommentsCreated'
-
-	__table_args__ = (
-        PrimaryKeyConstraint('comment_id'),
-    )
-
-class BlogFavorites(Base,BaseTableMixin,BlogMixin,CreatorMixin):
-	__tablename__ = 'BlogFavorites'
-
-	__table_args__ = (
-        PrimaryKeyConstraint('user_id', 'blog_id'),
-    )
-
-class BlogLikes(Base,BaseTableMixin,BlogMixin,CreatorMixin):
-	__tablename__ = 'BlogLikes'
-
-	__table_args__ = (
-        PrimaryKeyConstraint('user_id', 'blog_id'),
-    )
-
-class BlogCommentMixin(object):
-
-	@declared_attr
-	def comment_id(cls):
-		return Column('comment_id', INTID_COLUMN_TYPE, ForeignKey("BlogCommentsCreated.comment_id"), nullable=False, index=True)
-
-
-class BlogCommentFavorites(Base,BaseTableMixin,BlogCommentMixin, CreatorMixin):
-	__tablename__ = 'BlogCommentFavorites'
-
-	__table_args__ = (
-        PrimaryKeyConstraint('user_id', 'comment_id'),
-    )
-
-class BlogCommentLikes(Base,BaseTableMixin,BlogCommentMixin, CreatorMixin):
-	__tablename__ = 'BlogCommentLikes'
-
-	__table_args__ = (
-        PrimaryKeyConstraint('user_id', 'comment_id'),
-    )
+from . import resolve_objects
+from . import get_analytics_db
+from . import should_update_event
 
 def _get_blog_id( db, blog_ds_id ):
 	blog = db.session.query(BlogsCreated).filter( BlogsCreated.blog_ds_id == blog_ds_id ).first()
@@ -172,8 +103,8 @@ def delete_blog( timestamp, blog_ds_id ):
 	blog.blog_ds_id = None
 	blog_id = blog.blog_id
 
-	db.session.query( BlogCommentsCreated ).filter(
-						BlogCommentsCreated.blog_id == blog_id ).update(
+	db.session.query(BlogCommentsCreated ).filter(
+					 BlogCommentsCreated.blog_id == blog_id ).update(
 									{ BlogCommentsCreated.deleted : timestamp } )
 	db.session.flush()
 
@@ -248,7 +179,7 @@ def flag_blog( blog, state ):
 	db.session.flush()
 
 def _blog_view_exists( db, user_id, blog_id, timestamp ):
-	return db.session.query( BlogsViewed ).filter(
+	return db.session.query(BlogsViewed ).filter(
 							BlogsViewed.user_id == user_id,
 							BlogsViewed.blog_id == blog_id,
 							BlogsViewed.timestamp == timestamp ).first()
