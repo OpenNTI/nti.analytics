@@ -38,7 +38,7 @@ setup(
 		'python-geoip',
 		'python-geoip-geolite2',
 		'sqlalchemy',
-		'user-agents'
+		'user-agents',
 		'nti.analytics_database',
 		'nti.app.assessment',
 		'nti.app.products.courseware',
