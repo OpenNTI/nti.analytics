@@ -134,7 +134,7 @@ def create_note(user, nti_session, note):
 			parent_user_id = new_note.user_id
 			logger.info('Created parent note (user=%s) (note=%s)', note_creator, parent_note)
 
-	new_object = NotesCreated(user_id=uid,
+	new_object = NotesCreated(	user_id=uid,
 								session_id=sid,
 								timestamp=timestamp,
 								course_id=course_id,
