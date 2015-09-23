@@ -40,11 +40,11 @@ setup(
 		'sqlalchemy',
 		'user-agents'
 		'nti.analytics_database',
-		'nti.async',
 		'nti.app.assessment',
 		'nti.app.products.courseware',
 		'nti.app.products.courseware_ims',
-		'nti.app.products.gradebook'
+		'nti.app.products.gradebook',
+		'nti.async'
 	],
 	entry_points=entry_points
 )
