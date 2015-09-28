@@ -22,6 +22,8 @@ from nti.analytics.interfaces import INoteViewEvent
 from nti.analytics.interfaces import ITopicViewEvent
 from nti.analytics.interfaces import IAnalyticsSession
 from nti.analytics.interfaces import IProfileViewEvent
+from nti.analytics.interfaces import IAssignmentViewEvent
+from nti.analytics.interfaces import ISelfAssessmentViewEvent
 from nti.analytics.interfaces import IProfileActivityViewEvent
 from nti.analytics.interfaces import IProfileMembershipViewEvent
 
@@ -36,10 +38,13 @@ class _NTIAnalyticsModelUpdater(object):
 	def updateFromExternalObject(self, parsed, *args, **kwargs):
 		root_context_id = parsed.get('course', None)
 		duration = parsed.get('time_length', None)
+		resource_id = parsed.get('resource_id', None)
 		if root_context_id is not None and parsed.get('RootContextID') is None:
 			parsed['RootContextID'] = root_context_id
 		if duration is not None and parsed.get('Duration') is None:
 			parsed['Duration'] = duration
+		if resource_id is not None and parsed.get('ResourceId') is None:
+			parsed['ResourceId'] = resource_id
 		result = InterfaceObjectIO(self.obj, self.model_interface).updateFromExternalObject(parsed)
 		return result
 
@@ -105,3 +110,15 @@ class _ProfileActivityViewEvent(_NTIAnalyticsModelUpdater):
 class _ProfileMembershipViewEvent(_NTIAnalyticsModelUpdater):
 
 	model_interface = IProfileMembershipViewEvent
+
+@interface.implementer(IInternalObjectUpdater)
+@component.adapter(IAssignmentViewEvent)
+class _AssignmentViewEvent(_NTIAnalyticsModelUpdater):
+
+	model_interface = IAssignmentViewEvent
+
+@interface.implementer(IInternalObjectUpdater)
+@component.adapter(ISelfAssessmentViewEvent)
+class _SelfAssessmentViewEvent(_NTIAnalyticsModelUpdater):
+
+	model_interface = ISelfAssessmentViewEvent

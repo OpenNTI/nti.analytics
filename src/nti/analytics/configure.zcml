@@ -161,6 +161,14 @@
 			 for=".interfaces.IProfileMembershipViewEvent"
 			 provides="nti.externalization.interfaces.IInternalObjectUpdater" />
 
+	<adapter factory=".internalization._AssignmentViewEvent"
+			 for=".interfaces.IAssignmentViewEvent"
+			 provides="nti.externalization.interfaces.IInternalObjectUpdater" />
+
+	<adapter factory=".internalization._SelfAssessmentViewEvent"
+			 for=".interfaces.ISelfAssessmentViewEvent"
+			 provides="nti.externalization.interfaces.IInternalObjectUpdater" />
+
 	<!-- Research -->
 	<adapter factory=".model._UserResearchStatus" />
 

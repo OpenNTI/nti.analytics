@@ -306,6 +306,18 @@ class TestResourceEvents(NTIAnalyticsTestCase):
 		assert_that( new_io, has_property( 'QuestionSetId', is_( question_set_id )))
 		assert_that( new_io, is_( SelfAssessmentViewEvent ) )
 
+	def _do_test_assigment_json(self, new_io, ext_obj):
+		internalization.update_from_external_object(new_io, ext_obj)
+		assert_that(new_io, has_property( 'user', is_( user )))
+		assert_that(new_io, has_property( 'timestamp', is_( timestamp )))
+		assert_that(new_io, has_property( 'RootContextID', is_( course )))
+		assert_that(new_io, has_property( 'context_path', is_( context_path )))
+		assert_that(new_io, has_property( 'ContentId', none()))
+		assert_that(new_io, has_property( 'Duration', is_( time_length )))
+		assert_that( new_io, has_property( 'AssignmentId', is_( assignment_id )))
+		assert_that( new_io, has_property( 'ResourceId', is_( assignment_id )))
+		assert_that( new_io, is_( AssignmentViewEvent ) )
+
 	def test_assignment_event(self):
 		assert_that(assignment_event, verifiably_provides( IAssignmentViewEvent ) )
 
@@ -317,15 +329,13 @@ class TestResourceEvents(NTIAnalyticsTestCase):
 		assert_that(factory, is_(not_none()))
 
 		new_io = factory()
-		internalization.update_from_external_object(new_io, ext_obj)
-		assert_that(new_io, has_property( 'user', is_( user )))
-		assert_that(new_io, has_property( 'timestamp', is_( timestamp )))
-		assert_that(new_io, has_property( 'RootContextID', is_( course )))
-		assert_that(new_io, has_property( 'context_path', is_( context_path )))
-		assert_that(new_io, has_property( 'ContentId', none()))
-		assert_that(new_io, has_property( 'Duration', is_( time_length )))
-		assert_that( new_io, has_property( 'AssignmentId', is_( assignment_id )))
-		assert_that( new_io, is_( AssignmentViewEvent ) )
+		self._do_test_assigment_json( new_io, ext_obj )
+
+		# Validate we can accept legacy field names.
+		resource_id = ext_obj.pop( 'ResourceId' )
+		ext_obj[ 'resource_id' ] = resource_id
+		new_io = factory()
+		self._do_test_assigment_json( new_io, ext_obj )
 
 	def test_video_event(self):
 		assert_that(skip_video_event, verifiably_provides( IVideoEvent ) )
