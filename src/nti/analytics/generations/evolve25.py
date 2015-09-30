@@ -39,6 +39,17 @@ def _column_exists( con, table, column ):
 	res = con.execute( COLUMN_EXISTS_QUERY % ( table, column ) )
 	return res.scalar()
 
+def _add_evolve33_column(op, connection):
+	from .evolve33 import TABLES
+	new_column_name = 'entity_root_context_id'
+	nullable_col_name = 'course_id'
+
+	for table in TABLES:
+		if not _column_exists( connection, table.__tablename__, new_column_name ):
+			op.add_column( table.__tablename__, Column( new_column_name, Integer,
+									nullable=True, index=True, autoincrement=False) )
+			op.alter_column( table.__tablename__, nullable_col_name, existing_type=Integer, nullable=True )
+
 def evolve_job():
 	setHooks()
 
@@ -51,6 +62,7 @@ def evolve_job():
 	connection = db.engine.connect()
 	mc = MigrationContext.configure( connection )
 	op = Operations(mc)
+	_add_evolve33_column(op, connection)
 
 	# Add our column
 	for table in (BlogCommentsCreated,ForumCommentsCreated,NotesCreated):
