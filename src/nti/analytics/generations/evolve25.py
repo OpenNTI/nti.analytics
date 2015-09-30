@@ -48,7 +48,10 @@ def _add_evolve33_column(op, connection):
 		if not _column_exists( connection, table.__tablename__, new_column_name ):
 			op.add_column( table.__tablename__, Column( new_column_name, Integer,
 									nullable=True, index=True, autoincrement=False) )
+		if _column_exists( connection, table.__tablename__, nullable_col_name ):
 			op.alter_column( table.__tablename__, nullable_col_name, existing_type=Integer, nullable=True )
+		else:
+			op.add_column( table.__tablename__, Column(nullable_col_name, Integer, nullable=True) )
 
 def evolve_job():
 	setHooks()
