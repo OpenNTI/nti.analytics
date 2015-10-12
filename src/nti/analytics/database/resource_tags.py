@@ -57,6 +57,10 @@ from . import resolve_objects
 from . import get_analytics_db
 
 def _get_sharing_enum(note, course):
+	# TODO This needs to be expanded.  We should at least store
+	# Global (community), PublicCourse, PrivateCourse, Private, and Other
+	# if we do not store sharing details explicitly. Migration.
+
 	# Logic duped in courseware_reports.views.admin_views
 	# We may have many values here (course subinstance + parent)
 
