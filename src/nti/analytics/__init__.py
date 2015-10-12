@@ -14,6 +14,8 @@ MessageFactory = zope.i18nmessageid.MessageFactory('nti.analytics')
 
 from zope import component
 
+from zope.security.interfaces import NoInteraction
+from zope.security.management import getInteraction
 from zope.security.management import queryInteraction
 
 from nti.dataserver.users import User
@@ -79,11 +81,10 @@ def get_factory():
 	return component.getUtility(IAnalyticsQueueFactory)
 
 def get_current_username():
-	interaction = queryInteraction()
-	participations = list(getattr(interaction, 'participations', None) or ())
-	participation = participations[0] if participations else None
-	principal = getattr(participation, 'principal', None)
-	return principal.id if principal is not None else None
+	try:
+		return getInteraction().participations[0].principal.id
+	except (NoInteraction, IndexError, AttributeError):
+		return None
 
 def get_current_user(user=None):
 	user = get_current_username() if user is None else user
