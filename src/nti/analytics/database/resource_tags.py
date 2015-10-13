@@ -11,6 +11,12 @@ logger = __import__('logging').getLogger(__name__)
 
 from sqlalchemy.orm.session import make_transient
 
+from zope import component
+
+from nti.appserver.policies.interfaces import ISitePolicyUserEventListener
+
+from nti.dataserver.users.communities import Community
+
 from nti.analytics_database.resource_tags import NoteLikes
 from nti.analytics_database.resource_tags import NotesViewed
 from nti.analytics_database.resource_tags import NotesCreated
@@ -56,33 +62,44 @@ from .users import get_or_create_user
 from . import resolve_objects
 from . import get_analytics_db
 
+def _get_site_community():
+	site_policy = component.queryUtility( ISitePolicyUserEventListener )
+	community_username = getattr(site_policy, 'COM_USERNAME', '')
+	result = None
+	if community_username:
+		result = Community.get_community( community_username )
+	return result
+
 def _get_sharing_enum(note, course):
-	# TODO This needs to be expanded.  We should at least store
-	# Global (community), PublicCourse, PrivateCourse, Private, and Other
-	# if we do not store sharing details explicitly. Migration.
-
-	# Logic duped in courseware_reports.views.admin_views
+	# TODO Logic needs to be updated in courseware_reports.views.admin_views
 	# We may have many values here (course subinstance + parent)
-
-	# Note: we could also do private if not shared at all
-	# or perhaps we want to store who we're sharing to.
-	result = 'OTHER'
+	# Note: perhaps we want to store who we're sharing to.
 
 	sharing_scopes = getattr(course, 'SharingScopes', None)
 	if sharing_scopes is None:
 		# Content package
-		return result
+		return 'OTHER'
 
-	public_scopes = sharing_scopes.getAllScopesImpliedbyScope('Public')
+	# Do we want purchased here?
+	public_scopes = set( sharing_scopes.getAllScopesImpliedbyScope('Public') )
 	other_scopes = [x for x in sharing_scopes.values() if x not in public_scopes]
 
 	def _intersect(set1, set2):
 		return any(x in set1 for x in set2)
 
-	if _intersect(public_scopes, note.sharingTargets):
-		result = 'PUBLIC'
+	site_community = _get_site_community()
+
+	if not note.sharingTargets:
+		result = 'PRIVATE'
+	elif site_community and note.isSharedDirectlyWith( site_community ):
+		result = 'GLOBAL'
+	elif _intersect(public_scopes, note.sharingTargets):
+		result = 'PUBLIC_COURSE'
 	elif _intersect(other_scopes, note.sharingTargets):
-		result = 'COURSE'
+		result = 'PRIVATE_COURSE'
+	else:
+		# We're shared directly with individuals/groups.
+		result = 'OTHER'
 
 	return result
 

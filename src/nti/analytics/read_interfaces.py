@@ -47,7 +47,7 @@ from nti.schema.field import DateTime
 from nti.schema.field import DecodingValidTextLine as ValidTextLine
 from nti.schema.field import IndexedIterable as TypedIterable
 
-SHARING_ENUM = ( 'PUBLIC', 'COURSE', 'OTHER', 'UNKNOWN' )
+SHARING_ENUM = ('GLOBAL', 'PRIVATE_COURSE', 'PUBLIC_COURSE', 'PRIVATE', 'OTHER')
 SHARING_VOCAB = \
 	vocabulary.SimpleVocabulary([vocabulary.SimpleTerm(_x) for _x in SHARING_ENUM])
 

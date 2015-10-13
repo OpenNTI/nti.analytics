@@ -59,7 +59,7 @@ class TestNotes( NTIAnalyticsTestCase ):
 		course._ds_intid = 123456
 		mock_find_object.is_callable().returns( note )
 		mock_container_context.is_callable().returns( course )
-		mock_sharing_enum.is_callable().returns( 'UNKNOWN' )
+		mock_sharing_enum.is_callable().returns( 'PRIVATE' )
 		oid = 13
 
 		_add_note( oid )
@@ -100,7 +100,7 @@ class TestNotes( NTIAnalyticsTestCase ):
 
 		course = CourseInstance()
 		mock_container_context.is_callable().returns( course )
-		mock_sharing_enum.is_callable().returns( 'UNKNOWN' )
+		mock_sharing_enum.is_callable().returns( 'PRIVATE' )
 
 		# Create note
 		note1 = Note()
@@ -159,7 +159,7 @@ class TestNotes( NTIAnalyticsTestCase ):
 
 		course = CourseInstance()
 		mock_container_context.is_callable().returns( course )
-		mock_sharing_enum.is_callable().returns( 'UNKNOWN' )
+		mock_sharing_enum.is_callable().returns( 'PRIVATE' )
 
 		# Create note
 		note1 = Note()

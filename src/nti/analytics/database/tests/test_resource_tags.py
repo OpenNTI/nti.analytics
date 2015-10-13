@@ -51,7 +51,7 @@ class TestResourceTags(AnalyticsTestBase):
 					'nti.analytics.database.resource_tags.get_root_context'  )
 	def test_note(self, mock_sharing_enum, mock_validate, mock_root_context):
 		mock_validate.is_callable().returns( True )
-		mock_sharing_enum.is_callable().returns( 'UNKNOWN' )
+		mock_sharing_enum.is_callable().returns( 'PRIVATE' )
 		mock_root_context.is_callable().returns( self.course_id )
 		context_path = None
 
@@ -80,8 +80,7 @@ class TestResourceTags(AnalyticsTestBase):
 		assert_that( note.course_id, is_( self.course_id ) )
 		assert_that( note.note_id, is_( note_id ) )
 		assert_that( note.resource_id, is_( self.resource_id ) )
-		# 'UNKNOWN' since we cannot access course and it's scopes.
-		assert_that( note.sharing, is_( 'UNKNOWN' ) )
+		assert_that( note.sharing, is_( 'PRIVATE' ) )
 		assert_that( note.deleted, none() )
 		assert_that( note.timestamp, not_none() )
 
@@ -117,7 +116,7 @@ class TestResourceTags(AnalyticsTestBase):
 	@fudge.patch( 'nti.analytics.database.resource_tags._get_sharing_enum',
 					'nti.analytics.database.resource_tags.get_root_context'  )
 	def test_idempotent_note(self, mock_sharing_enum, mock_root_context):
-		mock_sharing_enum.is_callable().returns( 'UNKNOWN' )
+		mock_sharing_enum.is_callable().returns( 'PRIVATE' )
 		mock_root_context.is_callable().returns( self.course_id )
 		context_path = None
 
@@ -164,7 +163,7 @@ class TestResourceTags(AnalyticsTestBase):
 					'nti.analytics.database.resource_tags.get_root_context'   )
 	def test_lazy_note_create(self, mock_sharing_enum, mock_validate, mock_root_context):
 		mock_validate.is_callable().returns( True )
-		mock_sharing_enum.is_callable().returns( 'UNKNOWN' )
+		mock_sharing_enum.is_callable().returns( 'PRIVATE' )
 		mock_root_context.is_callable().returns( self.course_id )
 		context_path = None
 
@@ -202,7 +201,7 @@ class TestResourceTags(AnalyticsTestBase):
 					'nti.analytics.database.resource_tags.get_root_context'    )
 	def test_lazy_note_create_parent(self, mock_sharing_enum, mock_validate, mock_root_context):
 		mock_validate.is_callable().returns( True )
-		mock_sharing_enum.is_callable().returns( 'UNKNOWN' )
+		mock_sharing_enum.is_callable().returns( 'PRIVATE' )
 		mock_root_context.is_callable().returns( self.course_id )
 
 		results = self.session.query( NotesCreated ).all()

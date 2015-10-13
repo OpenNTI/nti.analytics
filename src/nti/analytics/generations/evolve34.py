@@ -10,9 +10,6 @@ logger = __import__('logging').getLogger(__name__)
 
 generation = 34
 
-from time import sleep
-from geopy import geocoders
-
 from sqlalchemy import Column
 from sqlalchemy import Integer
 
@@ -41,49 +38,48 @@ def evolve_job():
     mc = MigrationContext.configure( connection )
     op = Operations( mc )
     originalTable = IpGeoLocation
-    locationsTable = Location
-    
+
     # Add location_id column
     if not mysql_column_exists( connection, originalTable.__tablename__, 'location_id' ):
-        op.add_column( originalTable.__tablename__, Column('location_id', 
+        op.add_column( originalTable.__tablename__, Column('location_id',
                                                            Integer,
-                                                           nullable=True, 
+                                                           nullable=True,
                                                            index=True ) )
-        
+
         # Populate the new table
         for record in db.session.query( originalTable ).yield_per( 1000 ):
                 _latitude = getattr( record, 'latitude' )
                 _longitude = getattr( record, 'longitude' )
-     
+
                 lat_str = str(round(_latitude, 4))
                 long_str = str(round(_longitude, 4))
-                 
+
                 # Check to see whether we've already created a row for this location
                 existing_location = db.session.query( Location ).filter(
                                                                          Location.latitude == lat_str,
                                                                          Location.longitude == long_str
                                                                          ).first()
-                 
+
                 if existing_location is None:
-                    # We don't have an entry for this location yet. 
-                    new_location = Location( latitude=lat_str, 
-                                              longitude=long_str, 
-                                              city='', 
-                                              state='', 
+                    # We don't have an entry for this location yet.
+                    new_location = Location( latitude=lat_str,
+                                              longitude=long_str,
+                                              city='',
+                                              state='',
                                               country='' )
                     db.session.add( new_location )
                     db.session.flush()
                     # Set the location_id of the record to match the Location we just created
                     record.location_id = new_location.location_id
                     logger.info('Created location')
-                else: 
+                else:
                     # We already know about this location.
                     # Set the location_id of the original table to the correct row.
                     record.location_id = existing_location.location_id
                     logger.info('Not a new location - linked existing location')
-                    
+
     logger.info( 'Finished analytics evolve (%s)', generation )
-    
+
     """
     This migration moves location data (lat/long coordinates) to a separate table,
     Location. The Location table maintains the coordinates, making the 'latitude'
