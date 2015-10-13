@@ -17,6 +17,8 @@ from hamcrest import assert_that
 from nti.dataserver.users import User
 
 from nti.contenttypes.courses.courses import CourseInstance
+from nti.contenttypes.courses.courses import CourseAdministrativeLevel
+
 from nti.dataserver.contenttypes.highlight import Highlight
 from nti.dataserver.contenttypes.note import Note
 from nti.dataserver.contenttypes.bookmark import Bookmark
@@ -40,11 +42,17 @@ from ..resource_tags import get_favorites_for_users_notes
 
 class TestNotes( NTIAnalyticsTestCase ):
 
+	def _get_course(self):
+		admin = CourseAdministrativeLevel()
+		self.ds.root['admin'] = admin
+		course = CourseInstance()
+		admin['course'] = course
+		return course
+
 	@WithMockDSTrans
 	@fudge.patch( 'nti.ntiids.ntiids.find_object_with_ntiid',
-				'nti.analytics.resolvers.get_container_context',
-				'nti.analytics.database.resource_tags._get_sharing_enum' )
-	def test_add_notes(self, mock_find_object, mock_container_context, mock_sharing_enum):
+				'nti.analytics.resolvers.get_container_context' )
+	def test_add_notes(self, mock_find_object, mock_container_context):
 		user = User.create_user( username='new_user1', dataserver=self.ds )
 		results = get_notes( user )
 		assert_that( results, has_length( 0 ))
@@ -55,11 +63,9 @@ class TestNotes( NTIAnalyticsTestCase ):
 		note.creator = user
 		note.containerId = 'tag:nti:foo'
 		user.addContainedObject( note )
-		course = CourseInstance()
-		course._ds_intid = 123456
+		course = self._get_course()
 		mock_find_object.is_callable().returns( note )
 		mock_container_context.is_callable().returns( course )
-		mock_sharing_enum.is_callable().returns( 'PRIVATE' )
 		oid = 13
 
 		_add_note( oid )
@@ -73,6 +79,7 @@ class TestNotes( NTIAnalyticsTestCase ):
 		assert_that( note_record.RootContext, is_( course ) )
 		assert_that( note_record.NoteLength, is_( 7 ))
 		assert_that( note_record.user, is_( user ) )
+		assert_that( note_record.Sharing, is_( 'PRIVATE' ))
 
 		results = get_notes( user )
 		assert_that( results, has_length( 1 ))
@@ -92,15 +99,13 @@ class TestNotes( NTIAnalyticsTestCase ):
 
 	@WithMockDSTrans
 	@fudge.patch( 'nti.ntiids.ntiids.find_object_with_ntiid',
-				'nti.analytics.resolvers.get_container_context',
-				'nti.analytics.database.resource_tags._get_sharing_enum' )
-	def test_reply_comments(self, mock_find_object, mock_container_context, mock_sharing_enum):
+				'nti.analytics.resolvers.get_container_context' )
+	def test_reply_comments(self, mock_find_object, mock_container_context):
 		user1 = User.create_user( username='new_user1', dataserver=self.ds )
 		user2 = User.create_user( username='new_user2', dataserver=self.ds )
 
-		course = CourseInstance()
+		course = self._get_course()
 		mock_container_context.is_callable().returns( course )
-		mock_sharing_enum.is_callable().returns( 'PRIVATE' )
 
 		# Create note
 		note1 = Note()
@@ -135,6 +140,7 @@ class TestNotes( NTIAnalyticsTestCase ):
 		assert_that( results[0].user, is_( user2 ))
 		assert_that( results[0].IsReply, is_( True ))
 		assert_that( results[0].RepliedToUser, is_( user1 ))
+		assert_that( results[0].Sharing, is_( 'PRIVATE' ))
 
 		results = get_user_replies_to_others( user2 )
 		assert_that( results, has_length( 1 ))
@@ -142,6 +148,7 @@ class TestNotes( NTIAnalyticsTestCase ):
 		assert_that( results[0].user, is_( user2 ))
 		assert_that( results[0].IsReply, is_( True ))
 		assert_that( results[0].RepliedToUser, is_( user1 ))
+		assert_that( results[0].Sharing, is_( 'PRIVATE' ))
 
 		# The reverse is nothing
 		results = get_replies_to_user( user2 )
@@ -151,15 +158,13 @@ class TestNotes( NTIAnalyticsTestCase ):
 
 	@WithMockDSTrans
 	@fudge.patch( 'nti.ntiids.ntiids.find_object_with_ntiid',
-				'nti.analytics.resolvers.get_container_context',
-				'nti.analytics.database.resource_tags._get_sharing_enum' )
-	def test_rated_notes(self, mock_find_object, mock_container_context, mock_sharing_enum):
+				'nti.analytics.resolvers.get_container_context' )
+	def test_rated_notes(self, mock_find_object, mock_container_context):
 		user1 = User.create_user( username='new_user1', dataserver=self.ds )
 		user2 = User.create_user( username='new_user2', dataserver=self.ds )
 
-		course = CourseInstance()
+		course = self._get_course()
 		mock_container_context.is_callable().returns( course )
-		mock_sharing_enum.is_callable().returns( 'PRIVATE' )
 
 		# Create note
 		note1 = Note()
