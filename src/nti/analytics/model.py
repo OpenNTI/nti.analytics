@@ -77,6 +77,8 @@ class RootContextEvent(ViewEvent): # alias
 class ResourceEvent(RootContextEvent):
 	createDirectFieldProperties(IResourceEvent)
 
+	resource_id = alias('ResourceId')
+
 	__external_class_name__ = "ResourceEvent"
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.resourceevent'
 
@@ -110,6 +112,7 @@ class WatchVideoEvent(RootContextEvent):
 	event_type = VIDEO_WATCH
 
 	course = alias('RootContextID')
+	resource_id = alias('ResourceId')
 
 @interface.implementer(IVideoEvent)
 class SkipVideoEvent(RootContextEvent):
@@ -121,6 +124,7 @@ class SkipVideoEvent(RootContextEvent):
 	event_type = VIDEO_SKIP
 
 	course = alias('RootContextID')
+	resource_id = alias('ResourceId')
 
 @interface.implementer(ICourseCatalogViewEvent)
 class CourseCatalogViewEvent(RootContextEvent):

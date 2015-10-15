@@ -91,7 +91,7 @@ class IResourceEvent(IAnalyticsViewEvent, IRootContextEvent):
 	"""
 	Describes a resource viewing event.
 	"""
-	resource_id = ValidTextLine(title="The resource ntiid.")
+	ResourceId = ValidTextLine(title="The resource ntiid.")
 
 class IAssessmentViewEvent( IAnalyticsViewEvent, IRootContextEvent ):
 	ResourceId = ValidTextLine(title="The assessment ntiid.", required=True)

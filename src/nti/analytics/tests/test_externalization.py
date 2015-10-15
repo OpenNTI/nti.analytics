@@ -106,18 +106,17 @@ resource_kwargs = { 'user':user,
 					'timestamp':timestamp,
 					'RootContextID':course,
 					'context_path':context_path,
-					'resource_id':resource_id,
+					'ResourceId':resource_id,
 					'Duration':time_length }
 
 resource_event = ResourceEvent( **resource_kwargs )
 
 self_assess_kwargs = dict( **resource_kwargs )
-self_assess_kwargs['ContentId'] = self_assess_kwargs.pop( 'resource_id' )
+self_assess_kwargs['ContentId'] = self_assess_kwargs.pop( 'ResourceId' )
 self_assess_kwargs['ResourceId'] = question_set_id = 'tag:nextthought,2011-05-01-selfasssessss1'
 self_assessment_event = SelfAssessmentViewEvent( **self_assess_kwargs )
 
 assignment_kwargs = dict( **resource_kwargs )
-assignment_kwargs.pop( 'resource_id' )
 assignment_kwargs['ResourceId'] = assignment_id = 'tag:nextthought,2011-05-01-assign1'
 assignment_event = AssignmentViewEvent( **assignment_kwargs )
 
@@ -128,7 +127,7 @@ skip_video_event = SkipVideoEvent(user=user,
 					timestamp=timestamp,
 					RootContextID=course,
 					context_path=context_path,
-					resource_id=resource_id,
+					ResourceId=resource_id,
 					Duration=time_length,
 					video_start_time=video_start_time,
 					video_end_time=video_end_time,
@@ -138,7 +137,7 @@ watch_video_event = WatchVideoEvent(user=user,
 				timestamp=timestamp,
 				RootContextID=course,
 				context_path=context_path,
-				resource_id=resource_id,
+				ResourceId=resource_id,
 				Duration=time_length,
 				MaxDuration=max_time_length,
 				video_start_time=video_start_time,
@@ -149,7 +148,7 @@ start_video_event = WatchVideoEvent(user=user,
 				timestamp=timestamp,
 				RootContextID=course,
 				context_path=context_path,
-				resource_id=resource_id,
+				ResourceId=resource_id,
 				Duration=None,
 				MaxDuration=max_time_length,
 				video_start_time=video_start_time,
@@ -281,7 +280,7 @@ class TestResourceEvents(NTIAnalyticsTestCase):
 		assert_that(new_io, has_property('timestamp', is_( timestamp )))
 		assert_that(new_io, has_property( 'RootContextID', is_( course )))
 		assert_that(new_io, has_property('context_path', is_( context_path )))
-		assert_that(new_io, has_property('resource_id', is_( resource_id )))
+		assert_that(new_io, has_property('ResourceId', is_( resource_id )))
 		assert_that(new_io, has_property( 'Duration', is_( time_length )))
 		assert_that( new_io, is_( ResourceEvent ) )
 
@@ -353,7 +352,7 @@ class TestResourceEvents(NTIAnalyticsTestCase):
 		assert_that(new_io, has_property('timestamp', is_( timestamp )))
 		assert_that(new_io, has_property( 'RootContextID', is_( course )))
 		assert_that(new_io, has_property('context_path', is_( context_path )))
-		assert_that(new_io, has_property('resource_id', is_( resource_id )))
+		assert_that(new_io, has_property('ResourceId', is_( resource_id )))
 		assert_that(new_io, has_property( 'Duration', is_( time_length )))
 		assert_that(new_io, has_property('event_type', is_( SkipVideoEvent.event_type )))
 		assert_that(new_io, has_property('video_start_time', is_( video_start_time )))
@@ -403,7 +402,7 @@ class TestResourceEvents(NTIAnalyticsTestCase):
 		assert_that(new_io, has_property('timestamp', is_( timestamp )))
 		assert_that(new_io, has_property( 'RootContextID', is_( course )))
 		assert_that(new_io, has_property('context_path', is_( context_path )))
-		assert_that(new_io, has_property('resource_id', is_( resource_id )))
+		assert_that(new_io, has_property('ResourceId', is_( resource_id )))
 		assert_that(new_io, has_property( 'Duration', none()))
 		assert_that(new_io, has_property('event_type', is_( WatchVideoEvent.event_type )))
 		assert_that(new_io, has_property('video_start_time', is_( video_start_time )))
@@ -434,7 +433,7 @@ class TestResourceEvents(NTIAnalyticsTestCase):
 		assert_that(new_io, has_property('user', is_( 'andrew.ligon' )))
 		assert_that(new_io, has_property('RootContextID', is_( "tag:nextthought.com,2011-10:system-OID-0x7e30:5573657273:YV7ubjAxx3S" )))
 		assert_that(new_io, has_property('context_path', is_( ['a test'] )))
-		assert_that(new_io, has_property('resource_id', is_( '1500101:0_ey2kllmp' )))
+		assert_that(new_io, has_property('ResourceId', is_( '1500101:0_ey2kllmp' )))
 		assert_that(new_io, has_property('Duration', is_( 24791 )))
 		assert_that(new_io, has_property('time_length', is_( 24791 )))
 		assert_that(new_io, has_property('event_type', is_( WatchVideoEvent.event_type )))
