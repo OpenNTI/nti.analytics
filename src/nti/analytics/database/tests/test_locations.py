@@ -34,12 +34,10 @@ class TestLocations( NTIAnalyticsTestCase ):
 		self.db = AnalyticsDB( dburi='sqlite://', testmode=True )
 		component.getGlobalSiteManager().registerUtility( self.db, IAnalyticsDB )
 		self.session = self.db.session
-# 		pass
 
 	def tearDown(self):
 		component.getGlobalSiteManager().unregisterUtility( self.db )
 		self.session.close()
-# 		pass
 		
 	def _create_course(self):
 		content_unit = find_object_with_ntiid( course )
