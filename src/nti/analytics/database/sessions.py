@@ -73,8 +73,12 @@ def end_session(user, session_id, timestamp):
 		result = old_session
 	return result
 
+def _lookup_coordinates_for_ip(ip_addr):
+	# Given an IP address, lookup and return the coordinates of its location
+	return geolite2.lookup(ip_addr)
+
 def _create_ip_location(db, ip_addr, user_id):
-	ip_info = geolite2.lookup(ip_addr)
+	ip_info = _lookup_coordinates_for_ip(ip_addr)
 	# In one case, we had ip_info but no lat/long.
 	if ip_info and ip_info.location and len(ip_info.location) > 1:
 		ip_location = IpGeoLocation(ip_addr=ip_addr,
