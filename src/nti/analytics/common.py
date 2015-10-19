@@ -213,7 +213,7 @@ def _should_create_analytics( request ):
 		return False
 	return True
 
-def process_event( get_job_queue, object_op, obj=None, **kwargs ):
+def process_event( get_job_queue, object_op, obj=None, immediate=False, **kwargs ):
 	"""
 	Processes the event, which may not occur synchronously.
 	"""
@@ -235,7 +235,10 @@ def process_event( get_job_queue, object_op, obj=None, **kwargs ):
 	else:
 		logger.warn( 'Request did not have site (%s)', request )
 
-	queue = get_job_queue()
-	job = create_job( _execute_job, object_op, **effective_kwargs )
-	queue.put( job )
+	if immediate:
+		_execute_job( object_op, **effective_kwargs )
+	else:
+		queue = get_job_queue()
+		job = create_job( _execute_job, object_op, **effective_kwargs )
+		queue.put( job )
 

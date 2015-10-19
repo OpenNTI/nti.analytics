@@ -8,7 +8,8 @@ entry_points = {
 		"nti_analytics_processor = nti.analytics.utils.constructor:main",
 		"nti_analytics_migrator = nti.analytics.utils.ds_migrator:main",
 		"nti_analytics_fail_processor = nti.analytics.utils.failure_processor:main",
-		"nti_analytics_video_duration = nti.analytics.utils.upload_video_durations:main"
+		"nti_analytics_video_duration = nti.analytics.utils.upload_video_durations:main",
+		"nti_analytics_event_uploader = nti.analytics.utils.event_uploader:main"
 	],
 }
 

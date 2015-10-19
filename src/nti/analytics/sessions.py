@@ -133,7 +133,7 @@ def handle_end_session( username, request, timestamp=None ):
 		_remove_cookie( request )
 
 def update_session( session, user, user_agent=None, ip_addr=None ):
-	"Create and update the given session based on information given and return. "
+	"Create and update the given session based on information given and return."
 	if session.SessionID is None:
 		# Insert now
 		new_session = _add_session( user, user_agent, ip_addr, session.SessionEndTime, start_time=session.SessionStartTime )

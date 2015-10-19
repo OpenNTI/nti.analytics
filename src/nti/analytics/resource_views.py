@@ -340,7 +340,7 @@ def _add_blog_event( event, nti_session=None ):
 					user, blog, event.time_length )
 
 	notify(BlogViewedRecordedEvent(user=user, blog=blog, timestamp=event.timestamp,
-								   session=nti_session, 
+								   session=nti_session,
 								   duration=event.time_length,
 								   context_path=event.context_path))
 
@@ -366,7 +366,7 @@ def _add_catalog_event( event, nti_session=None ):
 					event.time_length )
 
 	notify(CatalogViewedRecordedEvent(user=user, context=course, timestamp=event.timestamp,
-									  session=nti_session, 
+									  session=nti_session,
 									  duration=event.time_length,
 									  context_path=event.context_path))
 
@@ -575,30 +575,33 @@ def handle_events( batch_events ):
 			event.user = get_current_username()
 		nti_session = get_nti_session_id( event=event )
 
+		kwargs = {'event':event,
+				'nti_session': nti_session }
+
 		if INoteViewEvent.providedBy( event ):
-			process_event( _get_note_queue, _add_note_event, event=event, nti_session=nti_session )
+			process_event( _get_note_queue, _add_note_event, **kwargs )
 		elif IBlogViewEvent.providedBy( event ):
-			process_event( _get_blog_queue, _add_blog_event, event=event, nti_session=nti_session )
+			process_event( _get_blog_queue, _add_blog_event, **kwargs )
 		elif ITopicViewEvent.providedBy( event ):
-			process_event( _get_topic_queue, _add_topic_event, event=event, nti_session=nti_session )
+			process_event( _get_topic_queue, _add_topic_event, **kwargs )
 		elif IVideoEvent.providedBy( event ):
-			process_event( _get_video_queue, _add_video_event, event=event, nti_session=nti_session )
+			process_event( _get_video_queue, _add_video_event, **kwargs )
 		elif ISelfAssessmentViewEvent.providedBy( event ):
-			process_event( _get_resource_queue, _add_self_assessment_event, event=event, nti_session=nti_session )
+			process_event( _get_resource_queue, _add_self_assessment_event, **kwargs )
 		elif IAssignmentViewEvent.providedBy( event ):
-			process_event( _get_resource_queue, _add_assignment_event, event=event, nti_session=nti_session )
+			process_event( _get_resource_queue, _add_assignment_event, **kwargs )
 		elif IResourceEvent.providedBy( event ):
-			process_event( _get_resource_queue, _add_resource_event, event=event, nti_session=nti_session )
+			process_event( _get_resource_queue, _add_resource_event, **kwargs )
 		elif ICourseCatalogViewEvent.providedBy( event ):
-			process_event( _get_catalog_queue, _add_catalog_event, event=event, nti_session=nti_session )
+			process_event( _get_catalog_queue, _add_catalog_event, **kwargs )
 		elif IVideoPlaySpeedChangeEvent.providedBy( event ):
-			process_event( _get_video_queue, _add_play_speed_event, event=event, nti_session=nti_session )
+			process_event( _get_video_queue, _add_play_speed_event, **kwargs )
 		elif IProfileActivityViewEvent.providedBy( event ):
-			process_event( _get_profile_queue, _add_profile_activity_event, event=event, nti_session=nti_session )
+			process_event( _get_profile_queue, _add_profile_activity_event, **kwargs )
 		elif IProfileMembershipViewEvent.providedBy( event ):
-			process_event( _get_profile_queue, _add_profile_membership_event, event=event, nti_session=nti_session )
+			process_event( _get_profile_queue, _add_profile_membership_event, **kwargs )
 		elif IProfileViewEvent.providedBy( event ):
-			process_event( _get_profile_queue, _add_profile_event, event=event, nti_session=nti_session )
+			process_event( _get_profile_queue, _add_profile_event, **kwargs )
 	# If we validated early, we could return something meaningful.
 	# But we'd have to handle all validation exceptions as to not lose the valid
 	# events. The nti.async.processor does this and at least drops the bad

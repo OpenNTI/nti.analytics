@@ -156,8 +156,8 @@ def create_video_event(	user,
 						with_transcript,
 						play_speed ):
 	db = get_analytics_db()
-	user = get_or_create_user( user )
-	uid = user.user_id
+	user_record = get_or_create_user( user )
+	uid = user_record.user_id
 	sid = SessionId.get_id( nti_session )
 	vid = ResourceId.get_id( video_resource )
 	vid = get_resource_id( db, vid, create=True, max_time_length=max_time_length )
