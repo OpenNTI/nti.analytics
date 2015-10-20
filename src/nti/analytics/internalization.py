@@ -35,16 +35,16 @@ class _NTIAnalyticsModelUpdater(object):
 	def __init__(self, obj):
 		self.obj = obj
 
+	field_map = { 'course': 'RootContextID',
+				'time_length': 'Duration',
+				'resource_id': 'ResourceId',
+				'topic_id': 'blog_id'}
+
 	def updateFromExternalObject(self, parsed, *args, **kwargs):
-		root_context_id = parsed.get('course', None)
-		duration = parsed.get('time_length', None)
-		resource_id = parsed.get('resource_id', None)
-		if root_context_id is not None and parsed.get('RootContextID') is None:
-			parsed['RootContextID'] = root_context_id
-		if duration is not None and parsed.get('Duration') is None:
-			parsed['Duration'] = duration
-		if resource_id is not None and parsed.get('ResourceId') is None:
-			parsed['ResourceId'] = resource_id
+		for old, new in self.field_map.items():
+			old_val = parsed.get( old )
+			if old_val is not None and parsed.get( new ) is None:
+				parsed[new] = old_val
 		result = InterfaceObjectIO(self.obj, self.model_interface).updateFromExternalObject(parsed)
 		return result
 
