@@ -16,6 +16,10 @@ u'tag:nextthought.com,2011-10:OC-HTML-Oklahoma_Christian_University_CMSC_1313_F_
 u'ResourceId': u'tag:nextthought.com,2011-10:OC-RelatedWorkRef-Oklahoma_Christian_University_CMSC_1313_F_2015_Software_Engineering_I.relatedworkref.relwk:12_2_lecture_presentation',
 u'timestamp': 1444936880.005}) (resource_id)
 
+This script will probably not need to be used again, but if so,
+we could improve this by using transactional savepoints and
+being able to accurately log how many events are loaded (e.g. dupes).
+
 .. $Id$
 """
 
