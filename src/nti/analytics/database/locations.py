@@ -47,12 +47,18 @@ def _get_locations_for_ids(db, location_ids, location_counts):
 	return location_rows
 
 def _get_location_data(locations, location_counts):
-
+	
+	# Notice that we handle everything as standard strings.
+	# Converting to unicode can cause errors for strings 
+	# containing non-ASCII characters. The Google API we're 
+	# currently using for maps expects to receive regular strings 
+	# with backslash-escaped characters, for its marker labels.
+	
 	def get_user_label(number_of_users):
 		if number_of_users > 1:
-			return '%s users' % number_of_users
+			return str('%s users') % number_of_users
 		else:
-			return '1 user'
+			return str('1 user')
 
 	db_data = []
 
@@ -62,25 +68,32 @@ def _get_location_data(locations, location_counts):
 		state = location.state
 		country = location.country
 
+		# Create the label for the map marker
 		if country == 'United States of America':
 			if city and state:
-				label = "%s, %s" % (city, state)
+				# We have to explicitly cast these to regular strings
+				# or else unicode_literals will try to convert them
+				# from ascii to unicode, which won't work if the inputs have 
+				# escaped characters outside of the range of characters 
+				# in ascii. 
+				label = str('%s, %s') % (city, state)
 			elif state:
-				label = "%s" % state
+				label = str('%s') % state
 			else:
-				label = ''
+				label = str('')
 		else:
 			if city and country:
-				label = "%s, %s" % (city, country)
+				label = str('%s, %s') % (city, country)
 			elif country:
-				label = "%s" % country
+				label = str('%s') % country
 			else:
-				label = ''
+				label = str('')
 
-		label = '%s (%s)' % (label, get_user_label(location_counts[location.location_id]))
+		# Add the number of users to the label
+		label = str('%s (%s)') % (label, get_user_label(location_counts[location.location_id]))
 
 		number_of_users_in_location = location_counts[location.location_id]
-
+		
 		locationData = {
 				'latitude': float(location.latitude),
 				'longitude': float(location.longitude),
@@ -124,7 +137,8 @@ def _get_enrolled_user_ids(course, enrollment_scope):
 	# _get_enrollment_scope_dic method in
 	# coursewarereports/views/__init__.py.
 
-def _get_enrollment_scope_dict(course, instructors=set()):
+def _get_enrollment_scope_dict(course=ALL_USERS, instructors=set()):
+	
 	"""
 	Build a dict of scope_name to usernames.
 	"""
