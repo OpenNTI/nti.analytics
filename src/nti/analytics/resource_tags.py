@@ -4,6 +4,7 @@
 $Id$
 """
 from __future__ import print_function, unicode_literals, absolute_import, division
+from nti.analytics.database.resource_tags import get_note_last_view
 __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
@@ -44,6 +45,7 @@ from nti.analytics import get_factory
 from nti.analytics import TAGS_ANALYTICS
 
 get_note_views = db_resource_tags.get_note_views
+get_note_last_view = db_resource_tags.get_note_last_view
 get_notes = db_resource_tags.get_notes
 get_highlights = db_resource_tags.get_highlights
 get_bookmarks = db_resource_tags.get_bookmarks

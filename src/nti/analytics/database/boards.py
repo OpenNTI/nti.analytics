@@ -9,6 +9,7 @@ __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
+from sqlalchemy import func
 from sqlalchemy.orm.session import make_transient
 
 from nti.analytics_database.boards import TopicLikes
@@ -52,6 +53,7 @@ from .root_context import get_root_context_id
 
 from .users import get_user
 from .users import get_or_create_user
+from .users import get_user_db_id
 
 from . import resolve_objects
 from . import get_analytics_db
@@ -586,7 +588,7 @@ def get_topics_created_for_user( user, course=None, get_deleted=False, **kwargs 
 
 	return resolve_objects( _resolve_topic, results, course=course )
 
-def get_topic_views( user=None, topic=None, course=None, **kwargs ):
+def get_topic_views( user=None, topic=None, course=None, raw=False, **kwargs ):
 
 	filters = []
 	if topic is not None:
@@ -596,8 +598,19 @@ def get_topic_views( user=None, topic=None, course=None, **kwargs ):
 
 	results = get_filtered_records( user, TopicsViewed, course=course,
 								filters=filters, **kwargs )
+	if raw:
+		return results
+	else:
+		return resolve_objects( _resolve_topic_view, results, topic=topic, course=course )
 
-	return resolve_objects( _resolve_topic_view, results, topic=topic, course=course )
+def get_topic_last_view( topic, user ):
+	db = get_analytics_db()
+	topic_id = _get_topic_id_from_topic( db, topic )
+	user_id = get_user_db_id( user )
+	result = db.session.query( func.max( TopicsViewed.timestamp )  ).filter(
+										TopicsViewed.topic_id == topic_id,
+										TopicsViewed.user_id == user_id ).one()
+	return result and result[0]
 
 def get_comments_for_topic( topic ):
 	db = get_analytics_db()

@@ -9,6 +9,7 @@ __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
+from sqlalchemy import func
 from sqlalchemy.orm.session import make_transient
 
 from zope import component
@@ -58,6 +59,7 @@ from .root_context import get_root_context_id
 
 from .users import get_user
 from .users import get_or_create_user
+from .users import get_user_db_id
 
 from . import resolve_objects
 from . import get_analytics_db
@@ -457,7 +459,7 @@ def _resolve_note_view(row, note=None, user=None, course=None):
 									RootContext=course)
 	return result
 
-def get_note_views(user=None, note=None, course=None, **kwargs):
+def get_note_views(user=None, note=None, course=None, raw=False, **kwargs):
 	filters = []
 	if note is not None:
 		db = get_analytics_db()
@@ -467,9 +469,20 @@ def get_note_views(user=None, note=None, course=None, **kwargs):
 
 	results = get_filtered_records(	user, NotesViewed, course=course,
 									filters=filters, **kwargs)
+	if raw:
+		return results
+	else:
+		return resolve_objects(_resolve_note_view, results, note=note, user=user, course=course)
 
-	return resolve_objects(_resolve_note_view, results, note=note, user=user, course=course)
-
+def get_note_last_view( note, user ):
+	db = get_analytics_db()
+	note_ds_id = NoteId.get_id(note)
+	note_id = _get_note_id(db, note_ds_id)
+	user_id = get_user_db_id( user )
+	result = db.session.query( func.max( NotesViewed.timestamp )  ).filter(
+										NotesViewed.note_id == note_id,
+										NotesViewed.user_id == user_id ).one()
+	return result and result[0]
 
 def get_likes_for_users_notes(user, course=None, **kwargs):
 	"""

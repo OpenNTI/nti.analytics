@@ -68,6 +68,7 @@ get_topics_created_for_user = db_boards.get_topics_created_for_user
 get_forum_comments_for_user = db_boards.get_forum_comments_for_user
 get_forum_comments = db_boards.get_forum_comments
 get_topic_views = db_boards.get_topic_views
+get_topic_last_view = db_boards.get_topic_last_view
 get_replies_to_user = db_boards.get_replies_to_user
 get_user_replies_to_others = db_boards.get_user_replies_to_others
 get_likes_for_users_topics = db_boards.get_likes_for_users_topics
