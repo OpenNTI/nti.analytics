@@ -48,17 +48,18 @@ def _get_locations_for_ids(db, location_ids, location_counts):
 
 def _get_location_data(locations, location_counts):
 	
-	# Notice that we handle everything as standard strings.
-	# Converting to unicode can cause errors for strings 
-	# containing non-ASCII characters. The Google API we're 
-	# currently using for maps expects to receive regular strings 
-	# with backslash-escaped characters, for its marker labels.
+	# Handle everything as unicode. The Google API we're 
+	# currently using for maps is picky about encoding, but
+	# everything is handled internally as unicode. When
+	# exporting to the template, we encode everything into 
+	# UTF-8, and then send that to the template. Javascript
+	# converts the UTF-8 strings into the format Google Maps wants. 
 	
 	def get_user_label(number_of_users):
 		if number_of_users > 1:
-			return str('%s users') % number_of_users
+			return u'%s users' % number_of_users
 		else:
-			return str('1 user')
+			return u'1 user'
 
 	db_data = []
 
@@ -69,28 +70,23 @@ def _get_location_data(locations, location_counts):
 		country = location.country
 
 		# Create the label for the map marker
-		if country == 'United States of America':
+		if country == u'United States of America':
 			if city and state:
-				# We have to explicitly cast these to regular strings
-				# or else unicode_literals will try to convert them
-				# from ascii to unicode, which won't work if the inputs have 
-				# escaped characters outside of the range of characters 
-				# in ascii. 
-				label = str('%s, %s') % (city, state)
+				label = u'%s, %s' % (city, state)
 			elif state:
-				label = str('%s') % state
+				label = u'%s' % state
 			else:
-				label = str('')
+				label = u''
 		else:
 			if city and country:
-				label = str('%s, %s') % (city, country)
+				label = u'%s, %s' % (city, country)
 			elif country:
-				label = str('%s') % country
+				label = u'%s' % country
 			else:
-				label = str('')
+				label = u''
 
 		# Add the number of users to the label
-		label = str('%s (%s)') % (label, get_user_label(location_counts[location.location_id]))
+		label = u'%s (%s)' % (label, get_user_label(location_counts[location.location_id]))
 
 		number_of_users_in_location = location_counts[location.location_id]
 		
