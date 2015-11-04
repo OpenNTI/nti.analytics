@@ -17,7 +17,6 @@ import fudge
 
 from zope import component
 
-from nti.analytics.database import sessions
 from nti.analytics.database import locations
 from nti.analytics.database.database import AnalyticsDB
 from nti.analytics.database.interfaces import IAnalyticsDB
@@ -53,8 +52,8 @@ class TestLocations(NTIAnalyticsTestCase):
 		get_root_context_id(self.db, course_obj, create=True)
 
 	@WithMockDSTrans
-	@fudge.patch('nti.analytics.database.sessions._lookup_coordinates_for_ip')
-	@fudge.patch('nti.analytics.database.sessions._lookup_location')
+	@fudge.patch('nti.analytics.database.locations._lookup_coordinates_for_ip')
+	@fudge.patch('nti.analytics.database.locations._lookup_location')
 	def test_location_list(self, fake_ip_lookup, fake_location_lookup):
 		# Create a fake user and course
 		principal = User.create_user(username='sjohnson@nextthought.com', dataserver=self.ds)
@@ -76,7 +75,7 @@ class TestLocations(NTIAnalyticsTestCase):
 		# This user lives at Google.
 		fake_location_lookup.is_callable().calls(fake_location_data_for_coordinates)
 		fake_ip_lookup.is_callable().calls(fake_locations_for_ips)
-		sessions._create_ip_location(self.db, '8.8.8.8', 1)
+		locations._create_ip_location(self.db, '8.8.8.8', 1)
 
 		location_results = locations.get_location_list(course, 'ALL_USERS')
 
@@ -92,7 +91,7 @@ class TestLocations(NTIAnalyticsTestCase):
 		self.ds.root[second_user.id] = second_user
 		self.second_user = second_user
 		manager.enroll(second_user, scope='ForCredit')
-		sessions._create_ip_location(self.db, '1.2.3.4', 2)
+		locations._create_ip_location(self.db, '1.2.3.4', 2)
 
 		# We should see both users in ALL_USERS, but only the second user in ForCredit.
 

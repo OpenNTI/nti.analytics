@@ -13,12 +13,16 @@ __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
+from geoip import geolite2
+from geopy import geocoders
+
+from nti.analytics_database.sessions import Location
+from nti.analytics_database.sessions import IpGeoLocation
+
 from nti.dataserver.users.users import User
 from nti.dataserver.interfaces import IEnumerableEntityContainer
 
 from .users import get_user_db_id
-
-from .sessions import IpGeoLocation, Location
 
 from . import get_analytics_db
 
@@ -27,7 +31,8 @@ ALL_USERS = 'ALL_USERS'
 def _get_location_ids_for_users(db, user_ids):
 	location_ids = []
 	for user_id in user_ids:
-		ips_for_user = db.session.query(IpGeoLocation).filter(IpGeoLocation.user_id == user_id).all()
+		ips_for_user = db.session.query(IpGeoLocation).filter(
+										IpGeoLocation.user_id == user_id).all()
 		for row in ips_for_user:
 			location_ids.append(row.location_id)
 	return location_ids
@@ -35,7 +40,8 @@ def _get_location_ids_for_users(db, user_ids):
 def _get_locations_for_ids(db, location_ids, location_counts):
 	location_rows = []
 	for location_id in location_ids:
-		location = db.session.query(Location).filter(Location.location_id == location_id).first()
+		location = db.session.query(Location).filter(
+									Location.location_id == location_id).first()
 		# count the number of times this location is being used
 		if location_id in location_counts:
 			location_counts[location_id] += 1
@@ -47,14 +53,13 @@ def _get_locations_for_ids(db, location_ids, location_counts):
 	return location_rows
 
 def _get_location_data(locations, location_counts):
-	
-	# Handle everything as unicode. The Google API we're 
+	# Handle everything as unicode. The Google API we're
 	# currently using for maps is picky about encoding, but
 	# everything is handled internally as unicode. When
-	# exporting to the template, we encode everything into 
+	# exporting to the template, we encode everything into
 	# UTF-8, and then send that to the template. Javascript
-	# converts the UTF-8 strings into the format Google Maps wants. 
-	
+	# converts the UTF-8 strings into the format Google Maps wants.
+
 	def get_user_label(number_of_users):
 		if number_of_users > 1:
 			return u'%s users' % number_of_users
@@ -89,7 +94,7 @@ def _get_location_data(locations, location_counts):
 		label = u'%s (%s)' % (label, get_user_label(location_counts[location.location_id]))
 
 		number_of_users_in_location = location_counts[location.location_id]
-		
+
 		locationData = {
 				'latitude': float(location.latitude),
 				'longitude': float(location.longitude),
@@ -119,6 +124,9 @@ def _get_enrolled_user_ids(course, enrollment_scope):
 	"""
 	Gets a list of the user ids for the specified course and enrollment scope.
 	"""
+	# Note: this is the same code as in the
+	# _get_enrollment_scope_dic method in
+	# coursewarereports/views/__init__.py.
 	users = _get_enrollment_scope_dict(course, set(course.instructors))
 	user_ids = []
 	usernames_for_scope = users[enrollment_scope]
@@ -129,12 +137,8 @@ def _get_enrolled_user_ids(course, enrollment_scope):
 			user_ids.append(id_)
 	return user_ids
 
-	# Note: this is the same code as in the
-	# _get_enrollment_scope_dic method in
-	# coursewarereports/views/__init__.py.
-
 def _get_enrollment_scope_dict(course=ALL_USERS, instructors=set()):
-	
+
 	"""
 	Build a dict of scope_name to usernames.
 	"""
@@ -166,3 +170,134 @@ def _get_enrollment_scope_dict(course=ALL_USERS, instructors=set()):
 	results['Public'] = all_users - non_public_users - instructors
 	results[ALL_USERS] = all_users
 	return results
+
+def _lookup_coordinates_for_ip(ip_addr):
+	# Given an IP address, lookup and return the coordinates of its location
+	return geolite2.lookup(ip_addr)
+
+def _create_ip_location(db, ip_addr, user_id):
+	ip_info = _lookup_coordinates_for_ip(ip_addr)
+	# In one case, we had ip_info but no lat/long.
+	if ip_info and ip_info.location and len(ip_info.location) > 1:
+		ip_location = IpGeoLocation(ip_addr=ip_addr,
+									user_id=user_id,
+ 									country_code=ip_info.country)
+		db.session.add(ip_location)
+		db.session.flush()
+		# We truncate location coordinates to 4 decimal places
+		# and converting to strings. This way we have a consistent
+		# level of precision, and comparing as strings instead of
+		# floats ensures the accuracy of comparisons. Everything is
+		# stored as strings except if we need to do a lookup,
+		# in which case they are converted to floats for the lookup
+		ip_location.location_id = _get_location_id(db,
+													str(round(ip_info.location[0], 4)),
+													str(round(ip_info.location[1], 4)))
+		db.session.flush()
+
+def check_ip_location(db, ip_addr, user_id):
+	# Should only be null in tests.
+	if ip_addr:
+		old_ip_location = db.session.query(IpGeoLocation).filter(
+										IpGeoLocation.ip_addr == ip_addr,
+										IpGeoLocation.user_id == user_id).first()
+		if not old_ip_location:
+			# This is a new IP location
+			_create_ip_location(db, ip_addr, user_id)
+
+		else:
+			old_location_data = db.session.query(Location).filter(
+												Location.location_id == old_ip_location.location_id).first()
+			old_ip_location.location_id = _get_location_id(db,
+															old_location_data.latitude,
+															old_location_data.longitude)
+
+# To avoid exhausting our service limit.
+UPDATE_LIMIT = 500
+
+def update_missing_locations():
+	"""
+	Cycle through our locations, querying and updating
+	any locations with missing data.
+	"""
+	db = get_analytics_db()
+	update_count = 0
+	checked_count = 0
+
+	for location in db.session.query( Location ).yield_per( 1000 ):
+		if 		not location.city \
+			or 	not location.state \
+			or 	not location.country:
+			checked_count += 1
+			_create_new_location( db, location.latitude, location.longitude, location )
+
+			if location.city or location.state:
+				update_count += 1
+			if checked_count > UPDATE_LIMIT:
+				break
+	return update_count
+
+def _get_location_id(db, lat_str, long_str):
+
+	existing_location = db.session.query(Location).filter(Location.latitude == lat_str,
+														  Location.longitude == long_str).first()
+
+	if not existing_location:
+		# We've never seen this location before, so create
+		# a new row for it in the Location table and return location_id
+		new_location = _create_new_location(db, lat_str, long_str)
+		return new_location.location_id
+
+	else:
+		# This Location already exists, so make sure its fields are all
+		# filled out if possible, then return its location_id.
+		# We do a lookup if *any* fields are missing to backfill
+		# missing foreign locations.  At a later point, we should
+		# perhaps only perform a lookup if all fields are empty.
+		if 		existing_location.city == '' \
+			or 	existing_location.state == '' \
+			or 	existing_location.country == '':
+			_create_new_location(db, lat_str, long_str, existing_location)
+		return existing_location.location_id
+
+def _lookup_location(lat, long_):
+	# Using Nominatim as our lookup service for now, because
+	# they don't require registration or an API key. The downside
+	# is that they have a usage limit of 1 lookup/second.
+	# See http://wiki.openstreetmap.org/wiki/Nominatim_usage_policy
+	# for more details on the usage policy.
+	try:
+		geolocator = geocoders.Nominatim()
+		# TODO: Hard coding to english location names.
+		location = geolocator.reverse((lat, long_), language='en')
+		location_address = location.raw.get('address')
+		_city = location_address.get('city') or location_address.get( 'town' )
+		_state = location_address.get('state')
+		_country = location_address.get('country')
+	except Exception as e:
+		logger.debug('Reverse geolookup for %s, %s failed (%s).', lat, long_, e)
+		_city = _state = _country = ''
+	return (_city, _state, _country)
+
+def _create_new_location(db, lat_str, long_str, existing_location=None):
+	# Returns the location_id of the row created in the Location table
+
+	lat = float(lat_str)
+	long_ = float(long_str)
+
+	_city, _state, _country = _lookup_location(lat, long_)
+
+	# If we got an existing location, update the data
+	# instead of creating a new location
+	if existing_location:
+		existing_location.city = _city
+		existing_location.state = _state
+		existing_location.country = _country
+		return existing_location
+	else:
+		new_location = Location(latitude=lat_str, longitude=long_str,
+								city=_city, state=_state, country=_country)
+		db.session.add(new_location)
+		# need to flush here so that our new location will be assigned a location_id
+		db.session.flush()
+		return new_location
