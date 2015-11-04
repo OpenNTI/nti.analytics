@@ -30,11 +30,10 @@ ALL_USERS = 'ALL_USERS'
 
 def _get_location_ids_for_users(db, user_ids):
 	location_ids = []
-	for user_id in user_ids:
-		ips_for_user = db.session.query(IpGeoLocation).filter(
-										IpGeoLocation.user_id == user_id).all()
-		for row in ips_for_user:
-			location_ids.append(row.location_id)
+	if user_ids:
+		location_ids = db.session.query(IpGeoLocation.location_id).filter(
+										IpGeoLocation.user_id.in_( user_ids )).all()
+		location_ids = (x[0] for x in location_ids)
 	return location_ids
 
 def _get_locations_for_ids(db, location_ids, location_counts):
@@ -91,9 +90,8 @@ def _get_location_data(locations, location_counts):
 				label = u''
 
 		# Add the number of users to the label
-		label = u'%s (%s)' % (label, get_user_label(location_counts[location.location_id]))
-
 		number_of_users_in_location = location_counts[location.location_id]
+		label = u'%s (%s)' % (label, get_user_label( number_of_users_in_location ))
 
 		locationData = {
 				'latitude': float(location.latitude),
@@ -103,12 +101,12 @@ def _get_location_data(locations, location_counts):
 				'state': state,
 				'country': country,
 				'number_of_students': number_of_users_in_location}
-		# append the data for this location as a location element in db_data
+		# Append the data for this location as a location element in db_data
 		db_data.append(locationData)
 
 	return db_data
 
-def get_location_list(course, enrollment_scope):
+def get_location_list(course, enrollment_scope=None):
 
 	db = get_analytics_db()
 	location_counts = {}
@@ -120,15 +118,16 @@ def get_location_list(course, enrollment_scope):
 
 	return data
 
-def _get_enrolled_user_ids(course, enrollment_scope):
+def _get_enrolled_user_ids(course, enrollment_scope=None):
 	"""
 	Gets a list of the user ids for the specified course and enrollment scope.
 	"""
 	# Note: this is the same code as in the
 	# _get_enrollment_scope_dic method in
 	# coursewarereports/views/__init__.py.
-	users = _get_enrollment_scope_dict(course, set(course.instructors))
+	users = _get_enrollment_scope_dict(course)
 	user_ids = []
+	enrollment_scope = enrollment_scope or ALL_USERS
 	usernames_for_scope = users[enrollment_scope]
 	for username in usernames_for_scope:
 		user = User.get_user(username)
@@ -137,7 +136,7 @@ def _get_enrolled_user_ids(course, enrollment_scope):
 			user_ids.append(id_)
 	return user_ids
 
-def _get_enrollment_scope_dict(course=ALL_USERS, instructors=set()):
+def _get_enrollment_scope_dict(course):
 
 	"""
 	Build a dict of scope_name to usernames.
@@ -149,6 +148,7 @@ def _get_enrollment_scope_dict(course=ALL_USERS, instructors=set()):
 	# Seems like it would make sense to have an Everyone scope...
 	# { Everyone: { Public : ( Open, Purchased ), ForCredit : ( FCD, FCND ) }}
 	results = {}
+	instructors = set( course.instructors )
 	# Lumping purchased in with public.
 	public_scope = course.SharingScopes.get('Public', None)
 	purchased_scope = course.SharingScopes.get('Purchased', None)
@@ -239,8 +239,9 @@ def update_missing_locations():
 
 def _get_location_id(db, lat_str, long_str):
 
-	existing_location = db.session.query(Location).filter(Location.latitude == lat_str,
-														  Location.longitude == long_str).first()
+	existing_location = db.session.query(Location).filter(
+										Location.latitude == lat_str,
+							 		 	Location.longitude == long_str).first()
 
 	if not existing_location:
 		# We've never seen this location before, so create
@@ -269,6 +270,9 @@ def _lookup_location(lat, long_):
 	try:
 		geolocator = geocoders.Nominatim()
 		# TODO: Hard coding to english location names.
+		# We probably want to store these in 'en' and
+		# use the message factory translation layer to
+		# use client's accept-language headers.
 		location = geolocator.reverse((lat, long_), language='en')
 		location_address = location.raw.get('address')
 		_city = location_address.get('city') or location_address.get( 'town' )
@@ -280,8 +284,6 @@ def _lookup_location(lat, long_):
 	return (_city, _state, _country)
 
 def _create_new_location(db, lat_str, long_str, existing_location=None):
-	# Returns the location_id of the row created in the Location table
-
 	lat = float(lat_str)
 	long_ = float(long_str)
 
