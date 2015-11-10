@@ -28,6 +28,8 @@
 	<include package=".database" file="configure.zcml" />
 
 	<!-- Subscribers -->
+	<subscriber handler=".resolvers._library_sync" />
+
 	<subscriber handler=".users._entity_removed" />
 	<subscriber handler=".users._user_research" />
 

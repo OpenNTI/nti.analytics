@@ -176,7 +176,6 @@ def _build_ntiid_map():
 	catalog = component.getUtility( ICourseCatalog )
 	for entry in catalog.iterCatalogEntries():
 		course = ICourseInstance( entry )
-
 		containers = _do_get_containers_in_course( course )
 		course_key = to_external_ntiid_oid( course )
 		course_dict[course_key] = containers
@@ -233,6 +232,9 @@ def _get_course_from_ntiid_resolver():
 def _reset():
 	_get_course_from_ntiid_resolver().reset()
 
+# FIXME This probably will not work if we have two processes
+# running at once since only one processor will see the event
+# in the job queue.
 @component.adapter( IContentPackageLibraryModifiedOnSyncEvent )
 def _library_sync( _ ):
 	process_event( _get_job_queue, _reset )
