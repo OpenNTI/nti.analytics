@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python
 # -*- coding: utf-8 -*
 """
@@ -10,13 +11,15 @@ logger = __import__('logging').getLogger(__name__)
 
 import time
 
+from zope import interface
 from zope import component
+
+from zope.traversing.interfaces import IEtcNamespace
 
 from nti.assessment.interfaces import IQAssignment
 from nti.assessment.interfaces import IQuestionSet
 
 from nti.contentlibrary.interfaces import IContentPackage
-from nti.contentlibrary.interfaces import IContentPackageLibraryModifiedOnSyncEvent
 
 from nti.contentlibrary.indexed_data import get_catalog
 from nti.contentlibrary.indexed_data.interfaces import CONTAINER_IFACES
@@ -36,10 +39,10 @@ from nti.ntiids.ntiids import TYPE_INTID
 from nti.ntiids.ntiids import is_ntiid_of_types
 from nti.ntiids.ntiids import find_object_with_ntiid
 
+from nti.site.interfaces import IHostPolicySiteManager
+
 from nti.analytics import get_factory
 from nti.analytics import SESSIONS_ANALYTICS
-
-from nti.analytics.common import process_event
 
 def _get_job_queue():
 	factory = get_factory()
@@ -185,20 +188,25 @@ def _build_ntiid_map():
 				len( course_dict ) )
 	return course_dict
 
+class IAnalyticsCourseFromChildNTIIDResolver( interface.Interface ):
+	"""
+	An analytics-only interface to fetch courses from an ntiid.
+	"""
+
+@interface.implementer( IAnalyticsCourseFromChildNTIIDResolver )
 class _CourseFromChildNTIIDResolver(object):
 
-	def __init__(self):
-		self.course_to_containers = None
+	last_sync_time = 0
 
-	def reset(self):
-		# We may have a few of these come in at once, one
-		# per each content package changed.  Let's just empty
-		# ourselves out, and reset for the next read.  We build
-		# relatively cheaply (6s locally, 9.2014), and the sync
-		# events probably only occur during lulls.
+	def __init__(self, last_sync_time):
+		self.course_to_containers = None
+		self.last_sync_time = last_sync_time
+
+	def reset(self, last_sync_time):
 		if self.course_to_containers is not None:
 			logger.info( 'Resetting analytics course resolver.' )
 		self.course_to_containers = None
+		self.last_sync_time = last_sync_time
 
 	def _rebuild(self):
 		self.course_to_containers = _build_ntiid_map()
@@ -211,7 +219,8 @@ class _CourseFromChildNTIIDResolver(object):
 			course_to_containers = self.course_to_containers
 
 		# This is about 4x faster in the worst case than dynamically iterating
-		# through children and searching for contained objects (but costs in other ways).
+		# through children and searching for contained objects (but costs in
+		# other ways).
 		for course_key, containers in course_to_containers.items():
 
 			# We can no longer check the catalog due to timing issues,
@@ -221,23 +230,25 @@ class _CourseFromChildNTIIDResolver(object):
 				return course
 		return None
 
-_course_from_ntiid_resolver = None
+def _get_last_sync_time():
+	hostsites = component.getUtility(IEtcNamespace, name='hostsites')
+	return hostsites.lastSynchronized or 0
 
 def _get_course_from_ntiid_resolver():
-	global _course_from_ntiid_resolver
-	if _course_from_ntiid_resolver is None:
-		_course_from_ntiid_resolver = _CourseFromChildNTIIDResolver()
-	return _course_from_ntiid_resolver
+	# We don't want to register anything except in our sites with courses.
+	if not IHostPolicySiteManager.providedBy( component.getSiteManager() ):
+		return _CourseFromChildNTIIDResolver( )
 
-def _reset():
-	_get_course_from_ntiid_resolver().reset()
-
-# FIXME This probably will not work if we have two processes
-# running at once since only one processor will see the event
-# in the job queue.
-@component.adapter( IContentPackageLibraryModifiedOnSyncEvent )
-def _library_sync( _ ):
-	process_event( _get_job_queue, _reset )
+	last_sync_time = _get_last_sync_time()
+	course_resolver = component.queryUtility( IAnalyticsCourseFromChildNTIIDResolver )
+	if course_resolver is None:
+		course_resolver = _CourseFromChildNTIIDResolver( last_sync_time )
+		registry = component.getSiteManager()
+		registry.registerUtility( course_resolver, IAnalyticsCourseFromChildNTIIDResolver )
+	elif last_sync_time > course_resolver.last_sync_time:
+		# Ok, we need to refresh.
+		course_resolver.reset( last_sync_time )
+	return course_resolver
 
 def get_course_by_container_id( container_id ):
 	"""
