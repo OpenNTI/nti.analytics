@@ -93,7 +93,7 @@ def _check_ntiid(ntiid):
 
 def _indexed_data( unit, iface, accum ):
 	container = iface(unit, None)
-	if not container:
+	if container is not None:
 		return
 	for item in container.values():
 		ntiid = None
