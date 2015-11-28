@@ -15,9 +15,6 @@ from nti.contenttypes.courses.interfaces import ICourseSubInstance
 
 from nti.dataserver.interfaces import IEntity
 
-from ..read_models import AnalyticsLike
-from ..read_models import AnalyticsFavorite
-
 from .root_context import get_root_context
 from .root_context import get_root_context_id
 
@@ -133,7 +130,7 @@ def get_user_replies_to_others( table, user, get_deleted=False, filters=None, **
 
 	return get_filtered_records( user, table, filters=filters, **kwargs )
 
-def get_replies_to_user( table, user,get_deleted=False, **kwargs  ):
+def get_replies_to_user( table, user, get_deleted=False, **kwargs  ):
 	"""
 	Fetch any replies to our user, *after* the optionally given timestamp.
 	"""
@@ -169,20 +166,15 @@ def get_ratings_for_user_objects( table, user, **kwargs ):
 
 	return result
 
-def _do_resolve_rating( clazz, row, rater, obj_creator ):
-	user = get_user( row.user_id ) if rater is None else rater
-	creator = get_user( row.creator_id ) if obj_creator is None else obj_creator
-
-	result = None
-	if		user is not None \
-		and creator is not None:
-		result = clazz(	user=user,
-						timestamp=row.timestamp,
-						ObjectCreator=creator )
-	return result
+def _do_resolve_rating( row, rater, obj_creator ):
+	if rater is not None:
+		row.user = rater
+	if obj_creator is not None:
+		row.Creator = obj_creator
+	return row
 
 def resolve_like( row, rater=None, obj_creator=None ):
-	return _do_resolve_rating( AnalyticsLike, row, rater, obj_creator )
+	return _do_resolve_rating( row, rater, obj_creator )
 
 def resolve_favorite( row, rater=None, obj_creator=None ):
-	return _do_resolve_rating( AnalyticsFavorite, row, rater, obj_creator )
+	return _do_resolve_rating( row, rater, obj_creator )

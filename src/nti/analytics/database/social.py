@@ -20,22 +20,13 @@ from nti.analytics_database.social import DynamicFriendsListsCreated
 from nti.analytics_database.social import DynamicFriendsListsMemberAdded
 from nti.analytics_database.social import DynamicFriendsListsMemberRemoved
 
-from sqlalchemy.orm.session import make_transient
-
 from ..common import timestamp_type
 from ..common import get_created_timestamp
 
-from ..identifier import DFLId
-from ..identifier import ChatId
-from ..identifier import SessionId
-from ..identifier import FriendsListId
-
-from ..read_models import AnalyticsGroup
-from ..read_models import AnalyticsContact
+from ..identifier import get_ds_id
 
 from ._utils import get_filtered_records
 
-from .users import get_user
 from .users import get_user_db_id
 from .users import get_or_create_user
 
@@ -53,8 +44,8 @@ def create_chat_initiated(user, nti_session, chat):
 	db = get_analytics_db()
 	user_record = get_or_create_user(user)
 	uid = user_record.user_id
-	sid = SessionId.get_id(nti_session)
-	chat_ds_id = ChatId.get_id(chat)
+	sid = nti_session
+	chat_ds_id = get_ds_id(chat)
 
 	if _chat_exists(db, chat_ds_id):
 		logger.warn('Chat already exists (ds_id=%s) (owner=%s)', chat_ds_id, user)
@@ -72,8 +63,8 @@ def chat_joined(user, nti_session, timestamp, chat):
 	db = get_analytics_db()
 	user = get_or_create_user(user)
 	uid = user.user_id
-	sid = SessionId.get_id(nti_session)
-	chat_ds_id = ChatId.get_id(chat)
+	sid = nti_session
+	chat_ds_id = get_ds_id(chat)
 	chat_id = _get_chat_id(db, chat_ds_id)
 	timestamp = timestamp_type(timestamp)
 
@@ -91,7 +82,7 @@ def _get_chat_members(db, chat_id):
 def update_chat(timestamp, chat, new_members):
 	db = get_analytics_db()
 	timestamp = timestamp_type(timestamp)
-	chat_ds_id = ChatId.get_id(chat)
+	chat_ds_id = get_ds_id(chat)
 	chat_id = _get_chat_id(db, chat_ds_id)
 
 	old_members = _get_chat_members(db, chat_id)
@@ -124,8 +115,8 @@ def create_dynamic_friends_list(user, nti_session, dynamic_friends_list):
 	db = get_analytics_db()
 	user_record = get_or_create_user(user)
 	uid = user_record.user_id
-	sid = SessionId.get_id(nti_session)
-	dfl_ds_id = DFLId.get_id(dynamic_friends_list)
+	sid = nti_session
+	dfl_ds_id = get_ds_id(dynamic_friends_list)
 
 	if _dfl_exists(db, dfl_ds_id):
 		logger.warn('DFL already exists (dfl_id=%s) (owner=%s)', dfl_ds_id, user)
@@ -161,8 +152,8 @@ def create_dynamic_friends_member(user, nti_session, timestamp, dynamic_friends_
 	else:
 		user = get_or_create_user(user)
 		uid = user.user_id
-	sid = SessionId.get_id(nti_session)
-	dfl_ds_id = DFLId.get_id(dynamic_friends_list)
+	sid = nti_session
+	dfl_ds_id = get_ds_id(dynamic_friends_list)
 	dfl_id = _get_dfl_id(db, dfl_ds_id)
 	target = get_or_create_user(new_friend)
 	target_id = target.user_id
@@ -185,8 +176,8 @@ def remove_dynamic_friends_member(user, nti_session, timestamp, dynamic_friends_
 	db = get_analytics_db()
 	user = get_or_create_user(user)
 	uid = user.user_id
-	sid = SessionId.get_id(nti_session)
-	dfl_ds_id = DFLId.get_id(dynamic_friends_list)
+	sid = nti_session
+	dfl_ds_id = get_ds_id(dynamic_friends_list)
 	dfl_id = _get_dfl_id(db, dfl_ds_id)
 	target = get_or_create_user(target)
 	target_id = target.user_id
@@ -212,8 +203,8 @@ def create_friends_list(user, nti_session, timestamp, friends_list):
 	db = get_analytics_db()
 	user_record = get_or_create_user(user)
 	uid = user_record.user_id
-	sid = SessionId.get_id(nti_session)
-	friends_list_ds_id = FriendsListId.get_id(friends_list)
+	sid = nti_session
+	friends_list_ds_id = get_ds_id(friends_list)
 
 	if _friends_list_exists(db, friends_list_ds_id):
 		logger.warn('Friends list already exists (ds_id=%s) (owner=%s)',
@@ -255,8 +246,8 @@ def _find_friends_list_members(user_list, members):
 	return _find_members(user_list, members)
 
 def _find_members(user_list, members):
-	""" 
-	For a user_list, return a tuple of members to add/remove. 
+	"""
+	For a user_list, return a tuple of members to add/remove.
 	"""
 	members = set(members)
 	new_members = set([ get_or_create_user(x).user_id for x in user_list if x])
@@ -286,7 +277,7 @@ def update_contacts(user, nti_session, timestamp, friends_list):
 	db = get_analytics_db()
 	user = get_or_create_user(user)
 	uid = user.user_id
-	sid = SessionId.get_id(nti_session)
+	sid = nti_session
 	timestamp = timestamp_type(timestamp)
 
 	members = _get_contacts(db, uid)
@@ -316,7 +307,7 @@ def update_friends_list(user, nti_session, timestamp, friends_list):
 	includes both adding and removing members.
 	"""
 	db = get_analytics_db()
-	friends_list_ds_id = FriendsListId.get_id(friends_list)
+	friends_list_ds_id = get_ds_id(friends_list)
 	friends_list_id = _get_friends_list_id(db, friends_list_ds_id)
 
 	if not friends_list_id:
@@ -331,7 +322,7 @@ def update_friends_list(user, nti_session, timestamp, friends_list):
 
 	user = get_or_create_user(user)
 	uid = user.user_id
-	sid = SessionId.get_id(nti_session)
+	sid = nti_session
 	timestamp = timestamp_type(timestamp)
 
 	for new_member in members_to_add:
@@ -353,17 +344,9 @@ def update_friends_list(user, nti_session, timestamp, friends_list):
 	return len(members_to_add) - len(members_to_remove)
 
 def _resolve_contact(row, user=None):
-	make_transient(row)
-	user = get_user(row.user_id) if user is None else user
-	contact = get_user(row.target_id)
-
-	result = None
-	if 		contact is not None \
-		and user is not None:
-		result = AnalyticsContact(Contact=contact,
-								  user=user,
-								  timestamp=row.timestamp)
-	return result
+	if user is not None:
+		row.user = user
+	return row
 
 def get_contacts_added(user, **kwargs):
 	"""
@@ -374,17 +357,9 @@ def get_contacts_added(user, **kwargs):
 	return resolve_objects(_resolve_contact, results, user=user)
 
 def _resolve_group(row, user=None):
-	make_transient(row)
-	user = get_user(row.user_id) if user is None else user
-	group = DFLId.get_object(row.dfl_ds_id)
-
-	result = None
-	if 		group is not None \
-		and user is not None:
-		result = AnalyticsGroup(Group=group,
-								user=user,
-								timestamp=row.timestamp)
-	return result
+	if user is not None:
+		row.user = user
+	return row
 
 def _resolve_group_joined(row):
 	# Just get our group record

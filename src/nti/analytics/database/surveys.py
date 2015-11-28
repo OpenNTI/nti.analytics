@@ -14,8 +14,7 @@ from nti.analytics_database.surveys import SurveysTaken
 
 from ..common import timestamp_type
 
-from ..identifier import SessionId
-from ..identifier import SubmissionId
+from ..identifier import get_ds_id
 
 from .root_context import get_root_context_id
 
@@ -31,10 +30,10 @@ def create_poll_taken(user, nti_session, timestamp, course, submission):
 	db = get_analytics_db()
 	user_record = get_or_create_user(user)
 	uid = user_record.user_id
-	sid = SessionId.get_id(nti_session)
+	sid = nti_session
 	course_id = get_root_context_id(db, course, create=True)
 	timestamp = timestamp_type(timestamp)
-	submission_id = SubmissionId.get_id(submission)
+	submission_id = get_ds_id(submission)
 
 	if _poll_exists(db, submission_id):
 		logger.warn("Poll already exists (ds_id=%s) (user=%s) ",
@@ -59,10 +58,10 @@ def create_survey_taken(user, nti_session, timestamp, course, submission):
 	db = get_analytics_db()
 	user_record = get_or_create_user(user)
 	uid = user_record.user_id
-	sid = SessionId.get_id(nti_session)
+	sid = nti_session
 	course_id = get_root_context_id(db, course, create=True)
 	timestamp = timestamp_type(timestamp)
-	submission_id = SubmissionId.get_id(submission)
+	submission_id = get_ds_id(submission)
 
 	if _survey_exists(db, submission_id):
 		logger.warn("Survey already exists (ds_id=%s) (user=%s) ",

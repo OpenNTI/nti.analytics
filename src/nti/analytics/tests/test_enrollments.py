@@ -21,35 +21,14 @@ from nti.dataserver.users import User
 
 from nti.dataserver.tests.mock_dataserver import WithMockDSTrans
 
-from nti.analytics import identifier
-
-from nti.analytics.database.database import AnalyticsDB
-from nti.analytics.database.interfaces import IAnalyticsDB
 from nti.analytics.database.enrollments import CourseEnrollments
 from nti.analytics.database.enrollments import CourseDrops
 
 #from nti.analytics.enrollments import _user_enrollments
 
 from nti.analytics.tests import NTIAnalyticsTestCase
-from nti.analytics.tests import TestIdentifier
 
 class TestEnrollments( NTIAnalyticsTestCase ):
-
-	def setUp(self):
-		self.db = AnalyticsDB( dburi='sqlite://', testmode=True )
-		component.getGlobalSiteManager().registerUtility( self.db, IAnalyticsDB )
-		self.session = self.db.session
-		self.patches = [
-			patch_object( identifier.SessionId, 'get_id', TestIdentifier.get_id ),
-			patch_object( identifier._DSIdentifier, 'get_id', TestIdentifier.get_id ),
-			patch_object( identifier._NtiidIdentifier, 'get_id', TestIdentifier.get_id ) ]
-
-	def tearDown(self):
-		component.getGlobalSiteManager().unregisterUtility( self.db, provided=IAnalyticsDB )
-		self.session.close()
-
-		for patch in self.patches:
-			patch.restore()
 
 	@WithMockDSTrans
 	def test_enrollments(self):

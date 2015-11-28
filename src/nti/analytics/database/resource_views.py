@@ -15,29 +15,19 @@ from nti.analytics_database.resource_views import VideoPlaySpeedEvents
 
 from ..common import timestamp_type
 
-from ..identifier import SessionId
-from ..identifier import ResourceId
+from ..identifier import get_ntiid_id
 
 from ..interfaces import VIDEO_WATCH
 
-from ..read_models import AnalyticsVideoSkip
-from ..read_models import AnalyticsVideoView
-from ..read_models import AnalyticsResourceView
-
 from ._utils import get_context_path
-from ._utils import expand_context_path
 from ._utils import get_root_context_ids
-from ._utils import get_root_context_obj
 from ._utils import get_filtered_records
 
-from .users import get_user
 from .users import get_or_create_user
 from .users import get_user_db_id
 
 from .resources import get_resource_id
-from .resources import get_resource_val
 from .resources import get_resource_record
-from .resources import get_resource_record_from_id
 
 from . import resolve_objects
 from . import get_analytics_db
@@ -57,8 +47,8 @@ def _create_view( table, user, nti_session, timestamp, root_context, context_pat
 	db = get_analytics_db()
 	user_record = get_or_create_user( user )
 	uid = user_record.user_id
-	sid = SessionId.get_id( nti_session )
-	rid = ResourceId.get_id( resource )
+	sid = nti_session
+	rid = get_ntiid_id( resource )
 	rid = get_resource_id( db, rid, create=True )
 	timestamp = timestamp_type( timestamp )
 
@@ -107,8 +97,8 @@ def create_play_speed_event( user, nti_session, timestamp, root_context, resourc
 	db = get_analytics_db()
 	user = get_or_create_user( user )
 	uid = user.user_id
-	sid = SessionId.get_id( nti_session )
-	vid = ResourceId.get_id( resource_id )
+	sid = nti_session
+	vid = get_ntiid_id( resource_id )
 	vid = get_resource_id( db, vid, create=True )
 
 	timestamp = timestamp_type( timestamp )
@@ -158,8 +148,8 @@ def create_video_event(	user,
 	db = get_analytics_db()
 	user_record = get_or_create_user( user )
 	uid = user_record.user_id
-	sid = SessionId.get_id( nti_session )
-	vid = ResourceId.get_id( video_resource )
+	sid = nti_session
+	vid = get_ntiid_id( video_resource )
 	vid = get_resource_id( db, vid, create=True, max_time_length=max_time_length )
 
 	timestamp = timestamp_type( timestamp )
@@ -203,70 +193,81 @@ def create_video_event(	user,
 		video_play_speed.video_view_id = new_object.video_view_id
 
 def _resolve_resource_view( record, course=None, user=None ):
-	time_length = record.time_length
+# 	time_length = record.time_length
+#
+# 	# We could filter out time_length = 0 events, but they
+# 	# may be useful to determine if 'some' progress has possibly made.
+# 	# We also store 0s events at event start time.
+#
+# 	timestamp = record.timestamp
+# 	context_path = record.context_path
+# 	context_path = expand_context_path( context_path )
+# 	root_context = get_root_context_obj( record ) if course is None else course
+# 	user = get_user( record.user_id ) if user is None else user
+#
+# 	resource_id = record.resource_id
+# 	resource_ntiid = get_resource_val( resource_id )
+#
+# 	resource_event = AnalyticsResourceView(user=user,
+# 					timestamp=timestamp,
+# 					RootContext=root_context,
+# 					context_path=context_path,
+# 					ResourceId=resource_ntiid,
+# 					Duration=time_length)
 
-	# We could filter out time_length = 0 events, but they
-	# may be useful to determine if 'some' progress has possibly made.
-	# We also store 0s events at event start time.
-
-	timestamp = record.timestamp
-	context_path = record.context_path
-	context_path = expand_context_path( context_path )
-	root_context = get_root_context_obj( record ) if course is None else course
-	user = get_user( record.user_id ) if user is None else user
-
-	resource_id = record.resource_id
-	resource_ntiid = get_resource_val( resource_id )
-
-	resource_event = AnalyticsResourceView(user=user,
-					timestamp=timestamp,
-					RootContext=root_context,
-					context_path=context_path,
-					ResourceId=resource_ntiid,
-					Duration=time_length)
-
-	return resource_event
+	if course is not None:
+		record.RootContext = course
+	if user is not None:
+		record.user = user
+	return record
 
 def _resolve_video_view( record, course=None, user=None, max_time_length=None ):
-	time_length = record.time_length
-
-	# We could filter out time_length = 0 events, but they
-	# may be useful to determine if 'some' progress has possibly made.
-	# We also store 0s events at event start time.
-
-	timestamp = record.timestamp
-	context_path = record.context_path
-	context_path = expand_context_path( context_path )
-	root_context = get_root_context_obj( record ) if course is None else course
-	user = get_user( record.user_id ) if user is None else user
-	resource_record = get_resource_record_from_id( record.resource_id )
-
-	if max_time_length is None:
-		max_time_length = resource_record.max_time_length
-
-	resource_ntiid = resource_record.resource_ds_id
-	video_start_time = record.video_start_time
-	video_end_time = record.video_end_time
-	with_transcript = record.with_transcript
-
-
-	if record.video_event_type == 'WATCH':
-		video_type = AnalyticsVideoView
-	else:
-		video_type = AnalyticsVideoSkip
-
-	video_event = video_type(user=user,
-				SessionID=record.session_id,
-				timestamp=timestamp,
-				RootContext=root_context,
-				context_path=context_path,
-				ResourceId=resource_ntiid,
-				Duration=time_length,
-				MaxDuration=max_time_length,
-				VideoStartTime=video_start_time,
-				VideoEndTime=video_end_time,
-				WithTranscript=with_transcript)
-	return video_event
+# 	time_length = record.time_length
+#
+# 	# We could filter out time_length = 0 events, but they
+# 	# may be useful to determine if 'some' progress has possibly made.
+# 	# We also store 0s events at event start time.
+#
+# 	from IPython.core.debugger import Tracer;Tracer()()
+# 	timestamp = record.timestamp
+# 	context_path = record.context_path
+# 	context_path = expand_context_path( context_path )
+# 	root_context = get_root_context_obj( record ) if course is None else course
+# 	user = get_user( record.user_id ) if user is None else user
+#
+# 	if max_time_length is None:
+# 		max_time_length = record.resource.max_time_length
+#
+# 	resource_ntiid = record.resource.resource_ds_id
+# 	video_start_time = record.video_start_time
+# 	video_end_time = record.video_end_time
+# 	with_transcript = record.with_transcript
+#
+#
+# 	if record.video_event_type == 'WATCH':
+# 		video_type = AnalyticsVideoView
+# 	else:
+# 		video_type = AnalyticsVideoSkip
+#
+# 	video_event = video_type(user=user,
+# 				SessionID=record.session_id,
+# 				timestamp=timestamp,
+# 				RootContext=root_context,
+# 				context_path=context_path,
+# 				ResourceId=resource_ntiid,
+# 				Duration=time_length,
+# 				MaxDuration=max_time_length,
+# 				VideoStartTime=video_start_time,
+# 				VideoEndTime=video_end_time,
+# 				WithTranscript=with_transcript)
+# return video_event
+	if course is not None:
+		record.RootContext = course
+	if user is not None:
+		record.user = user
+	if max_time_length is not None:
+		record.MaxDuration = max_time_length
+	return record
 
 def get_user_resource_views_for_ntiid( user, resource_ntiid ):
 	results = ()

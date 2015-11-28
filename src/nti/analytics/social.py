@@ -44,8 +44,7 @@ from nti.analytics.database import social as db_social
 
 from nti.analytics.sessions import get_nti_session_id
 
-from nti.analytics.identifier import FriendsListId
-from nti.analytics.identifier import DFLId
+from .identifier import get_ds_id
 
 get_contacts_added = db_social.get_contacts_added
 get_groups_created = db_social.get_groups_created
@@ -166,7 +165,7 @@ def _friendslist_modified(obj, _):
 @component.adapter( IFriendsList, IIntIdRemovedEvent )
 def _friendslist_deleted(obj, _):
 	if _is_friends_list( obj ):
-		obj_id = FriendsListId.get_id( obj )
+		obj_id = get_ds_id( obj )
 		timestamp = datetime.utcnow()
 		process_event( _get_job_queue, _remove_friends_list, friends_list_id=obj_id, timestamp=timestamp )
 
@@ -215,7 +214,7 @@ def _dfl_added(obj, _):
 @component.adapter( IDynamicSharingTargetFriendsList, IIntIdRemovedEvent )
 def _dfl_deleted(obj, _):
 	timestamp = datetime.utcnow()
-	dfl_id = DFLId.get_id( obj )
+	dfl_id = get_ds_id( obj )
 	process_event( _get_job_queue, _remove_dfl, dfl_id=dfl_id, timestamp=timestamp )
 
 def _handle_dfl_membership_event( event, to_call ):

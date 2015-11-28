@@ -4,7 +4,6 @@
 $Id$
 """
 from __future__ import print_function, unicode_literals, absolute_import, division
-from nti.analytics.database.resource_tags import get_note_last_view
 __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
@@ -37,9 +36,7 @@ from nti.analytics.common import get_rating_from_event
 
 from nti.analytics.database import resource_tags as db_resource_tags
 
-from nti.analytics.identifier import NoteId
-from nti.analytics.identifier import HighlightId
-from nti.analytics.identifier import BookmarkId
+from .identifier import get_ds_id
 
 from nti.analytics import get_factory
 from nti.analytics import TAGS_ANALYTICS
@@ -123,10 +120,8 @@ def _note_added( obj, _ ):
 def _note_removed( obj, _ ):
 	if _is_note( obj ):
 		timestamp = datetime.utcnow()
-		note_id = NoteId.get_id( obj )
+		note_id = get_ds_id( obj )
 		process_event( _get_job_queue, _remove_note, note_id=note_id, timestamp=timestamp )
-
-
 
 
 # Highlights
@@ -151,7 +146,7 @@ def _highlight_added( obj, _ ):
 def _highlight_removed( obj, _ ):
 	if _is_highlight( obj ):
 		timestamp = datetime.utcnow()
-		highlight_id = HighlightId.get_id( obj )
+		highlight_id = get_ds_id( obj )
 		process_event( _get_job_queue, _remove_highlight, highlight_id=highlight_id, timestamp=timestamp )
 
 # Bookmarks
@@ -174,7 +169,7 @@ def _bookmark_added( obj, _ ):
 @component.adapter(	IBookmark, IIntIdRemovedEvent )
 def _bookmark_removed( obj, _ ):
 	timestamp = datetime.utcnow()
-	bookmark_id = BookmarkId.get_id( obj )
+	bookmark_id = get_ds_id( obj )
 	process_event( _get_job_queue, _remove_bookmark, bookmark_id=bookmark_id, timestamp=timestamp )
 
 component.moduleProvides( IObjectProcessor )

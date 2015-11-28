@@ -17,7 +17,8 @@ from nti.dataserver.interfaces import IUsernameSubstitutionPolicy
 
 from ..common import get_created_timestamp
 
-from ..identifier import UserId
+from ..identifier import get_ds_id
+from ..identifier import get_ds_object
 
 from ..interfaces import IUserResearchStatus
 
@@ -39,7 +40,7 @@ def create_user(user):
 	# We may have non-IUsers here, but let's keep them since we may need
 	# them (e.g. community owned forums).
 	username = getattr(user, 'username', None)
-	uid = UserId.get_id(user)
+	uid = get_ds_id(user)
 
 	allow_research = None
 	user_research = IUserResearchStatus(user, None)
@@ -67,7 +68,7 @@ def _get_user_record(user):
 	# and other high volume calls that return a single row.
 	# This is still considered experimental for 1.0.0.
 	db = get_analytics_db()
-	uid = UserId.get_id(user)
+	uid = get_ds_id(user)
 	found_user = db.session.query(Users).filter(Users.user_ds_id == uid).first()
 	return found_user
 
@@ -96,7 +97,7 @@ def get_user(user_id):
 	found_user = db.session.query(Users).filter(Users.user_id == user_id,
 												Users.user_ds_id != None).first()
 	if found_user is not None:
-		result = UserId.get_object(found_user.user_ds_id)
+		result = get_ds_object(found_user.user_ds_id)
 
 	return result
 

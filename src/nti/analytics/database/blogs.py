@@ -9,8 +9,6 @@ __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
-from sqlalchemy.orm.session import make_transient
-
 from nti.analytics_database.blogs import BlogLikes
 from nti.analytics_database.blogs import BlogsViewed
 from nti.analytics_database.blogs import BlogsCreated
@@ -24,12 +22,7 @@ from ..common import get_ratings
 from ..common import timestamp_type
 from ..common import get_created_timestamp
 
-from ..identifier import BlogId
-from ..identifier import CommentId
-from ..identifier import SessionId
-
-from ..read_models import AnalyticsBlog
-from ..read_models import AnalyticsBlogComment
+from ..identifier import get_ds_id
 
 from ._utils import resolve_like
 from ._utils import resolve_favorite
@@ -39,7 +32,6 @@ from ._utils import get_ratings_for_user_objects
 from ._utils import get_replies_to_user as _get_replies_to_user
 from ._utils import get_user_replies_to_others as _get_user_replies_to_others
 
-from .users import get_user
 from .users import get_or_create_user
 
 from . import resolve_objects
@@ -56,8 +48,8 @@ def create_blog( user, nti_session, blog_entry ):
 	db = get_analytics_db()
 	user_record = get_or_create_user( user )
 	uid = user_record.user_id
-	sid = SessionId.get_id( nti_session )
-	blog_ds_id = BlogId.get_id( blog_entry )
+	sid = nti_session
+	blog_ds_id = get_ds_id( blog_entry )
 
 	if _blog_exists( db, blog_ds_id ):
 		logger.warn( 'Blog already exists (blog_id=%s) (user=%s)', blog_ds_id, user )
@@ -142,7 +134,7 @@ def _create_blog_rating_record( db, table, user, session_id, timestamp, blog_id,
 
 def like_blog( blog, user, session_id, timestamp, delta ):
 	db = get_analytics_db()
-	blog_ds_id = BlogId.get_id( blog )
+	blog_ds_id = get_ds_id( blog )
 	db_blog = db.session.query(BlogsCreated).filter(
 								BlogsCreated.blog_ds_id == blog_ds_id ).first()
 
@@ -157,7 +149,7 @@ def like_blog( blog, user, session_id, timestamp, delta ):
 
 def favorite_blog( blog, user, session_id, timestamp, delta ):
 	db = get_analytics_db()
-	blog_ds_id = BlogId.get_id( blog )
+	blog_ds_id = get_ds_id( blog )
 	db_blog = db.session.query(BlogsCreated).filter(
 								BlogsCreated.blog_ds_id == blog_ds_id ).first()
 
@@ -172,7 +164,7 @@ def favorite_blog( blog, user, session_id, timestamp, delta ):
 
 def flag_blog( blog, state ):
 	db = get_analytics_db()
-	blog_ds_id = BlogId.get_id( blog )
+	blog_ds_id = get_ds_id( blog )
 	db_blog = db.session.query(BlogsCreated).filter(
 							BlogsCreated.blog_ds_id == blog_ds_id ).first()
 	db_blog.is_flagged = state
@@ -188,8 +180,8 @@ def create_blog_view(user, nti_session, timestamp, context_path, blog_entry, tim
 	db = get_analytics_db()
 	user_record = get_or_create_user( user )
 	uid = user_record.user_id
-	sid = SessionId.get_id( nti_session )
-	blog_ds_id = BlogId.get_id( blog_entry )
+	sid = nti_session
+	blog_ds_id = get_ds_id( blog_entry )
 	blog_id = _get_blog_id( db, blog_ds_id )
 
 	if blog_id is None:
@@ -229,10 +221,10 @@ def create_blog_comment(user, nti_session, blog, comment ):
 	db = get_analytics_db()
 	user = get_or_create_user( user )
 	uid = user.user_id
-	sid = SessionId.get_id( nti_session )
-	blog_ds_id = BlogId.get_id( blog )
+	sid = nti_session
+	blog_ds_id = get_ds_id( blog )
 	bid = _get_blog_id( db, blog_ds_id )
-	cid = CommentId.get_id( comment )
+	cid = get_ds_id( comment )
 
 	if bid is None:
 		blog_creator = get_creator( blog )
@@ -250,7 +242,7 @@ def create_blog_comment(user, nti_session, blog, comment ):
 	timestamp = get_created_timestamp( comment )
 	parent_comment = getattr( comment, 'inReplyTo', None )
 	if parent_comment is not None:
-		pid = CommentId.get_id( parent_comment )
+		pid = get_ds_id( parent_comment )
 		parent_creator = get_creator( parent_comment )
 		parent_user_record = get_or_create_user( parent_creator )
 		parent_user_id = parent_user_record.user_id
@@ -317,7 +309,7 @@ def _create_blog_comment_rating_record( db, table, user, session_id, timestamp, 
 
 def like_comment( comment, user, session_id, timestamp, delta ):
 	db = get_analytics_db()
-	comment_id = CommentId.get_id( comment )
+	comment_id = get_ds_id( comment )
 	db_comment = db.session.query(BlogCommentsCreated).filter(
 								BlogCommentsCreated.comment_id == comment_id ).first()
 
@@ -331,7 +323,7 @@ def like_comment( comment, user, session_id, timestamp, delta ):
 
 def favorite_comment( comment, user, session_id, timestamp, delta ):
 	db = get_analytics_db()
-	comment_id = CommentId.get_id( comment )
+	comment_id = get_ds_id( comment )
 	db_comment = db.session.query(BlogCommentsCreated).filter(
 									BlogCommentsCreated.comment_id == comment_id ).first()
 
@@ -345,53 +337,23 @@ def favorite_comment( comment, user, session_id, timestamp, delta ):
 
 def flag_comment( comment, state ):
 	db = get_analytics_db()
-	comment_id = CommentId.get_id( comment )
+	comment_id = get_ds_id( comment )
 	db_comment = db.session.query(BlogCommentsCreated).filter(
 									BlogCommentsCreated.comment_id == comment_id ).first()
 	db_comment.is_flagged = state
 	db.session.flush()
 
 def _resolve_blog( row, user=None ):
-	make_transient( row )
-	blog = BlogId.get_object( row.blog_ds_id )
-	user = get_user( row.user_id ) if user is None else user
-
-	result = None
-	if 		blog is not None \
-		and user is not None:
-		result = AnalyticsBlog( Blog=blog,
-								user=user,
-								timestamp=row.timestamp,
-								Flagged=row.is_flagged,
-								LikeCount=row.like_count,
-								FavoriteCount=row.favorite_count,
-								BlogLength=row.blog_length )
-	return result
+	if user is not None:
+		row.user = user
+	return row
 
 def _resolve_blog_comment( row, user=None, parent_user=None ):
-	make_transient( row )
-	comment = CommentId.get_object( row.comment_id )
-	user = get_user( row.user_id ) if user is None else user
-
-	result = None
-	if 		comment is not None \
-		and user is not None:
-
-		is_reply = row.parent_id is not None
-		if 		parent_user is None \
-			and row.parent_user_id is not None:
-			parent_user = get_user( row.parent_user_id )
-
-		result = AnalyticsBlogComment( Comment=comment,
-								user=user,
-								timestamp=row.timestamp,
-								CommentLength=row.comment_length,
-								Flagged=row.is_flagged,
-								LikeCount=row.like_count,
-								FavoriteCount=row.favorite_count,
-								IsReply=is_reply,
-								RepliedToUser=parent_user )
-	return result
+	if user is not None:
+		row.user = user
+	if parent_user is not None:
+		row.RepliedToUser = parent_user
+	return row
 
 def get_blogs( user, get_deleted=False, **kwargs ):
 	"""

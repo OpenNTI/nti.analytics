@@ -16,8 +16,6 @@ from nti.analytics_database.enrollments import CourseCatalogViews
 
 from ..common import timestamp_type
 
-from ..identifier import SessionId
-
 from ._utils import get_context_path
 
 from .root_context import get_root_context_id
@@ -37,7 +35,7 @@ def create_course_catalog_view( user, nti_session, timestamp, context_path, cour
 	db = get_analytics_db()
 	user = get_or_create_user(user )
 	uid = user.user_id
-	sid = SessionId.get_id( nti_session )
+	sid = nti_session
 	course_id = get_root_context_id( db, course, create=True )
 	timestamp = timestamp_type( timestamp )
 
@@ -82,7 +80,7 @@ def create_course_enrollment(user, nti_session, timestamp, course, enrollment_ty
 
 	user_record = get_or_create_user( user )
 	uid = user_record.user_id
-	sid = SessionId.get_id( nti_session )
+	sid = nti_session
 	course_id = get_root_context_id( db, course, create=True )
 
 	if _enrollment_exists( db, uid, course_id ):
@@ -112,7 +110,7 @@ def create_course_drop(user, nti_session, timestamp, course):
 	db = get_analytics_db()
 	user_record = get_or_create_user( user )
 	uid = user_record.user_id
-	sid = SessionId.get_id( nti_session )
+	sid = nti_session
 	course_id = get_root_context_id( db, course, create=True )
 	timestamp = timestamp_type( timestamp )
 

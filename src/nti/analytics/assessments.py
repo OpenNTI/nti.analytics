@@ -26,7 +26,7 @@ from nti.intid.interfaces import IIntIdRemovedEvent
 
 from nti.ntiids.ntiids import find_object_with_ntiid
 
-from nti.analytics.identifier import FeedbackId
+from .identifier import get_ds_id
 
 from nti.analytics.resolvers import get_root_context
 from nti.analytics.resolvers import get_course_for_ntiid
@@ -218,7 +218,7 @@ def _feedback_added(feedback, event):
 @component.adapter(IUsersCourseAssignmentHistoryItemFeedback, IIntIdRemovedEvent)
 def _feedback_removed(feedback, event):
 	timestamp = datetime.utcnow()
-	feedback_id = FeedbackId.get_id( feedback )
+	feedback_id = get_ds_id( feedback )
 	process_event( _get_job_queue, _remove_feedback, feedback_id=feedback_id, timestamp=timestamp )
 
 def init( obj ):

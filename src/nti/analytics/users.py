@@ -16,8 +16,10 @@ from nti.dataserver.interfaces import IEntity
 from nti.intid.interfaces import IIntIdRemovedEvent
 
 from nti.analytics.common import process_event
+
 from nti.analytics.database import users as db_users
-from nti.analytics.identifier import UserId
+
+from .identifier import get_ds_id
 
 from nti.analytics import get_factory
 from nti.analytics import DELETE_ANALYTICS
@@ -41,12 +43,12 @@ def _update_user_research( user_ds_id, allow_research ):
 
 @component.adapter( IEntity, IIntIdRemovedEvent )
 def _entity_removed( entity, event ):
-	entity_id = UserId.get_id( entity )
+	entity_id = get_ds_id( entity )
 	process_event( _get_delete_queue, _delete_entity, entity_id=entity_id )
 
 @component.adapter( IUserResearchStatusEvent )
 def _user_research( event ):
 	user = event.user
 	allow_research = event.allow_research
-	user_ds_id = UserId.get_id( user )
+	user_ds_id = get_ds_id( user )
 	process_event( _get_user_queue, _update_user_research, user_ds_id=user_ds_id, allow_research=allow_research )

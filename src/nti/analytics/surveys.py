@@ -19,8 +19,6 @@ from nti.intid.interfaces import IIntIdAddedEvent
 
 from nti.ntiids.ntiids import find_object_with_ntiid
 
-from nti.analytics.resolvers import get_root_context
-
 from nti.analytics.sessions import get_nti_session_id
 
 from . import get_factory

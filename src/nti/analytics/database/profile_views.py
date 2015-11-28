@@ -16,8 +16,6 @@ from nti.analytics_database.profile_views import EntityProfileMembershipViews
 from ..common import get_entity
 from ..common import timestamp_type
 
-from ..identifier import SessionId
-
 from ._utils import get_context_path
 
 from .users import get_or_create_user
@@ -46,8 +44,7 @@ def _create_profile_view(event, table, nti_session):
 
 	existing_record = _profile_view_exists(db, table, user_id, target_id, timestamp)
 	time_length = event.time_length
-
-	sid = SessionId.get_id(nti_session)
+	sid = nti_session
 
 	if existing_record is not None:
 		if should_update_event(existing_record, time_length):

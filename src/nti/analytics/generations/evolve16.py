@@ -19,7 +19,7 @@ from zope.component.hooks import site, setHooks
 from nti.analytics.database import get_analytics_db
 from nti.analytics.database.root_context import Courses
 
-from nti.analytics.identifier import RootContextId
+from ..identifier import get_root_context_id
 
 def do_evolve(context):
 	setHooks()
@@ -42,7 +42,7 @@ def do_evolve(context):
 
 		course_obj = intids.queryObject( course_ds_intid, default=None )
 		if course_obj is not None:
-			course_ntiid = RootContextId.get_id( course_obj )
+			course_ntiid = get_root_context_id( course_obj )
 			if course_ntiid:
 				course.context_ds_id = course_ntiid
 		else:

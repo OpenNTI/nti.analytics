@@ -42,8 +42,7 @@ from nti.analytics.common import get_rating_from_event
 
 from nti.analytics.database import blogs as db_blogs
 
-from nti.analytics.identifier import BlogId
-from nti.analytics.identifier import CommentId
+from .identifier import get_ds_id
 
 get_blogs = db_blogs.get_blogs
 get_blog_comments = db_blogs.get_blog_comments
@@ -117,10 +116,8 @@ def _modify_personal_blog_comment(comment, _):
 	# IObjectSharingModifiedEvent
 	if IDeletedObjectPlaceholder.providedBy( comment ):
 		timestamp = datetime.utcnow()
-		comment_id = CommentId.get_id( comment )
+		comment_id = get_ds_id( comment )
 		process_event( _get_comment_queue, _remove_comment, comment_id=comment_id, timestamp=timestamp )
-
-
 
 
 # Blogs
@@ -202,7 +199,7 @@ def _delete_blog( blog_id, timestamp ):
 @component.adapter(	IPersonalBlogEntry, IIntIdRemovedEvent )
 def _blog_removed( blog, _ ):
 	timestamp = datetime.utcnow()
-	blog_id = BlogId.get_id( blog )
+	blog_id = get_ds_id( blog )
 	process_event( _get_blog_queue, _delete_blog, blog_id=blog_id, timestamp=timestamp )
 
 component.moduleProvides( IObjectProcessor )

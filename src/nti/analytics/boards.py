@@ -43,9 +43,7 @@ from nti.analytics.common import get_rating_from_event
 
 from nti.analytics.database import boards as db_boards
 
-from nti.analytics.identifier import ForumId
-from nti.analytics.identifier import TopicId
-from nti.analytics.identifier import CommentId
+from .identifier import get_ds_id
 
 from nti.analytics import get_factory
 from nti.analytics import BOARDS_ANALYTICS
@@ -135,10 +133,8 @@ def _modify_general_forum_comment(comment, _):
 	if		_is_forum_comment( comment ) \
 		and IDeletedObjectPlaceholder.providedBy( comment ):
 			timestamp = datetime.utcnow()
-			comment_id = CommentId.get_id( comment )
+			comment_id = get_ds_id( comment )
 			process_event( _get_comments_queue, _remove_comment, comment_id=comment_id, timestamp=timestamp )
-
-
 
 
 # Topic
@@ -220,7 +216,7 @@ def _topic_added( topic, _ ):
 def _topic_removed( topic, _ ):
 	if _is_topic( topic ):
 		timestamp = datetime.utcnow()
-		topic_id = TopicId.get_id( topic )
+		topic_id = get_ds_id( topic )
 		process_event( _get_topic_queue, _remove_topic, topic_id=topic_id, timestamp=timestamp )
 
 
@@ -246,7 +242,7 @@ def _forum_added( forum, _ ):
 @component.adapter( IForum, IIntIdRemovedEvent )
 def _forum_removed( forum, _ ):
 	timestamp = get_deleted_time( forum )
-	forum_id = ForumId.get_id( forum )
+	forum_id = get_ds_id( forum )
 	process_event( _get_board_queue, _remove_forum, forum_id=forum_id, timestamp=timestamp )
 
 component.moduleProvides( IObjectProcessor )

@@ -10,7 +10,6 @@ __docformat__ = "restructuredtext en"
 logger = __import__('logging').getLogger(__name__)
 
 from sqlalchemy import func
-from sqlalchemy.orm.session import make_transient
 
 from nti.analytics_database.boards import TopicLikes
 from nti.analytics_database.boards import TopicsViewed
@@ -30,19 +29,12 @@ from ..common import timestamp_type
 from ..common import get_object_root
 from ..common import get_created_timestamp
 
-from ..identifier import ForumId
-from ..identifier import TopicId
-from ..identifier import CommentId
-from ..identifier import SessionId
-
-from ..read_models import AnalyticsTopic
-from ..read_models import AnalyticsTopicView
-from ..read_models import AnalyticsForumComment
+from ..identifier import get_ds_id
+from ..identifier import get_ds_object
 
 from ._utils import resolve_like
 from ._utils import resolve_favorite
 from ._utils import get_context_path
-from ._utils import get_root_context_obj
 from ._utils import get_root_context_ids
 from ._utils import get_filtered_records
 from ._utils import get_ratings_for_user_objects
@@ -51,7 +43,6 @@ from ._utils import get_user_replies_to_others as _get_user_replies_to_others
 
 from .root_context import get_root_context_id
 
-from .users import get_user
 from .users import get_or_create_user
 from .users import get_user_db_id
 
@@ -81,7 +72,7 @@ def _get_forum_id( db, forum_ds_id ):
 _forum_exists = _get_forum_id
 
 def _get_forum_id_from_forum( db, forum ):
-	forum_ds_id = ForumId.get_id( forum )
+	forum_ds_id = get_ds_id( forum )
 	return _get_forum_id( db, forum_ds_id )
 
 def _get_topic( db, topic_ds_id ):
@@ -96,7 +87,7 @@ def _get_topic_id( db, topic_ds_id ):
 _topic_exists = _get_topic_id
 
 def _get_topic_id_from_topic( db, topic ):
-	topic_ds_id = TopicId.get_id( topic )
+	topic_ds_id = get_ds_id( topic )
 	return _get_topic_id( db, topic_ds_id )
 
 def _get_topic_from_db_id( topic_id ):
@@ -104,15 +95,15 @@ def _get_topic_from_db_id( topic_id ):
 	db = get_analytics_db()
 	topic = db.session.query(TopicsCreated).filter(
 							 TopicsCreated.topic_id == topic_id ).first()
-	topic = TopicId.get_object( topic.topic_ds_id )
+	topic = get_ds_object( topic.topic_ds_id )
 	return topic
 
 def create_forum(user, nti_session, forum):
 	db = get_analytics_db()
 	user_record = get_or_create_user( user )
 	uid = user_record.user_id
-	sid = SessionId.get_id( nti_session )
-	forum_ds_id = ForumId.get_id( forum )
+	sid = nti_session
+	forum_ds_id = get_ds_id( forum )
 
 	if _forum_exists( db, forum_ds_id ):
 		logger.warn( 'Forum already exists (ds_id=%s) (user=%s)', forum_ds_id, user )
@@ -158,9 +149,9 @@ def create_topic(user, nti_session, topic):
 	db = get_analytics_db()
 	user_record = get_or_create_user( user )
 	uid = user_record.user_id
-	sid = SessionId.get_id( nti_session )
+	sid = nti_session
 	__traceback_info__ = topic, topic.__parent__
-	topic_ds_id = TopicId.get_id( topic )
+	topic_ds_id = get_ds_id( topic )
 
 	if _topic_exists( db, topic_ds_id ):
 		logger.warn( 'Topic already exists (ds_id=%s) (user=%s)',
@@ -250,7 +241,7 @@ def _create_topic_rating_record( db, table, user, session_id, timestamp, topic_i
 
 def like_topic( topic, user, session_id, timestamp, delta ):
 	db = get_analytics_db()
-	topic_ds_id = TopicId.get_id( topic )
+	topic_ds_id = get_ds_id( topic )
 	db_topic = db.session.query(TopicsCreated).filter(
 								TopicsCreated.topic_ds_id == topic_ds_id ).first()
 
@@ -267,7 +258,7 @@ def like_topic( topic, user, session_id, timestamp, delta ):
 
 def favorite_topic( topic, user, session_id, timestamp, delta ):
 	db = get_analytics_db()
-	topic_ds_id = TopicId.get_id( topic )
+	topic_ds_id = get_ds_id( topic )
 	db_topic = db.session.query(TopicsCreated).filter(
 								TopicsCreated.topic_ds_id == topic_ds_id ).first()
 
@@ -284,7 +275,7 @@ def favorite_topic( topic, user, session_id, timestamp, delta ):
 
 def flag_topic( topic, state ):
 	db = get_analytics_db()
-	topic_ds_id = TopicId.get_id( topic )
+	topic_ds_id = get_ds_id( topic )
 	db_topic = db.session.query(TopicsCreated).filter(
 								TopicsCreated.topic_ds_id == topic_ds_id ).first()
 	db_topic.is_flagged = state
@@ -301,7 +292,7 @@ def create_topic_view(user, nti_session, timestamp, root_context, context_path, 
 	db = get_analytics_db()
 	user_record = get_or_create_user( user )
 	uid = user_record.user_id
-	sid = SessionId.get_id( nti_session )
+	sid = nti_session
 	__traceback_info__ = topic, topic.__parent__
 	did = _get_topic_id_from_topic( db, topic )
 
@@ -350,10 +341,10 @@ def create_forum_comment(user, nti_session, topic, comment):
 	db = get_analytics_db()
 	user_record = get_or_create_user( user )
 	uid = user_record.user_id
-	sid = SessionId.get_id( nti_session )
+	sid = nti_session
 	forum = topic.__parent__
 	topic_id = _get_topic_id_from_topic( db, topic )
-	cid = CommentId.get_id(comment)
+	cid = get_ds_id(comment)
 
 	if not topic_id:
 		# Create our topic (and forum) if necessary.
@@ -379,7 +370,7 @@ def create_forum_comment(user, nti_session, topic, comment):
 
 	parent_comment = getattr( comment, 'inReplyTo', None )
 	if parent_comment is not None:
-		pid = CommentId.get_id( parent_comment )
+		pid = get_ds_id( parent_comment )
 		parent_creator = get_creator( parent_comment )
 		parent_user_record = get_or_create_user( parent_creator )
 		parent_user_id = parent_user_record.user_id
@@ -447,7 +438,7 @@ def _create_forum_comment_rating_record( db, table, user, session_id, timestamp,
 
 def like_comment( comment, user, session_id, timestamp, delta ):
 	db = get_analytics_db()
-	comment_id = CommentId.get_id( comment )
+	comment_id = get_ds_id( comment )
 	db_comment = db.session.query(ForumCommentsCreated).filter(
 								ForumCommentsCreated.comment_id == comment_id ).one()
 
@@ -464,7 +455,7 @@ def like_comment( comment, user, session_id, timestamp, delta ):
 
 def favorite_comment( comment, user, session_id, timestamp, delta ):
 	db = get_analytics_db()
-	comment_id = CommentId.get_id( comment )
+	comment_id = get_ds_id( comment )
 	db_comment = db.session.query(ForumCommentsCreated).filter(
 								ForumCommentsCreated.comment_id == comment_id ).one()
 
@@ -481,73 +472,36 @@ def favorite_comment( comment, user, session_id, timestamp, delta ):
 
 def flag_comment( comment, state ):
 	db = get_analytics_db()
-	comment_id = CommentId.get_id( comment )
+	comment_id = get_ds_id( comment )
 	db_comment = db.session.query(ForumCommentsCreated).filter(
 								ForumCommentsCreated.comment_id == comment_id ).one()
 	db_comment.is_flagged = state
 	db.session.flush()
 
 def _resolve_comment( row, user=None, course=None, parent_user=None ):
-	# Detach this from the db, resolving objects as we go.
-	make_transient( row )
-	comment = CommentId.get_object( row.comment_id )
-	root_context = get_root_context_obj( row ) if course is None else course
-	user = get_user( row.user_id ) if user is None else user
-	result = None
-
-	if 		comment is not None \
-		and user is not None \
-		and root_context is not None:
-
-		is_reply = row.parent_id is not None
-		if 		parent_user is None \
-			and row.parent_user_id is not None:
-			parent_user = get_user( row.parent_user_id )
-
-		result = AnalyticsForumComment( Comment=comment,
-								user=user,
-								CommentLength=row.comment_length,
-								timestamp=row.timestamp,
-								Flagged=row.is_flagged,
-								LikeCount=row.like_count,
-								FavoriteCount=row.favorite_count,
-								RootContext=root_context,
-								IsReply=is_reply,
-								RepliedToUser=parent_user )
-	return result
+	if course is not None:
+		row.RootContext = course
+	if user is not None:
+		row.user = user
+	if parent_user is not None:
+		row.RepliedToUser = parent_user
+	return row
 
 def _resolve_topic( row, user=None, course=None ):
-	make_transient( row )
-	topic = TopicId.get_object( row.topic_ds_id )
-	root_context = get_root_context_obj( row ) if course is None else course
-	user = get_user( row.user_id ) if user is None else user
-	result = None
-
-	if 		topic is not None \
-		and user is not None \
-		and root_context is not None:
-		result = AnalyticsTopic( Topic=topic,
-								user=user,
-								timestamp=row.timestamp,
-								RootContext=root_context )
-	return result
+	if course is not None:
+		row.RootContext = course
+	if user is not None:
+		row.user = user
+	return row
 
 def _resolve_topic_view( row, topic=None, user=None, course=None ):
-	make_transient( row )
-	topic = _get_topic_from_db_id( row.topic_id ) if topic is None else topic
-	root_context = get_root_context_obj( row ) if course is None else course
-	user = get_user( row.user_id ) if user is None else user
-	result = None
-
-	if 		topic is not None \
-		and user is not None \
-		and root_context is not None:
-		result = AnalyticsTopicView( Topic=topic,
-								user=user,
-								timestamp=row.timestamp,
-								RootContext=root_context,
-								Duration=row.time_length )
-	return result
+	if course is not None:
+		row.RootContext = course
+	if user is not None:
+		row.user = user
+	if topic is not None:
+		row.Topic = topic
+	return row
 
 def get_forum_comments_for_user( user=None, course=None,
 						get_deleted=False, top_level_only=False,
@@ -601,7 +555,7 @@ def get_topic_views( user=None, topic=None, course=None, raw=False, **kwargs ):
 	if raw:
 		return results
 	else:
-		return resolve_objects( _resolve_topic_view, results, topic=topic, course=course )
+		return resolve_objects( _resolve_topic_view, results, user=user, topic=topic, course=course )
 
 def get_topic_last_view( topic, user ):
 	db = get_analytics_db()

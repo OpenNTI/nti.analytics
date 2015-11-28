@@ -18,6 +18,8 @@ from fudge import patch_object
 from six import integer_types, string_types
 
 import zope.testing.cleanup
+
+from zope import interface
 from zope import component
 
 from nti.dataserver.tests.mock_dataserver import WithMockDS
@@ -31,6 +33,11 @@ from nti.testing.layers import GCLayerMixin
 from nti.testing.layers import ZopeComponentLayer
 from nti.testing.layers import ConfiguringLayerMixin
 
+from nti.analytics_database.interfaces import IAnalyticsDSIdentifier
+from nti.analytics_database.interfaces import IAnalyticsIntidIdentifier
+from nti.analytics_database.interfaces import IAnalyticsNTIIDIdentifier
+from nti.analytics_database.interfaces import IAnalyticsRootContextIdentifier
+
 from nti.analytics.database.interfaces import IAnalyticsDB
 from nti.analytics.database.database import AnalyticsDB
 from nti.analytics.database import users as db_users
@@ -40,9 +47,6 @@ from nti.analytics.database import root_context as db_courses
 from nti.app.assessment.tests import RegisterAssignmentLayerMixin
 
 from nti.dataserver.tests.mock_dataserver import DSInjectorMixin
-
-from nti.analytics import identifier
-from nti.analytics.identifier import _Identifier
 
 class SharedConfiguringTestLayer(ZopeComponentLayer,
                                  GCLayerMixin,
@@ -82,13 +86,16 @@ def _do_cache( obj, val ):
 	id_map[val] = obj
 	cache[obj] = val
 
-class TestIdentifier(_Identifier):
-	""" Defines ids simply if they are ints, or looks for an 'intid' field. """
+@interface.implementer( IAnalyticsDSIdentifier )
+class TestIdentifier(object):
+	"""
+	Defines ids simply if they are ints,
+	or looks for an 'intid' field.
+	"""
 
 	default_intid = DEFAULT_INTID
 
-	@classmethod
-	def get_id( cls, obj ):
+	def get_id( self, obj ):
 		result = None
 
 		# Opt for ds_intid if we're in a mock_ds
@@ -115,8 +122,7 @@ class TestIdentifier(_Identifier):
 			pass
 		return result
 
-	@classmethod
-	def get_object( cls, val ):
+	def get_object( self, val ):
 		result = id_map.get( val, None )
 
 		if result is None:
@@ -144,13 +150,13 @@ class AnalyticsTestBase(unittest.TestCase):
 		component.getGlobalSiteManager().registerUtility( self.db, IAnalyticsDB )
 		self.session = self.db.session
 
-		self.patches = [
-			patch_object( identifier.RootContextId, 'get_id', TestIdentifier.get_id ),
-			patch_object( identifier._DSIdentifier, 'get_id', TestIdentifier.get_id ),
-			patch_object( identifier._NtiidIdentifier, 'get_id', TestIdentifier.get_id ),
-			patch_object( identifier.RootContextId, 'get_object', TestIdentifier.get_object ),
-			patch_object( identifier._DSIdentifier, 'get_object', TestIdentifier.get_object ),
-			patch_object( identifier._NtiidIdentifier, 'get_object', TestIdentifier.get_object ) ]
+		self.test_identifier = TestIdentifier()
+		component.getGlobalSiteManager().registerUtility( self.test_identifier,
+														IAnalyticsIntidIdentifier )
+		component.getGlobalSiteManager().registerUtility( self.test_identifier,
+														IAnalyticsNTIIDIdentifier )
+		component.getGlobalSiteManager().registerUtility( self.test_identifier,
+														IAnalyticsRootContextIdentifier )
 
 		db_users.create_user( test_user_ds_id )
 		user_agent = 'webapp-1.9'
@@ -162,8 +168,7 @@ class AnalyticsTestBase(unittest.TestCase):
 	def tearDown(self):
 		component.getGlobalSiteManager().unregisterUtility( self.db )
 		self.session.close()
-		for patch in self.patches:
-			patch.restore()
+		component.getGlobalSiteManager().unregisterUtility( self.test_identifier )
 
 class NTIAnalyticsTestCase(AnalyticsTestBase):
 	layer = SharedConfiguringTestLayer

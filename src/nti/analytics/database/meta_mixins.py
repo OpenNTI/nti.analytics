@@ -9,5 +9,6 @@ __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
-import zope.deprecation
-zope.deprecation.moved('nti.nti.analytics_database.meta_mixins')
+# FIXME Remove
+# import zope.deprecation
+# zope.deprecation.moved('nti.nti.analytics_database.meta_mixins')

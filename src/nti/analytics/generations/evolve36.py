@@ -22,7 +22,7 @@ from nti.analytics.database.root_context import get_root_context
 
 from nti.analytics_database.resource_tags import NotesCreated
 
-from nti.analytics.identifier import NoteId
+from ..identifier import get_ds_object
 
 from ._utils import do_evolve
 
@@ -50,7 +50,7 @@ def evolve_job():
 		if course is None:
 			continue
 
-		note = NoteId.get_object( record.note_ds_id )
+		note = get_ds_object( record.note_ds_id )
 		if note is None:
 			continue
 

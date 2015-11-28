@@ -88,7 +88,7 @@
 	<subscriber handler=".enrollments._enrolled" />
 	<subscriber handler=".enrollments._dropped" />
 
-	<!-- utils -->
+	<!-- Utilities -->
 
 	<utility component=".blogs" provides=".interfaces.IObjectProcessor" name="blogs"/>
 	<utility component=".boards" provides=".interfaces.IObjectProcessor" name="boards"/>
@@ -96,6 +96,13 @@
 	<utility component=".resource_tags" provides=".interfaces.IObjectProcessor" name="resource_tags"/>
 	<utility component=".assessments" provides=".interfaces.IObjectProcessor" name="assessments"/>
 	<utility component=".enrollments" provides=".interfaces.IObjectProcessor" name="enrollments"/>
+
+	<utility factory=".identifier._DSIdentifier"
+			provides="nti.analytics_database.interfaces.IAnalyticsIntidIdentifier" />
+	<utility factory=".identifier._NTIIDIdentifier"
+			provides="nti.analytics_database.interfaces.IAnalyticsNTIIDIdentifier"/>
+	<utility factory=".identifier._RootContextIdentifier"
+			provides="nti.analytics_database.interfaces.IAnalyticsRootContextIdentifier"/>
 
 	<!-- Externalization -->
 

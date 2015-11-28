@@ -16,8 +16,6 @@ from sqlalchemy.orm.session import make_transient
 
 from ..common import timestamp_type
 
-from ..read_models import AnalyticsSession
-
 from ._utils import get_filtered_records
 
 from .locations import check_ip_location
@@ -101,17 +99,7 @@ def get_session_by_id(session_id):
 	return session_record
 
 def _resolve_session(row):
-	make_transient(row)
-	duration = None
-	if row.end_time:
-		duration = row.end_time - row.start_time
-		duration = duration.seconds
-
-	result = AnalyticsSession(SessionID=row.session_id,
-							  SessionStartTime=row.start_time,
-							  SessionEndTime=row.end_time,
-							  Duration=duration)
-	return result
+	return row
 
 def get_user_sessions(user, timestamp=None, max_timestamp=None, for_timestamp=None):
 	"""

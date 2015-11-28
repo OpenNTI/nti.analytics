@@ -14,8 +14,6 @@ import json
 from six import string_types
 from six import integer_types
 
-from sqlalchemy.orm.session import make_transient
-
 from nti.analytics_database.assessments import AssignmentViews
 from nti.analytics_database.assessments import AssignmentGrades
 from nti.analytics_database.assessments import AssignmentsTaken
@@ -44,27 +42,16 @@ from ..common import timestamp_type
 from ..common import get_created_timestamp
 from ..common import get_course as get_course_from_object
 
-from ..identifier import SessionId
-from ..identifier import SubmissionId
-from ..identifier import QuestionSetId
-from ..identifier import FeedbackId
-from ..identifier import ResourceId
-
-from ..read_models import AnalyticsAssessment
-from ..read_models import AnalyticsAssignment
-from ..read_models import AnalyticsAssignmentView
-from ..read_models import AnalyticsAssignmentDetail
-from ..read_models import AnalyticsSelfAssessmentView
+from ..identifier import get_ds_id
+from ..identifier import get_ntiid_id
 
 from ._utils import get_context_path
 from ._utils import get_filtered_records
 
 from .resources import get_resource_id
 
-from .root_context import get_root_context
 from .root_context import get_root_context_id
 
-from .users import get_user
 from .users import get_user_db_id
 from .users import get_or_create_user
 
@@ -152,17 +139,17 @@ def create_self_assessment_taken( user, nti_session, timestamp, course, submissi
 	db = get_analytics_db()
 	user_record = get_or_create_user( user )
 	uid = user_record.user_id
-	sid = SessionId.get_id( nti_session )
+	sid = nti_session
 	course_id = get_root_context_id( db, course, create=True )
 	timestamp = timestamp_type( timestamp )
-	submission_id = SubmissionId.get_id( submission )
+	submission_id = get_ds_id( submission )
 
 	if _self_assessment_exists( db, submission_id ):
 		logger.warn( "Self-assessment already exists (ds_id=%s) (user=%s) ",
 					submission_id, user )
 		return False
 
-	self_assessment_id = QuestionSetId.get_id( submission.questionSetId )
+	self_assessment_id = get_ntiid_id( submission.questionSetId )
 	# We likely will not have a grader.
 	grader = _get_grader_id( submission )
 	# TODO As a QAssessedQuestionSet. we will not have a duration.
@@ -240,10 +227,10 @@ def create_assignment_taken( user, nti_session, timestamp, course, submission ):
 	db = get_analytics_db()
 	user_record = get_or_create_user( user )
 	uid = user_record.user_id
-	sid = SessionId.get_id( nti_session )
+	sid = nti_session
 	course_id = get_root_context_id( db, course, create=True )
 	timestamp = timestamp_type( timestamp )
-	submission_id = SubmissionId.get_id( submission )
+	submission_id = get_ds_id( submission )
 
 	if _assignment_taken_exists( db, submission_id ):
 		logger.warn( 'Assignment taken already exists (ds_id=%s) (user=%s)',
@@ -348,7 +335,7 @@ def grade_submission( user, nti_session, timestamp, grader, graded_val, submissi
 	db = get_analytics_db()
 	grader = get_or_create_user( grader )
 	grader_id  = grader.user_id
-	submission_id = SubmissionId.get_id( submission )
+	submission_id = get_ds_id( submission )
 	assignment_taken_id = _get_assignment_taken_id( db, submission_id )
 
 	if assignment_taken_id is None:
@@ -375,7 +362,7 @@ def grade_submission( user, nti_session, timestamp, grader, graded_val, submissi
 		# New grade
 		user = get_or_create_user(user )
 		uid = user.user_id
-		sid = SessionId.get_id( nti_session )
+		sid = nti_session
 
 		new_object = AssignmentGrades( 	user_id=uid,
 										session_id=sid,
@@ -406,9 +393,9 @@ def create_submission_feedback( user, nti_session, timestamp, submission, feedba
 	db = get_analytics_db()
 	user_record = get_or_create_user( user )
 	uid = user_record.user_id
-	sid = SessionId.get_id( nti_session )
+	sid = nti_session
 	timestamp = timestamp_type( timestamp )
-	feedback_ds_id = FeedbackId.get_id( feedback )
+	feedback_ds_id = get_ds_id( feedback )
 
 	if _feedback_exists( db, feedback_ds_id ):
 		logger.warn( 'Feedback exists (ds_id=%s) (user=%s)', feedback_ds_id, user )
@@ -416,7 +403,7 @@ def create_submission_feedback( user, nti_session, timestamp, submission, feedba
 
 	feedback_length = sum( len( x ) for x in feedback.body )
 
-	submission_id = SubmissionId.get_id( submission )
+	submission_id = get_ds_id( submission )
 	assignment_taken_id = _get_assignment_taken_id( db, submission_id )
 
 	if assignment_taken_id is None:
@@ -466,10 +453,10 @@ def _create_assessment_view( table, user, nti_session, timestamp, course, contex
 	db = get_analytics_db()
 	user_record = get_or_create_user( user )
 	uid = user_record.user_id
-	sid = SessionId.get_id( nti_session )
+	sid = nti_session
 	rid = None
 	if resource is not None:
-		rid = ResourceId.get_id( resource )
+		rid = get_ntiid_id( resource )
 		rid = get_resource_id( db, rid, create=True )
 
 	course_id = get_root_context_id( db, course, create=True )
@@ -505,89 +492,20 @@ def create_assignment_view( user, nti_session, timestamp, course, context_path, 
 						course, context_path, resource, time_length, assignment_id )
 
 def _resolve_self_assessment( row, user=None, course=None ):
-	make_transient( row )
-	submission = SubmissionId.get_object( row.submission_id )
-	if course is None:
-		course = get_root_context( row.course_id )
-	if user is None:
-		user = get_user( row.user_id )
-
-	result = None
-	if 		submission is not None \
-		and user is not None \
-		and course is not None:
-		result = AnalyticsAssessment( Submission=submission,
-									user=user,
-									timestamp=row.timestamp,
-									RootContext=course,
-									Duration=row.time_length,
-									AssessmentId=row.assignment_id )
-	return result
+	if course is not None:
+		row.RootContext = course
+	if user is not None:
+		row.user = user
+	return row
 
 def _resolve_assignment( row, details=None, user=None, course=None ):
-	# We may have multiple assignment records here at one point.
-	submission_record = row
-	grade_record = submission_record.grade
-	make_transient( submission_record )
-
-	grade_num = grade = grader = None
-	if grade_record is not None:
-		make_transient( grade_record )
-		grade_num = grade_record.grade_num
-		grade = grade_record.grade
-		grader = grade_record.grader
-
-	submission = SubmissionId.get_object( submission_record.submission_id )
-	if course is None:
-		course = get_root_context( submission_record.course_id )
-	if user is None:
-		user = get_user( submission_record.user_id )
-	result = None
-	if 		submission is not None \
-		and user is not None \
-		and course is not None:
-		result = AnalyticsAssignment( Submission=submission,
-										user=user,
-										timestamp=submission_record.timestamp,
-										RootContext=course,
-										Duration=submission_record.time_length,
-										AssignmentId=submission_record.assignment_id,
-										GradeNum=grade_num,
-										Grade=grade,
-										Grader=grader,
-										IsLate=submission_record.is_late,
-										Details=details )
-	return result
-
-def _resolve_assignment_details( row ):
-	submission_record, detail_records = row
-	details = []
-
-	# Seems like this would be automatic.
-	if not isinstance( detail_records, list ):
-		detail_records = (detail_records,)
-
-	for detail_record in detail_records:
-		make_transient( detail_record )
-
-		grade = grader = is_correct = None
-		grade_record = detail_record.grade
-		if grade_record:
-			grade = grade_record.grade
-			grader = grade_record.grader
-			is_correct = grade_record.is_correct
-
-		answer = _load_response( detail_record.submission )
-
-		result = AnalyticsAssignmentDetail( QuestionId=detail_record.question_id,
-											QuestionPartId=detail_record.question_part_id,
-											Answer=answer,
-											Duration=detail_record.time_length,
-											Grade=grade,
-											Grader=grader,
-											IsCorrect=is_correct )
-		details.append( result )
-	return _resolve_assignment( submission_record, details=details )
+	if course is not None:
+		row.RootContext = course
+	if user is not None:
+		row.user = user
+	if details is not None:
+		row.Details = details
+	return row
 
 def get_self_assessments_for_user(user, course=None, **kwargs ):
 	"Retrieves all self-assessments for the given user and course."
@@ -645,36 +563,28 @@ def get_assignment_grades_for_course(course, assignment_id):
 
 	return resolve_objects( _resolve_assignment, results )
 
+# FIXME Rename func, details are relationship?
 def get_assignment_details_for_course(course, assignment_id):
 	db = get_analytics_db()
 	course_id = get_root_context_id( db, course )
-	results = db.session.query( AssignmentsTaken, AssignmentDetails ) \
-						.join( AssignmentDetails ) \
+	results = db.session.query( AssignmentsTaken ) \
 						.filter( AssignmentsTaken.course_id == course_id,
 								AssignmentsTaken.assignment_id == assignment_id ).all()
 
-	return resolve_objects( _resolve_assignment_details, results )
+	return resolve_objects( _resolve_assignment, results )
 
-def _resolve_view( clazz, row, course, user ):
-	time_length = row.time_length
-	timestamp = row.timestamp
-	course = get_root_context( row.course_id ) if course is None else course
-	user = get_user( row.user_id ) if user is None else user
-
-	# We're returning the assignmentId here; we may want to return
-	# the actual page in the future.
-	resource_event = clazz(	user=user,
-							timestamp=timestamp,
-							RootContext=course,
-							ResourceId=row.assignment_id,
-							Duration=time_length)
-	return resource_event
+def _resolve_view( row, course, user ):
+	if course is not None:
+		row.RootContext = course
+	if user is not None:
+		row.user = user
+	return row
 
 def _resolve_self_assessment_view( row, user=None, course=None ):
-	return _resolve_view( AnalyticsSelfAssessmentView, row, course, user )
+	return _resolve_view( row, course, user )
 
 def _resolve_assignment_view( row, user=None, course=None ):
-	return _resolve_view( AnalyticsAssignmentView, row, course, user )
+	return _resolve_view( row, course, user )
 
 def get_self_assessment_views( user, course=None, **kwargs ):
 	"""

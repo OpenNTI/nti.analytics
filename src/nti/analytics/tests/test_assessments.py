@@ -60,14 +60,14 @@ class TestAssessments( NTIAnalyticsTestCase ):
 		assert_that( results[0].RootContext, is_( course ))
 		assert_that( results[0].user, is_( user ))
 		assert_that( results[0].Duration, is_( time_length ))
-		assert_that( results[0].ResourceId, is_( question_set_id ))
+		assert_that( results[0].AssessmentId, is_( question_set_id ))
 
 		results = get_self_assessment_views( user, course=course )
 		assert_that( results, has_length( 1 ))
 		assert_that( results[0].RootContext, is_( course ))
 		assert_that( results[0].user, is_( user ))
 		assert_that( results[0].Duration, is_( time_length ))
-		assert_that( results[0].ResourceId, is_( question_set_id ))
+		assert_that( results[0].AssessmentId, is_( question_set_id ))
 
 		# Filtered out
 		wrong_course = CourseInstance()
@@ -103,14 +103,14 @@ class TestAssessments( NTIAnalyticsTestCase ):
 		assert_that( results[0].RootContext, is_( course ))
 		assert_that( results[0].user, is_( user ))
 		assert_that( results[0].Duration, is_( time_length ))
-		assert_that( results[0].ResourceId, is_( assignment_id ))
+		assert_that( results[0].AssessmentId, is_( assignment_id ))
 
 		results = get_assignment_views( user, course=course )
 		assert_that( results, has_length( 1 ))
 		assert_that( results[0].RootContext, is_( course ))
 		assert_that( results[0].user, is_( user ))
 		assert_that( results[0].Duration, is_( time_length ))
-		assert_that( results[0].ResourceId, is_( assignment_id ))
+		assert_that( results[0].AssessmentId, is_( assignment_id ))
 
 		# Filtered out
 		wrong_course = CourseInstance()
