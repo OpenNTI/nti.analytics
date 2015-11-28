@@ -193,28 +193,6 @@ def create_video_event(	user,
 		video_play_speed.video_view_id = new_object.video_view_id
 
 def _resolve_resource_view( record, course=None, user=None ):
-# 	time_length = record.time_length
-#
-# 	# We could filter out time_length = 0 events, but they
-# 	# may be useful to determine if 'some' progress has possibly made.
-# 	# We also store 0s events at event start time.
-#
-# 	timestamp = record.timestamp
-# 	context_path = record.context_path
-# 	context_path = expand_context_path( context_path )
-# 	root_context = get_root_context_obj( record ) if course is None else course
-# 	user = get_user( record.user_id ) if user is None else user
-#
-# 	resource_id = record.resource_id
-# 	resource_ntiid = get_resource_val( resource_id )
-#
-# 	resource_event = AnalyticsResourceView(user=user,
-# 					timestamp=timestamp,
-# 					RootContext=root_context,
-# 					context_path=context_path,
-# 					ResourceId=resource_ntiid,
-# 					Duration=time_length)
-
 	if course is not None:
 		record.RootContext = course
 	if user is not None:
@@ -222,45 +200,6 @@ def _resolve_resource_view( record, course=None, user=None ):
 	return record
 
 def _resolve_video_view( record, course=None, user=None, max_time_length=None ):
-# 	time_length = record.time_length
-#
-# 	# We could filter out time_length = 0 events, but they
-# 	# may be useful to determine if 'some' progress has possibly made.
-# 	# We also store 0s events at event start time.
-#
-# 	from IPython.core.debugger import Tracer;Tracer()()
-# 	timestamp = record.timestamp
-# 	context_path = record.context_path
-# 	context_path = expand_context_path( context_path )
-# 	root_context = get_root_context_obj( record ) if course is None else course
-# 	user = get_user( record.user_id ) if user is None else user
-#
-# 	if max_time_length is None:
-# 		max_time_length = record.resource.max_time_length
-#
-# 	resource_ntiid = record.resource.resource_ds_id
-# 	video_start_time = record.video_start_time
-# 	video_end_time = record.video_end_time
-# 	with_transcript = record.with_transcript
-#
-#
-# 	if record.video_event_type == 'WATCH':
-# 		video_type = AnalyticsVideoView
-# 	else:
-# 		video_type = AnalyticsVideoSkip
-#
-# 	video_event = video_type(user=user,
-# 				SessionID=record.session_id,
-# 				timestamp=timestamp,
-# 				RootContext=root_context,
-# 				context_path=context_path,
-# 				ResourceId=resource_ntiid,
-# 				Duration=time_length,
-# 				MaxDuration=max_time_length,
-# 				VideoStartTime=video_start_time,
-# 				VideoEndTime=video_end_time,
-# 				WithTranscript=with_transcript)
-# return video_event
 	if course is not None:
 		record.RootContext = course
 	if user is not None:
