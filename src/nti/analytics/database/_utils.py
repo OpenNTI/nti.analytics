@@ -13,6 +13,7 @@ from collections import OrderedDict
 
 from zope import interface
 
+from nti.analytics_database.interfaces import IAnalyticsContextPathExpander
 from nti.analytics_database.interfaces import IAnalyticsRootContextResolver
 
 from nti.contenttypes.courses.interfaces import ICourseSubInstance
@@ -45,6 +46,12 @@ def get_context_path(context_path):
 def expand_context_path(context_path):
 	return context_path.split('/')
 
+@interface.implementer(IAnalyticsContextPathExpander)
+class _AnalyticsContextPathExpander(object):
+
+	def expand(self, context_path):
+		return expand_context_path(context_path)
+	
 def get_root_context_ids(root_context):
 	course_id = entity_root_context_id = None
 	if IEntity.providedBy(root_context):

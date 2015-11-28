@@ -13,10 +13,13 @@
 
 	<!-- Utilities -->
 	<utility factory="._utils._AnalyticsRootContextResolver"
-			 provides="nti.analytics_database.interfaces.IAnalyticsRootContextResolver"/>
+			 provides="nti.analytics_database.interfaces.IAnalyticsRootContextResolver" />
+
+	<utility factory="._utils._AnalyticsContextPathExpander"
+			 provides="nti.analytics_database.interfaces.IAnalyticsContextPathExpander" />
 
 	<utility factory=".users._AnalyticsUserResolver"
-			 provides="nti.analytics_database.interfaces.IAnalyticsUserResolver"/>
+			 provides="nti.analytics_database.interfaces.IAnalyticsUserResolver" />
 
 	<!-- Non devmode is config driven -->
 	<configure zcml:condition="have devmode">
