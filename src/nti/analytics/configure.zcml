@@ -89,7 +89,6 @@
 	<subscriber handler=".enrollments._dropped" />
 
 	<!-- Utilities -->
-
 	<utility component=".blogs" provides=".interfaces.IObjectProcessor" name="blogs"/>
 	<utility component=".boards" provides=".interfaces.IObjectProcessor" name="boards"/>
 	<utility component=".social" provides=".interfaces.IObjectProcessor" name="social"/>
@@ -99,8 +98,10 @@
 
 	<utility factory=".identifier._DSIdentifier"
 			provides="nti.analytics_database.interfaces.IAnalyticsIntidIdentifier" />
+
 	<utility factory=".identifier._NTIIDIdentifier"
 			provides="nti.analytics_database.interfaces.IAnalyticsNTIIDIdentifier"/>
+
 	<utility factory=".identifier._RootContextIdentifier"
 			provides="nti.analytics_database.interfaces.IAnalyticsRootContextIdentifier"/>
 

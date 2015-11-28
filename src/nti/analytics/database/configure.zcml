@@ -11,6 +11,13 @@
 
 	<include package="." file="meta.zcml" />
 
+	<!-- Utilities -->
+	<utility factory="._utils._AnalyticsRootContextResolver"
+			 provides="nti.analytics_database.interfaces.IAnalyticsRootContextResolver"/>
+
+	<utility factory=".users._AnalyticsUserResolver"
+			 provides="nti.analytics_database.interfaces.IAnalyticsUserResolver"/>
+
 	<!-- Non devmode is config driven -->
 	<configure zcml:condition="have devmode">
 
@@ -23,6 +30,7 @@
 		<configure zcml:condition="not-have testmode">
 			<adb:registerAnalyticsDB defaultSQLite="True" />
 		</configure>
+
 	</configure>
 
 </configure>

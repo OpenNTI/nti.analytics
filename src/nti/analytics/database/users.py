@@ -12,6 +12,9 @@ logger = __import__('logging').getLogger(__name__)
 from nti.analytics_database.users import Users
 
 from zope import component
+from zope import interface
+
+from nti.analytics_database.interfaces import IAnalyticsUserResolver
 
 from nti.dataserver.interfaces import IUsernameSubstitutionPolicy
 
@@ -30,7 +33,7 @@ def _get_username2(user):
 	"""
 	username = getattr(user, 'username', None) or ''
 	policy = component.queryUtility(IUsernameSubstitutionPolicy)
-	result = policy.replace(username) if policy else ''
+	result = policy.replace(username) if policy is not None else ''
 	if username == result:
 		result = ''
 	return result
@@ -60,7 +63,8 @@ def create_user(user):
 	# gracefully at this level. A job-level retry should work though.
 	db.session.add(user)
 	db.session.flush()
-	logger.info('Created user (user=%s) (user_id=%s) (user_ds_id=%s)', username, user.user_id, uid)
+	logger.info('Created user (user=%s) (user_id=%s) (user_ds_id=%s)',
+				username, user.user_id, uid)
 	return user
 
 def _get_user_record(user):
@@ -100,6 +104,12 @@ def get_user(user_id):
 		result = get_ds_object(found_user.user_ds_id)
 
 	return result
+
+@interface.implementer(IAnalyticsUserResolver)
+class _AnalyticsUserResolver(object):
+	
+	def __call__(self, user_id):
+		return get_user(user_id)
 
 def delete_entity(entity_ds_id):
 	db = get_analytics_db()
