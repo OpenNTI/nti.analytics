@@ -43,14 +43,9 @@ def get_context_path(context_path):
 		result = '/'.join(context_path)
 	return result
 
+@interface.implementer(IAnalyticsContextPathExpander)
 def expand_context_path(context_path):
 	return context_path.split('/')
-
-@interface.implementer(IAnalyticsContextPathExpander)
-class _AnalyticsContextPathExpander(object):
-
-	def expand(self, context_path):
-		return expand_context_path(context_path)
 	
 def get_root_context_ids(root_context):
 	course_id = entity_root_context_id = None
@@ -62,6 +57,7 @@ def get_root_context_ids(root_context):
 		course_id = get_root_context_id(db, root_context, create=True)
 	return course_id, entity_root_context_id
 
+@interface.implementer(IAnalyticsRootContextResolver)
 def get_root_context_obj(root_context_record):
 	course_id = root_context_record.course_id
 	if course_id:
@@ -70,12 +66,6 @@ def get_root_context_obj(root_context_record):
 		entity_root_context_id = root_context_record.entity_root_context_id
 		root_context = get_user(entity_root_context_id)
 	return root_context
-
-@interface.implementer(IAnalyticsRootContextResolver)
-class _AnalyticsRootContextResolver(object):
-
-	def __call__(self, rc_id):
-		return get_root_context_obj(rc_id)
 
 def _do_course_and_timestamp_filtering(table, timestamp=None, max_timestamp=None, 
 									   course=None, filters=None):
