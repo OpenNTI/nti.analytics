@@ -11,10 +11,10 @@ logger = __import__('logging').getLogger(__name__)
 
 from six import string_types
 
-from zope.intid import IIntIds
-
 from zope import component
 from zope import interface
+
+from zope.intid import IIntIds
 
 from ZODB.interfaces import IBroken
 from ZODB.POSException import POSError

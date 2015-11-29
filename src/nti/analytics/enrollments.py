@@ -33,8 +33,9 @@ from .interfaces import IObjectProcessor
 
 from .sessions import get_nti_session_id
 
-from . import get_factory
 from . import ENROLL_ANALYTICS
+
+from . import get_factory
 
 get_enrollments_for_course = db_enrollments.get_enrollments_for_course
 
