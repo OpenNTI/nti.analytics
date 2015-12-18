@@ -198,7 +198,7 @@ class _CourseFromChildNTIIDResolver(object):
 
 	last_sync_time = 0
 
-	def __init__(self, last_sync_time):
+	def __init__(self, last_sync_time=0):
 		self.course_to_containers = None
 		self.last_sync_time = last_sync_time
 
