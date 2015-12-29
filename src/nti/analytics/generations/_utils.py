@@ -41,13 +41,25 @@ class MockDataserver(object):
 COLUMN_EXISTS_QUERY = 	"""
 						SELECT *
 						FROM information_schema.COLUMNS
-						WHERE TABLE_SCHEMA = 'Analytics'
+						WHERE TABLE_SCHEMA = '%s'
 							AND TABLE_NAME = '%s'
 							AND COLUMN_NAME = '%s'
 						"""
 
-def mysql_column_exists( con, table, column ):
-	res = con.execute( COLUMN_EXISTS_QUERY % ( table, column ) )
+def mysql_column_exists( con, schema, table, column ):
+	res = con.execute( COLUMN_EXISTS_QUERY % ( schema, table, column ) )
+	return res.scalar()
+
+FOREIGN_KEY_EXISTS_QUERY =  """
+							SELECT *
+							FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+							WHERE TABLE_SCHEMA = '%s'
+								AND REFERENCED_TABLE_NAME = '%s'
+								AND TABLE_NAME = '%s'
+								AND COLUMN_NAME = '%s';
+							"""
+def mysql_foreign_key_exists( con, schema, table, column, ref_table ):
+	res = con.execute( FOREIGN_KEY_EXISTS_QUERY % ( schema, ref_table, table, column ) )
 	return res.scalar()
 
 def do_evolve( context, evolve_job, generation, with_library=False ):
