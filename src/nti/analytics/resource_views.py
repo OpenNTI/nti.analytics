@@ -73,6 +73,7 @@ from nti.analytics import VIDEO_VIEW_ANALYTICS
 from nti.analytics import CATALOG_VIEW_ANALYTICS
 from nti.analytics import RESOURCE_VIEW_ANALYTICS
 
+get_resource_views = db_resource_views.get_resource_views
 get_user_resource_views = db_resource_views.get_user_resource_views
 get_user_resource_views_for_ntiid = db_resource_views.get_user_resource_views_for_ntiid
 get_video_views = db_resource_views.get_user_video_views
