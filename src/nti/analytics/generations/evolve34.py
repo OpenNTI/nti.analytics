@@ -21,8 +21,8 @@ from alembic.operations import Operations
 from alembic.migration import MigrationContext
 
 from nti.analytics.database import get_analytics_db
-from nti.analytics.database.sessions import Location
-from nti.analytics.database.sessions import IpGeoLocation
+from nti.analytics.database.locations import Location
+from nti.analytics.database.locations import IpGeoLocation
 
 def evolve_job():
     setHooks()
