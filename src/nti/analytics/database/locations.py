@@ -22,9 +22,9 @@ from nti.analytics_database.sessions import IpGeoLocation
 from nti.dataserver.users.users import User
 from nti.dataserver.interfaces import IEnumerableEntityContainer
 
-from .users import get_user_db_id
+from nti.analytics.database import get_analytics_db
 
-from . import get_analytics_db
+from nti.analytics.database.users import get_user_db_id
 
 ALL_USERS = 'ALL_USERS'
 
@@ -141,12 +141,15 @@ def _get_enrollment_scope_dict(course):
 	"""
 	Build a dict of scope_name to usernames.
 	"""
-	# XXX We are not exposing these multiple scopes in many places,
+	# XXX: We are not exposing these multiple scopes in many places,
 	# including many reports and in TopCreators.
-	# XXX This is confusing if we are nesting scopes.  Perhaps
+	# XXX: This is confusing if we are nesting scopes.  Perhaps
 	# it makes more sense to keep things in the Credit/NonCredit camps.
 	# Seems like it would make sense to have an Everyone scope...
 	# { Everyone: { Public : ( Open, Purchased ), ForCredit : ( FCD, FCND ) }}
+
+	# XXX: It's useful here that we're capturing all subinstance students, but
+	# that is not messaged to end-user.
 	results = {}
 	instructors = set( course.instructors )
 	# Lumping purchased in with public.
@@ -212,7 +215,7 @@ def check_ip_location(db, ip_addr, user_id):
 															old_location_data.latitude,
 															old_location_data.longitude)
 
-# To avoid exhausting our service limit.
+#: To avoid exhausting our service limit.
 UPDATE_LIMIT = 500
 
 def update_missing_locations():
