@@ -46,7 +46,7 @@ def create_course_catalog_view( user, nti_session, timestamp, context_path, cour
 			existing_record.time_length = time_length
 			return
 		else:
-			logger.warn( 'Course catalog view already exists (user=%s) (catalog=%s)',
+			logger.debug( 'Course catalog view already exists (user=%s) (catalog=%s)',
 						uid, course_id )
 			return
 
@@ -84,7 +84,7 @@ def create_course_enrollment(user, nti_session, timestamp, course, enrollment_ty
 	course_id = get_root_context_id( db, course, create=True )
 
 	if _enrollment_exists( db, uid, course_id ):
-		logger.warn( 'Enrollment already exists (user=%s) (course=%s)',
+		logger.debug( 'Enrollment already exists (user=%s) (course=%s)',
 					user, course_id )
 		return
 
@@ -99,6 +99,7 @@ def create_course_enrollment(user, nti_session, timestamp, course, enrollment_ty
 									course_id=course_id,
 									type_id=type_id )
 	db.session.add( new_object )
+	return new_object
 
 def _course_drop_exists( db, user_id, course_id, timestamp ):
 	return db.session.query(CourseDrops ).filter(
@@ -115,7 +116,7 @@ def create_course_drop(user, nti_session, timestamp, course):
 	timestamp = timestamp_type( timestamp )
 
 	if _course_drop_exists( db, uid, course_id, timestamp ):
-		logger.warn( 'Course drop already exists (user=%s) (course=%s)',
+		logger.debug( 'Course drop already exists (user=%s) (course=%s)',
 					user, course_id )
 		return
 

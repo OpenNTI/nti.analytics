@@ -53,7 +53,7 @@ class SharedConfiguringTestLayer(ZopeComponentLayer,
                                  ConfiguringLayerMixin,
                                  DSInjectorMixin):
 
-	set_up_packages = ('nti.dataserver', 'nti.analytics')
+	set_up_packages = ('nti.dataserver', 'nti.analytics', 'nti.contentsearch')
 
 	@classmethod
 	def setUp(cls):

@@ -53,6 +53,8 @@
 	<subscriber handler=".blogs._blog_rated" />
 	<subscriber handler=".blogs._blog_flagged" />
 
+	<subscriber handler=".search._search_completed" />
+
 	<subscriber handler=".social._friendslist_added" />
 	<subscriber handler=".social._friendslist_modified" />
 	<subscriber handler=".social._friendslist_deleted" />
