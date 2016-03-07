@@ -542,7 +542,7 @@ def get_topics_created_for_user( user, course=None, get_deleted=False, **kwargs 
 
 	return resolve_objects( _resolve_topic, results, course=course )
 
-def get_topic_views( user=None, topic=None, course=None, raw=False, **kwargs ):
+def get_topic_views( user=None, topic=None, course=None, **kwargs ):
 
 	filters = []
 	if topic is not None:
@@ -552,10 +552,7 @@ def get_topic_views( user=None, topic=None, course=None, raw=False, **kwargs ):
 
 	results = get_filtered_records( user, TopicsViewed, course=course,
 								filters=filters, **kwargs )
-	if raw:
-		return results
-	else:
-		return resolve_objects( _resolve_topic_view, results, user=user, topic=topic, course=course )
+	return resolve_objects( _resolve_topic_view, results, user=user, topic=topic, course=course )
 
 def get_topic_last_view( topic, user ):
 	db = get_analytics_db()

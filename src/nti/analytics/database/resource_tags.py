@@ -422,7 +422,7 @@ def _resolve_note_view(row, note=None, user=None, course=None):
 		row.Note = note
 	return row
 
-def get_note_views(user=None, note=None, course=None, raw=False, **kwargs):
+def get_note_views(user=None, note=None, course=None, **kwargs):
 	filters = []
 	if note is not None:
 		db = get_analytics_db()
@@ -432,10 +432,7 @@ def get_note_views(user=None, note=None, course=None, raw=False, **kwargs):
 
 	results = get_filtered_records(	user, NotesViewed, course=course,
 									filters=filters, **kwargs)
-	if raw:
-		return results
-	else:
-		return resolve_objects(_resolve_note_view, results, note=note, user=user, course=course)
+	return resolve_objects(_resolve_note_view, results, note=note, user=user, course=course)
 
 def get_note_last_view( note, user ):
 	db = get_analytics_db()
