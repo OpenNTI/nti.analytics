@@ -12,20 +12,17 @@ logger = __import__('logging').getLogger(__name__)
 from nti.analytics_database.users import Users
 
 from zope import component
-from zope import interface
-
-from nti.analytics_database.interfaces import IAnalyticsUserResolver
 
 from nti.dataserver.interfaces import IUsernameSubstitutionPolicy
 
-from ..common import get_created_timestamp
+from nti.analytics.common import get_created_timestamp
 
-from ..identifier import get_ds_id
-from ..identifier import get_ds_object
+from nti.analytics.database import get_analytics_db
 
-from ..interfaces import IUserResearchStatus
+from nti.analytics.identifier import get_ds_id
+from nti.analytics.identifier import get_ds_object
 
-from . import get_analytics_db
+from nti.analytics.interfaces import IUserResearchStatus
 
 def _get_username2(user):
 	"""
@@ -92,7 +89,6 @@ def get_user_db_id(user):
 	found_user = _get_user_record(user)
 	return found_user and found_user.user_id
 
-@interface.implementer(IAnalyticsUserResolver)
 def get_user(user_id):
 	"""
 	Retrieves user with given db id.

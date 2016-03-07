@@ -15,12 +15,6 @@
 	<utility component="._utils.get_root_context_obj"
 			 provides="nti.analytics_database.interfaces.IAnalyticsRootContextResolver" />
 
-	<utility component="._utils.expand_context_path"
-			 provides="nti.analytics_database.interfaces.IAnalyticsContextPathExpander" />
-
-	<utility component=".users.get_user"
-			 provides="nti.analytics_database.interfaces.IAnalyticsUserResolver" />
-
 	<!-- Non devmode is config driven -->
 	<configure zcml:condition="have devmode">
 

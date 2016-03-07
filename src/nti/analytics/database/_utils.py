@@ -13,21 +13,22 @@ from collections import OrderedDict
 
 from zope import interface
 
-from nti.analytics_database.interfaces import IAnalyticsContextPathExpander
+from nti.analytics_database import CONTEXT_PATH_SEPARATOR
+
 from nti.analytics_database.interfaces import IAnalyticsRootContextResolver
+
+from nti.analytics.database import get_analytics_db
+
+from nti.analytics.database.root_context import get_root_context
+from nti.analytics.database.root_context import get_root_context_id
+
+from nti.analytics.database.users import get_user
+from nti.analytics.database.users import get_user_db_id
+from nti.analytics.database.users import get_or_create_user
 
 from nti.contenttypes.courses.interfaces import ICourseSubInstance
 
 from nti.dataserver.interfaces import IEntity
-
-from .root_context import get_root_context
-from .root_context import get_root_context_id
-
-from .users import get_user
-from .users import get_user_db_id
-from .users import get_or_create_user
-
-from . import get_analytics_db
 
 def get_context_path(context_path):
 	# Note: we could also sub these resource_ids for the actual
@@ -39,14 +40,9 @@ def get_context_path(context_path):
 		# This will remove all duplicate elements. Hopefully we do
 		# not have scattered duplicates, which would be an error condition.
 		context_path = list(OrderedDict.fromkeys(context_path))
-		# '/' is illegal in ntiid strings
-		result = '/'.join(context_path)
+		result = CONTEXT_PATH_SEPARATOR.join(context_path)
 	return result
 
-@interface.implementer(IAnalyticsContextPathExpander)
-def expand_context_path(context_path):
-	return context_path.split('/')
-	
 def get_root_context_ids(root_context):
 	course_id = entity_root_context_id = None
 	if IEntity.providedBy(root_context):
@@ -67,7 +63,7 @@ def get_root_context_obj(root_context_record):
 		root_context = get_user(entity_root_context_id)
 	return root_context
 
-def _do_course_and_timestamp_filtering(table, timestamp=None, max_timestamp=None, 
+def _do_course_and_timestamp_filtering(table, timestamp=None, max_timestamp=None,
 									   course=None, filters=None):
 	db = get_analytics_db()
 	result = []
