@@ -24,35 +24,35 @@ from nti.analytics_database.resource_tags import NoteFavorites
 from nti.analytics_database.resource_tags import BookmarksCreated
 from nti.analytics_database.resource_tags import HighlightsCreated
 
-from ..common import get_creator
-from ..common import get_ratings
-from ..common import timestamp_type
-from ..common import get_created_timestamp
+from nti.analytics.common import get_creator
+from nti.analytics.common import get_ratings
+from nti.analytics.common import timestamp_type
+from nti.analytics.common import get_created_timestamp
 
-from ..identifier import get_ds_id
-from ..identifier import get_ds_object
-from ..identifier import get_ntiid_id
+from nti.analytics.identifier import get_ds_id
+from nti.analytics.identifier import get_ds_object
+from nti.analytics.identifier import get_ntiid_id
 
-from ..resolvers import get_root_context
+from nti.analytics.resolvers import get_root_context
 
-from ._utils import resolve_like
-from ._utils import get_context_path
-from ._utils import resolve_favorite
-from ._utils import get_filtered_records
-from ._utils import get_root_context_ids
-from ._utils import get_ratings_for_user_objects
-from ._utils import get_replies_to_user as _get_replies_to_user
-from ._utils import get_user_replies_to_others as _get_user_replies_to_others
+from nti.analytics.database._utils import resolve_like
+from nti.analytics.database._utils import get_context_path
+from nti.analytics.database._utils import resolve_favorite
+from nti.analytics.database._utils import get_filtered_records
+from nti.analytics.database._utils import get_root_context_ids
+from nti.analytics.database._utils import get_ratings_for_user_objects
+from nti.analytics.database._utils import get_replies_to_user as _get_replies_to_user
+from nti.analytics.database._utils import get_user_replies_to_others as _get_user_replies_to_others
 
-from .resources import get_resource_id
+from nti.analytics.database.resources import get_resource_id
 
-from .root_context import get_root_context_id
+from nti.analytics.database.root_context import get_root_context_id
 
-from .users import get_or_create_user
-from .users import get_user_db_id
+from nti.analytics.database.users import get_or_create_user
+from nti.analytics.database.users import get_user_db_id
 
-from . import resolve_objects
-from . import get_analytics_db
+from nti.analytics.database import resolve_objects
+from nti.analytics.database import get_analytics_db
 
 def _get_site_community():
 	site_policy = component.queryUtility( ISitePolicyUserEventListener )

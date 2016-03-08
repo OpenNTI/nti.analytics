@@ -43,7 +43,7 @@ from nti.analytics.common import get_rating_from_event
 
 from nti.analytics.database import boards as db_boards
 
-from .identifier import get_ds_id
+from nti.analytics.identifier import get_ds_id
 
 from nti.analytics import get_factory
 from nti.analytics import BOARDS_ANALYTICS

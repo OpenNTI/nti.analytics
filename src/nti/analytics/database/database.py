@@ -24,9 +24,9 @@ from zope.sqlalchemy import ZopeTransactionExtension
 
 from nti.common.property import Lazy
 
-from .interfaces import IAnalyticsDB
+from nti.analytics.database.interfaces import IAnalyticsDB
 
-from .metadata import AnalyticsMetadata
+from nti.analytics.database.metadata import AnalyticsMetadata
 
 @interface.implementer(IAnalyticsDB)
 class AnalyticsDB(object):

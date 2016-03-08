@@ -13,25 +13,24 @@ from nti.analytics_database.resource_views import VideoEvents
 from nti.analytics_database.resource_views import CourseResourceViews
 from nti.analytics_database.resource_views import VideoPlaySpeedEvents
 
-from ..common import timestamp_type
+from nti.analytics.common import timestamp_type
 
-from ..identifier import get_ntiid_id
+from nti.analytics.identifier import get_ntiid_id
 
-from ..interfaces import VIDEO_WATCH
+from nti.analytics.interfaces import VIDEO_WATCH
 
-from ._utils import get_context_path
-from ._utils import get_root_context_ids
-from ._utils import get_filtered_records
+from nti.analytics.database._utils import get_context_path
+from nti.analytics.database._utils import get_root_context_ids
+from nti.analytics.database._utils import get_filtered_records
 
-from .users import get_or_create_user
-from .users import get_user_db_id
+from nti.analytics.database.users import get_or_create_user
 
-from .resources import get_resource_id
-from .resources import get_resource_record
+from nti.analytics.database.resources import get_resource_id
+from nti.analytics.database.resources import get_resource_record
 
-from . import resolve_objects
-from . import get_analytics_db
-from . import should_update_event
+from nti.analytics.database import resolve_objects
+from nti.analytics.database import get_analytics_db
+from nti.analytics.database import should_update_event
 
 def _resource_view_exists( db, table, user_id, resource_id, timestamp ):
 	return db.session.query( table ).filter(
@@ -208,32 +207,36 @@ def _resolve_video_view( record, course=None, user=None, max_time_length=None ):
 		record.MaxDuration = max_time_length
 	return record
 
-def get_user_resource_views_for_ntiid( user, resource_ntiid ):
+def get_resource_views_for_ntiid( resource_ntiid, user=None, course=None, **kwargs ):
 	results = ()
 	db = get_analytics_db()
-	user_id = get_user_db_id( user )
 	resource_id = get_resource_id( db, resource_ntiid )
 	if resource_id is not None:
-		view_records = db.session.query( CourseResourceViews ).filter(
-										CourseResourceViews.user_id == user_id,
-										CourseResourceViews.resource_id == resource_id ).all()
-		results = resolve_objects( _resolve_resource_view, view_records, user=user )
+		filters = ( CourseResourceViews.resource_id == resource_id, )
+		view_records = get_filtered_records( user, CourseResourceViews,
+											course=course, filters=filters, **kwargs )
+		results = resolve_objects( _resolve_resource_view, view_records, user=user, course=course )
 	return results
 
-def get_user_video_views_for_ntiid( user, resource_ntiid ):
+def get_user_resource_views_for_ntiid( user, resource_ntiid ):
+	return get_resource_views_for_ntiid( resource_ntiid, user=user )
+
+def get_video_views_for_ntiid( resource_ntiid, user=None, course=None, **kwargs ):
 	results = ()
 	db = get_analytics_db()
-	user_id = get_user_db_id( user )
 	resource_record = get_resource_record( db, resource_ntiid )
 	if resource_record is not None:
 		resource_id = resource_record.resource_id
 		max_time_length = resource_record.max_time_length
-		video_records = db.session.query( VideoEvents ).filter(
-										VideoEvents.user_id == user_id,
-										VideoEvents.resource_id == resource_id,
-										VideoEvents.video_event_type == VIDEO_WATCH ).all()
-		results = resolve_objects( _resolve_video_view, video_records, user=user, max_time_length=max_time_length )
+		filters = ( VideoEvents.video_event_type == VIDEO_WATCH,
+					VideoEvents.resource_id == resource_id )
+		video_records = get_filtered_records( user, VideoEvents,
+											course=course, filters=filters, **kwargs )
+		results = resolve_objects( _resolve_video_view, video_records, user=user, course=course, max_time_length=max_time_length )
 	return results
+
+def get_user_video_views_for_ntiid( user, resource_ntiid ):
+	return get_video_views_for_ntiid( resource_ntiid, user=user )
 
 def get_user_resource_views( user=None, course=None, **kwargs ):
 	results = get_filtered_records( user, CourseResourceViews,

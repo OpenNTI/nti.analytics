@@ -27,6 +27,7 @@ from nti.analytics.database import resource_views as db_views
 
 from nti.analytics.resource_views import get_video_views
 from nti.analytics.resource_views import get_progress_for_ntiid
+from nti.analytics.resource_views import get_video_views_for_ntiid
 from nti.analytics.resource_views import get_video_progress_for_course
 
 from nti.dataserver.tests.mock_dataserver import WithMockDSTrans
@@ -163,6 +164,12 @@ class TestResourceViews( NTIAnalyticsTestCase ):
 		community = Community.create_community( username='community_name' )
 		_create_video_event( test_user_ds_id, video_ntiid, community )
 
+		# Empty
+		results = get_video_views_for_ntiid( video_ntiid + 'dne' )
+		assert_that( results, has_length( 0 ))
+
+		results = get_video_views_for_ntiid( video_ntiid )
+		assert_that( results, has_length( 1 ))
 		views = get_video_views()
 		assert_that( views, has_length( 1 ))
 		view = views[0]
@@ -174,3 +181,6 @@ class TestResourceViews( NTIAnalyticsTestCase ):
 		assert_that( views, has_length( 1 ))
 		view = views[0]
 		assert_that( view.RootContext, is_( course ))
+
+		results = get_video_views_for_ntiid( video_ntiid )
+		assert_that( results, has_length( 2 ))

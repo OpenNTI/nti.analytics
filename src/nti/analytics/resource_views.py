@@ -78,6 +78,8 @@ get_user_resource_views = db_resource_views.get_user_resource_views
 get_user_resource_views_for_ntiid = db_resource_views.get_user_resource_views_for_ntiid
 get_video_views = db_resource_views.get_user_video_views
 get_user_video_views = db_resource_views.get_user_video_views
+get_video_views_for_ntiid = db_resource_views.get_video_views_for_ntiid
+get_resource_views_for_ntiid = db_resource_views.get_resource_views_for_ntiid
 
 def _has_href_fragment( node, children ):
 	def _has_frag( node ):
