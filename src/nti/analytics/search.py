@@ -36,6 +36,9 @@ def _store_search( *args, **kwargs ):
 
 @component.adapter( ISearchCompletedEvent )
 def _search_completed( event ):
+	# Note: these search events are fired as the user types out
+	# their (potentially long) search string. This may lead to
+	# many similar event terms in succession.
 	course_id = event.query.context.get( 'course' )
 	nti_session = get_nti_session_id()
 	process_event( 	_get_search_queue,
