@@ -19,26 +19,29 @@ from nti.dataserver.users import User
 from nti.contenttypes.courses.courses import CourseInstance
 from nti.contenttypes.courses.courses import CourseAdministrativeLevel
 
+from nti.dataserver.contenttypes.canvas import Canvas
 from nti.dataserver.contenttypes.highlight import Highlight
 from nti.dataserver.contenttypes.note import Note
 from nti.dataserver.contenttypes.bookmark import Bookmark
 
 from nti.dataserver.tests.mock_dataserver import WithMockDSTrans
 
-from . import NTIAnalyticsTestCase
+from nti.namedfile.file import NamedBlobFile
 
-from ..resource_tags import get_notes
-from ..resource_tags import get_bookmarks
-from ..resource_tags import get_highlights
-from ..resource_tags import _add_note
-from ..resource_tags import _like_note
-from ..resource_tags import _favorite_note
-from ..resource_tags import _add_bookmark
-from ..resource_tags import _add_highlight
-from ..resource_tags import get_replies_to_user
-from ..resource_tags import get_user_replies_to_others
-from ..resource_tags import get_likes_for_users_notes
-from ..resource_tags import get_favorites_for_users_notes
+from nti.analytics.tests import NTIAnalyticsTestCase
+
+from nti.analytics.resource_tags import get_notes
+from nti.analytics.resource_tags import get_bookmarks
+from nti.analytics.resource_tags import get_highlights
+from nti.analytics.resource_tags import _add_note
+from nti.analytics.resource_tags import _like_note
+from nti.analytics.resource_tags import _favorite_note
+from nti.analytics.resource_tags import _add_bookmark
+from nti.analytics.resource_tags import _add_highlight
+from nti.analytics.resource_tags import get_replies_to_user
+from nti.analytics.resource_tags import get_user_replies_to_others
+from nti.analytics.resource_tags import get_likes_for_users_notes
+from nti.analytics.resource_tags import get_favorites_for_users_notes
 
 class TestNotes( NTIAnalyticsTestCase ):
 
@@ -80,6 +83,7 @@ class TestNotes( NTIAnalyticsTestCase ):
 		assert_that( note_record.NoteLength, is_( 7 ))
 		assert_that( note_record.user, is_( user ) )
 		assert_that( note_record.Sharing, is_( 'PRIVATE' ))
+		assert_that( note_record.FileMimeTypes, has_length( 0 ))
 
 		results = get_notes( user )
 		assert_that( results, has_length( 1 ))
@@ -155,6 +159,61 @@ class TestNotes( NTIAnalyticsTestCase ):
 		assert_that( results, has_length( 0 ))
 		results = get_user_replies_to_others( user1 )
 		assert_that( results, has_length( 0 ))
+
+	@WithMockDSTrans
+	@fudge.patch( 'nti.ntiids.ntiids.find_object_with_ntiid',
+				  'nti.analytics.resolvers.get_container_context' )
+	def test_notes_with_user_files(self, mock_find_object, mock_container_context):
+		user = User.create_user( username='new_user1', dataserver=self.ds )
+		user2 = User.create_user( username='new_user2', dataserver=self.ds )
+		results = get_notes( user )
+		assert_that( results, has_length( 0 ))
+
+		text_file = NamedBlobFile(data='data', contentType=b'text/plain', filename='foo.txt')
+		image_file = NamedBlobFile(data='data', contentType=b'image/gif', filename='foo.jpg')
+		canvas = Canvas()
+
+		note = Note()
+		note._ds_intid = 1333
+		note.body = ('text_length', text_file)
+		text_length = len( 'text_length' )
+		note.creator = user
+		note.containerId = 'tag:nti:foo'
+		user.addContainedObject( note )
+		course = self._get_course()
+		mock_find_object.is_callable().returns( note )
+		mock_container_context.is_callable().returns( course )
+		oid = 13
+		_add_note( oid )
+
+		# Single mime_type
+		results = get_notes( user )
+		assert_that( results, has_length( 1 ))
+		note_record = results[0]
+		assert_that( note_record.note_length, is_( text_length ))
+		assert_that( note_record.FileMimeTypes, has_length( 1 ))
+		assert_that( note_record.FileMimeTypes.get( 'text/plain' ), is_( 1 ))
+
+		# Multiple
+		note = Note()
+		note._ds_intid = 1444
+		note.body = ('text_length', text_file, text_file, image_file, 'text_length', canvas)
+		note.creator = user2
+		note.containerId = 'tag:nti:foo'
+		user2.addContainedObject( note )
+		mock_find_object.is_callable().returns( note )
+		mock_container_context.is_callable().returns( course )
+		oid = 14
+		_add_note( oid )
+
+		results = get_notes( user2 )
+		assert_that( results, has_length( 1 ))
+		note_record = results[0]
+		assert_that( note_record.note_length, is_( text_length * 2 ))
+		assert_that( note_record.FileMimeTypes, has_length( 3 ))
+		assert_that( note_record.FileMimeTypes.get( 'text/plain' ), is_( 2 ))
+		assert_that( note_record.FileMimeTypes.get( 'image/gif' ), is_( 1 ))
+		assert_that( note_record.FileMimeTypes.get( Canvas.mime_type ), is_( 1 ))
 
 	@WithMockDSTrans
 	@fudge.patch( 'nti.ntiids.ntiids.find_object_with_ntiid',
@@ -259,5 +318,3 @@ class TestBookmarks( NTIAnalyticsTestCase ):
 		assert_that( bookmark_record.Bookmark, is_( bookmark ) )
 		assert_that( bookmark_record.user, is_( user ) )
 		assert_that( bookmark_record.RootContext, is_( course ) )
-
-

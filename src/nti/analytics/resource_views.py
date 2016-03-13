@@ -11,9 +11,17 @@ logger = __import__('logging').getLogger(__name__)
 
 import urlparse
 
+from datetime import datetime
+
+from pyramid.threadlocal import get_current_request
+
+from zope import component
+
 from zope.event import notify
 
 from nti.ntiids import ntiids
+
+from nti.appserver.interfaces import IFileViewedEvent
 
 from nti.contenttypes.courses.interfaces import ICourseInstance
 
@@ -21,6 +29,10 @@ from nti.contentlibrary.interfaces import IContentPackage
 from nti.contentlibrary.interfaces import IContentPackageBundle
 
 from nti.dataserver.interfaces import IEntity
+
+from nti.ntiids.ntiids import find_object_with_ntiid
+
+from nti.traversal.traversal import find_interface
 
 from nti.analytics.interfaces import IVideoEvent
 from nti.analytics.interfaces import IBlogViewEvent
@@ -578,8 +590,8 @@ def handle_events( batch_events ):
 			event.user = get_current_username()
 		nti_session = get_nti_session_id( event=event )
 
-		kwargs = {'event':event,
-				'nti_session': nti_session }
+		kwargs = {  'event':event,
+					'nti_session': nti_session }
 
 		if INoteViewEvent.providedBy( event ):
 			process_event( _get_note_queue, _add_note_event, **kwargs )
@@ -610,6 +622,44 @@ def handle_events( batch_events ):
 	# events. The nti.async.processor does this and at least drops the bad
 	# events in a failed queue.
 	return len( batch_events )
+
+def create_file_view( oid, nti_session, timestamp, username, referrer, creator_username ):
+	file_obj = find_object_with_ntiid( oid )
+	user = get_entity( username )
+	if file_obj is None or user is None:
+		return
+
+	# We only want topic/post/feedback data; so if we find a course, we know it's
+	# authored/uploaded files.
+	# We do this here to not slow down the ds request processing.
+	# XXX: Is this always correct?
+	course = find_interface( file_obj, ICourseInstance, strict=False )
+	if course is not None:
+		return
+
+	db_resource_views.create_file_view( file_obj, nti_session, timestamp, user, referrer, creator_username )
+
+@component.adapter(	IFileViewedEvent )
+def _file_viewed( event ):
+	nti_session = get_nti_session_id()
+	username = event.request.remote_user
+	referrer = event.request.referrer
+	# FIXME: These IFile objects do not have creators; is that correct?
+	creator = event.context.creator
+	creator = creator.username if creator else ''
+	process_event( 	_get_resource_queue,
+					create_file_view,
+					event.context,
+					nti_session=nti_session,
+					timestamp=datetime.utcnow(),
+					username=username,
+					referrer=referrer,
+					creator_username=creator )
+
+	# Make sure we commit our job
+	request = get_current_request()
+	if request is not None:
+		request.environ['nti.request_had_transaction_side_effects'] = True
 
 class UnrecoverableAnalyticsError( Exception ):
 	"""

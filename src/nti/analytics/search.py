@@ -31,9 +31,6 @@ def _get_search_queue():
 	factory = get_factory()
 	return factory.get_queue( SEARCH_ANALYTICS )
 
-def _store_search( *args, **kwargs ):
-	db_search.create_search_event( *args, **kwargs )
-
 @component.adapter( ISearchCompletedEvent )
 def _search_completed( event ):
 	# Note: these search events are fired as the user types out
@@ -42,7 +39,7 @@ def _search_completed( event ):
 	course_id = event.query.context.get( 'course' )
 	nti_session = get_nti_session_id()
 	process_event( 	_get_search_queue,
-					_store_search,
+					db_search.create_search_event,
 					timestamp=datetime.utcnow(),
 					session_id=nti_session,
 					username=event.user.username,

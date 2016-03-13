@@ -110,6 +110,7 @@ def _note_rated( event ):
 					nti_session=nti_session,
 					timestamp=timestamp )
 
+# TODO: handle modifications.
 @component.adapter(	INote, IIntIdAddedEvent )
 def _note_added( obj, _ ):
 	if _is_note( obj ):

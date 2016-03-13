@@ -23,6 +23,7 @@ from nti.analytics_database.resource_tags import NotesCreated
 from nti.analytics_database.resource_tags import NoteFavorites
 from nti.analytics_database.resource_tags import BookmarksCreated
 from nti.analytics_database.resource_tags import HighlightsCreated
+from nti.analytics_database.resource_tags import NotesUserFileUploadMimeTypes
 
 from nti.analytics.common import get_creator
 from nti.analytics.common import get_ratings
@@ -43,6 +44,8 @@ from nti.analytics.database._utils import get_root_context_ids
 from nti.analytics.database._utils import get_ratings_for_user_objects
 from nti.analytics.database._utils import get_replies_to_user as _get_replies_to_user
 from nti.analytics.database._utils import get_user_replies_to_others as _get_user_replies_to_others
+
+from nti.analytics.database.mime_types import build_mime_type_records
 
 from nti.analytics.database.resources import get_resource_id
 
@@ -127,8 +130,12 @@ def create_note(user, nti_session, note):
 	sharing = _get_sharing_enum(note, course)
 	like_count, favorite_count, is_flagged = get_ratings(note)
 
-	# FIXME Will have to handle modeled content
-	note_length = sum(len(x) for x in note.body)
+	note_length = 0
+	for item in note.body:
+		try:
+			note_length += len( item )
+		except (AttributeError,TypeError):
+			pass
 
 	parent_id = parent_user_id = None
 	parent_note = getattr(note, 'inReplyTo', None)
@@ -162,6 +169,11 @@ def create_note(user, nti_session, note):
 								is_flagged=is_flagged)
 	db.session.add(new_object)
 	db.session.flush()
+	note_id = new_object.note_id
+	file_mime_types = build_mime_type_records( db, note, NotesUserFileUploadMimeTypes )
+	for mime_record in file_mime_types:
+		mime_record.note_id = note_id
+		db.session.add( mime_record )
 	return new_object
 
 def delete_note(timestamp, note_ds_id):

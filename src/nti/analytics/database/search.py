@@ -9,8 +9,6 @@ __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
-from nti.analytics_database.search import SearchQueries
-
 from nti.analytics.common import timestamp_type
 
 from nti.analytics.database import get_analytics_db
@@ -20,6 +18,8 @@ from nti.analytics.database._utils import get_filtered_records
 from nti.analytics.database.root_context import get_root_context_id
 
 from nti.analytics.database.users import get_or_create_user
+
+from nti.analytics_database.search import SearchQueries
 
 from nti.dataserver.users import User
 
