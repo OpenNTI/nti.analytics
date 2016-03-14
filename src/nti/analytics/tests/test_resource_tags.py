@@ -14,14 +14,20 @@ from hamcrest import is_
 from hamcrest import has_length
 from hamcrest import assert_that
 
+from zope.file.file import File
+
 from nti.dataserver.users import User
 
 from nti.contenttypes.courses.courses import CourseInstance
 from nti.contenttypes.courses.courses import CourseAdministrativeLevel
 
 from nti.dataserver.contenttypes.canvas import Canvas
+from nti.dataserver.contenttypes.canvas import NonpersistentCanvasUrlShape
+
 from nti.dataserver.contenttypes.highlight import Highlight
+
 from nti.dataserver.contenttypes.note import Note
+
 from nti.dataserver.contenttypes.bookmark import Bookmark
 
 from nti.dataserver.tests.mock_dataserver import WithMockDSTrans
@@ -166,6 +172,7 @@ class TestNotes( NTIAnalyticsTestCase ):
 	def test_notes_with_user_files(self, mock_find_object, mock_container_context):
 		user = User.create_user( username='new_user1', dataserver=self.ds )
 		user2 = User.create_user( username='new_user2', dataserver=self.ds )
+		user3 = User.create_user( username='new_user3', dataserver=self.ds )
 		results = get_notes( user )
 		assert_that( results, has_length( 0 ))
 
@@ -210,10 +217,33 @@ class TestNotes( NTIAnalyticsTestCase ):
 		assert_that( results, has_length( 1 ))
 		note_record = results[0]
 		assert_that( note_record.note_length, is_( text_length * 2 ))
+		assert_that( note_record.FileMimeTypes, has_length( 2 ))
+		assert_that( note_record.FileMimeTypes.get( 'text/plain' ), is_( 2 ))
+		assert_that( note_record.FileMimeTypes.get( 'image/gif' ), is_( 1 ))
+
+		# Canvas with files
+		url_shape = NonpersistentCanvasUrlShape()
+		url_shape._file = File( 'image/png' )
+		canvas.shapeList = (object(), url_shape,)
+		note = Note()
+		note._ds_intid = 1555
+		note.body = ('text_length', text_file, text_file, image_file, 'text_length', canvas)
+		note.creator = user3
+		note.containerId = 'tag:nti:foo'
+		user3.addContainedObject( note )
+		mock_find_object.is_callable().returns( note )
+		mock_container_context.is_callable().returns( course )
+		oid = 15
+		_add_note( oid )
+
+		results = get_notes( user3 )
+		assert_that( results, has_length( 1 ))
+		note_record = results[0]
+		assert_that( note_record.note_length, is_( text_length * 2 ))
 		assert_that( note_record.FileMimeTypes, has_length( 3 ))
 		assert_that( note_record.FileMimeTypes.get( 'text/plain' ), is_( 2 ))
 		assert_that( note_record.FileMimeTypes.get( 'image/gif' ), is_( 1 ))
-		assert_that( note_record.FileMimeTypes.get( Canvas.mime_type ), is_( 1 ))
+		assert_that( note_record.FileMimeTypes.get( 'image/png' ), is_( 1 ))
 
 	@WithMockDSTrans
 	@fudge.patch( 'nti.ntiids.ntiids.find_object_with_ntiid',

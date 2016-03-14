@@ -26,6 +26,8 @@ from nti.analytics_database.interfaces import IAnalyticsRootContextIdentifier
 from nti.contenttypes.courses.interfaces import ICourseInstance
 from nti.contenttypes.courses.interfaces import ICourseCatalogEntry
 
+from nti.externalization.externalization import to_external_ntiid_oid
+
 from nti.ntiids.ntiids import find_object_with_ntiid
 
 @interface.implementer(IAnalyticsIntidIdentifier)
@@ -57,7 +59,9 @@ class _NTIIDIdentifier(object):
 		if isinstance(resource, string_types):
 			result = resource
 		else:
-			result = getattr(resource, 'ntiid', None)
+			result = getattr(resource, 'ntiid', None) \
+					or to_external_ntiid_oid( resource )
+
 		return result
 
 	def get_object(self, uid):

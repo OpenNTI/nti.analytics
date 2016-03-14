@@ -13,32 +13,49 @@ from zope.file.interfaces import IFile
 
 from nti.analytics_database.mime_types import FileMimeTypes
 
+from nti.dataserver.contenttypes.canvas import CanvasUrlShape
+from nti.dataserver.contenttypes.canvas import NonpersistentCanvasUrlShape
+
 from nti.dataserver.interfaces import ICanvas
+
+def get_item_mime_type( obj ):
+	try:
+		mime_type = obj.contentType
+	except AttributeError:
+		mime_type = 	getattr( obj, 'mimeType', None ) \
+					or 	getattr( obj, 'mime_type', None )
+	return mime_type
+
+def _add_mime_type_record( mime_type, mime_dict, db, factory ):
+	if mime_type is not None:
+		record = mime_dict.get( mime_type )
+		if record is None:
+			mime_type_id = get_mime_type_id( db, mime_type )
+			record = factory( file_mime_type_id=mime_type_id,
+					 		  count=0 )
+			mime_dict[mime_type] = record
+		record.count += 1
 
 def build_mime_type_records( db, obj, factory ):
 	"""
 	Given an object and a factory, build all the mimetype
-	records of `IFile` body components.
+	records of `IFile` and `ICanvas` body components.
 	"""
 	result = ()
 	mime_dict = {}
 	for item in obj.body:
-		mime_type = None
 		if IFile.providedBy( item ):
-			mime_type = item.contentType
+			mime_type = get_item_mime_type( item )
+			_add_mime_type_record( mime_type, mime_dict, db, factory )
 		elif ICanvas.providedBy( item ):
-			# XXX: Should we try to distinguish between
-			# image and whiteboard? Can we?
-			mime_type = item.mime_type
-
-		if mime_type is not None:
-			record = mime_dict.get( mime_type )
-			if record is None:
-				mime_type_id = get_mime_type_id( db, mime_type )
-				record = factory( file_mime_type_id=mime_type_id,
-						 		  count=0 )
-				mime_dict[mime_type] = record
-			record.count += 1
+			# For ICanvas, we want to capture the mime_types of the
+			# underlying uploaded files, if available.
+			for shape in item.shapeList:
+				if isinstance( shape, (CanvasUrlShape,NonpersistentCanvasUrlShape) ):
+					# XXX: This is a lot of knowledge.
+					shape_obj = getattr( shape, '_file', None )
+					mime_type = get_item_mime_type( shape_obj )
+					_add_mime_type_record( mime_type, mime_dict, db, factory )
 	if mime_dict:
 		result = mime_dict.values()
 	return result

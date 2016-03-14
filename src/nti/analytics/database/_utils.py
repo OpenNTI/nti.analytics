@@ -9,6 +9,8 @@ __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
+import six
+
 from collections import OrderedDict
 
 from zope import interface
@@ -36,6 +38,8 @@ def get_body_text_length( obj ):
 	"""
 	note_length = 0
 	for item in obj.body or ():
+		if not isinstance( item, six.string_types ):
+			continue
 		try:
 			note_length += len( item )
 		except (AttributeError,TypeError):

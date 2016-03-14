@@ -81,9 +81,7 @@
 	<subscriber handler=".resource_tags._note_flagged" />
 	<subscriber handler=".resource_tags._note_rated" />
 
-	<!-- # FIXME: These IFile objects do not have creators; is that correct?
 	<subscriber handler=".resource_views._file_viewed" />
-	-->
 
 	<subscriber handler=".assessments._grade_added" />
 	<subscriber handler=".assessments._grade_modified" />

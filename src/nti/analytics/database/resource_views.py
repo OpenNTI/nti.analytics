@@ -16,7 +16,6 @@ from nti.analytics_database.resource_views import UserFileUploadViewEvents
 
 from nti.analytics.common import timestamp_type
 
-from nti.analytics.identifier import get_ds_id
 from nti.analytics.identifier import get_ntiid_id
 
 from nti.analytics.interfaces import VIDEO_WATCH
@@ -26,6 +25,7 @@ from nti.analytics.database._utils import get_root_context_ids
 from nti.analytics.database._utils import get_filtered_records
 
 from nti.analytics.database.mime_types import get_mime_type_id
+from nti.analytics.database.mime_types import get_item_mime_type
 
 from nti.analytics.database.users import get_or_create_user
 
@@ -35,8 +35,6 @@ from nti.analytics.database.resources import get_resource_record
 from nti.analytics.database import resolve_objects
 from nti.analytics.database import get_analytics_db
 from nti.analytics.database import should_update_event
-
-from nti.dataserver.users import User
 
 def _resource_view_exists( db, table, user_id, resource_id, timestamp ):
 	return db.session.query( table ).filter(
@@ -197,19 +195,17 @@ def create_video_event(	user,
 	if video_play_speed:
 		video_play_speed.video_view_id = new_object.video_view_id
 
-def create_file_view( file_obj, session_id, timestamp, user, referrer, creator_username ):
-	file_ds_id = get_ds_id( file_obj )
+def create_file_view( file_obj, session_id, timestamp, user, referrer, creator ):
+	file_ds_id = get_ntiid_id( file_obj )
 
 	db = get_analytics_db()
 	user_record = get_or_create_user( user )
 	user_id = user_record.user_id
 	timestamp = timestamp_type( timestamp )
 
-	creator = User.get_user( creator_username )
 	creator = get_or_create_user( creator )
 	creator_id = creator.user_id
-	mime_type = 	getattr( file_obj, 'contentType', None ) \
-				or 	getattr( file_obj, 'mime_type', None )
+	mime_type = get_item_mime_type( file_obj )
 	mime_type_id = get_mime_type_id( db, mime_type )
 
 	file_view = UserFileUploadViewEvents(user_id=user_id,
