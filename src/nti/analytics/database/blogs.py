@@ -17,26 +17,27 @@ from nti.analytics_database.blogs import BlogCommentLikes
 from nti.analytics_database.blogs import BlogCommentsCreated
 from nti.analytics_database.blogs import BlogCommentFavorites
 
-from ..common import get_creator
-from ..common import get_ratings
-from ..common import timestamp_type
-from ..common import get_created_timestamp
+from nti.analytics.common import get_creator
+from nti.analytics.common import get_ratings
+from nti.analytics.common import timestamp_type
+from nti.analytics.common import get_created_timestamp
 
-from ..identifier import get_ds_id
+from nti.analytics.identifier import get_ds_id
 
-from ._utils import resolve_like
-from ._utils import resolve_favorite
-from ._utils import get_context_path
-from ._utils import get_filtered_records
-from ._utils import get_ratings_for_user_objects
-from ._utils import get_replies_to_user as _get_replies_to_user
-from ._utils import get_user_replies_to_others as _get_user_replies_to_others
+from nti.analytics.database import resolve_objects
+from nti.analytics.database import get_analytics_db
+from nti.analytics.database import should_update_event
 
-from .users import get_or_create_user
+from nti.analytics.database._utils import resolve_like
+from nti.analytics.database._utils import resolve_favorite
+from nti.analytics.database._utils import get_context_path
+from nti.analytics.database._utils import get_body_text_length
+from nti.analytics.database._utils import get_filtered_records
+from nti.analytics.database._utils import get_ratings_for_user_objects
+from nti.analytics.database._utils import get_replies_to_user as _get_replies_to_user
+from nti.analytics.database._utils import get_user_replies_to_others as _get_user_replies_to_others
 
-from . import resolve_objects
-from . import get_analytics_db
-from . import should_update_event
+from nti.analytics.database.users import get_or_create_user
 
 def _get_blog_id( db, blog_ds_id ):
 	blog = db.session.query(BlogsCreated).filter( BlogsCreated.blog_ds_id == blog_ds_id ).first()
@@ -59,18 +60,11 @@ def create_blog( user, nti_session, blog_entry ):
 	timestamp = get_created_timestamp( blog_entry )
 	blog_length = None
 
-	# TODO What about the headline?
-	# TODO We should probably capture text length when possible
-	# and marking if canvas or video are embedded.
 	try:
 		if blog_entry.description is not None:
 			blog_length = len( blog_entry.description )
 	except AttributeError:
-		try:
-			blog_length = sum( len( x ) for x in blog_entry.body )
-		except TypeError:
-			# Embedded Video
-			pass
+		blog_length = get_body_text_length( blog_entry )
 
 	new_object = BlogsCreated( 	user_id=uid,
 								session_id=sid,
@@ -247,7 +241,7 @@ def create_blog_comment(user, nti_session, blog, comment ):
 		parent_user_record = get_or_create_user( parent_creator )
 		parent_user_id = parent_user_record.user_id
 
-	comment_length = sum( len( x ) for x in comment.body ) if comment.body else 0
+	comment_length = get_body_text_length( comment )
 
 	new_object = BlogCommentsCreated( 	user_id=uid,
 										session_id=sid,

@@ -39,6 +39,7 @@ from nti.analytics.resolvers import get_root_context
 from nti.analytics.database._utils import resolve_like
 from nti.analytics.database._utils import get_context_path
 from nti.analytics.database._utils import resolve_favorite
+from nti.analytics.database._utils import get_body_text_length
 from nti.analytics.database._utils import get_filtered_records
 from nti.analytics.database._utils import get_root_context_ids
 from nti.analytics.database._utils import get_ratings_for_user_objects
@@ -129,13 +130,7 @@ def create_note(user, nti_session, note):
 	timestamp = get_created_timestamp(note)
 	sharing = _get_sharing_enum(note, course)
 	like_count, favorite_count, is_flagged = get_ratings(note)
-
-	note_length = 0
-	for item in note.body:
-		try:
-			note_length += len( item )
-		except (AttributeError,TypeError):
-			pass
+	note_length = get_body_text_length( note )
 
 	parent_id = parent_user_id = None
 	parent_note = getattr(note, 'inReplyTo', None)

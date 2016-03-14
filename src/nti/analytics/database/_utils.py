@@ -30,6 +30,18 @@ from nti.contenttypes.courses.interfaces import ICourseSubInstance
 
 from nti.dataserver.interfaces import IEntity
 
+def get_body_text_length( obj ):
+	"""
+	For a given obj with a body, find the length of the textual content.
+	"""
+	note_length = 0
+	for item in obj.body or ():
+		try:
+			note_length += len( item )
+		except (AttributeError,TypeError):
+			pass
+	return note_length
+
 def get_context_path(context_path):
 	# Note: we could also sub these resource_ids for the actual
 	# ids off of the Resources table.  That would be a bit tricky, because

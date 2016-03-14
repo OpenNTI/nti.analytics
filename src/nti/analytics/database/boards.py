@@ -35,6 +35,7 @@ from nti.analytics.identifier import get_ds_object
 from nti.analytics.database._utils import resolve_like
 from nti.analytics.database._utils import resolve_favorite
 from nti.analytics.database._utils import get_context_path
+from nti.analytics.database._utils import get_body_text_length
 from nti.analytics.database._utils import get_root_context_ids
 from nti.analytics.database._utils import get_filtered_records
 from nti.analytics.database._utils import get_ratings_for_user_objects
@@ -366,7 +367,7 @@ def create_forum_comment(user, nti_session, topic, comment):
 	timestamp = get_created_timestamp( comment )
 	like_count, favorite_count, is_flagged = get_ratings( comment )
 
-	comment_length = sum( len( x ) for x in comment.body )
+	comment_length = get_body_text_length( comment )
 
 	parent_comment = getattr( comment, 'inReplyTo', None )
 	if parent_comment is not None:

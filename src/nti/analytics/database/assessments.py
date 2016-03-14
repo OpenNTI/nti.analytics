@@ -37,27 +37,28 @@ from nti.assessment.randomized.interfaces import IQRandomizedPart
 
 from nti.ntiids.ntiids import find_object_with_ntiid
 
-from ..common import get_creator
-from ..common import timestamp_type
-from ..common import get_created_timestamp
-from ..common import get_course as get_course_from_object
+from nti.analytics.common import get_creator
+from nti.analytics.common import timestamp_type
+from nti.analytics.common import get_created_timestamp
+from nti.analytics.common import get_course as get_course_from_object
 
-from ..identifier import get_ds_id
-from ..identifier import get_ntiid_id
+from nti.analytics.identifier import get_ds_id
+from nti.analytics.identifier import get_ntiid_id
 
-from ._utils import get_context_path
-from ._utils import get_filtered_records
+from nti.analytics.database import resolve_objects
+from nti.analytics.database import get_analytics_db
+from nti.analytics.database import should_update_event
 
-from .resources import get_resource_id
+from nti.analytics.database._utils import get_context_path
+from nti.analytics.database._utils import get_filtered_records
+from nti.analytics.database._utils import get_body_text_length
 
-from .root_context import get_root_context_id
+from nti.analytics.database.resources import get_resource_id
 
-from .users import get_user_db_id
-from .users import get_or_create_user
+from nti.analytics.database.root_context import get_root_context_id
 
-from . import resolve_objects
-from . import get_analytics_db
-from . import should_update_event
+from nti.analytics.database.users import get_user_db_id
+from nti.analytics.database.users import get_or_create_user
 
 def _get_duration( submission ):
 	"""
@@ -401,7 +402,7 @@ def create_submission_feedback( user, nti_session, timestamp, submission, feedba
 		logger.warn( 'Feedback exists (ds_id=%s) (user=%s)', feedback_ds_id, user )
 		return
 
-	feedback_length = sum( len( x ) for x in feedback.body )
+	feedback_length = get_body_text_length( feedback )
 
 	submission_id = get_ds_id( submission )
 	assignment_taken_id = _get_assignment_taken_id( db, submission_id )
