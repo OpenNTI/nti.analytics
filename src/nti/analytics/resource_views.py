@@ -11,33 +11,16 @@ logger = __import__('logging').getLogger(__name__)
 
 import urlparse
 
-from datetime import datetime
-
-from pyramid.threadlocal import get_current_request
-
-from zope import component
-
 from zope.event import notify
 
 from nti.ntiids import ntiids
-
-from nti.app.assessment.interfaces import IUsersCourseAssignmentHistoryItemFeedback
-
-from nti.appserver.interfaces import IFileViewedEvent
 
 from nti.contenttypes.courses.interfaces import ICourseInstance
 
 from nti.contentlibrary.interfaces import IContentPackage
 from nti.contentlibrary.interfaces import IContentPackageBundle
 
-from nti.dataserver.contenttypes.forums.interfaces import IPost
-
-from nti.dataserver.interfaces import INote
 from nti.dataserver.interfaces import IEntity
-
-from nti.ntiids.ntiids import find_object_with_ntiid
-
-from nti.traversal.traversal import find_interface
 
 from nti.analytics.interfaces import IVideoEvent
 from nti.analytics.interfaces import IBlogViewEvent
@@ -627,52 +610,6 @@ def handle_events( batch_events ):
 	# events. The nti.async.processor does this and at least drops the bad
 	# events in a failed queue.
 	return len( batch_events )
-
-def _get_file_view_root_obj( file_obj ):
-	"""
-	For a file view, we want the root object of types we allow
-	(comments, feedback, or UGD).
-	"""
-	for iface in (INote, IUsersCourseAssignmentHistoryItemFeedback, IPost):
-		root_obj = find_interface( file_obj, iface, strict=False )
-		if root_obj is not None:
-			return root_obj
-	return None
-
-def create_file_view( oid, nti_session, timestamp, username, referrer ):
-	file_obj = find_object_with_ntiid( oid )
-	user = get_entity( username )
-	if file_obj is None or user is None:
-		return
-
-	# We do this here to not slow down the ds request processing.
-	root_obj = _get_file_view_root_obj( file_obj )
-	if root_obj is None:
-		# We only want topic/post/feedback data; so if we find a course, we know it's
-		# authored/uploaded files.
-		return
-
-	# Root obj creator should be our file owner, which we may not store in the ds.
-	creator = root_obj.creator
-	db_resource_views.create_file_view( file_obj, nti_session, timestamp, user, referrer, creator )
-
-@component.adapter(	IFileViewedEvent )
-def _file_viewed( event ):
-	nti_session = get_nti_session_id()
-	username = event.request.remote_user
-	referrer = event.request.referrer
-	process_event( 	_get_resource_queue,
-					create_file_view,
-					event.context,
-					nti_session=nti_session,
-					timestamp=datetime.utcnow(),
-					username=username,
-					referrer=referrer )
-
-	# Make sure we commit our job
-	request = get_current_request()
-	if request is not None:
-		request.environ['nti.request_had_transaction_side_effects'] = True
 
 class UnrecoverableAnalyticsError( Exception ):
 	"""

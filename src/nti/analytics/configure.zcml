@@ -81,7 +81,7 @@
 	<subscriber handler=".resource_tags._note_flagged" />
 	<subscriber handler=".resource_tags._note_rated" />
 
-	<subscriber handler=".resource_views._file_viewed" />
+	<subscriber handler=".user_file_views._file_viewed" />
 
 	<subscriber handler=".assessments._grade_added" />
 	<subscriber handler=".assessments._grade_modified" />

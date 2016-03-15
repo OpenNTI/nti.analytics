@@ -11,6 +11,7 @@ logger = __import__('logging').getLogger(__name__)
 
 from nti.analytics.common import timestamp_type
 
+from nti.analytics.database import resolve_objects
 from nti.analytics.database import get_analytics_db
 
 from nti.analytics.database._utils import get_filtered_records
@@ -53,6 +54,13 @@ def create_search_event( timestamp, session_id, username, elapsed, hit_count, te
 	logger.info('Created search event (user=%s) (term=%s)', username, term)
 	return user
 
+def _resolve_search_query(row, user=None, course=None):
+	if user is not None:
+		row.user = user
+	if course is not None:
+		row.RootContext = course
+	return row
+
 def get_search_queries( user=None, course=None, **kwargs ):
 	results = get_filtered_records( user, SearchQueries, course=course, **kwargs )
-	return results
+	return resolve_objects( _resolve_search_query, results, user=user, course=course )
