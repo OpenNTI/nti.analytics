@@ -13,8 +13,7 @@ from zope.file.interfaces import IFile
 
 from nti.analytics_database.mime_types import FileMimeTypes
 
-from nti.dataserver.contenttypes.canvas import CanvasUrlShape
-from nti.dataserver.contenttypes.canvas import NonpersistentCanvasUrlShape
+from nti.dataserver.interfaces import ICanvasURLShape
 
 from nti.dataserver.interfaces import ICanvas
 
@@ -51,7 +50,7 @@ def build_mime_type_records( db, obj, factory ):
 			# For ICanvas, we want to capture the mime_types of the
 			# underlying uploaded files, if available.
 			for shape in item.shapeList:
-				if isinstance( shape, (CanvasUrlShape,NonpersistentCanvasUrlShape) ):
+				if ICanvasURLShape.providedBy( shape ):
 					# XXX: This is a lot of knowledge.
 					shape_obj = getattr( shape, '_file', None )
 					mime_type = get_item_mime_type( shape_obj )
