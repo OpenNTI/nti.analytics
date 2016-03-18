@@ -64,7 +64,7 @@ def create_user(user):
 				username, user.user_id, uid)
 	return user
 
-def _get_user_record(user):
+def get_user_record(user):
 	# Look into using sqlalchemy baked queries for this
 	# and other high volume calls that return a single row.
 	# This is still considered experimental for 1.0.0.
@@ -74,7 +74,7 @@ def _get_user_record(user):
 	return found_user
 
 def get_or_create_user(user):
-	found_user = _get_user_record(user)
+	found_user = get_user_record(user)
 	if found_user is not None:
 		# Lazy build fields.
 		# This can only be called on POSTs.
@@ -86,7 +86,7 @@ def get_or_create_user(user):
 	return found_user or create_user(user)
 
 def get_user_db_id(user):
-	found_user = _get_user_record(user)
+	found_user = get_user_record(user)
 	return found_user and found_user.user_id
 
 def get_user(user_id):
@@ -115,3 +115,4 @@ def update_user_research(user_ds_id, allow_research):
 								  Users.user_ds_id == user_ds_id).first()
 	if found_user is not None:
 		found_user.allow_research = allow_research
+

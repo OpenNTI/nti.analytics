@@ -25,6 +25,8 @@ from nti.analytics import get_factory
 from nti.analytics import DELETE_ANALYTICS
 from nti.analytics import USERS_ANALYTICS
 
+get_user_record = db_users.get_user_record
+
 def _get_delete_queue():
 	factory = get_factory()
 	return factory.get_queue( DELETE_ANALYTICS )
