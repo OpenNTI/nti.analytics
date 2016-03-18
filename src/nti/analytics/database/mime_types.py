@@ -42,7 +42,7 @@ def build_mime_type_records( db, obj, factory ):
 	"""
 	result = ()
 	mime_dict = {}
-	for item in obj.body:
+	for item in obj.body or ():
 		if IFile.providedBy( item ):
 			mime_type = get_item_mime_type( item )
 			_add_mime_type_record( mime_type, mime_dict, db, factory )
