@@ -136,7 +136,6 @@ def _modify_general_forum_comment(comment, _):
 			comment_id = get_ds_id( comment )
 			process_event( _get_comments_queue, _remove_comment, comment_id=comment_id, timestamp=timestamp )
 
-
 # Topic
 def _add_topic( oid, nti_session=None ):
 	topic = ntiids.find_object_with_ntiid( oid )

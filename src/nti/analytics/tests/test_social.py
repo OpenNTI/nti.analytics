@@ -24,14 +24,14 @@ from nti.dataserver.users.friends_lists import DynamicFriendsList
 
 from nti.dataserver.tests.mock_dataserver import WithMockDSTrans
 
-from . import NTIAnalyticsTestCase
+from nti.analytics.tests import NTIAnalyticsTestCase
 
-from ..social import _add_dfl
-from ..social import _add_dfl_member
-from ..social import get_contacts_added
-from ..social import _update_friends_list
-from ..social import get_groups_created
-from ..social import get_groups_joined
+from nti.analytics.social import _add_dfl
+from nti.analytics.social import _add_dfl_member
+from nti.analytics.social import get_contacts_added
+from nti.analytics.social import _update_friends_list
+from nti.analytics.social import get_groups_created
+from nti.analytics.social import get_groups_joined
 
 class TestSocial( NTIAnalyticsTestCase ):
 

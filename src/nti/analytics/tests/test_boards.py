@@ -17,6 +17,8 @@ from datetime import timedelta
 
 from zope import component
 
+from zope.file.file import File
+
 from hamcrest import is_
 from hamcrest import has_length
 from hamcrest import assert_that
@@ -26,34 +28,43 @@ from nti.dataserver.users import Community
 
 from nti.contenttypes.courses.courses import CourseInstance
 
+from nti.dataserver.contenttypes.canvas import Canvas
+from nti.dataserver.contenttypes.canvas import NonpersistentCanvasUrlShape
+
 from nti.dataserver.contenttypes.forums.forum import GeneralForum
+
 from nti.dataserver.contenttypes.forums.topic import GeneralTopic
+from nti.dataserver.contenttypes.forums.topic import GeneralHeadlineTopic
+
 from nti.dataserver.contenttypes.forums.post import GeneralForumComment
+from nti.dataserver.contenttypes.forums.post import GeneralHeadlinePost
 
 from nti.dataserver.tests.mock_dataserver import WithMockDSTrans
 
-from . import NTIAnalyticsTestCase
+from nti.namedfile.file import NamedBlobFile
 
-from ..boards import _add_comment
-from ..boards import _like_topic
-from ..boards import _like_comment
-from ..boards import _favorite_topic
-from ..boards import _favorite_comment
-from ..boards import _add_topic
-from ..boards import get_topic_views
-from ..boards import get_replies_to_user
-from ..boards import get_forum_comments
-from ..boards import get_topics_created_for_user
-from ..boards import get_user_replies_to_others
-from ..boards import get_likes_for_users_topics
-from ..boards import get_forum_comments_for_user
-from ..boards import get_likes_for_users_comments
-from ..boards import get_favorites_for_users_topics
-from ..boards import get_favorites_for_users_comments
+from nti.analytics.tests import NTIAnalyticsTestCase
 
-from ..model import TopicViewEvent
+from nti.analytics.boards import _add_comment
+from nti.analytics.boards import _like_topic
+from nti.analytics.boards import _like_comment
+from nti.analytics.boards import _favorite_topic
+from nti.analytics.boards import _favorite_comment
+from nti.analytics.boards import _add_topic
+from nti.analytics.boards import get_topic_views
+from nti.analytics.boards import get_replies_to_user
+from nti.analytics.boards import get_forum_comments
+from nti.analytics.boards import get_topics_created_for_user
+from nti.analytics.boards import get_user_replies_to_others
+from nti.analytics.boards import get_likes_for_users_topics
+from nti.analytics.boards import get_forum_comments_for_user
+from nti.analytics.boards import get_likes_for_users_comments
+from nti.analytics.boards import get_favorites_for_users_topics
+from nti.analytics.boards import get_favorites_for_users_comments
 
-from ..resource_views import _add_topic_event
+from nti.analytics.model import TopicViewEvent
+
+from nti.analytics.resource_views import _add_topic_event
 
 class TestComments( NTIAnalyticsTestCase ):
 
@@ -196,8 +207,7 @@ class TestComments( NTIAnalyticsTestCase ):
 		intids = component.getUtility( zope.intid.IIntIds )
 		course = CourseInstance()
 
-		# Create forum/topic
-		# Should be lazily created
+		# Create forum/topic; should be lazily created
 		forum = GeneralForum()
 		forum.creator = user1
 		forum.__parent__ = course
@@ -374,3 +384,60 @@ class TestComments( NTIAnalyticsTestCase ):
 		topics = get_topics_created_for_user( user2 )
 		assert_that( topics, has_length( 1 ))
 		assert_that( topics[0].RootContext, is_( community ))
+
+	@WithMockDSTrans
+	@fudge.patch( 'nti.ntiids.ntiids.find_object_with_ntiid' )
+	def test_topic_user_files(self, mock_find_object):
+		user1 = User.create_user( username='new_user1', dataserver=self.ds )
+		user2 = User.create_user( username='new_user2', dataserver=self.ds )
+
+		results = get_topics_created_for_user( user1 )
+		assert_that( results, has_length( 0 ))
+		results = get_forum_comments_for_user( user1 )
+		assert_that( results, has_length( 0 ))
+
+		# Create topic/comment without files; post is created automatically.
+		topic = GeneralHeadlineTopic()
+		topic._ds_intid = 888
+		topic.creator = user1
+		mock_find_object.is_callable().returns( topic )
+		oid = 13
+
+		comment = GeneralHeadlinePost()
+		comment._ds_intid = 9992
+		comment.creator = user1
+		comment.inReplyTo = None
+		comment.__parent__ = topic
+		topic.headline = comment
+		_add_topic( oid )
+
+		results = get_topics_created_for_user( user1 )
+		assert_that( results, has_length( 1 ))
+		results = get_forum_comments_for_user( user1 )
+		assert_that( results, has_length( 1 ))
+		comment_record = results[0]
+		assert_that( comment_record.FileMimeTypes, has_length( 0 ))
+
+		# Create topic/comment with headline post with files
+		topic._ds_intid = 999
+		comment._ds_intid = 9999
+		comment.creator = topic.creator = user2
+
+		text_file = NamedBlobFile(data='data', contentType=b'text/plain', filename='foo.txt')
+		image_file = NamedBlobFile(data='data', contentType=b'image/gif', filename='foo.jpg')
+		canvas = Canvas()
+		url_shape = NonpersistentCanvasUrlShape()
+		url_shape._file = File( 'image/png' )
+		canvas.shapeList = (object(), url_shape,)
+		text_length = len( 'text_length' )
+		comment.body = ('text_length', text_file, text_file, image_file, 'text_length', canvas)
+
+		_add_topic( oid )
+		results = get_forum_comments_for_user( user2 )
+		assert_that( results, has_length( 1 ))
+		comment_record = results[0]
+		assert_that( comment_record.comment_length, is_( text_length * 2 ))
+		assert_that( comment_record.FileMimeTypes, has_length( 3 ))
+		assert_that( comment_record.FileMimeTypes.get( 'text/plain' ), is_( 2 ))
+		assert_that( comment_record.FileMimeTypes.get( 'image/gif' ), is_( 1 ))
+		assert_that( comment_record.FileMimeTypes.get( 'image/png' ), is_( 1 ))

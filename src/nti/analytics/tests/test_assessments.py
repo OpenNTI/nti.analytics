@@ -26,10 +26,10 @@ from nti.analytics.model import AssignmentViewEvent
 
 from nti.dataserver.tests.mock_dataserver import WithMockDSTrans
 
-from . import NTIAnalyticsTestCase
+from nti.analytics.tests import NTIAnalyticsTestCase
 
-from ..resource_views import _add_self_assessment_event
-from ..resource_views import _add_assignment_event
+from nti.analytics.resource_views import _add_self_assessment_event
+from nti.analytics.resource_views import _add_assignment_event
 
 class TestAssessments( NTIAnalyticsTestCase ):
 

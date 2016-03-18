@@ -33,19 +33,19 @@ from nti.analytics.resolvers import get_course_for_ntiid
 
 from nti.analytics.sessions import get_nti_session_id
 
-from . import get_factory
-from . import ASSESSMENTS_ANALYTICS
+from nti.analytics import get_factory
+from nti.analytics import ASSESSMENTS_ANALYTICS
 
-from .common import get_entity
-from .common import get_course
-from .common import get_creator
-from .common import process_event
-from .common import get_object_root
-from .common import get_created_timestamp
+from nti.analytics.common import get_entity
+from nti.analytics.common import get_course
+from nti.analytics.common import get_creator
+from nti.analytics.common import process_event
+from nti.analytics.common import get_object_root
+from nti.analytics.common import get_created_timestamp
 
-from .database import assessments as db_assessments
+from nti.analytics.database import assessments as db_assessments
 
-from .interfaces import IObjectProcessor
+from nti.analytics.interfaces import IObjectProcessor
 
 component.moduleProvides(IObjectProcessor)
 

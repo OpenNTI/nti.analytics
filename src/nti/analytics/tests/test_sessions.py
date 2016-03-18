@@ -20,10 +20,10 @@ from nti.dataserver.users import User
 
 from nti.dataserver.tests.mock_dataserver import WithMockDSTrans
 
-from . import NTIAnalyticsTestCase
+from nti.analytics.tests import NTIAnalyticsTestCase
 
-from ..sessions import _add_session
-from ..sessions import get_user_sessions
+from nti.analytics.sessions import _add_session
+from nti.analytics.sessions import get_user_sessions
 
 class TestSessions( NTIAnalyticsTestCase ):
 

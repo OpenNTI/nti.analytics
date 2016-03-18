@@ -36,7 +36,7 @@ from nti.analytics.common import get_rating_from_event
 
 from nti.analytics.database import resource_tags as db_resource_tags
 
-from .identifier import get_ds_id
+from nti.analytics.identifier import get_ds_id
 
 from nti.analytics import get_factory
 from nti.analytics import TAGS_ANALYTICS
@@ -123,7 +123,6 @@ def _note_removed( obj, _ ):
 		timestamp = datetime.utcnow()
 		note_id = get_ds_id( obj )
 		process_event( _get_job_queue, _remove_note, note_id=note_id, timestamp=timestamp )
-
 
 # Highlights
 def _add_highlight( oid, nti_session=None ):

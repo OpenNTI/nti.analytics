@@ -23,6 +23,7 @@ from nti.analytics_database.assessments import SelfAssessmentViews
 from nti.analytics_database.assessments import SelfAssessmentsTaken
 from nti.analytics_database.assessments import SelfAssessmentDetails
 from nti.analytics_database.assessments import AssignmentDetailGrades
+from nti.analytics_database.assessments import FeedbackUserFileUploadMimeTypes
 
 from nti.app.products.gradebook.interfaces import IGrade
 
@@ -52,6 +53,8 @@ from nti.analytics.database import should_update_event
 from nti.analytics.database._utils import get_context_path
 from nti.analytics.database._utils import get_filtered_records
 from nti.analytics.database._utils import get_body_text_length
+
+from nti.analytics.database.mime_types import build_mime_type_records
 
 from nti.analytics.database.resources import get_resource_id
 
@@ -379,7 +382,7 @@ def _get_grade_entry( db, assignment_taken_id ):
 	# Currently, one assignment means one grade (and one grader).  If that changes, we'll
 	# need to change this (at least)
 	grade_entry = db.session.query(AssignmentGrades).filter(
-												AssignmentGrades.assignment_taken_id==assignment_taken_id ).first()
+								   AssignmentGrades.assignment_taken_id==assignment_taken_id ).first()
 	return grade_entry
 
 def _get_grade_id( db, assignment_taken_id ):
@@ -388,7 +391,7 @@ def _get_grade_id( db, assignment_taken_id ):
 
 def _feedback_exists( db, feedback_ds_id ):
 	return db.session.query( AssignmentFeedback ).filter(
-							AssignmentFeedback.feedback_ds_id == feedback_ds_id ).count()
+							 AssignmentFeedback.feedback_ds_id == feedback_ds_id ).count()
 
 def create_submission_feedback( user, nti_session, timestamp, submission, feedback ):
 	db = get_analytics_db()
@@ -427,12 +430,20 @@ def create_submission_feedback( user, nti_session, timestamp, submission, feedba
 									feedback_length=feedback_length,
 									grade_id=grade_id )
 	db.session.add( new_object )
+	db.session.flush()
+
+	feedback_id = new_object.feedback_id
+	file_mime_types = build_mime_type_records( db, feedback, FeedbackUserFileUploadMimeTypes )
+	for mime_record in file_mime_types:
+		mime_record.feedback_id = feedback_id
+		db.session.add( mime_record )
+	return new_object
 
 def delete_feedback( timestamp, feedback_ds_id ):
 	db = get_analytics_db()
 	timestamp = timestamp_type( timestamp )
 	feedback = db.session.query(AssignmentFeedback).filter(
-							AssignmentFeedback.feedback_ds_id == feedback_ds_id ).first()
+								AssignmentFeedback.feedback_ds_id == feedback_ds_id ).first()
 	if not feedback:
 		logger.info( 'Feedback never created (%s)', feedback_ds_id )
 		return
@@ -564,7 +575,7 @@ def get_assignment_grades_for_course(course, assignment_id):
 
 	return resolve_objects( _resolve_assignment, results )
 
-# FIXME Rename func, details are relationship?
+# TODO: Rename func, details are relationship?
 def get_assignment_details_for_course(course, assignment_id):
 	db = get_analytics_db()
 	course_id = get_root_context_id( db, course )

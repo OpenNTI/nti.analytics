@@ -8,9 +8,6 @@ __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
-from fudge import patch_object
-from zope import component
-
 from hamcrest import assert_that
 from hamcrest import has_length
 
@@ -23,8 +20,6 @@ from nti.dataserver.tests.mock_dataserver import WithMockDSTrans
 
 from nti.analytics.database.enrollments import CourseEnrollments
 from nti.analytics.database.enrollments import CourseDrops
-
-#from nti.analytics.enrollments import _user_enrollments
 
 from nti.analytics.tests import NTIAnalyticsTestCase
 

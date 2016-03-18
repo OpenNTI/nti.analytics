@@ -43,7 +43,7 @@ from nti.dataserver.contenttypes.forums.forum import CommunityForum
 
 from nti.testing.time import time_monotonically_increases
 
-from . import NTIAnalyticsTestCase
+from nti.analytics.tests import NTIAnalyticsTestCase
 
 class MockDBRecord( object ):
 	"""

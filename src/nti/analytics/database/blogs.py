@@ -16,6 +16,7 @@ from nti.analytics_database.blogs import BlogFavorites
 from nti.analytics_database.blogs import BlogCommentLikes
 from nti.analytics_database.blogs import BlogCommentsCreated
 from nti.analytics_database.blogs import BlogCommentFavorites
+from nti.analytics_database.blogs import BlogCommentsUserFileUploadMimeTypes
 
 from nti.analytics.common import get_creator
 from nti.analytics.common import get_ratings
@@ -36,6 +37,8 @@ from nti.analytics.database._utils import get_filtered_records
 from nti.analytics.database._utils import get_ratings_for_user_objects
 from nti.analytics.database._utils import get_replies_to_user as _get_replies_to_user
 from nti.analytics.database._utils import get_user_replies_to_others as _get_user_replies_to_others
+
+from nti.analytics.database.mime_types import build_mime_type_records
 
 from nti.analytics.database.users import get_or_create_user
 
@@ -76,6 +79,9 @@ def create_blog( user, nti_session, blog_entry ):
 								is_flagged=is_flagged )
 	db.session.add( new_object )
 	db.session.flush()
+	# See .boards.py
+	if getattr( blog_entry, 'headline', None ) is not None:
+		create_blog_comment(user, nti_session, blog_entry, blog_entry.headline )
 	return new_object
 
 def delete_blog( timestamp, blog_ds_id ):
@@ -256,6 +262,11 @@ def create_blog_comment(user, nti_session, blog, comment ):
 										is_flagged=is_flagged )
 	db.session.add( new_object )
 	db.session.flush()
+	comment_id = new_object.comment_id
+	file_mime_types = build_mime_type_records( db, comment, BlogCommentsUserFileUploadMimeTypes )
+	for mime_record in file_mime_types:
+		mime_record.comment_id = comment_id
+		db.session.add( mime_record )
 	return new_object
 
 def delete_blog_comment(timestamp, comment_id):

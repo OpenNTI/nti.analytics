@@ -19,6 +19,7 @@ from nti.analytics_database.boards import TopicFavorites
 from nti.analytics_database.boards import ForumCommentLikes
 from nti.analytics_database.boards import ForumCommentsCreated
 from nti.analytics_database.boards import ForumCommentFavorites
+from nti.analytics_database.boards import ForumCommentsUserFileUploadMimeTypes
 
 from nti.dataserver.interfaces import IEntity
 
@@ -41,6 +42,8 @@ from nti.analytics.database._utils import get_filtered_records
 from nti.analytics.database._utils import get_ratings_for_user_objects
 from nti.analytics.database._utils import get_replies_to_user as _get_replies_to_user
 from nti.analytics.database._utils import get_user_replies_to_others as _get_user_replies_to_others
+
+from nti.analytics.database.mime_types import build_mime_type_records
 
 from nti.analytics.database.root_context import get_root_context_id
 
@@ -175,18 +178,24 @@ def create_topic(user, nti_session, topic):
 	timestamp = get_created_timestamp( topic )
 	like_count, favorite_count, is_flagged = get_ratings( topic )
 
-	new_object = TopicsCreated( 	user_id=uid,
-									session_id=sid,
-									timestamp=timestamp,
-									course_id=course_id,
-									entity_root_context_id=entity_root_context_id,
-									forum_id=fid,
-									topic_ds_id=topic_ds_id,
-									like_count=like_count,
-									favorite_count=favorite_count,
-									is_flagged=is_flagged )
+	new_object = TopicsCreated( user_id=uid,
+								session_id=sid,
+								timestamp=timestamp,
+								course_id=course_id,
+								entity_root_context_id=entity_root_context_id,
+								forum_id=fid,
+								topic_ds_id=topic_ds_id,
+								like_count=like_count,
+								favorite_count=favorite_count,
+								is_flagged=is_flagged )
 	db.session.add( new_object )
 	db.session.flush()
+	# We manually roll our headline into the comments table (same in blogs),
+	# since these objects are not broadcast. This may make it difficult to
+	# get topic/headline stats only without accessing the ds, and it will
+	# be difficult to get non-headline comment data only.
+	if getattr( topic, 'headline', None ) is not None:
+		create_forum_comment(user, nti_session, topic, topic.headline)
 	return new_object
 
 def delete_topic(timestamp, topic_ds_id):
@@ -391,6 +400,12 @@ def create_forum_comment(user, nti_session, topic, comment):
 										favorite_count=favorite_count,
 										is_flagged=is_flagged )
 	db.session.add( new_object )
+	db.session.flush()
+	comment_id = new_object.comment_id
+	file_mime_types = build_mime_type_records( db, comment, ForumCommentsUserFileUploadMimeTypes )
+	for mime_record in file_mime_types:
+		mime_record.comment_id = comment_id
+		db.session.add( mime_record )
 	return new_object
 
 def delete_forum_comment(timestamp, comment_id):
