@@ -549,6 +549,7 @@ def get_assignments_for_user(user, course=None, **kwargs):
 	results = get_filtered_records( user, AssignmentsTaken, course=course, **kwargs )
 	return resolve_objects( _resolve_assignment, results, course=course )
 
+# TODO: These two func may be redundant.
 def get_self_assessments_for_course(course):
 	db = get_analytics_db()
 	course_id = get_root_context_id( db, course )

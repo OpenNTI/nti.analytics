@@ -99,9 +99,9 @@ def build_post_stats(records, clazz, obj_field, length_field):
 			obj = getattr(post, obj_field, None)
 
 			if obj is not None:
-				# Waking up object, expensive if we're
-				# waking up every child?
-				recursive_child_count += len(obj.referents)
+				# Waking up object, expensive if we're waking up every child?
+				# HeadlinePosts do not have referents.
+				recursive_child_count += len( getattr( obj, 'referents', ()))
 
 				if _has_whiteboard(obj):
 					contains_board_count += 1
