@@ -31,8 +31,8 @@ class IPostMixin(ICountStats):
 	ReplyCount = Number(title="The number of reply posts.", required=True)
 	DistinctPostsLiked = Number(title="The number of distinct posts liked.", required=True)
 	DistinctPostsFavorited = Number(title="The number of distinct posts favorited.", required=True)
-	TotalLikes = Number(title="The total number of posts likes.", required=True)
-	TotalFavorites = Number(title="The total number of posts favorites.", required=True)
+	TotalLikes = Number(title="The total number of posts liked.", required=True)
+	TotalFavorites = Number(title="The total number of posts favorited.", required=True)
 	RecursiveChildrenCount = Number(title="The total number of direct or indirect children of this post.",
 									required=True)
 	StandardDeviationLength = Float(title="Standard deviation body length", required=False)

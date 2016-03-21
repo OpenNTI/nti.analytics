@@ -101,7 +101,7 @@ def build_post_stats(records, clazz, obj_field, length_field, all_mime_types):
 			obj = getattr(post, obj_field, None)
 
 			if obj is not None:
-				# WakeupFDTestsing up object, expensive if we're waking up every child?
+				# Waking up object, expensive if we're waking up every child?
 				# HeadlinePosts do not have referents.
 				recursive_child_count += len( getattr( obj, 'referents', ()))
 
