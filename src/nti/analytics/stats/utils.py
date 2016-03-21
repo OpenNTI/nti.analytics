@@ -61,7 +61,7 @@ def _has_whiteboard(obj):
 				return True
 	return False
 
-def build_post_stats(records, clazz, obj_field, length_field):
+def build_post_stats(records, clazz, obj_field, length_field, all_mime_types):
 	"""
 	Given post (comment/blog/note/etc) records, build a post stats object
 	using the given factory.
@@ -71,6 +71,8 @@ def build_post_stats(records, clazz, obj_field, length_field):
 	total_likes = total_faves = total_length = 0
 	recursive_child_count = contains_board_count = 0
 	average_length = std_dev_length = 0
+
+	upload_mime_type_counts = {}
 
 	if records:
 		lengths = []
@@ -99,12 +101,19 @@ def build_post_stats(records, clazz, obj_field, length_field):
 			obj = getattr(post, obj_field, None)
 
 			if obj is not None:
-				# Waking up object, expensive if we're waking up every child?
+				# WakeupFDTestsing up object, expensive if we're waking up every child?
 				# HeadlinePosts do not have referents.
 				recursive_child_count += len( getattr( obj, 'referents', ()))
 
 				if _has_whiteboard(obj):
 					contains_board_count += 1
+
+			if post.FileMimeTypes:
+				for mime_type, mime_count in post.FileMimeTypes.items():
+					try:
+						upload_mime_type_counts[mime_type] += mime_count
+					except KeyError:
+						upload_mime_type_counts[mime_type] = mime_count
 
 		average_length = total_length / count
 		std_dev_length = get_std_dev(lengths, total_length)
@@ -120,5 +129,10 @@ def build_post_stats(records, clazz, obj_field, length_field):
 					   StandardDeviationLength=std_dev_length,
 					   AverageLength=average_length,
 					   ContainsWhiteboardCount=contains_board_count)
+
+	# Set mime_type attributes for simple externalization
+	for mime_type in all_mime_types or ():
+		mime_count = upload_mime_type_counts.get( mime_type, 0 )
+		setattr( post_stats, 'FileUpload_%s' % mime_type, mime_count )
 
 	return post_stats
