@@ -13,6 +13,8 @@ from zope.file.interfaces import IFile
 
 from nti.analytics_database.mime_types import FileMimeTypes
 
+from nti.analytics.database import get_analytics_db
+
 from nti.dataserver.interfaces import ICanvasURLShape
 
 from nti.dataserver.interfaces import ICanvas
@@ -70,3 +72,11 @@ def get_mime_type_id( db, mime_type, create=True ):
 		db.session.add( result )
 		db.session.flush()
 	return result.file_mime_type_id
+
+def get_all_mime_types():
+	"""
+	Return a set of all mime_types in the db.
+	"""
+	db = get_analytics_db()
+	results = db.session.query(FileMimeTypes).all()
+	return {x.mime_type for x in results}

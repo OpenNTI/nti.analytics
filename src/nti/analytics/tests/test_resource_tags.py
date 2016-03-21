@@ -11,8 +11,10 @@ logger = __import__('logging').getLogger(__name__)
 import fudge
 
 from hamcrest import is_
+from hamcrest import contains
 from hamcrest import has_length
 from hamcrest import assert_that
+from hamcrest import contains_inanyorder
 
 from zope.file.file import File
 
@@ -35,6 +37,8 @@ from nti.dataserver.tests.mock_dataserver import WithMockDSTrans
 from nti.namedfile.file import NamedBlobFile
 
 from nti.analytics.tests import NTIAnalyticsTestCase
+
+from nti.analytics.mime_types import get_all_mime_types
 
 from nti.analytics.resource_tags import get_notes
 from nti.analytics.resource_tags import get_bookmarks
@@ -201,6 +205,9 @@ class TestNotes( NTIAnalyticsTestCase ):
 		assert_that( note_record.FileMimeTypes, has_length( 1 ))
 		assert_that( note_record.FileMimeTypes.get( 'text/plain' ), is_( 1 ))
 
+		mime_types = get_all_mime_types()
+		assert_that( mime_types, contains( 'text/plain' ))
+
 		# Multiple
 		note = Note()
 		note._ds_intid = 1444
@@ -220,6 +227,9 @@ class TestNotes( NTIAnalyticsTestCase ):
 		assert_that( note_record.FileMimeTypes, has_length( 2 ))
 		assert_that( note_record.FileMimeTypes.get( 'text/plain' ), is_( 2 ))
 		assert_that( note_record.FileMimeTypes.get( 'image/gif' ), is_( 1 ))
+
+		mime_types = get_all_mime_types()
+		assert_that( mime_types, contains_inanyorder( 'text/plain', 'image/gif' ))
 
 		# Canvas with files
 		url_shape = NonpersistentCanvasUrlShape()
@@ -244,6 +254,9 @@ class TestNotes( NTIAnalyticsTestCase ):
 		assert_that( note_record.FileMimeTypes.get( 'text/plain' ), is_( 2 ))
 		assert_that( note_record.FileMimeTypes.get( 'image/gif' ), is_( 1 ))
 		assert_that( note_record.FileMimeTypes.get( 'image/png' ), is_( 1 ))
+
+		mime_types = get_all_mime_types()
+		assert_that( mime_types, contains_inanyorder( 'text/plain', 'image/gif', 'image/png' ))
 
 	@WithMockDSTrans
 	@fudge.patch( 'nti.ntiids.ntiids.find_object_with_ntiid',

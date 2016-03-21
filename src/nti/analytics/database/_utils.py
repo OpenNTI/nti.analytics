@@ -88,7 +88,7 @@ def _do_course_and_timestamp_filtering(table, timestamp=None, max_timestamp=None
 		course_id = get_root_context_id(db, course)
 		course_ids = [ course_id ]
 
-		# For courses with super-instances (e.g. History)
+		# XXX: For courses with super-instances (e.g. History)
 		# we want to aggregate any data that may have been
 		# pinned on the super instance as well. I think we
 		# would want this for any scenario.
