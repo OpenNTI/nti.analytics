@@ -522,69 +522,38 @@ def _resolve_assignment( row, details=None, user=None, course=None ):
 def get_self_assessments_for_user(user, course=None, **kwargs ):
 	"Retrieves all self-assessments for the given user and course."
 	results = get_filtered_records( user, SelfAssessmentsTaken, course=course, **kwargs )
-	return resolve_objects( _resolve_self_assessment, results, course=course )
+	return resolve_objects( _resolve_self_assessment, results, user=user, course=course )
 
 def get_self_assessments_for_user_and_id(user, assessment_id):
 	"Pulls all assessment records for the given user matching the passed in assessment id."
-	db = get_analytics_db()
-	uid = get_user_db_id( user )
-	results = db.session.query(SelfAssessmentsTaken).filter(
-							SelfAssessmentsTaken.user_id == uid,
-							SelfAssessmentsTaken.assignment_id == assessment_id ).all()
-
-	return resolve_objects( _resolve_self_assessment, results )
-
-def get_assignment_for_user( user, assignment_id ):
-	"Pulls all assignment records for the given user matching the passed in assignment id."
-	db = get_analytics_db()
-	uid = get_user_db_id( user )
-	results = db.session.query( AssignmentsTaken ) \
-					.filter( AssignmentsTaken.user_id == uid,
-							AssignmentsTaken.assignment_id == assignment_id ).all()
-
-	return resolve_objects( _resolve_assignment, results )
+	filters = (SelfAssessmentsTaken.assignment_id == assessment_id,)
+	results = get_self_assessments_for_user(user, filters=filters)
+	return results
 
 def get_assignments_for_user(user, course=None, **kwargs):
 	"Retrieves all assignments for the given user and course."
 	results = get_filtered_records( user, AssignmentsTaken, course=course, **kwargs )
-	return resolve_objects( _resolve_assignment, results, course=course )
+	return resolve_objects( _resolve_assignment, results, user=user, course=course )
 
-# TODO: These two func may be redundant.
+def get_assignment_for_user( user, assignment_id ):
+	"Pulls all assignment records for the given user matching the passed in assignment id."
+	filters = (AssignmentsTaken.assignment_id == assignment_id,)
+	results = get_assignments_for_user(user, filters=filters)
+	return results
+
 def get_self_assessments_for_course(course):
-	db = get_analytics_db()
-	course_id = get_root_context_id( db, course )
-	results = db.session.query(SelfAssessmentsTaken).filter(
-							SelfAssessmentsTaken.course_id == course_id ).all()
-
-	return resolve_objects( _resolve_self_assessment, results, course=course )
+	return get_self_assessments_for_user(None, course=course)
 
 def get_assignments_for_course(course):
-	db = get_analytics_db()
-	course_id = get_root_context_id( db, course )
-	results = db.session.query(AssignmentsTaken) \
-						.filter( AssignmentsTaken.course_id == course_id ).all()
-
-	return resolve_objects( _resolve_assignment, results )
+	return get_assignments_for_user(None, course=course)
 
 # AssignmentReport
 def get_assignment_grades_for_course(course, assignment_id):
-	db = get_analytics_db()
-	course_id = get_root_context_id( db, course )
-	results = db.session.query(AssignmentsTaken) \
-						.filter( AssignmentsTaken.course_id == course_id,
-								 AssignmentsTaken.assignment_id == assignment_id ).all()
+	filters = (AssignmentsTaken.assignment_id == assignment_id,)
+	results = get_assignments_for_user(None, course=course, filters=filters)
+	return results
 
-	return resolve_objects( _resolve_assignment, results )
-
-# TODO: Rename func, details are relationship?
-def get_assignment_details_for_course(course, assignment_id):
-	db = get_analytics_db()
-	course_id = get_root_context_id( db, course )
-	results = db.session.query( AssignmentsTaken ) \
-						.filter( AssignmentsTaken.course_id == course_id,
-								AssignmentsTaken.assignment_id == assignment_id ).all()
-
-	return resolve_objects( _resolve_assignment, results )
+get_assignment_details_for_course = get_assignment_grades_for_course
 
 def _resolve_view( row, course, user ):
 	if course is not None:
