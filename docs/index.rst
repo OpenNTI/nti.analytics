@@ -19,10 +19,7 @@ Table Documentation
 .. toctree::
 	:maxdepth: 2
 
-
 	tables
-
-
 
 Indices and tables
 ==================

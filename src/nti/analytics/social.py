@@ -44,7 +44,7 @@ from nti.analytics.database import social as db_social
 
 from nti.analytics.sessions import get_nti_session_id
 
-from .identifier import get_ds_id
+from nti.analytics.identifier import get_ds_id
 
 get_contacts_added = db_social.get_contacts_added
 get_groups_created = db_social.get_groups_created

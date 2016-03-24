@@ -20,18 +20,18 @@ from nti.analytics_database.social import DynamicFriendsListsCreated
 from nti.analytics_database.social import DynamicFriendsListsMemberAdded
 from nti.analytics_database.social import DynamicFriendsListsMemberRemoved
 
-from ..common import timestamp_type
-from ..common import get_created_timestamp
+from nti.analytics.common import timestamp_type
+from nti.analytics.common import get_created_timestamp
 
-from ..identifier import get_ds_id
+from nti.analytics.identifier import get_ds_id
 
-from ._utils import get_filtered_records
+from nti.analytics.database import resolve_objects
+from nti.analytics.database import get_analytics_db
 
-from .users import get_user_db_id
-from .users import get_or_create_user
+from nti.analytics.database.query_utils import get_filtered_records
 
-from . import resolve_objects
-from . import get_analytics_db
+from nti.analytics.database.users import get_user_db_id
+from nti.analytics.database.users import get_or_create_user
 
 def _get_chat_id(db, chat_ds_id):
 	chat = db.session.query(ChatsInitiated).filter(

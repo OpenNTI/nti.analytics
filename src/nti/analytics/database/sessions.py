@@ -14,15 +14,15 @@ from nti.analytics_database.sessions import UserAgents
 
 from sqlalchemy.orm.session import make_transient
 
-from ..common import timestamp_type
+from nti.analytics.common import timestamp_type
 
-from ._utils import get_filtered_records
+from nti.analytics.database.query_utils import get_filtered_records
 
-from .locations import check_ip_location
-from .users import get_or_create_user
+from nti.analytics.database.locations import check_ip_location
+from nti.analytics.database.users import get_or_create_user
 
-from . import resolve_objects
-from . import get_analytics_db
+from nti.analytics.database import resolve_objects
+from nti.analytics.database import get_analytics_db
 
 def _create_user_agent(db, user_agent):
 	new_agent = UserAgents(user_agent=user_agent)

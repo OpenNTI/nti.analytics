@@ -51,7 +51,6 @@ from nti.analytics.database import get_analytics_db
 from nti.analytics.database import should_update_event
 
 from nti.analytics.database._utils import get_context_path
-from nti.analytics.database._utils import get_filtered_records
 from nti.analytics.database._utils import get_body_text_length
 
 from nti.analytics.database.mime_types import build_mime_type_records
@@ -60,8 +59,9 @@ from nti.analytics.database.resources import get_resource_id
 
 from nti.analytics.database.root_context import get_root_context_id
 
-from nti.analytics.database.users import get_user_db_id
 from nti.analytics.database.users import get_or_create_user
+
+from nti.analytics.database.query_utils import get_filtered_records
 
 def _get_duration( submission ):
 	"""

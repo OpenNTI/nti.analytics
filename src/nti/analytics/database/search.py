@@ -14,7 +14,7 @@ from nti.analytics.common import timestamp_type
 from nti.analytics.database import resolve_objects
 from nti.analytics.database import get_analytics_db
 
-from nti.analytics.database._utils import get_filtered_records
+from nti.analytics.database.query_utils import get_filtered_records
 
 from nti.analytics.database.root_context import get_root_context_id
 

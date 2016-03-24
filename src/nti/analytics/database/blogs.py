@@ -29,16 +29,17 @@ from nti.analytics.database import resolve_objects
 from nti.analytics.database import get_analytics_db
 from nti.analytics.database import should_update_event
 
-from nti.analytics.database._utils import resolve_like
-from nti.analytics.database._utils import resolve_favorite
 from nti.analytics.database._utils import get_context_path
 from nti.analytics.database._utils import get_body_text_length
-from nti.analytics.database._utils import get_filtered_records
-from nti.analytics.database._utils import get_ratings_for_user_objects
-from nti.analytics.database._utils import get_replies_to_user as _get_replies_to_user
-from nti.analytics.database._utils import get_user_replies_to_others as _get_user_replies_to_others
 
 from nti.analytics.database.mime_types import build_mime_type_records
+
+from nti.analytics.database.query_utils import resolve_like
+from nti.analytics.database.query_utils import resolve_favorite
+from nti.analytics.database.query_utils import get_filtered_records
+from nti.analytics.database.query_utils import get_ratings_for_user_objects
+from nti.analytics.database.query_utils import get_replies_to_user as _get_replies_to_user
+from nti.analytics.database.query_utils import get_user_replies_to_others as _get_user_replies_to_others
 
 from nti.analytics.database.users import get_or_create_user
 

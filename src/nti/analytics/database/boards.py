@@ -33,17 +33,18 @@ from nti.analytics.common import get_created_timestamp
 from nti.analytics.identifier import get_ds_id
 from nti.analytics.identifier import get_ds_object
 
-from nti.analytics.database._utils import resolve_like
-from nti.analytics.database._utils import resolve_favorite
 from nti.analytics.database._utils import get_context_path
 from nti.analytics.database._utils import get_body_text_length
 from nti.analytics.database._utils import get_root_context_ids
-from nti.analytics.database._utils import get_filtered_records
-from nti.analytics.database._utils import get_ratings_for_user_objects
-from nti.analytics.database._utils import get_replies_to_user as _get_replies_to_user
-from nti.analytics.database._utils import get_user_replies_to_others as _get_user_replies_to_others
 
 from nti.analytics.database.mime_types import build_mime_type_records
+
+from nti.analytics.database.query_utils import resolve_like
+from nti.analytics.database.query_utils import resolve_favorite
+from nti.analytics.database.query_utils import get_filtered_records
+from nti.analytics.database.query_utils import get_ratings_for_user_objects
+from nti.analytics.database.query_utils import get_replies_to_user as _get_replies_to_user
+from nti.analytics.database.query_utils import get_user_replies_to_others as _get_user_replies_to_others
 
 from nti.analytics.database.root_context import get_root_context_id
 

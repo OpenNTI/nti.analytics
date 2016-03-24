@@ -21,9 +21,10 @@ from nti.analytics.interfaces import VIDEO_WATCH
 
 from nti.analytics.database._utils import get_context_path
 from nti.analytics.database._utils import get_root_context_ids
-from nti.analytics.database._utils import get_filtered_records
 
 from nti.analytics.database.users import get_or_create_user
+
+from nti.analytics.database.query_utils import get_filtered_records
 
 from nti.analytics.database.resources import get_resource_id
 from nti.analytics.database.resources import get_resource_record

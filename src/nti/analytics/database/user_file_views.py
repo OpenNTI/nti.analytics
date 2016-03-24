@@ -15,7 +15,7 @@ from nti.analytics.common import timestamp_type
 
 from nti.analytics.identifier import get_ntiid_id
 
-from nti.analytics.database._utils import get_filtered_records
+from nti.analytics.database.query_utils import get_filtered_records
 
 from nti.analytics.database.mime_types import get_mime_type_id
 from nti.analytics.database.mime_types import get_item_mime_type
