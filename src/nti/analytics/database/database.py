@@ -86,7 +86,7 @@ class AnalyticsDB(object):
 
 	@Lazy
 	def sessionmaker(self):
-		if self.autocommit or self.testmode:
+		if self.autocommit:
 			result = sessionmaker(bind=self.engine,
 							  	  twophase=self.twophase)
 		else:

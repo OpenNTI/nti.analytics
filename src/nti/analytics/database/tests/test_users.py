@@ -69,7 +69,7 @@ class TestUsers(unittest.TestCase):
 		assert_that( results, has_length( 3 ) )
 
 		# Save everything we have.
-		self.session.commit()
+		self.session.flush()
 
 		# Update research field
 		update_user_research( fooser, True )
