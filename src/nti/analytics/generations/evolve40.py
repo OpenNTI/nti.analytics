@@ -19,8 +19,8 @@ from zope.component.hooks import setHooks
 
 from nti.analytics.database import get_analytics_db
 
-from nti.analytics.generations._utils import do_evolve
-from nti.analytics.generations._utils import mysql_foreign_key_exists
+from nti.analytics.generations.utils import do_evolve
+from nti.analytics.generations.utils import mysql_foreign_key_exists
 
 TABLES = ['NotesCreated',
 	      'BlogCommentsCreated',

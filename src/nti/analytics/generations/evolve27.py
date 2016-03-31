@@ -37,7 +37,7 @@ from nti.analytics.database.resource_tags import NotesCreated
 from nti.analytics.database.resource_tags import NoteLikes
 from nti.analytics.database.resource_tags import NoteFavorites
 
-from ._utils import do_evolve
+from .utils import do_evolve
 
 TABLES = [ ( BlogLikes, BlogsCreated, 'blog_id', BlogsCreated.blog_id ),
 			( BlogFavorites, BlogsCreated, 'blog_id', BlogsCreated.blog_id ),

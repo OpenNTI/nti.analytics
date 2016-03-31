@@ -40,7 +40,7 @@ from nti.analytics.database.resource_views import CourseResourceViews
 from nti.analytics.database.resource_views import VideoEvents
 from nti.analytics.database.resource_views import VideoPlaySpeedEvents
 
-from ._utils import do_evolve
+from .utils import do_evolve
 
 TABLES = [AssignmentViews,
 	      SelfAssessmentViews,

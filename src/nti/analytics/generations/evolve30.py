@@ -23,7 +23,7 @@ from nti.analytics.database import get_analytics_db
 from nti.analytics.database.assessments import AssignmentViews
 from nti.analytics.database.assessments import SelfAssessmentViews
 
-from ._utils import do_evolve
+from .utils import do_evolve
 
 TABLES = [ AssignmentViews, SelfAssessmentViews ]
 

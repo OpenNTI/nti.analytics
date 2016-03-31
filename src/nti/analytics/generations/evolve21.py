@@ -19,7 +19,7 @@ from alembic.migration import MigrationContext
 
 from nti.analytics.database import get_analytics_db
 
-from ._utils import do_evolve
+from .utils import do_evolve
 
 INDEX_EXISTS_QUERY = 	"""
 						SHOW INDEX FROM Analytics.%s

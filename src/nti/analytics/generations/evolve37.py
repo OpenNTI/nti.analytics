@@ -16,7 +16,7 @@ from zope.component.hooks import setHooks
 
 from nti.analytics.database import get_analytics_db
 
-from ._utils import do_evolve
+from .utils import do_evolve
 
 UPDATE_CITY_SQL = """ALTER TABLE Location
 					MODIFY city VARCHAR(64) CHARACTER SET utf8 COLLATE utf8_unicode_ci;"""

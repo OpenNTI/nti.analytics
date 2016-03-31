@@ -21,8 +21,8 @@ from zope.component.hooks import setHooks
 
 from nti.analytics.database import get_analytics_db
 
-from ._utils import do_evolve
-from ._utils import mysql_foreign_key_exists
+from .utils import do_evolve
+from .utils import mysql_foreign_key_exists
 
 TABLES = ['AssignmentViews',
 	      'SelfAssessmentViews']

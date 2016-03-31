@@ -61,7 +61,7 @@ from nti.analytics.database.resource_tags import NotesViewed
 from nti.analytics.database.resource_views import CourseResourceViews
 from nti.analytics.database.resource_views import VideoEvents
 
-from ._utils import do_evolve
+from .utils import do_evolve
 
 INDEX_EXISTS_QUERY = 	"""
 						SHOW INDEX FROM Analytics.%s

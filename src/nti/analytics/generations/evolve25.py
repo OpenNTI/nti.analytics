@@ -25,7 +25,7 @@ from nti.analytics.database.blogs import BlogCommentsCreated
 from nti.analytics.database.boards import ForumCommentsCreated
 from nti.analytics.database.resource_tags import NotesCreated
 
-from ._utils import do_evolve
+from .utils import do_evolve
 
 COLUMN_EXISTS_QUERY = 	"""
 						SELECT *

@@ -13,8 +13,8 @@ generation = 34
 from sqlalchemy import Column
 from sqlalchemy import Integer
 
-from ._utils import do_evolve
-from ._utils import mysql_column_exists
+from .utils import do_evolve
+from .utils import mysql_column_exists
 
 from zope.component.hooks import setHooks
 from alembic.operations import Operations

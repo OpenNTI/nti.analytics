@@ -24,7 +24,7 @@ from nti.analytics_database.resource_tags import NotesCreated
 
 from ..identifier import get_ds_object
 
-from ._utils import do_evolve
+from .utils import do_evolve
 
 seen = set()
 

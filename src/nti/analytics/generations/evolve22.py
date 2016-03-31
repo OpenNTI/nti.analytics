@@ -22,7 +22,7 @@ from alembic.migration import MigrationContext
 from sqlalchemy import Column
 from sqlalchemy import String
 
-from ._utils import do_evolve
+from .utils import do_evolve
 
 COLUMN_EXISTS_QUERY = 	"""
 						SELECT *

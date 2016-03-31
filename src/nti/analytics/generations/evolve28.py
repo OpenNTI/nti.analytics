@@ -31,7 +31,7 @@ from nti.analytics.database.resource_tags import NotesCreated
 from nti.analytics.database.resource_tags import NoteLikes
 from nti.analytics.database.resource_tags import NoteFavorites
 
-from ._utils import do_evolve
+from .utils import do_evolve
 
 TABLES = [ ( ForumCommentLikes, ForumCommentsCreated, 'comment_id', ForumCommentsCreated.comment_id ),
 			( ForumCommentFavorites, ForumCommentsCreated, 'comment_id', ForumCommentsCreated.comment_id ),

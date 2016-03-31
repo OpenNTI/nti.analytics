@@ -22,8 +22,8 @@ from alembic.migration import MigrationContext
 
 from nti.analytics.database import get_analytics_db
 
-from ._utils import do_evolve
-from ._utils import mysql_column_exists
+from .utils import do_evolve
+from .utils import mysql_column_exists
 
 def evolve_job():
 	setHooks()

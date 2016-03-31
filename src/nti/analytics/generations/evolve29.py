@@ -24,8 +24,8 @@ from nti.analytics.database import get_analytics_db
 from nti.analytics.database.assessments import AssignmentViews
 from nti.analytics.database.assessments import SelfAssessmentViews
 
-from ._utils import do_evolve
-from ._utils import mysql_column_exists
+from .utils import do_evolve
+from .utils import mysql_column_exists
 
 TABLES = [ AssignmentViews, SelfAssessmentViews ]
 

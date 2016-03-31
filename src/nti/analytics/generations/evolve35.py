@@ -21,7 +21,7 @@ from nti.analytics.database import get_analytics_db
 
 from nti.analytics_database.resource_tags import SHARING_ENUMS
 
-from ._utils import do_evolve
+from .utils import do_evolve
 
 def evolve_job():
 	setHooks()
