@@ -66,7 +66,7 @@ def get_mime_type_id( db, mime_type, create=True ):
 	Get the mime type database id, optionally creating it.
 	"""
 	result = db.session.query(FileMimeTypes).filter(
-							FileMimeTypes.mime_type == mime_type ).first()
+							  FileMimeTypes.mime_type == mime_type ).first()
 	if result is None and create:
 		result = FileMimeTypes( mime_type=mime_type )
 		db.session.add( result )

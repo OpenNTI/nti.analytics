@@ -64,7 +64,7 @@ class TestNotes( NTIAnalyticsTestCase ):
 
 	@WithMockDSTrans
 	@fudge.patch( 'nti.ntiids.ntiids.find_object_with_ntiid',
-				'nti.analytics.resolvers.get_container_context' )
+				  'nti.analytics.resolvers.get_container_context' )
 	def test_add_notes(self, mock_find_object, mock_container_context):
 		user = User.create_user( username='new_user1', dataserver=self.ds )
 		results = get_notes( user )

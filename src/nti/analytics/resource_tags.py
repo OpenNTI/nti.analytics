@@ -105,10 +105,10 @@ def _note_rated( event ):
 		is_favorite, delta = get_rating_from_event( event )
 		to_call = _favorite_note if is_favorite else _like_note
 		process_event( _get_job_queue, to_call, obj,
-					username=event.rating.userid,
-					delta=delta,
-					nti_session=nti_session,
-					timestamp=timestamp )
+					   username=event.rating.userid,
+					   delta=delta,
+					   nti_session=nti_session,
+					   timestamp=timestamp )
 
 # TODO: handle modifications.
 @component.adapter(	INote, IIntIdAddedEvent )

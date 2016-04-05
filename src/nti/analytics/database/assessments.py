@@ -116,7 +116,6 @@ def _load_response( value ):
 			pass
 	return response
 
-
 def _get_grade_val( grade_value ):
 	"""Convert the webapp's "number - letter" scheme to a number, or None."""
 	result = None
@@ -393,6 +392,25 @@ def _feedback_exists( db, feedback_ds_id ):
 	return db.session.query( AssignmentFeedback ).filter(
 							 AssignmentFeedback.feedback_ds_id == feedback_ds_id ).count()
 
+def _set_mime_records( db, feedback_record, feedback ):
+	"""
+	Set the mime type records for our feedback, removing any
+	previous records present.
+	"""
+	# Delete the old records.
+	for mime_record in feedback_record._file_mime_types:
+		db.session.delete( mime_record )
+
+	file_mime_types = build_mime_type_records( db, feedback, FeedbackUserFileUploadMimeTypes )
+	feedback_record._file_mime_types.extend( file_mime_types )
+
+def _set_feedback_attributes( db, feedback_record, feedback ):
+	"""
+	Set the feedback attributes for this feedback record.
+	"""
+	feedback_record.feedback_length = get_body_text_length( feedback )
+	_set_mime_records( db, feedback_record, feedback )
+
 def create_submission_feedback( user, nti_session, timestamp, submission, feedback ):
 	db = get_analytics_db()
 	user_record = get_or_create_user( user )
@@ -404,8 +422,6 @@ def create_submission_feedback( user, nti_session, timestamp, submission, feedba
 	if _feedback_exists( db, feedback_ds_id ):
 		logger.warn( 'Feedback exists (ds_id=%s) (user=%s)', feedback_ds_id, user )
 		return
-
-	feedback_length = get_body_text_length( feedback )
 
 	submission_id = get_ds_id( submission )
 	assignment_taken_id = _get_assignment_taken_id( db, submission_id )
@@ -427,16 +443,10 @@ def create_submission_feedback( user, nti_session, timestamp, submission, feedba
 									timestamp=timestamp,
 									assignment_taken_id=assignment_taken_id,
 									feedback_ds_id=feedback_ds_id,
-									feedback_length=feedback_length,
 									grade_id=grade_id )
+	_set_feedback_attributes( db, new_object, feedback )
 	db.session.add( new_object )
 	db.session.flush()
-
-	feedback_id = new_object.feedback_id
-	file_mime_types = build_mime_type_records( db, feedback, FeedbackUserFileUploadMimeTypes )
-	for mime_record in file_mime_types:
-		mime_record.feedback_id = feedback_id
-		db.session.add( mime_record )
 	return new_object
 
 def delete_feedback( timestamp, feedback_ds_id ):

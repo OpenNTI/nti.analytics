@@ -68,9 +68,9 @@ def _get_site_community():
 	return result
 
 def _get_sharing_enum(note, course):
-	# TODO Logic needs to be updated in courseware_reports.views.admin_views
+	# TODO: Logic needs to be updated in courseware_reports.views.admin_views
 	# We may have many values here (course subinstance + parent)
-	# Note: perhaps we want to store who we're sharing to.
+	# Perhaps we want to store who we're sharing to.
 
 	sharing_scopes = getattr(course, 'SharingScopes', None)
 	if sharing_scopes is None:
@@ -111,6 +111,30 @@ def _get_note_id(db, note_ds_id):
 
 _note_exists = _get_note_id
 
+def _set_mime_records( db, note_record, note ):
+	"""
+	Set the mime type records for our note, removing any
+	previous records present.
+	"""
+	# Delete the old records.
+	for mime_record in note_record._file_mime_types:
+		db.session.delete( mime_record )
+
+	file_mime_types = build_mime_type_records( db, note, NotesUserFileUploadMimeTypes )
+	note_record._file_mime_types.extend( file_mime_types )
+
+def _set_note_attributes( db, note_record, note, course ):
+	"""
+	Set the note attributes for this note record.
+	"""
+	note_record.sharing = _get_sharing_enum(note, course)
+	like_count, favorite_count, is_flagged = get_ratings(note)
+	note_record.like_count = like_count
+	note_record.favorite_count = favorite_count
+	note_record.is_flagged = is_flagged
+	note_record.note_length = get_body_text_length( note )
+	_set_mime_records( db, note_record, note )
+
 def create_note(user, nti_session, note):
 	db = get_analytics_db()
 	user_record = get_or_create_user(user)
@@ -129,9 +153,6 @@ def create_note(user, nti_session, note):
 	course = get_root_context(note)
 	course_id = get_root_context_id(db, course, create=True)
 	timestamp = get_created_timestamp(note)
-	sharing = _get_sharing_enum(note, course)
-	like_count, favorite_count, is_flagged = get_ratings(note)
-	note_length = get_body_text_length( note )
 
 	parent_id = parent_user_id = None
 	parent_note = getattr(note, 'inReplyTo', None)
@@ -157,19 +178,10 @@ def create_note(user, nti_session, note):
 								note_ds_id=note_ds_id,
 								resource_id=rid,
 								parent_id=parent_id,
-								parent_user_id=parent_user_id,
-								note_length=note_length,
-								sharing=sharing,
-								like_count=like_count,
-								favorite_count=favorite_count,
-								is_flagged=is_flagged)
+								parent_user_id=parent_user_id)
+	_set_note_attributes( db, new_object, note, course )
 	db.session.add(new_object)
 	db.session.flush()
-	note_id = new_object.note_id
-	file_mime_types = build_mime_type_records( db, note, NotesUserFileUploadMimeTypes )
-	for mime_record in file_mime_types:
-		mime_record.note_id = note_id
-		db.session.add( mime_record )
 	return new_object
 
 def delete_note(timestamp, note_ds_id):

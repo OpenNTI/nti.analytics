@@ -49,6 +49,22 @@ def _get_blog_id( db, blog_ds_id ):
 
 _blog_exists = _get_blog_id
 
+def _set_blog_attributes( blog_record, blog ):
+	"""
+	Set the blog attributes for this blog record.
+	"""
+	blog_length = 0
+	try:
+		if blog.description is not None:
+			blog_length = len( blog.description )
+	except AttributeError:
+		blog_length = get_body_text_length( blog )
+	like_count, favorite_count, is_flagged = get_ratings( blog )
+	blog_record.like_count = like_count
+	blog_record.favorite_count = favorite_count
+	blog_record.is_flagged = is_flagged
+	blog_record.blog_length = blog_length
+
 def create_blog( user, nti_session, blog_entry ):
 	db = get_analytics_db()
 	user_record = get_or_create_user( user )
@@ -60,24 +76,13 @@ def create_blog( user, nti_session, blog_entry ):
 		logger.warn( 'Blog already exists (blog_id=%s) (user=%s)', blog_ds_id, user )
 		return
 
-	like_count, favorite_count, is_flagged = get_ratings( blog_entry )
 	timestamp = get_created_timestamp( blog_entry )
-	blog_length = None
-
-	try:
-		if blog_entry.description is not None:
-			blog_length = len( blog_entry.description )
-	except AttributeError:
-		blog_length = get_body_text_length( blog_entry )
 
 	new_object = BlogsCreated( 	user_id=uid,
 								session_id=sid,
 								timestamp=timestamp,
-								blog_length=blog_length,
-								blog_ds_id=blog_ds_id,
-								like_count=like_count,
-								favorite_count=favorite_count,
-								is_flagged=is_flagged )
+								blog_ds_id=blog_ds_id )
+	_set_blog_attributes( new_object, blog_entry )
 	db.session.add( new_object )
 	db.session.flush()
 	# See .boards.py
@@ -152,7 +157,7 @@ def favorite_blog( blog, user, session_id, timestamp, delta ):
 	db = get_analytics_db()
 	blog_ds_id = get_ds_id( blog )
 	db_blog = db.session.query(BlogsCreated).filter(
-								BlogsCreated.blog_ds_id == blog_ds_id ).first()
+							   BlogsCreated.blog_ds_id == blog_ds_id ).first()
 
 	if db_blog is not None:
 		db_blog.favorite_count += delta
@@ -167,7 +172,7 @@ def flag_blog( blog, state ):
 	db = get_analytics_db()
 	blog_ds_id = get_ds_id( blog )
 	db_blog = db.session.query(BlogsCreated).filter(
-							BlogsCreated.blog_ds_id == blog_ds_id ).first()
+							   BlogsCreated.blog_ds_id == blog_ds_id ).first()
 	db_blog.is_flagged = state
 	db.session.flush()
 
@@ -218,6 +223,29 @@ def _blog_comment_exists( db, cid ):
 	return db.session.query( BlogCommentsCreated ).filter(
 							BlogCommentsCreated.comment_id == cid ).count()
 
+def _set_mime_records( db, comment_record, blog_comment ):
+	"""
+	Set the mime type records for our obj, removing any
+	previous records present.
+	"""
+	# Delete the old records.
+	for mime_record in comment_record._file_mime_types:
+		db.session.delete( mime_record )
+
+	file_mime_types = build_mime_type_records( db, blog_comment, BlogCommentsUserFileUploadMimeTypes )
+	comment_record._file_mime_types.extend( file_mime_types )
+
+def _set_blog_comment_attributes( db, comment_record, comment ):
+	"""
+	Set the comment attributes for this comment record.
+	"""
+	like_count, favorite_count, is_flagged = get_ratings(comment)
+	comment_record.like_count = like_count
+	comment_record.favorite_count = favorite_count
+	comment_record.is_flagged = is_flagged
+	comment_record.comment_length = get_body_text_length( comment )
+	_set_mime_records( db, comment_record, comment )
+
 def create_blog_comment(user, nti_session, blog, comment ):
 	db = get_analytics_db()
 	user = get_or_create_user( user )
@@ -238,7 +266,6 @@ def create_blog_comment(user, nti_session, blog, comment ):
 		return
 
 	pid = parent_user_id = None
-	like_count, favorite_count, is_flagged = get_ratings( comment )
 
 	timestamp = get_created_timestamp( comment )
 	parent_comment = getattr( comment, 'inReplyTo', None )
@@ -248,26 +275,17 @@ def create_blog_comment(user, nti_session, blog, comment ):
 		parent_user_record = get_or_create_user( parent_creator )
 		parent_user_id = parent_user_record.user_id
 
-	comment_length = get_body_text_length( comment )
-
 	new_object = BlogCommentsCreated( 	user_id=uid,
 										session_id=sid,
 										timestamp=timestamp,
 										blog_id=bid,
 										parent_id=pid,
 										parent_user_id=parent_user_id,
-										comment_length=comment_length,
-										comment_id=cid,
-										like_count=like_count,
-										favorite_count=favorite_count,
-										is_flagged=is_flagged )
+										comment_id=cid )
+
+	_set_blog_comment_attributes( db, new_object, comment )
 	db.session.add( new_object )
 	db.session.flush()
-	comment_id = new_object.comment_id
-	file_mime_types = build_mime_type_records( db, comment, BlogCommentsUserFileUploadMimeTypes )
-	for mime_record in file_mime_types:
-		mime_record.comment_id = comment_id
-		db.session.add( mime_record )
 	return new_object
 
 def delete_blog_comment(timestamp, comment_id):

@@ -150,6 +150,15 @@ def delete_forum(timestamp, forum_ds_id):
 							{ ForumCommentsCreated.deleted : timestamp } )
 	db.session.flush()
 
+def _set_topic_attributes( topic_record, topic ):
+	"""
+	Set the topic attributes for this topic record.
+	"""
+	like_count, favorite_count, is_flagged = get_ratings(topic)
+	topic_record.like_count = like_count
+	topic_record.favorite_count = favorite_count
+	topic_record.is_flagged = is_flagged
+
 def create_topic(user, nti_session, topic):
 	db = get_analytics_db()
 	user_record = get_or_create_user( user )
@@ -177,7 +186,6 @@ def create_topic(user, nti_session, topic):
 	course_id, entity_root_context_id = _get_root_context_ids( forum )
 
 	timestamp = get_created_timestamp( topic )
-	like_count, favorite_count, is_flagged = get_ratings( topic )
 
 	new_object = TopicsCreated( user_id=uid,
 								session_id=sid,
@@ -185,10 +193,8 @@ def create_topic(user, nti_session, topic):
 								course_id=course_id,
 								entity_root_context_id=entity_root_context_id,
 								forum_id=fid,
-								topic_ds_id=topic_ds_id,
-								like_count=like_count,
-								favorite_count=favorite_count,
-								is_flagged=is_flagged )
+								topic_ds_id=topic_ds_id )
+	_set_topic_attributes( new_object, topic )
 	db.session.add( new_object )
 	db.session.flush()
 	# We manually roll our headline into the comments table (same in blogs),
@@ -346,7 +352,30 @@ def create_topic_view(user, nti_session, timestamp, root_context, context_path, 
 
 def _comment_exists( db, comment_id ):
 	return db.session.query( ForumCommentsCreated ).filter(
-							ForumCommentsCreated.comment_id == comment_id ).count()
+							 ForumCommentsCreated.comment_id == comment_id ).count()
+
+def _set_mime_records( db, comment_record, comment ):
+	"""
+	Set the mime type records for our obj, removing any
+	previous records present.
+	"""
+	# Delete the old records.
+	for mime_record in comment_record._file_mime_types:
+		db.session.delete( mime_record )
+
+	file_mime_types = build_mime_type_records( db, comment, ForumCommentsUserFileUploadMimeTypes )
+	comment_record._file_mime_types.extend( file_mime_types )
+
+def _set_comment_attributes( db, comment_record, comment ):
+	"""
+	Set the comment attributes for this comment record.
+	"""
+	like_count, favorite_count, is_flagged = get_ratings(comment)
+	comment_record.like_count = like_count
+	comment_record.favorite_count = favorite_count
+	comment_record.is_flagged = is_flagged
+	comment_record.comment_length = get_body_text_length( comment )
+	_set_mime_records( db, comment_record, comment )
 
 def create_forum_comment(user, nti_session, topic, comment):
 	db = get_analytics_db()
@@ -375,9 +404,6 @@ def create_forum_comment(user, nti_session, topic, comment):
 	course_id, entity_root_context_id = _get_root_context_ids( forum )
 	pid = parent_user_id = None
 	timestamp = get_created_timestamp( comment )
-	like_count, favorite_count, is_flagged = get_ratings( comment )
-
-	comment_length = get_body_text_length( comment )
 
 	parent_comment = getattr( comment, 'inReplyTo', None )
 	if parent_comment is not None:
@@ -395,18 +421,10 @@ def create_forum_comment(user, nti_session, topic, comment):
 										topic_id=topic_id,
 										parent_id=pid,
 										parent_user_id=parent_user_id,
-										comment_length=comment_length,
-										comment_id=cid,
-										like_count=like_count,
-										favorite_count=favorite_count,
-										is_flagged=is_flagged )
+										comment_id=cid )
+	_set_comment_attributes( db, new_object, comment )
 	db.session.add( new_object )
 	db.session.flush()
-	comment_id = new_object.comment_id
-	file_mime_types = build_mime_type_records( db, comment, ForumCommentsUserFileUploadMimeTypes )
-	for mime_record in file_mime_types:
-		mime_record.comment_id = comment_id
-		db.session.add( mime_record )
 	return new_object
 
 def delete_forum_comment(timestamp, comment_id):
