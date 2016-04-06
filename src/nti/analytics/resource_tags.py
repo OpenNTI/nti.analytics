@@ -10,6 +10,8 @@ logger = __import__('logging').getLogger(__name__)
 
 from zope import component
 
+from zope.lifecycleevent.interfaces import IObjectModifiedEvent
+
 from datetime import datetime
 
 from contentratings.interfaces import IObjectRatedEvent
@@ -19,6 +21,7 @@ from nti.dataserver.interfaces import IHighlight
 from nti.dataserver.interfaces import INote
 from nti.dataserver.interfaces import IObjectFlaggedEvent
 from nti.dataserver.interfaces import IObjectFlaggingEvent
+
 from nti.dataserver.users.users import User
 
 from nti.ntiids import ntiids
@@ -65,6 +68,15 @@ def _add_note( oid, nti_session=None ):
 						user,
 						note )
 
+def _update_note( oid, nti_session=None ):
+	note = ntiids.find_object_with_ntiid( oid )
+	if note is not None:
+		user = get_creator( note )
+		db_resource_tags.update_note( user, nti_session, note )
+		logger.debug( 	"Note updated (user=%s) (note=%s)",
+						user,
+						note )
+
 def _remove_note( note_id, timestamp=None ):
 	db_resource_tags.delete_note( timestamp, note_id )
 	logger.debug( "Note deleted (note=%s)", note_id )
@@ -89,17 +101,16 @@ def _like_note( oid, username=None, delta=0, timestamp=None, nti_session=None ):
 		db_resource_tags.like_note( note, user, nti_session, timestamp, delta )
 		logger.debug( 'Note liked (note=%s)', note )
 
-@component.adapter( IObjectFlaggingEvent )
+@component.adapter( INote, IObjectFlaggingEvent )
 def _note_flagged( event ):
 	obj = event.object
-	state = True if IObjectFlaggedEvent.providedBy( event ) else False
-	if _is_note( obj ):
-		process_event( _get_job_queue, _flag_note, obj, state=state )
+	state = IObjectFlaggedEvent.providedBy( event )
+	process_event( _get_job_queue, _flag_note, obj, state=state )
 
-@component.adapter( IObjectRatedEvent )
+@component.adapter( INote, IObjectRatedEvent )
 def _note_rated( event ):
 	obj = event.object
-	if _is_note( obj ) and event.rating is not None:
+	if event.rating is not None:
 		timestamp = event.rating.timestamp
 		nti_session = get_nti_session_id()
 		is_favorite, delta = get_rating_from_event( event )
@@ -110,19 +121,21 @@ def _note_rated( event ):
 					   nti_session=nti_session,
 					   timestamp=timestamp )
 
-# TODO: handle modifications.
 @component.adapter(	INote, IIntIdAddedEvent )
 def _note_added( obj, _ ):
-	if _is_note( obj ):
-		nti_session = get_nti_session_id()
-		process_event( _get_job_queue, _add_note, obj, nti_session=nti_session )
+	nti_session = get_nti_session_id()
+	process_event( _get_job_queue, _add_note, obj, nti_session=nti_session )
+
+@component.adapter(	INote, IObjectModifiedEvent )
+def _note_modified( obj, _ ):
+	nti_session = get_nti_session_id()
+	process_event( _get_job_queue, _update_note, obj, nti_session=nti_session )
 
 @component.adapter(	INote, IIntIdRemovedEvent )
 def _note_removed( obj, _ ):
-	if _is_note( obj ):
-		timestamp = datetime.utcnow()
-		note_id = get_ds_id( obj )
-		process_event( _get_job_queue, _remove_note, note_id=note_id, timestamp=timestamp )
+	timestamp = datetime.utcnow()
+	note_id = get_ds_id( obj )
+	process_event( _get_job_queue, _remove_note, note_id=note_id, timestamp=timestamp )
 
 # Highlights
 def _add_highlight( oid, nti_session=None ):

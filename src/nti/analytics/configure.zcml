@@ -39,6 +39,7 @@
 	<subscriber handler=".courses._course_removed" />
 
 	<subscriber handler=".boards._topic_added" />
+	<subscriber handler=".boards._topic_updated" />
 	<subscriber handler=".boards._topic_removed" />
 	<subscriber handler=".boards._topic_flagged" />
 	<subscriber handler=".boards._topic_rated" />
@@ -46,13 +47,17 @@
 	<subscriber handler=".boards._forum_added" />
 	<subscriber handler=".boards._forum_removed" />
 
+	<subscriber handler=".boards._comment_flagged" />
 	<subscriber handler=".boards._add_general_forum_comment" />
 	<subscriber handler=".boards._modify_general_forum_comment" />
+	<subscriber handler=".boards._modify_post" />
 
 	<subscriber handler=".blogs._blog_added" />
+	<subscriber handler=".blogs._blog_updated" />
 	<subscriber handler=".blogs._blog_removed" />
 	<subscriber handler=".blogs._add_personal_blog_comment" />
 	<subscriber handler=".blogs._modify_personal_blog_comment" />
+	<subscriber handler=".blogs._modify_blog_post" />
 	<subscriber handler=".blogs._blog_rated" />
 	<subscriber handler=".blogs._blog_flagged" />
 
@@ -73,6 +78,7 @@
 	<subscriber handler=".surveys._inquiry_taken" />
 
 	<subscriber handler=".resource_tags._note_added" />
+	<subscriber handler=".resource_tags._note_modified" />
 	<subscriber handler=".resource_tags._note_removed" />
 	<subscriber handler=".resource_tags._highlight_added" />
 	<subscriber handler=".resource_tags._highlight_removed" />
@@ -90,6 +96,7 @@
 	<subscriber handler=".assessments._assignment_history_item_added" />
 
 	<subscriber handler=".assessments._feedback_added" />
+	<subscriber handler=".assessments._feedback_updated" />
 	<subscriber handler=".assessments._feedback_removed" />
 
 	<subscriber handler=".enrollments._enrolled" />

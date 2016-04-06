@@ -120,7 +120,6 @@ def _questionset_assessed( question_set, event ):
 def _question_grade( question, event ):
 	# These are question level grade events (also modified). These do
 	# not currently occur in the wild, but they may in the future.
-	# TODO implement
 	# We're not subscribed to any event listeners either.
 	pass
 
@@ -206,6 +205,16 @@ def _add_feedback( oid, nti_session=None ):
 		submission = get_object_root( feedback, IUsersCourseAssignmentHistoryItem )
 		_do_add_feedback( nti_session, feedback, submission )
 
+def _update_feedback( oid, nti_session=None ):
+	feedback = find_object_with_ntiid(oid)
+	if feedback is not None:
+		submission = get_object_root( feedback, IUsersCourseAssignmentHistoryItem )
+		user = get_creator( feedback )
+		timestamp = get_created_timestamp(feedback)
+		db_assessments.update_feedback(user, nti_session,
+										timestamp, submission, feedback )
+		logger.debug( "Assignment feedback updated (user=%s) (%s)", user, feedback )
+
 def _remove_feedback( feedback_id, timestamp=None ):
 	db_assessments.delete_feedback( timestamp, feedback_id )
 	logger.debug("Assignment feedback removed (%s)", feedback_id )
@@ -214,6 +223,11 @@ def _remove_feedback( feedback_id, timestamp=None ):
 def _feedback_added(feedback, event):
 	nti_session = get_nti_session_id()
 	process_event( _get_job_queue, _add_feedback, feedback, nti_session=nti_session )
+
+@component.adapter(IUsersCourseAssignmentHistoryItemFeedback, IObjectModifiedEvent)
+def _feedback_updated(feedback, event):
+	nti_session = get_nti_session_id()
+	process_event( _get_job_queue, _update_feedback, feedback, nti_session=nti_session )
 
 @component.adapter(IUsersCourseAssignmentHistoryItemFeedback, IIntIdRemovedEvent)
 def _feedback_removed(feedback, event):

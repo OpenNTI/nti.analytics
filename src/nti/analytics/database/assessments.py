@@ -388,9 +388,13 @@ def _get_grade_id( db, assignment_taken_id ):
 	grade_entry = _get_grade_entry( db, assignment_taken_id )
 	return grade_entry.grade_id
 
+def _get_feedback( db, feedback_ds_id ):
+	feedback = db.session.query( AssignmentFeedback ).filter(
+							 AssignmentFeedback.feedback_ds_id == feedback_ds_id ).first()
+	return feedback
+
 def _feedback_exists( db, feedback_ds_id ):
-	return db.session.query( AssignmentFeedback ).filter(
-							 AssignmentFeedback.feedback_ds_id == feedback_ds_id ).count()
+	return _get_feedback( db, feedback_ds_id ) is not None
 
 def _set_mime_records( db, feedback_record, feedback ):
 	"""
@@ -400,6 +404,7 @@ def _set_mime_records( db, feedback_record, feedback ):
 	# Delete the old records.
 	for mime_record in feedback_record._file_mime_types:
 		db.session.delete( mime_record )
+	feedback_record._file_mime_types = []
 
 	file_mime_types = build_mime_type_records( db, feedback, FeedbackUserFileUploadMimeTypes )
 	feedback_record._file_mime_types.extend( file_mime_types )
@@ -448,6 +453,18 @@ def create_submission_feedback( user, nti_session, timestamp, submission, feedba
 	db.session.add( new_object )
 	db.session.flush()
 	return new_object
+
+def update_feedback( user, nti_session, timestamp, submission, feedback ):
+	"""
+	Update our feedback record, creating if it does not exist.
+	"""
+	db = get_analytics_db()
+	feedback_ds_id = get_ds_id(feedback)
+	feedback_record = _get_feedback(db, feedback_ds_id)
+	if feedback_record is None:
+		create_submission_feedback( user, nti_session, timestamp, submission, feedback )
+	else:
+		_set_feedback_attributes( db, feedback_record, feedback )
 
 def delete_feedback( timestamp, feedback_ds_id ):
 	db = get_analytics_db()

@@ -119,19 +119,23 @@ def _set_mime_records( db, note_record, note ):
 	# Delete the old records.
 	for mime_record in note_record._file_mime_types:
 		db.session.delete( mime_record )
+	note_record._file_mime_types = []
 
 	file_mime_types = build_mime_type_records( db, note, NotesUserFileUploadMimeTypes )
 	note_record._file_mime_types.extend( file_mime_types )
+
+def _set_note_ratings( note_record, note ):
+	like_count, favorite_count, is_flagged = get_ratings(note)
+	note_record.like_count = like_count
+	note_record.favorite_count = favorite_count
+	note_record.is_flagged = is_flagged
 
 def _set_note_attributes( db, note_record, note, course ):
 	"""
 	Set the note attributes for this note record.
 	"""
 	note_record.sharing = _get_sharing_enum(note, course)
-	like_count, favorite_count, is_flagged = get_ratings(note)
-	note_record.like_count = like_count
-	note_record.favorite_count = favorite_count
-	note_record.is_flagged = is_flagged
+	_set_note_ratings( note_record, note )
 	note_record.note_length = get_body_text_length( note )
 	_set_mime_records( db, note_record, note )
 
@@ -183,6 +187,19 @@ def create_note(user, nti_session, note):
 	db.session.add(new_object)
 	db.session.flush()
 	return new_object
+
+def update_note(user, nti_session, note):
+	"""
+	Update our note record, creating if it does not exist.
+	"""
+	db = get_analytics_db()
+	note_ds_id = get_ds_id(note)
+	note_record = _get_note(db, note_ds_id)
+	if note_record is None:
+		create_note(user, nti_session, note)
+	else:
+		course = get_root_context(note)
+		_set_note_attributes( db, note_record, note, course )
 
 def delete_note(timestamp, note_ds_id):
 	db = get_analytics_db()
@@ -240,8 +257,7 @@ def like_note(note, user, session_id, timestamp, delta):
 							NotesCreated.note_ds_id == note_ds_id).first()
 
 	if db_note is not None:
-		db_note.like_count += delta
-		db.session.flush()
+		_set_note_ratings( db_note, note )
 		_create_note_rating_record(db, NoteLikes, user,
 								session_id, timestamp,
 								delta, db_note)
@@ -250,11 +266,10 @@ def favorite_note(note, user, session_id, timestamp, delta):
 	db = get_analytics_db()
 	note_ds_id = get_ds_id(note)
 	db_note = db.session.query(NotesCreated).filter(
-							NotesCreated.note_ds_id == note_ds_id).first()
+							   NotesCreated.note_ds_id == note_ds_id).first()
 
 	if db_note is not None:
-		db_note.favorite_count += delta
-		db.session.flush()
+		_set_note_ratings( db_note, note )
 		_create_note_rating_record(	db, NoteFavorites, user,
 									session_id, timestamp,
 									delta, db_note)
@@ -263,7 +278,7 @@ def flag_note(note, state):
 	db = get_analytics_db()
 	note_ds_id = get_ds_id(note)
 	db_note = db.session.query(NotesCreated).filter(
-							NotesCreated.note_ds_id == note_ds_id).first()
+							   NotesCreated.note_ds_id == note_ds_id).first()
 	db_note.is_flagged = state
 	db.session.flush()
 

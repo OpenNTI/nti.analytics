@@ -43,8 +43,13 @@ from nti.analytics.database.query_utils import get_user_replies_to_others as _ge
 
 from nti.analytics.database.users import get_or_create_user
 
+def _get_blog( db, blog_ds_id ):
+	blog = db.session.query(BlogsCreated).filter(
+							BlogsCreated.blog_ds_id == blog_ds_id ).first()
+	return blog
+
 def _get_blog_id( db, blog_ds_id ):
-	blog = db.session.query(BlogsCreated).filter( BlogsCreated.blog_ds_id == blog_ds_id ).first()
+	blog = _get_blog( db, blog_ds_id )
 	return blog and blog.blog_id
 
 _blog_exists = _get_blog_id
@@ -89,6 +94,18 @@ def create_blog( user, nti_session, blog_entry ):
 	if getattr( blog_entry, 'headline', None ) is not None:
 		create_blog_comment(user, nti_session, blog_entry, blog_entry.headline )
 	return new_object
+
+def update_blog(user, nti_session, blog):
+	"""
+	Update our blog, creating if it does not exist.
+	"""
+	db = get_analytics_db()
+	blog_ds_id = get_ds_id(blog)
+	blog_record = _get_blog( db, blog_ds_id )
+	if blog_record is None:
+		create_blog(user, nti_session, blog)
+	else:
+		_set_blog_attributes( blog_record, blog )
 
 def delete_blog( timestamp, blog_ds_id ):
 	db = get_analytics_db()
@@ -145,10 +162,10 @@ def like_blog( blog, user, session_id, timestamp, delta ):
 								BlogsCreated.blog_ds_id == blog_ds_id ).first()
 
 	if db_blog is not None:
-		db_blog.like_count += delta
 		db.session.flush()
 		creator_id = db_blog.user_id
 		blog_id = db_blog.blog_id
+		_set_blog_attributes( db_blog, blog )
 		_create_blog_rating_record( db, BlogLikes, user,
 								session_id, timestamp,
 								blog_id, delta, creator_id )
@@ -160,10 +177,10 @@ def favorite_blog( blog, user, session_id, timestamp, delta ):
 							   BlogsCreated.blog_ds_id == blog_ds_id ).first()
 
 	if db_blog is not None:
-		db_blog.favorite_count += delta
 		db.session.flush()
 		creator_id = db_blog.user_id
 		blog_id = db_blog.blog_id
+		_set_blog_attributes( db_blog, blog )
 		_create_blog_rating_record( db, BlogFavorites, user,
 								session_id, timestamp,
 								blog_id, delta, creator_id )
@@ -219,9 +236,13 @@ def create_blog_view(user, nti_session, timestamp, context_path, blog_entry, tim
 								time_length=time_length )
 	db.session.add( new_object )
 
+def _get_blog_comment( db, cid ):
+	comment = db.session.query( BlogCommentsCreated ).filter(
+								BlogCommentsCreated.comment_id == cid ).first()
+	return comment
+
 def _blog_comment_exists( db, cid ):
-	return db.session.query( BlogCommentsCreated ).filter(
-							BlogCommentsCreated.comment_id == cid ).count()
+	return _get_blog_comment( db, cid ) is not None
 
 def _set_mime_records( db, comment_record, blog_comment ):
 	"""
@@ -231,6 +252,7 @@ def _set_mime_records( db, comment_record, blog_comment ):
 	# Delete the old records.
 	for mime_record in comment_record._file_mime_types:
 		db.session.delete( mime_record )
+	comment_record._file_mime_types = []
 
 	file_mime_types = build_mime_type_records( db, blog_comment, BlogCommentsUserFileUploadMimeTypes )
 	comment_record._file_mime_types.extend( file_mime_types )
@@ -288,6 +310,18 @@ def create_blog_comment(user, nti_session, blog, comment ):
 	db.session.flush()
 	return new_object
 
+def update_blog_comment(user, nti_session, blog, comment):
+	"""
+	Update our blog comment, creating if it does not exist.
+	"""
+	db = get_analytics_db()
+	cid = get_ds_id( comment )
+	comment_record = _get_blog_comment( db, cid )
+	if comment_record is None:
+		create_blog_comment(user, nti_session, blog, comment)
+	else:
+		_set_blog_comment_attributes( db, comment_record, comment )
+
 def delete_blog_comment(timestamp, comment_id):
 	db = get_analytics_db()
 	timestamp = timestamp_type( timestamp )
@@ -338,10 +372,10 @@ def like_comment( comment, user, session_id, timestamp, delta ):
 								BlogCommentsCreated.comment_id == comment_id ).first()
 
 	if db_comment is not None:
-		db_comment.like_count += delta
 		db.session.flush()
 		creator_id = db_comment.user_id
 		comment_id = db_comment.comment_id
+		_set_blog_comment_attributes( db, db_comment, comment )
 		_create_blog_comment_rating_record( db, BlogCommentLikes, user,
 								session_id, timestamp, comment_id, delta, creator_id )
 
@@ -352,10 +386,10 @@ def favorite_comment( comment, user, session_id, timestamp, delta ):
 									BlogCommentsCreated.comment_id == comment_id ).first()
 
 	if db_comment is not None:
-		db_comment.favorite_count += delta
 		db.session.flush()
 		creator_id = db_comment.user_id
 		comment_id = db_comment.comment_id
+		_set_blog_comment_attributes( db, db_comment, comment )
 		_create_blog_comment_rating_record( db, BlogCommentFavorites, user,
 								session_id, timestamp, comment_id, delta, creator_id )
 

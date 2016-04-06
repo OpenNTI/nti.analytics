@@ -46,11 +46,13 @@ from nti.namedfile.file import NamedBlobFile
 from nti.analytics.tests import NTIAnalyticsTestCase
 
 from nti.analytics.boards import _add_comment
+from nti.analytics.boards import _update_comment
 from nti.analytics.boards import _like_topic
 from nti.analytics.boards import _like_comment
 from nti.analytics.boards import _favorite_topic
 from nti.analytics.boards import _favorite_comment
 from nti.analytics.boards import _add_topic
+from nti.analytics.boards import _update_topic
 from nti.analytics.boards import get_topic_views
 from nti.analytics.boards import get_replies_to_user
 from nti.analytics.boards import get_forum_comments
@@ -441,3 +443,19 @@ class TestComments( NTIAnalyticsTestCase ):
 		assert_that( comment_record.FileMimeTypes.get( 'text/plain' ), is_( 2 ))
 		assert_that( comment_record.FileMimeTypes.get( 'image/gif' ), is_( 1 ))
 		assert_that( comment_record.FileMimeTypes.get( 'image/png' ), is_( 1 ))
+
+		# Update topic
+		mock_find_object.is_callable().returns( topic )
+		_update_topic( topic )
+		results = get_topics_created_for_user( user1 )
+		assert_that( results, has_length( 1 ))
+
+		# Update comment
+		comment.body = ( 'a', )
+		mock_find_object.is_callable().returns( comment )
+		_update_comment( oid )
+		results = get_forum_comments_for_user( user2 )
+		assert_that( results, has_length( 1 ))
+		comment_record = results[0]
+		assert_that( comment_record.comment_length, is_( 1 ))
+		assert_that( comment_record.FileMimeTypes, has_length( 0 ))

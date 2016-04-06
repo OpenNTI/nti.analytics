@@ -197,7 +197,7 @@ def _execute_job( *args, **kwargs ):
 		db = get_analytics_db( strict=False )
 		if db is None:
 			logger.info( 'No analytics db found for site (%s), will drop event',
-						event_site_name )
+						 event_site_name )
 			return None
 
 		return _do_execute_job( db, *args, **kwargs )

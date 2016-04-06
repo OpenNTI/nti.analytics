@@ -44,6 +44,7 @@ from nti.analytics.resource_tags import get_notes
 from nti.analytics.resource_tags import get_bookmarks
 from nti.analytics.resource_tags import get_highlights
 from nti.analytics.resource_tags import _add_note
+from nti.analytics.resource_tags import _update_note
 from nti.analytics.resource_tags import _like_note
 from nti.analytics.resource_tags import _favorite_note
 from nti.analytics.resource_tags import _add_bookmark
@@ -257,6 +258,29 @@ class TestNotes( NTIAnalyticsTestCase ):
 
 		mime_types = get_all_mime_types()
 		assert_that( mime_types, contains_inanyorder( 'text/plain', 'image/gif', 'image/png' ))
+
+		# Update note with empty body
+		original_body = list( note.body )
+		note.body = ('a',)
+		_update_note( oid )
+
+		results = get_notes( user3 )
+		assert_that( results, has_length( 1 ))
+		note_record = results[0]
+		assert_that( note_record.note_length, is_( 1 ))
+		assert_that( note_record.FileMimeTypes, has_length( 0 ))
+
+		# Now original body
+		note.body = original_body
+		_update_note( oid )
+		results = get_notes( user3 )
+		assert_that( results, has_length( 1 ))
+		note_record = results[0]
+		assert_that( note_record.note_length, is_( text_length * 2 ))
+		assert_that( note_record.FileMimeTypes, has_length( 3 ))
+		assert_that( note_record.FileMimeTypes.get( 'text/plain' ), is_( 2 ))
+		assert_that( note_record.FileMimeTypes.get( 'image/gif' ), is_( 1 ))
+		assert_that( note_record.FileMimeTypes.get( 'image/png' ), is_( 1 ))
 
 	@WithMockDSTrans
 	@fudge.patch( 'nti.ntiids.ntiids.find_object_with_ntiid',

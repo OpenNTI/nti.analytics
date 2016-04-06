@@ -39,7 +39,9 @@ from nti.analytics.tests import NTIAnalyticsTestCase
 
 from nti.analytics.blogs import get_blogs
 from nti.analytics.blogs import _add_blog
+from nti.analytics.blogs import _update_blog
 from nti.analytics.blogs import _add_comment
+from nti.analytics.blogs import _update_comment
 from nti.analytics.blogs import _like_blog
 from nti.analytics.blogs import _favorite_blog
 from nti.analytics.blogs import _like_comment
@@ -294,3 +296,19 @@ class TestBlogs( NTIAnalyticsTestCase ):
 		assert_that( comment_record.FileMimeTypes.get( 'text/plain' ), is_( 2 ))
 		assert_that( comment_record.FileMimeTypes.get( 'image/gif' ), is_( 1 ))
 		assert_that( comment_record.FileMimeTypes.get( 'image/png' ), is_( 1 ))
+
+		# Update blog
+		mock_find_object.is_callable().returns( blog )
+		_update_blog( blog )
+		results = get_blogs( user1 )
+		assert_that( results, has_length( 1 ))
+
+		# Update comment
+		comment.body = ( 'a', )
+		mock_find_object.is_callable().returns( comment )
+		_update_comment( oid )
+		results = get_blog_comments( user2 )
+		assert_that( results, has_length( 1 ))
+		comment_record = results[0]
+		assert_that( comment_record.comment_length, is_( 1 ))
+		assert_that( comment_record.FileMimeTypes, has_length( 0 ))

@@ -27,6 +27,7 @@ from nti.dataserver.users.users import User
 
 from nti.dataserver.contenttypes.forums.interfaces import ITopic
 from nti.dataserver.contenttypes.forums.interfaces import IForum
+from nti.dataserver.contenttypes.forums.interfaces import IHeadlinePost
 from nti.dataserver.contenttypes.forums.interfaces import IPersonalBlogComment
 from nti.dataserver.contenttypes.forums.interfaces import IPersonalBlogEntry
 from nti.dataserver.contenttypes.forums.interfaces import IPersonalBlogEntryPost
@@ -98,6 +99,17 @@ def _add_comment( oid, nti_session=None ):
 							user,
 							getattr( topic, '__name__', topic ) )
 
+def _update_comment( oid, nti_session=None ):
+	comment = ntiids.find_object_with_ntiid( oid )
+	if comment is not None:
+		user = get_creator( comment )
+		topic = get_object_root( comment, ITopic )
+		if topic is not None:
+			db_boards.update_comment( user, nti_session, topic, comment )
+			logger.debug( 	"Forum comment updated (user=%s) (topic=%s)",
+							user,
+							getattr( topic, '__name__', topic ) )
+
 def _remove_comment( comment_id, timestamp ):
 	db_boards.delete_forum_comment( timestamp, comment_id )
 	logger.debug( "Forum comment deleted (comment_id=%s)", comment_id )
@@ -124,17 +136,26 @@ def _like_comment( oid, username=None, delta=0, timestamp=None, nti_session=None
 
 @component.adapter( IGeneralForumComment, IIntIdAddedEvent )
 def _add_general_forum_comment(comment, _):
-	if _is_forum_comment( comment ):
+	nti_session = get_nti_session_id()
+	process_event( _get_comments_queue, _add_comment, comment, nti_session=nti_session )
+
+def _do_modify_comment( comment ):
+	if IDeletedObjectPlaceholder.providedBy( comment ):
+		timestamp = datetime.utcnow()
+		comment_id = get_ds_id( comment )
+		process_event( _get_comments_queue, _remove_comment, comment_id=comment_id, timestamp=timestamp )
+	else:
 		nti_session = get_nti_session_id()
-		process_event( _get_comments_queue, _add_comment, comment, nti_session=nti_session )
+		process_event( _get_comments_queue, _update_comment, comment, nti_session=nti_session )
 
 @component.adapter( IGeneralForumComment, IObjectModifiedEvent )
 def _modify_general_forum_comment(comment, _):
-	if		_is_forum_comment( comment ) \
-		and IDeletedObjectPlaceholder.providedBy( comment ):
-			timestamp = datetime.utcnow()
-			comment_id = get_ds_id( comment )
-			process_event( _get_comments_queue, _remove_comment, comment_id=comment_id, timestamp=timestamp )
+	_do_modify_comment( comment )
+
+@component.adapter( IHeadlinePost, IObjectModifiedEvent )
+def _modify_post(comment, _):
+	if not IPersonalBlogEntryPost.providedBy( comment ):
+		_do_modify_comment( comment )
 
 # Topic
 def _add_topic( oid, nti_session=None ):
@@ -143,6 +164,15 @@ def _add_topic( oid, nti_session=None ):
 		user = get_creator( topic )
 		db_boards.create_topic( user, nti_session, topic )
 		logger.debug( "Topic created (user=%s) (topic=%s)",
+					user,
+					getattr( topic, '__name__', topic ))
+
+def _update_topic( oid, nti_session=None ):
+	topic = ntiids.find_object_with_ntiid( oid )
+	if topic is not None:
+		user = get_creator( topic )
+		db_boards.update_topic( user, nti_session, topic )
+		logger.debug( "Topic updated (user=%s) (topic=%s)",
 					user,
 					getattr( topic, '__name__', topic ))
 
@@ -170,14 +200,18 @@ def _like_topic( oid, username=None, delta=0, timestamp=None, nti_session=None )
 		db_boards.like_topic( topic, user, nti_session, timestamp, delta )
 		logger.debug( 'Topic liked (topic=%s)', topic )
 
-@component.adapter( IObjectFlaggingEvent )
+@component.adapter( ITopic, IObjectFlaggingEvent )
 def _topic_flagged( event ):
 	obj = event.object
-	state = True if IObjectFlaggedEvent.providedBy( event ) else False
 	if _is_topic( obj ):
+		state = IObjectFlaggedEvent.providedBy( event )
 		process_event( _get_topic_queue, _flag_topic, obj, state=state )
-	elif _is_forum_comment( obj ):
-		process_event( _get_comments_queue, _flag_comment, obj, state=state )
+
+@component.adapter( IGeneralForumComment, IObjectFlaggingEvent )
+def _comment_flagged( event ):
+	obj = event.object
+	state = IObjectFlaggedEvent.providedBy( event )
+	process_event( _get_comments_queue, _flag_comment, obj, state=state )
 
 @component.adapter( IObjectRatedEvent )
 def _topic_rated( event ):
@@ -211,13 +245,18 @@ def _topic_added( topic, _ ):
 		nti_session = get_nti_session_id()
 		process_event( _get_topic_queue, _add_topic, topic, nti_session=nti_session )
 
+@component.adapter( ITopic, IObjectModifiedEvent )
+def _topic_updated( topic, _ ):
+	if _is_topic( topic ):
+		nti_session = get_nti_session_id()
+		process_event( _get_topic_queue, _update_topic, topic, nti_session=nti_session )
+
 @component.adapter( ITopic, IIntIdRemovedEvent )
 def _topic_removed( topic, _ ):
 	if _is_topic( topic ):
 		timestamp = datetime.utcnow()
 		topic_id = get_ds_id( topic )
 		process_event( _get_topic_queue, _remove_topic, topic_id=topic_id, timestamp=timestamp )
-
 
 # Forum
 def _remove_forum( forum_id, timestamp ):

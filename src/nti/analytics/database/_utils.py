@@ -33,15 +33,16 @@ def get_body_text_length( obj ):
 	"""
 	For a given obj with a body, find the length of the textual content.
 	"""
-	note_length = 0
+	#TODO: We may have client created HTML here. Should we try to strip it?
+	text_length = 0
 	for item in obj.body or ():
 		if not isinstance( item, six.string_types ):
 			continue
 		try:
-			note_length += len( item )
+			text_length += len( item )
 		except (AttributeError,TypeError):
 			pass
-	return note_length
+	return text_length
 
 def get_context_path(context_path):
 	# Note: we could also sub these resource_ids for the actual

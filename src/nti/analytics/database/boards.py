@@ -205,6 +205,18 @@ def create_topic(user, nti_session, topic):
 		create_forum_comment(user, nti_session, topic, topic.headline)
 	return new_object
 
+def update_topic(user, nti_session, topic):
+	"""
+	Update our topic, creating if it does not exist.
+	"""
+	db = get_analytics_db()
+	topic_ds_id = get_ds_id( topic )
+	topic_record = _get_topic( db, topic_ds_id )
+	if topic_record is None:
+		create_topic(user, nti_session, topic)
+	else:
+		_set_topic_attributes( topic_record, topic )
+
 def delete_topic(timestamp, topic_ds_id):
 	db = get_analytics_db()
 	timestamp = timestamp_type( timestamp )
@@ -263,15 +275,15 @@ def like_topic( topic, user, session_id, timestamp, delta ):
 								TopicsCreated.topic_ds_id == topic_ds_id ).first()
 
 	if db_topic is not None:
-		db_topic.like_count += delta
 		db.session.flush()
 		topic_id = db_topic.topic_id
 		creator_id = db_topic.user_id
 		course_id = db_topic.course_id
+		_set_topic_attributes( db_topic, topic )
 		entity_root_context_id = db_topic.entity_root_context_id
 		_create_topic_rating_record( db, TopicLikes, user,
-								session_id, timestamp, topic_id, delta,
-								creator_id, course_id, entity_root_context_id )
+									session_id, timestamp, topic_id, delta,
+									creator_id, course_id, entity_root_context_id )
 
 def favorite_topic( topic, user, session_id, timestamp, delta ):
 	db = get_analytics_db()
@@ -280,11 +292,11 @@ def favorite_topic( topic, user, session_id, timestamp, delta ):
 								TopicsCreated.topic_ds_id == topic_ds_id ).first()
 
 	if db_topic is not None:
-		db_topic.favorite_count += delta
 		db.session.flush()
 		topic_id = db_topic.topic_id
 		creator_id = db_topic.user_id
 		course_id = db_topic.course_id
+		_set_topic_attributes( db_topic, topic )
 		entity_root_context_id = db_topic.entity_root_context_id
 		_create_topic_rating_record( db, TopicFavorites, user,
 								session_id, timestamp, topic_id, delta,
@@ -297,7 +309,6 @@ def flag_topic( topic, state ):
 								TopicsCreated.topic_ds_id == topic_ds_id ).first()
 	db_topic.is_flagged = state
 	db.session.flush()
-
 
 def _topic_view_exists( db, user_id, topic_id, timestamp ):
 	return db.session.query(TopicsViewed ).filter(
@@ -350,9 +361,14 @@ def create_topic_view(user, nti_session, timestamp, root_context, context_path, 
 								time_length=time_length )
 	db.session.add( new_object )
 
+def _get_comment( db, comment_id ):
+	comment = db.session.query( ForumCommentsCreated ).filter(
+							 	ForumCommentsCreated.comment_id == comment_id ).first()
+	return comment
+
 def _comment_exists( db, comment_id ):
-	return db.session.query( ForumCommentsCreated ).filter(
-							 ForumCommentsCreated.comment_id == comment_id ).count()
+	comment = _get_comment( db, comment_id )
+	return comment is not None
 
 def _set_mime_records( db, comment_record, comment ):
 	"""
@@ -362,6 +378,7 @@ def _set_mime_records( db, comment_record, comment ):
 	# Delete the old records.
 	for mime_record in comment_record._file_mime_types:
 		db.session.delete( mime_record )
+	comment_record._file_mime_types = []
 
 	file_mime_types = build_mime_type_records( db, comment, ForumCommentsUserFileUploadMimeTypes )
 	comment_record._file_mime_types.extend( file_mime_types )
@@ -427,6 +444,18 @@ def create_forum_comment(user, nti_session, topic, comment):
 	db.session.flush()
 	return new_object
 
+def update_comment(user, nti_session, topic, comment):
+	"""
+	Update our comment, creating if it does not exist.
+	"""
+	db = get_analytics_db()
+	comment_id = get_ds_id( comment )
+	comment_record = _get_comment( db, comment_id )
+	if comment_record is None:
+		create_forum_comment(user, nti_session, topic, comment)
+	else:
+		_set_comment_attributes( db, comment_record, comment )
+
 def delete_forum_comment(timestamp, comment_id):
 	db = get_analytics_db()
 	timestamp = timestamp_type( timestamp )
@@ -478,11 +507,11 @@ def like_comment( comment, user, session_id, timestamp, delta ):
 								ForumCommentsCreated.comment_id == comment_id ).one()
 
 	if db_comment is not None:
-		db_comment.like_count += delta
 		db.session.flush()
 		creator_id = db_comment.user_id
 		comment_id = db_comment.comment_id
 		course_id = db_comment.course_id
+		_set_comment_attributes( db, db_comment, comment )
 		entity_root_context_id = db_comment.entity_root_context_id
 		_create_forum_comment_rating_record( db, ForumCommentLikes, user,
 								session_id, timestamp, comment_id, delta,
@@ -495,11 +524,10 @@ def favorite_comment( comment, user, session_id, timestamp, delta ):
 								ForumCommentsCreated.comment_id == comment_id ).one()
 
 	if db_comment is not None:
-		db_comment.favorite_count += delta
-		db.session.flush()
 		creator_id = db_comment.user_id
 		comment_id = db_comment.comment_id
 		course_id = db_comment.course_id
+		_set_comment_attributes( db, db_comment, comment )
 		entity_root_context_id = db_comment.entity_root_context_id
 		_create_forum_comment_rating_record( db, ForumCommentFavorites, user,
 								session_id, timestamp, comment_id, delta,
