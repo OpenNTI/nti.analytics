@@ -201,15 +201,13 @@ def _like_topic( oid, username=None, delta=0, timestamp=None, nti_session=None )
 		logger.debug( 'Topic liked (topic=%s)', topic )
 
 @component.adapter( ITopic, IObjectFlaggingEvent )
-def _topic_flagged( event ):
-	obj = event.object
+def _topic_flagged( obj, event ):
 	if _is_topic( obj ):
 		state = IObjectFlaggedEvent.providedBy( event )
 		process_event( _get_topic_queue, _flag_topic, obj, state=state )
 
 @component.adapter( IGeneralForumComment, IObjectFlaggingEvent )
-def _comment_flagged( event ):
-	obj = event.object
+def _comment_flagged( obj, event ):
 	state = IObjectFlaggedEvent.providedBy( event )
 	process_event( _get_comments_queue, _flag_comment, obj, state=state )
 

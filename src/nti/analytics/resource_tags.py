@@ -102,14 +102,12 @@ def _like_note( oid, username=None, delta=0, timestamp=None, nti_session=None ):
 		logger.debug( 'Note liked (note=%s)', note )
 
 @component.adapter( INote, IObjectFlaggingEvent )
-def _note_flagged( event ):
-	obj = event.object
+def _note_flagged( obj, event ):
 	state = IObjectFlaggedEvent.providedBy( event )
 	process_event( _get_job_queue, _flag_note, obj, state=state )
 
 @component.adapter( INote, IObjectRatedEvent )
-def _note_rated( event ):
-	obj = event.object
+def _note_rated( obj, event ):
 	if event.rating is not None:
 		timestamp = event.rating.timestamp
 		nti_session = get_nti_session_id()

@@ -179,7 +179,7 @@ def _like_blog( oid, username=None, delta=0, timestamp=None, nti_session=None ):
 @component.adapter( IObjectFlaggingEvent )
 def _blog_flagged( event ):
 	obj = event.object
-	state = True if IObjectFlaggedEvent.providedBy( event ) else False
+	state = IObjectFlaggedEvent.providedBy( event )
 	if _is_blog( obj ):
 		process_event( _get_blog_queue, _flag_blog, obj, state=state )
 	elif _is_blog_comment( obj ):
