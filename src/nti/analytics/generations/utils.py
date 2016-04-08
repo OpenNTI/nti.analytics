@@ -101,9 +101,9 @@ def do_evolve( context, evolve_job, generation, with_library=False ):
 			# get the necessary courses per site.
 			run_job_in_all_host_sites( partial( run_job ) )
 		else:
-			if db is None:
-				# Site specific dbs
-				run_job_in_all_host_sites( partial( run_job ) )
-			else:
+			if db is not None:
 				# Global db
 				evolve_job()
+
+			# Site specific dbs
+			run_job_in_all_host_sites( partial( run_job ) )
