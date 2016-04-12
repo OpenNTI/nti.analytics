@@ -170,7 +170,7 @@ def _grade_submission( grade, submission ):
 	process_event( _get_job_queue,
 					_set_grade,
 					submission,
-					username=user.username,
+					username=getattr( user, 'username', None),
 					graded_val=graded_val,
 					nti_session=nti_session,
 					timestamp=timestamp )
