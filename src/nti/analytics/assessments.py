@@ -163,6 +163,10 @@ def _set_grade( oid, username, graded_val, nti_session=None, timestamp=None ):
 					 assignment_id )
 
 def _grade_submission( grade, submission ):
+	# Perhaps a grade is being assigned without a submission. That should be a rare case
+	# and is not something useful to persist (?).
+	if submission is None or not grade.creator:
+		return
 	user = get_creator( grade )
 	nti_session = get_nti_session_id()
 	timestamp = datetime.utcnow()
@@ -183,12 +187,6 @@ def _grade_modified(grade, event):
 @component.adapter(IGrade, IIntIdAddedEvent)
 def _grade_added(grade, event):
 	submission = IUsersCourseAssignmentHistoryItem( grade, None )
-	# Perhaps a grade is being assigned without a submission.  That should be a rare case
-	# and is not something useful to persist.
-	# TODO Oof, a placeholder submission is created. See if we can tell when that occurs.
-	# (it also appears in the Grade modified path).
-	if submission is None or not grade.creator:
-		return
 	_grade_submission( grade, submission )
 
 def _do_add_feedback( nti_session, feedback, submission ):
