@@ -80,3 +80,7 @@ class IAssignmentStats(IUniqueStatsMixin):
 	TimedAssignmentCount = Number(title="Unique assignment count", required=True)
 	TimedAssignmentLateCount = Number(title="Late assignment timed count", required=True)
 
+class IAnalyticsStatsSource(interface.Interface):
+	"""
+	A utility to provide stats.
+	"""
