@@ -216,6 +216,13 @@ class IProgress(interface.Interface):
 	LastModified = DateTime(title=u"The timestamp when this event occurred.",
 						required=False)
 
+class IVideoProgress(IProgress):
+	"""
+	Indicates progress made on a video.
+	"""
+	MostRecentEndTime = Number(title=u"A number indicating the last end point, in seconds, in which the video was watched.",
+						 	   default=0)
+
 class IUserResearchStatus(IDCTimes):
 	"""
 	Holds whether the user has accepted that data that they generate may be

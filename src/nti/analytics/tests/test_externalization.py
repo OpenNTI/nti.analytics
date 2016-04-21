@@ -55,11 +55,13 @@ from nti.analytics.interfaces import IVideoPlaySpeedChangeEvent
 from nti.analytics.interfaces import ISelfAssessmentViewEvent
 from nti.analytics.interfaces import IAssignmentViewEvent
 from nti.analytics.interfaces import IProgress
+from nti.analytics.interfaces import IVideoProgress
 from nti.analytics.interfaces import IAnalyticsClientParams
 from nti.analytics.interfaces import DEFAULT_ANALYTICS_BATCH_SIZE
 from nti.analytics.interfaces import DEFAULT_ANALYTICS_FREQUENCY
 
 from nti.analytics.progress import DefaultProgress
+from nti.analytics.progress import VideoProgress
 
 from nti.externalization.tests import assert_does_not_pickle
 
@@ -550,6 +552,23 @@ class TestProgress(NTIAnalyticsTestCase):
 		assert_that(ext_obj, has_entry( 'ResourceID', resource_id ))
 		assert_that(ext_obj, has_entry( 'Class', 'Progress' ))
 		assert_that(ext_obj, has_entry( 'MimeType', 'application/vnd.nextthought.progress' ))
+
+	def test_video_progress(self):
+		resource_id = 'tag:nt_ntiid1'
+		last_modified = datetime.utcnow()
+		last_end_time = 15
+		progress = VideoProgress( resource_id, 10, 20, True, last_modified, last_end_time )
+		assert_that( progress, verifiably_provides( IVideoProgress ) )
+
+		ext_obj = toExternalObject( progress )
+		assert_that(ext_obj, has_entry( 'AbsoluteProgress', 10 ))
+		assert_that(ext_obj, has_entry( 'MostRecentEndTime', last_end_time ))
+		assert_that(ext_obj, has_entry( 'MaxPossibleProgress', 20 ))
+		assert_that(ext_obj, has_entry( 'HasProgress', True ))
+		assert_that(ext_obj, has_entry( 'Last Modified', last_modified ))
+		assert_that(ext_obj, has_entry( 'ResourceID', resource_id ))
+		assert_that(ext_obj, has_entry( 'Class', 'Progress' ))
+		assert_that(ext_obj, has_entry( 'MimeType', 'application/vnd.nextthought.videoprogress' ))
 
 class TestClientParams(NTIAnalyticsTestCase):
 

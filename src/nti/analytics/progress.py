@@ -11,6 +11,7 @@ logger = __import__('logging').getLogger(__name__)
 from zope import interface
 
 from nti.analytics.interfaces import IProgress
+from nti.analytics.interfaces import IVideoProgress
 
 from nti.analytics.assessments import get_assignments_for_user
 from nti.analytics.assessments import get_self_assessments_for_user
@@ -41,6 +42,24 @@ class DefaultProgress( object ):
 		self.HasProgress = has_progress
 		self.LastModified = last_modified
 
+@WithRepr
+@EqHash( 'ResourceID', 'AbsoluteProgress', 'MaxPossibleProgress', 'HasProgress', 'LastModified', 'MostRecentEndTime' )
+@interface.implementer( IVideoProgress )
+class VideoProgress( DefaultProgress ):
+
+	# Re-use the original class for BWC.
+	__external_class_name__ = "Progress"
+	mime_type = mimeType = 'application/vnd.nextthought.videoprogress'
+
+	def __init__( self, progress_id, progress, max_progress,
+				  has_progress=False, last_modified=None, last_end_time=None ):
+		self.ResourceID = progress_id
+		self.AbsoluteProgress = progress
+		self.MaxPossibleProgress = max_progress
+		self.HasProgress = has_progress
+		self.LastModified = last_modified
+		self.MostRecentEndTime = last_end_time
+
 def get_progress_for_resource_container( resource_ntiid, resource_view_dict ):
 	"""
 	For a page container, use the children progress to determine
@@ -61,7 +80,8 @@ def get_progress_for_resource_container( resource_ntiid, resource_view_dict ):
 		last_mod = max( (x.LastModified for x in children_progress if x) )
 
 		result = DefaultProgress( resource_ntiid, viewed_pages, num_pages,
-								bool( viewed_pages ), last_modified=last_mod )
+								  has_progress=bool( viewed_pages ),
+								  last_modified=last_mod )
 	return result
 
 def get_progress_for_resource_views( resource_ntiid, resource_views ):
@@ -76,7 +96,8 @@ def get_progress_for_resource_views( resource_ntiid, resource_views ):
 		last_mod = next( ts for ts in
 						(x.timestamp for x in resource_views)
 						if ts is not None )
-		result = DefaultProgress( resource_ntiid, 1, 1, True, last_modified=last_mod )
+		result = DefaultProgress( resource_ntiid, 1, 1,
+								  has_progress=True, last_modified=last_mod )
 	return result
 
 def get_progress_for_video_views( resource_ntiid, video_events  ):
@@ -84,18 +105,22 @@ def get_progress_for_video_views( resource_ntiid, video_events  ):
 	For a set of events for a given ntiid, looking at a resource constitutes progress.
 	"""
 	result = None
-	video_events = list( video_events )
-
 	# Note: currently, 'None' time_lengths (placeholders for event starts)
 	# are considered progress.
 
 	if video_events:
-		# TODO Perhaps we want the most recent max time.
+		video_events = list( video_events )
+		# XXX: Perhaps we want the most recent max time.
 		# max time may be null.
+		sorted_events = sorted( video_events, key=lambda x: x.timestamp, reverse=True)
+		most_recent_event = sorted_events[0]
 		max_time = max( (x.MaxDuration for x in video_events) )
-		last_mod = max( (x.timestamp for x in video_events) )
+		last_mod = most_recent_event.timestamp
+		last_end_time = most_recent_event.VideoEndTime
 		total_time = sum( (x.time_length for x in video_events if x.time_length is not None) )
-		result = DefaultProgress( resource_ntiid, total_time, max_time, True, last_modified=last_mod )
+		result = VideoProgress( resource_ntiid, total_time, max_time,
+								has_progress=True, last_modified=last_mod,
+								last_end_time=last_end_time )
 	return result
 
 def _get_last_mod_progress( values, id_val ):
@@ -103,7 +128,8 @@ def _get_last_mod_progress( values, id_val ):
 	result = None
 	if values:
 		last_mod = max( (x.timestamp for x in values) )
-		result = DefaultProgress( id_val, 1, 1, True, last_modified=last_mod )
+		result = DefaultProgress( id_val, 1, 1,
+								  has_progress=True, last_modified=last_mod )
 	return result
 
 def _get_progress_for_assessments( assessment_dict ):
