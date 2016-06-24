@@ -88,7 +88,7 @@ def _get_response( user, question_part, response ):
 
 	if IQUploadedFile.providedBy( response ):
 		response = '<FILE_UPLOADED>'
-	elif IQModeledContentResponse.providedBy( question_part ):
+	elif IQModeledContentResponse.providedBy( response ):
 		response = ''.join( response.value )
 
 	result = ''
