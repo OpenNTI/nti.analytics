@@ -272,7 +272,9 @@ def create_assignment_taken( user, nti_session, timestamp, course, submission ):
 			for idx, response in enumerate( question_submission.parts ):
 				# Serialize our response
 				question_part = question.parts[idx] if question is not None else None
+				logger.info( 'Getting response for (aid=%s) (user=%s) (q=%s) (idx=%s) (submission=%s)', assignment_id, user, question_id, idx, submission_id)
 				response = _get_response( user, question_part, response )
+				logger.info( 'Got response for (aid=%s) (user=%s) (q=%s) (idx=%s) (submission=%s)', assignment_id, user, question_id, idx, submission_id)
 				parts = AssignmentDetails( 	user_id=uid,
 											session_id=sid,
 											timestamp=timestamp,
