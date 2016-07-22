@@ -73,7 +73,7 @@ def _get_self_assessments_for_course(course):
 	for item in catalog.iter_assessment_items():
 		if IQAssignment.providedBy(item):
 			qsids_to_strip.add(item.ntiid)
-			for assignment_part in item.parts:
+			for assignment_part in item.parts or ():
 				question_set = assignment_part.question_set
 				qsids_to_strip.add(question_set.ntiid)
 				for question in question_set.questions:
@@ -158,7 +158,8 @@ def _do_get_containers_in_course( course ):
 	containers_in_course = containers_in_course.union( [x.ntiid for x in catalog.iter_assessment_items()] )
 
 	self_assessments = _get_self_assessments_for_course(course)
-	self_assessment_containerids = {x.__parent__.ntiid for x in self_assessments}
+	self_assessment_containerids = {x.__parent__.ntiid for x in self_assessments
+									if hasattr(x.__parent__, 'ntiid')}
 	self_assessment_qsids = {x.ntiid: x for x in self_assessments}
 	containers_in_course = containers_in_course.union( self_assessment_containerids )
 	containers_in_course = containers_in_course.union( self_assessment_qsids )
