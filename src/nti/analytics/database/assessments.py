@@ -14,6 +14,8 @@ import json
 from six import string_types
 from six import integer_types
 
+from zope import interface
+
 from nti.analytics_database.assessments import AssignmentViews
 from nti.analytics_database.assessments import AssignmentGrades
 from nti.analytics_database.assessments import AssignmentsTaken
@@ -35,6 +37,7 @@ from nti.assessment.interfaces import IQModeledContentResponse
 from nti.assessment.interfaces import IQAssignmentDateContext
 
 from nti.assessment.randomized.interfaces import IQRandomizedPart
+from nti.assessment.randomized.interfaces import IRandomizedPartsContainer
 
 from nti.ntiids.ntiids import find_object_with_ntiid
 
@@ -82,9 +85,10 @@ def _get_response( user, question_part, response ):
 
 		# First de-randomize our question part, if necessary.
 		grader = grader_for_response( question_part, response )
-		response = grader.unshuffle(response,
-									user=user,
-									context=question_part)
+		if grader is not None:
+			response = grader.unshuffle(response,
+										user=user,
+										context=question_part)
 
 	if IQUploadedFile.providedBy( response ):
 		response = '<FILE_UPLOADED>'
@@ -155,7 +159,7 @@ def create_self_assessment_taken( user, nti_session, timestamp, course, submissi
 	self_assessment_id = get_ntiid_id( submission.questionSetId )
 	# We likely will not have a grader.
 	grader = _get_grader_id( submission )
-	# TODO As a QAssessedQuestionSet. we will not have a duration.
+	# TODO: As a QAssessedQuestionSet. we will not have a duration.
 	# I don't believe the submission was saved; so we cannot get it back.
 	# We'd have to transfer it during adaptation perhaps.
 	time_length = _get_duration( submission )
@@ -170,6 +174,7 @@ def create_self_assessment_taken( user, nti_session, timestamp, course, submissi
 	db.session.add( new_object )
 	db.session.flush()
 	self_assessment_id = new_object.self_assessment_id
+	qset = find_object_with_ntiid( submission.questionSetId )
 
 	for assessed_question in submission.questions:
 		question_id = assessed_question.questionId
@@ -179,7 +184,16 @@ def create_self_assessment_taken( user, nti_session, timestamp, course, submissi
 			grade = part.assessedValue
 			is_correct = grade == 1
 			question_part = question.parts[idx] if question is not None else None
-			response = _get_response( user, question_part, part.submittedResponse )
+
+			# Mark randomized if question set is a randomized parts container.
+			try:
+				if IRandomizedPartsContainer.providedBy( qset ):
+					interface.alsoProvides( question_part, IQRandomizedPart )
+				response = _get_response( user, question_part, part.submittedResponse )
+			finally:
+				if IRandomizedPartsContainer.providedBy( qset ):
+					interface.noLongerProvides(question_part, IQRandomizedPart)
+
 			grade_details = SelfAssessmentDetails( user_id=uid,
 													session_id=sid,
 													timestamp=timestamp,
@@ -262,6 +276,7 @@ def create_assignment_taken( user, nti_session, timestamp, course, submission ):
 	# Submission Parts
 	for set_submission in submission_obj.parts:
 		for question_submission in set_submission.questions:
+			qset = find_object_with_ntiid( set_submission.questionSetId )
 			# Questions don't have ds_intids, just use ntiid.
 			question_id = question_submission.questionId
 			question = find_object_with_ntiid( question_id )
@@ -272,7 +287,17 @@ def create_assignment_taken( user, nti_session, timestamp, course, submission ):
 			for idx, response in enumerate( question_submission.parts ):
 				# Serialize our response
 				question_part = question.parts[idx] if question is not None else None
-				response = _get_response( user, question_part, response )
+				logger.info( 'Getting response for (aid=%s) (user=%s) (q=%s) (idx=%s) (submission=%s)',
+							 assignment_id, user, question_id, idx, submission_id)
+
+				# Mark randomized if question set is a randomized parts container.
+				try:
+					if IRandomizedPartsContainer.providedBy( qset ):
+						interface.alsoProvides( question_part, IQRandomizedPart )
+					response = _get_response( user, question_part, response )
+				finally:
+					if IRandomizedPartsContainer.providedBy( qset ):
+						interface.noLongerProvides(question_part, IQRandomizedPart)
 				parts = AssignmentDetails( 	user_id=uid,
 											session_id=sid,
 											timestamp=timestamp,
