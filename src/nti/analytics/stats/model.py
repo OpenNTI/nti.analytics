@@ -23,7 +23,7 @@ from nti.analytics.stats.interfaces import ISelfAssessmentStats
 
 from nti.schema.field import SchemaConfigured
 
-from nti.schema.schema import EqHash
+from nti.schema.eqhash import EqHash
 
 @EqHash('count')
 @interface.implementer(ICountStats)
