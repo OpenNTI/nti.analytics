@@ -16,14 +16,14 @@ from zope.interface.interfaces import ObjectEvent, IObjectEvent
 from dolmen.builtins import IString
 from dolmen.builtins import INumeric
 
-from nti.common.property import alias
-
 from nti.contenttypes.courses.interfaces import ICourseInstance
 from nti.contenttypes.courses.interfaces import	ICourseCatalogEntry
 
 from nti.dataserver.interfaces import INote
 from nti.dataserver.interfaces import IUser
 from nti.dataserver.contenttypes.forums.interfaces import ITopic
+
+from nti.property.property import alias
 
 from nti.schema.field import Bool
 from nti.schema.field import List

@@ -20,7 +20,7 @@ from nti.analytics.boards import get_topic_views
 
 from nti.externalization.representation import WithRepr
 
-from nti.common.property import alias
+from nti.property.property import alias
 
 from nti.schema.eqhash import EqHash
 

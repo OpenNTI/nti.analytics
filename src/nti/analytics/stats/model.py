@@ -11,7 +11,7 @@ logger = __import__('logging').getLogger(__name__)
 
 from zope import interface
 
-from nti.common.property import alias
+from nti.property.property import alias
 
 from nti.analytics.stats.interfaces import ICountStats
 from nti.analytics.stats.interfaces import INoteStats

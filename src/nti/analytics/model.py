@@ -3,6 +3,7 @@
 """
 .. $Id$
 """
+
 from __future__ import print_function, unicode_literals, absolute_import, division
 __docformat__ = "restructuredtext en"
 
@@ -16,7 +17,7 @@ from zope.interface.interfaces import ObjectEvent
 from nti.externalization.persistence import NoPickle
 from nti.externalization.representation import WithRepr
 
-from nti.common.property import alias
+from nti.property.property import alias
 
 from nti.schema.field import SchemaConfigured
 from nti.schema.fieldproperty import createDirectFieldProperties

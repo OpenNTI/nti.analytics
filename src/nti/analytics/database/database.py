@@ -22,7 +22,7 @@ from zope import interface
 
 from zope.sqlalchemy import ZopeTransactionExtension
 
-from nti.common.property import Lazy
+from nti.property.property import Lazy
 
 from nti.analytics.database.interfaces import IAnalyticsDB
 
