@@ -208,7 +208,7 @@ def _should_create_analytics( request ):
 	"Decides if this request should create analytics data."
 	# Is our user impersonating?
 	if is_impersonating(request):
-		logger.info( 'Not creating analytics data for impersonating user (%s)',
+		logger.warn( 'Not creating analytics data for impersonating user (%s)',
 					request.remote_user )
 		return False
 	return True
