@@ -44,6 +44,8 @@ from nti.externalization import externalization
 from nti.intid.interfaces import IntIdMissingError
 from nti.intid.interfaces import ObjectMissingError
 
+from nti.securitypolicy.utils import is_impersonating
+
 from nti.site.site import get_site_for_site_names
 from nti.site.transient import TrivialSite
 
@@ -205,8 +207,7 @@ def _execute_job( *args, **kwargs ):
 def _should_create_analytics( request ):
 	"Decides if this request should create analytics data."
 	# Is our user impersonating?
-	environ = getattr( request, 'environ', () )
-	if 'REMOTE_USER_DATA' in environ and environ['REMOTE_USER_DATA']:
+	if is_impersonating(request):
 		logger.info( 'Not creating analytics data for impersonating user (%s)',
 					request.remote_user )
 		return False
