@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*
 """
-$Id$
+.. $Id$
 """
+
 from __future__ import print_function, unicode_literals, absolute_import, division
 __docformat__ = "restructuredtext en"
 
@@ -11,33 +12,38 @@ logger = __import__('logging').getLogger(__name__)
 from datetime import datetime
 
 from pyramid.threadlocal import get_current_request
+
 from pyramid.traversal import find_interface
 
 from six import integer_types
 
 from zope import component
-from zope.component.hooks import site as current_site
+
 from zope.component.hooks import getSite
+from zope.component.hooks import site as current_site
 
 from zc.blist import BList
 
-from ZODB.POSException import POSKeyError
+from ZODB.POSException import POSError
 
 from nti.async import create_job
 
 from nti.analytics.database import get_analytics_db
 
-from nti.dataserver import rating
 from nti.dataserver import liking
+from nti.dataserver import rating
+
 from nti.dataserver.interfaces import IEntity
+
 from nti.dataserver.rating import IObjectUnratedEvent
+
 from nti.dataserver.users import Entity
 
 from nti.dataserver.interfaces import IDataserver
 from nti.dataserver.interfaces import IGlobalFlagStorage
 
-from nti.contenttypes.courses.interfaces import ICourseCatalogEntry
 from nti.contenttypes.courses.interfaces import ICourseInstance
+from nti.contenttypes.courses.interfaces import ICourseCatalogEntry
 
 from nti.externalization import externalization
 
@@ -47,6 +53,7 @@ from nti.intid.interfaces import ObjectMissingError
 from nti.securitypolicy.utils import is_impersonating
 
 from nti.site.site import get_site_for_site_names
+
 from nti.site.transient import TrivialSite
 
 def get_rating_from_event( event ):
@@ -87,7 +94,7 @@ def get_creator(obj):
 		creator = getattr(obj, 'creator', None)
 		creator = get_entity(creator) if creator else None
 		return creator
-	except (TypeError, POSKeyError):
+	except (TypeError, POSError):
 		return None
 
 def get_deleted_time( obj ):
@@ -103,7 +110,9 @@ def to_external_ntiid_oid(obj):
 	return ntiid
 
 def get_object_root( obj, type_to_find ):
-	""" Work up the parent tree looking for 'type_to_find', returning None if not found. """
+	""" 
+	Work up the parent tree looking for 'type_to_find', returning None if not found. 
+	"""
 	return find_interface( obj, type_to_find )
 
 def get_course( obj ):
@@ -131,8 +140,8 @@ def timestamp_type(timestamp):
 		# we attempt to handle it.
 		ts_string = str( int( timestamp ) )
 		if len( ts_string ) > 12:
-			logger.warn( 'Timestamp received in ms, converting to seconds (%s)',
-							timestamp )
+			logger.warn('Timestamp received in ms, converting to seconds (%s)',
+						timestamp )
 			timestamp = timestamp / 1000.0
 		result = datetime.utcfromtimestamp( timestamp )
 
@@ -241,4 +250,3 @@ def process_event( get_job_queue, object_op, obj=None, immediate=False, **kwargs
 		queue = get_job_queue()
 		job = create_job( _execute_job, object_op, **effective_kwargs )
 		queue.put( job )
-
