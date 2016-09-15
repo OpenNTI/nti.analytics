@@ -15,8 +15,11 @@ import os
 import ConfigParser
 
 from sqlalchemy import create_engine
+
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import scoped_session
+
 from sqlalchemy.pool import StaticPool
-from sqlalchemy.orm import sessionmaker, scoped_session
 
 from zope import interface
 
@@ -35,8 +38,8 @@ class AnalyticsDB(object):
 	max_overflow = 10
 	pool_recycle = 300
 
-	def __init__(self, dburi=None, twophase=False, autocommit=False, defaultSQLite=False,
-				 testmode=False, config=None):
+	def __init__(self, dburi=None, twophase=False, autocommit=False,
+				 defaultSQLite=False, testmode=False, config=None):
 		self.dburi = dburi
 		self.twophase = twophase
 		self.autocommit = autocommit
@@ -70,12 +73,12 @@ class AnalyticsDB(object):
 				# In-memory connections have a different db per connection, so let's make
 				# them share a db connection to avoid missing metadata issues.
 				# Only for devmode.
-				result = create_engine(	self.dburi,
+				result = create_engine(self.dburi,
 				   						connect_args={'check_same_thread':False},
 				   						poolclass=StaticPool)
 
 			else:
-				result = create_engine(	self.dburi,
+				result = create_engine(self.dburi,
 							   	   		pool_size=self.pool_size,
 							   	   		max_overflow=self.max_overflow,
 							   	   		pool_recycle=self.pool_recycle)
