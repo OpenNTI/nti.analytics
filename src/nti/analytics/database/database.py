@@ -9,10 +9,10 @@ __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
-import transaction
-
 import os
 import ConfigParser
+
+import transaction
 
 from sqlalchemy import create_engine
 
@@ -25,11 +25,11 @@ from zope import interface
 
 from zope.sqlalchemy import ZopeTransactionExtension
 
-from nti.property.property import Lazy
-
 from nti.analytics.database.interfaces import IAnalyticsDB
 
 from nti.analytics.database.metadata import AnalyticsMetadata
+
+from nti.property.property import Lazy
 
 @interface.implementer(IAnalyticsDB)
 class AnalyticsDB(object):

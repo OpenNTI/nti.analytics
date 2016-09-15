@@ -17,9 +17,9 @@ from zope import interface
 
 from nti.analytics_database import CONTEXT_PATH_SEPARATOR
 
-from nti.analytics_database.interfaces import IAnalyticsRootContextResolver
-
 from nti.analytics.database import get_analytics_db
+
+from nti.analytics_database.interfaces import IAnalyticsRootContextResolver
 
 from nti.analytics.database.root_context import get_root_context
 from nti.analytics.database.root_context import get_root_context_id
@@ -29,18 +29,18 @@ from nti.analytics.database.users import get_or_create_user
 
 from nti.dataserver.interfaces import IEntity
 
-def get_body_text_length( obj ):
+def get_body_text_length(obj):
 	"""
 	For a given obj with a body, find the length of the textual content.
 	"""
-	#TODO: We may have client created HTML here. Should we try to strip it?
+	# TODO: We may have client created HTML here. Should we try to strip it?
 	text_length = 0
 	for item in obj.body or ():
-		if not isinstance( item, six.string_types ):
+		if not isinstance(item, six.string_types):
 			continue
 		try:
-			text_length += len( item )
-		except (AttributeError,TypeError):
+			text_length += len(item)
+		except (AttributeError, TypeError):
 			pass
 	return text_length
 
