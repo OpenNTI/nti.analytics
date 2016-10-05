@@ -181,6 +181,8 @@ class NTIAnalyticsApplicationTestLayer(ApplicationTestLayer):
 	# Perhaps there was some layer interaction between the two, or a
 	# closed dataserver?
 
+	# Must implement these methods to avoid the super methods from getting called.
+
 	@classmethod
 	def setUp(self):
 		self.db = AnalyticsDB( dburi='sqlite://' )
@@ -189,3 +191,11 @@ class NTIAnalyticsApplicationTestLayer(ApplicationTestLayer):
 	@classmethod
 	def tearDown(self):
 		component.getGlobalSiteManager().unregisterUtility( self.db )
+
+	@classmethod
+	def testSetUp(cls, test=None):
+		pass
+
+	@classmethod
+	def testTearDown(cls):
+		pass
