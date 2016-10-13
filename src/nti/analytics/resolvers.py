@@ -1,9 +1,9 @@
-
 #!/usr/bin/env python
 # -*- coding: utf-8 -*
 """
-$Id$
+.. $Id$
 """
+
 from __future__ import print_function, unicode_literals, absolute_import, division
 __docformat__ = "restructuredtext en"
 
@@ -16,6 +16,9 @@ from zope import component
 
 from zope.traversing.interfaces import IEtcNamespace
 
+from nti.analytics import get_factory
+from nti.analytics import SESSIONS_ANALYTICS
+
 from nti.assessment.interfaces import IQAssignment
 from nti.assessment.interfaces import IQuestionSet
 
@@ -23,6 +26,8 @@ from nti.contentlibrary.interfaces import IContentPackage
 
 from nti.contentlibrary.indexed_data import get_catalog
 from nti.contentlibrary.indexed_data.interfaces import CONTAINER_IFACES
+
+from nti.contenttypes.courses.common import get_course_packages
 
 from nti.contenttypes.courses.interfaces import ICourseCatalog
 from nti.contenttypes.courses.interfaces import ICourseInstance
@@ -40,9 +45,6 @@ from nti.ntiids.ntiids import is_ntiid_of_types
 from nti.ntiids.ntiids import find_object_with_ntiid
 
 from nti.site.interfaces import IHostPolicySiteManager
-
-from nti.analytics import get_factory
-from nti.analytics import SESSIONS_ANALYTICS
 
 def _get_job_queue():
 	factory = get_factory()
@@ -143,11 +145,7 @@ def _get_assignment_ids_for_course( course ):
 	return assignment_ids
 
 def _do_get_containers_in_course( course ):
-	try:
-		packages = course.ContentPackageBundle.ContentPackages
-	except AttributeError:
-		packages = (course.legacy_content_package,)
-
+	packages = get_course_packages(course)
 	containers_in_course = set()
 	for package in packages:
 		recur_children_ntiid( package, containers_in_course )
