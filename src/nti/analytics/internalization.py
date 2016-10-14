@@ -36,9 +36,9 @@ class _NTIAnalyticsModelUpdater(object):
 		self.obj = obj
 
 	field_map = { 'course': 'RootContextID',
-				'time_length': 'Duration',
-				'resource_id': 'ResourceId',
-				'topic_id': 'blog_id'}
+				  'time_length': 'Duration',
+				  'resource_id': 'ResourceId',
+				  'topic_id': 'blog_id' }
 
 	def updateFromExternalObject(self, parsed, *args, **kwargs):
 		for old, new in self.field_map.items():
