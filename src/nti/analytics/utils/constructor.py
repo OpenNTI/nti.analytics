@@ -20,12 +20,16 @@ from z3c.autoinclude.zcml import includePluginsDirective
 from nti.async.utils.processor import Processor
 
 from nti.analytics import QUEUE_NAMES
+
 from nti.analytics.interfaces import IObjectProcessor
 
-from nti.analytics.users import logger as users_logger
-from nti.analytics.sessions import logger as sessions_logger
 from nti.analytics.resolvers import logger as resolvers_logger
+
 from nti.analytics.resource_views import logger as resource_view_logger
+
+from nti.analytics.sessions import logger as sessions_logger
+
+from nti.analytics.users import logger as users_logger
 
 class PluginPoint(Contained):
 

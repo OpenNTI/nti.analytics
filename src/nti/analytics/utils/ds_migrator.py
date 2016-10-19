@@ -3,6 +3,7 @@
 """
 .. $Id$
 """
+
 from __future__ import print_function, unicode_literals, absolute_import, division
 __docformat__ = "restructuredtext en"
 
@@ -11,17 +12,21 @@ logger = __import__('logging').getLogger(__name__)
 import os
 import sys
 import time
-import functools
 import logging
 import argparse
+import functools
 import transaction
 
 import zope.exceptions
 import zope.browserpage
 
 from zope import component
+
+from zope.configuration import config
+from zope.configuration import xmlconfig
+
 from zope.container.contained import Contained
-from zope.configuration import xmlconfig, config
+
 from zope.dottedname import resolve as dottedname
 
 from z3c.autoinclude.zcml import includePluginsDirective
@@ -50,29 +55,29 @@ class _AnalyticsMigrator(object):
 		self.batch_size = batch_size
 		self.site_names = site_names
 
-	def init( self, obj ):
+	def init(self, obj):
 		result = False
 		for _, module in component.getUtilitiesFor(IObjectProcessor):
-			result = module.init( obj ) or result
+			result = module.init(obj) or result
 		return result
 
-	def init_db( self ):
+	def init_db(self):
 		count = 0
-		for ds_id, obj in all_objects_iids( self.usernames, self.last_oid ):
-			if self.init( obj ):
+		for ds_id, obj in all_objects_iids(self.usernames, self.last_oid):
+			if self.init(obj):
 				count += 1
 				self.last_oid = ds_id
 				if count % 10000 == 0:
-					logger.info( 'Processed %s objects...', count)
-					transaction.savepoint( optimistic=True )
+					logger.info('Processed %s objects...', count)
+					transaction.savepoint(optimistic=True)
 			if self.batch_size and count > self.batch_size:
 				break
 		return count
 
-	def __call__( self ):
+	def __call__(self):
 		logger.info('Initializing analytics ds migrator (usernames=%s) (last_oid=%s) '
-					'(batch_size=%s) (site=%s)', len( self.usernames ), self.last_oid,
-					 self.batch_size, self.site_names )
+					'(batch_size=%s) (site=%s)', len(self.usernames), self.last_oid,
+					self.batch_size, self.site_names)
 		now = time.time()
 		total = 0
 
@@ -87,19 +92,19 @@ class _AnalyticsMigrator(object):
 				count = transaction_runner(self.init_db, retries=2, sleep=1)
 				last_valid_id = self.last_oid
 				total += count
-				logger.info( 'Committed batch (%s) (last_oid=%s) (total=%s)',
-							count, last_valid_id, total )
+				logger.info('Committed batch (%s) (last_oid=%s) (total=%s)',
+							count, last_valid_id, total)
 
-				if 		( self.batch_size and count <= self.batch_size ) \
+				if 		(self.batch_size and count <= self.batch_size) \
 					or 	self.batch_size is None:
 					break
 			except KeyboardInterrupt:
-				logger.info( 'Exiting analytics migrator' )
+				logger.info('Exiting analytics migrator')
 				break
 			finally:
 				# Store our state
-				with open( self.last_oid_file, 'w+' ) as f:
-					f.write( str( last_valid_id ) )
+				with open(self.last_oid_file, 'w+') as f:
+					f.write(str(last_valid_id))
 
 		elapsed = time.time() - now
 		logger.info("Total objects processed (size=%s) (time=%s)", total, elapsed)
@@ -149,14 +154,13 @@ class Processor(object):
 		includePluginsDirective(context, PP_APP)
 		includePluginsDirective(context, PP_APP_SITES)
 		includePluginsDirective(context, PP_APP_PRODUCTS)
-
 		return context
 
 	def set_log_formatter(self, args):
 		ei = '%(asctime)s %(levelname)-5.5s [%(name)s][%(thread)d][%(threadName)s] %(message)s'
 		logging.root.handlers[0].setFormatter(zope.exceptions.log.Formatter(ei))
 
-	def process_args(self, args,last_oid,last_oid_file):
+	def process_args(self, args, last_oid, last_oid_file):
 		self.set_log_formatter(args)
 
 		if args.verbose:
@@ -175,43 +179,42 @@ class Processor(object):
 		if args.batch_size:
 			batch_size = args.batch_size
 
-		analytics_migrator = _AnalyticsMigrator(usernames,  last_oid,
+		analytics_migrator = _AnalyticsMigrator(usernames, last_oid,
 												last_oid_file, batch_size,
 												site_names)
 		result = analytics_migrator()
 		sys.exit(result)
 
-	def __call__(self, *args, **kwargs ):
+	def __call__(self, *args, **kwargs):
 		arg_parser = self.create_arg_parser()
 		args = arg_parser.parse_args()
 
 		env_dir = args.env_dir
 		if not env_dir:
-			env_dir = os.getenv('DATASERVER_DIR' )
+			env_dir = os.getenv('DATASERVER_DIR')
 		if not env_dir or not os.path.exists(env_dir) and not os.path.isdir(env_dir):
 			raise ValueError("Invalid dataserver environment root directory", env_dir)
 
 		last_oid_file = env_dir + '/data/.analytics_ds_migrator'
 		last_oid = 0
-		if os.path.exists( last_oid_file ):
-			with open( last_oid_file, 'r' ) as f:
+		if os.path.exists(last_oid_file):
+			with open(last_oid_file, 'r') as f:
 				file_last_oid = f.read()
 				if file_last_oid:
-					last_oid = int( file_last_oid )
+					last_oid = int(file_last_oid)
 
-		conf_packages = ('nti.analytics','nti.appserver', 'nti.dataserver',)
+		conf_packages = ('nti.analytics', 'nti.appserver', 'nti.dataserver',)
 		context = self.create_context(env_dir)
 
 		run_with_dataserver(environment_dir=env_dir,
-							 xmlconfig_packages=conf_packages,
-							 verbose=args.verbose,
-							 context=context,
-							 use_transaction_runner=False,
-							 function=lambda: self.process_args(args,last_oid,last_oid_file) )
+							xmlconfig_packages=conf_packages,
+							verbose=args.verbose,
+							context=context,
+							use_transaction_runner=False,
+							function=lambda: self.process_args(args, last_oid, last_oid_file))
 
 def main():
 	return Processor()()
 
 if __name__ == '__main__':
 	main()
-

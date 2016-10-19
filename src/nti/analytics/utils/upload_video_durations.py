@@ -49,7 +49,7 @@ def _process_args(args):
 		set_site( args.site )
 	db = get_analytics_db()
 	count, missing_count = _store_video_duration_times( db, args.filename )
-	logger.info( 'Finished uploading file (possible uploads=%s) (missing=%s)',
+	logger.info('Finished uploading file (possible uploads=%s) (missing=%s)',
 				count, missing_count )
 
 def main():
