@@ -79,7 +79,7 @@ class IRootContextEvent(interface.Interface):
 	"""
 	An event rooted in a root context, typically an entity or course.
 	"""
-	RootContextID = ValidTextLine(title='Object ntiid', required=False)
+	RootContextID = ValidTextLine(title='Object ntiid', required=True)
 
 class ITopicViewEvent(IAnalyticsViewEvent, IRootContextEvent):
 	"""

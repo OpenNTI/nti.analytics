@@ -194,6 +194,8 @@ def _valid_root_context_type( obj ):
 
 def _validate_root_context_event( event, object_id=None ):
 	""" Validate we have a root context (course or entity)."""
+	# XXX: We could get the course(s) from the resource id (asset), and then
+	# we could probably guess based on a course the event creator is enrolled in.
 	_validate_analytics_event( event, object_id )
 
 	root_context = _get_root_context( event )
