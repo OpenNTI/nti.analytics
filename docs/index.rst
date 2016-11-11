@@ -14,7 +14,7 @@ Conceptual Documentation
 	:maxdepth: 2
 
 Table Documentation
----------
+-------------------
 
 .. toctree::
 	:maxdepth: 2
