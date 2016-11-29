@@ -156,6 +156,12 @@ def create_video_event(	user,
 
 	existing_record = _video_view_exists( db, uid, vid, timestamp, video_event_type )
 
+	if 		time_length is None \
+		and video_start_time is not None \
+		and video_end_time is not None:
+		# The client may not provide this
+		time_length = abs( video_end_time - video_start_time )
+
 	if existing_record is not None:
 		if should_update_event( existing_record, time_length ):
 			existing_record.time_length = time_length
