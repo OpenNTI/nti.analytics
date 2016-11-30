@@ -39,9 +39,7 @@ def _search_completed( event ):
 	course_id = event.query.context.get( 'course' )
 	nti_session = get_nti_session_id()
 	
-	hit_count = 	getattr(event, 'TotalHitCount', None) \
-				or 	event.metadata.TotalHitCount
-
+	hit_count = getattr(event, 'hit_count', None)
 	process_event( 	_get_search_queue,
 					db_search.create_search_event,
 					timestamp=datetime.utcnow(),
