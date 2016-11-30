@@ -38,13 +38,17 @@ def _search_completed( event ):
 	# many similar event terms in succession.
 	course_id = event.query.context.get( 'course' )
 	nti_session = get_nti_session_id()
+	
+	hit_count = 	getattr(event, 'TotalHitCount', None) \
+				or 	event.metadata.TotalHitCount
+
 	process_event( 	_get_search_queue,
 					db_search.create_search_event,
 					timestamp=datetime.utcnow(),
 					session_id=nti_session,
 					username=event.user.username,
 					elapsed=event.elapsed,
-					hit_count=event.metadata.TotalHitCount,
+					hit_count=hit_count,
 					term=event.query.term,
 					search_types=event.query.searchOn,
 					course_id=course_id )
