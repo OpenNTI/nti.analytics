@@ -1,12 +1,11 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*
-"""
-$Id$
-"""
+# -*- coding: utf-8 -*-
+
 from __future__ import print_function, unicode_literals, absolute_import, division
 __docformat__ = "restructuredtext en"
 
-logger = __import__('logging').getLogger(__name__)
+# disable: accessing protected members, too many methods
+# pylint: disable=W0212,R0904
 
 from hamcrest import is_
 from hamcrest import none
@@ -15,15 +14,14 @@ from hamcrest import contains
 from hamcrest import has_length
 from hamcrest import assert_that
 
-from zope import component
-
 from zope.event import notify
 
 from nti.analytics.search import get_search_queries
 
-from nti.contentsearch.interfaces import SearchCompletedEvent
 from nti.contentsearch.interfaces import ISearchQuery
-from nti.contentsearch.interfaces import ISearchResultsCreator
+from nti.contentsearch.interfaces import SearchCompletedEvent
+
+from nti.contentsearch.search_results import SearchResults
 
 from nti.dataserver.users import User
 
@@ -39,7 +37,7 @@ class TestSearch( NTIAnalyticsTestCase ):
 		gus = User.create_user( username='Augustus' )
 		# Basic search without filters
 		query = ISearchQuery("test")
-		results = component.getUtility(ISearchResultsCreator)( query )
+		results = SearchResults(Query=query)
 		elapsed_time = 5 #s
 		event = SearchCompletedEvent( oz, results, elapsed_time )
 		notify( event )
@@ -58,7 +56,7 @@ class TestSearch( NTIAnalyticsTestCase ):
 		# Search by type, with Gus
 		query = ISearchQuery("empty")
 		query.searchOn = ('videotranscript',)
-		results = component.getUtility(ISearchResultsCreator)( query )
+		results = SearchResults(Query=query)
 		elapsed_time = 30 #s
 		event = SearchCompletedEvent( gus, results, elapsed_time )
 		notify( event )
