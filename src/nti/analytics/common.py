@@ -22,6 +22,9 @@ from zope import component
 from zope.component.hooks import getSite
 from zope.component.hooks import site as current_site
 
+from zope.intid.interfaces import IntIdMissingError
+from zope.intid.interfaces import ObjectMissingError
+
 from zc.blist import BList
 
 from ZODB.POSException import POSError
@@ -46,9 +49,6 @@ from nti.contenttypes.courses.interfaces import ICourseInstance
 from nti.contenttypes.courses.interfaces import ICourseCatalogEntry
 
 from nti.externalization import externalization
-
-from nti.intid.interfaces import IntIdMissingError
-from nti.intid.interfaces import ObjectMissingError
 
 from nti.securitypolicy.utils import is_impersonating
 
