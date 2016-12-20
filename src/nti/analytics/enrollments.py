@@ -13,13 +13,13 @@ from datetime import datetime
 
 from zope import component
 
+from zc.intid.interfaces import IAfterIdAddedEvent
+from zc.intid.interfaces import IBeforeIdRemovedEvent
+
 from nti.contenttypes.courses.enrollment import DefaultPrincipalEnrollments
 from nti.contenttypes.courses.interfaces import ICourseInstanceEnrollmentRecord
 
 from nti.dataserver.interfaces import IUser
-
-from nti.intid.interfaces import IIntIdAddedEvent
-from nti.intid.interfaces import IIntIdRemovedEvent
 
 from nti.ntiids import ntiids
 
@@ -87,13 +87,13 @@ def _handle_event(record, to_call):
 				  nti_session=nti_session)
 
 
-@component.adapter(ICourseInstanceEnrollmentRecord, IIntIdAddedEvent)
+@component.adapter(ICourseInstanceEnrollmentRecord, IAfterIdAddedEvent)
 def _enrolled(record, event):
 	# TODO This does not handle if we manually migrate users from
 	# one super course to many sectioned courses.
 	_handle_event(record, _add_enrollment)
 
-@component.adapter(ICourseInstanceEnrollmentRecord, IIntIdRemovedEvent)
+@component.adapter(ICourseInstanceEnrollmentRecord, IBeforeIdRemovedEvent)
 def _dropped(record, event):
 	_handle_event(record, _add_drop)
 

@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*
 """
-$Id$
+.. $Id$
 """
+
 from __future__ import print_function, unicode_literals, absolute_import, division
 __docformat__ = "restructuredtext en"
 
@@ -11,13 +12,15 @@ logger = __import__('logging').getLogger(__name__)
 from datetime import datetime
 
 from zope import component
+
 from zope.lifecycleevent.interfaces import IObjectModifiedEvent
+
+from zc.intid.interfaces import IAfterIdAddedEvent
+from zc.intid.interfaces import IBeforeIdRemovedEvent
 
 from contentratings.interfaces import IObjectRatedEvent
 
 from nti.ntiids import ntiids
-from nti.intid.interfaces import IIntIdAddedEvent
-from nti.intid.interfaces import IIntIdRemovedEvent
 
 from nti.dataserver.interfaces import IObjectFlaggedEvent
 from nti.dataserver.interfaces import IObjectFlaggingEvent
@@ -115,7 +118,7 @@ def _like_comment( oid, username=None, delta=0, timestamp=None, nti_session=None
 		db_blogs.like_comment( comment, user, nti_session, timestamp, delta )
 		logger.debug( 'Comment liked (comment=%s)', comment )
 
-@component.adapter( IPersonalBlogComment, IIntIdAddedEvent)
+@component.adapter( IPersonalBlogComment, IAfterIdAddedEvent)
 def _add_personal_blog_comment(comment, _):
 	nti_session = get_nti_session_id()
 	process_event( _get_comment_queue, _add_comment, comment, nti_session=nti_session )
@@ -210,7 +213,7 @@ def _blog_rated( event ):
 					delta=delta, nti_session=nti_session,
 					timestamp=timestamp )
 
-@component.adapter(	IPersonalBlogEntry, IIntIdAddedEvent )
+@component.adapter(	IPersonalBlogEntry, IAfterIdAddedEvent )
 def _blog_added( blog, event ):
 	_do_blog_added( blog, event )
 
@@ -223,7 +226,7 @@ def _delete_blog( blog_id, timestamp ):
 	db_blogs.delete_blog( timestamp, blog_id )
 	logger.debug( 'Blog deleted (blog_id=%s)', blog_id )
 
-@component.adapter(	IPersonalBlogEntry, IIntIdRemovedEvent )
+@component.adapter(	IPersonalBlogEntry, IBeforeIdRemovedEvent )
 def _blog_removed( blog, _ ):
 	timestamp = datetime.utcnow()
 	blog_id = get_ds_id( blog )

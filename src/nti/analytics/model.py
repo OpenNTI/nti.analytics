@@ -11,7 +11,9 @@ logger = __import__('logging').getLogger(__name__)
 
 from zope import component
 from zope import interface
+
 from zope.annotation.factory import factory as an_factory
+
 from zope.interface.interfaces import ObjectEvent
 
 from nti.externalization.persistence import NoPickle

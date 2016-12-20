@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*
 """
-$Id$
+.. $Id$
 """
-from __future__ import print_function, unicode_literals, absolute_import, division
 
+from __future__ import print_function, unicode_literals, absolute_import, division
 __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
@@ -12,12 +12,14 @@ logger = __import__('logging').getLogger(__name__)
 from datetime import datetime
 
 from zope import component
+
+from zope.lifecycleevent.interfaces import IObjectAddedEvent
 from zope.lifecycleevent.interfaces import IObjectModifiedEvent
-from zope.lifecycleevent import IObjectAddedEvent
+
+from zc.intid.interfaces import IAfterIdAddedEvent
+from zc.intid.interfaces import IBeforeIdRemovedEvent
 
 from nti.ntiids import ntiids
-from nti.intid.interfaces import IIntIdAddedEvent
-from nti.intid.interfaces import IIntIdRemovedEvent
 
 from nti.chatserver.interfaces import IMeeting
 
@@ -149,7 +151,7 @@ def _update_friends_list( oid, nti_session=None, timestamp=None ):
 			result = db_social.update_friends_list( user, nti_session, timestamp, friends_list )
 			logger.debug( 'Update FriendsList (user=%s) (count=%s)', user, result )
 
-@component.adapter( IFriendsList, IIntIdAddedEvent )
+@component.adapter( IFriendsList, IAfterIdAddedEvent )
 def _friendslist_added(obj, _):
 	if _is_friends_list( obj ):
 		nti_session = get_nti_session_id()
@@ -162,7 +164,7 @@ def _friendslist_modified(obj, _):
 		nti_session = get_nti_session_id()
 		process_event( _get_job_queue, _update_friends_list, obj, nti_session=nti_session, timestamp=timestamp )
 
-@component.adapter( IFriendsList, IIntIdRemovedEvent )
+@component.adapter( IFriendsList, IBeforeIdRemovedEvent )
 def _friendslist_deleted(obj, _):
 	if _is_friends_list( obj ):
 		obj_id = get_ds_id( obj )
@@ -206,12 +208,12 @@ def _remove_dfl_member( source, target, username=None, timestamp=None, nti_sessi
 		db_social.remove_dynamic_friends_member( user, nti_session, timestamp, dfl, member )
 		logger.debug( "DFL left (member=%s) (dfl=%s)", member, dfl )
 
-@component.adapter(	IDynamicSharingTargetFriendsList, IIntIdAddedEvent )
+@component.adapter(	IDynamicSharingTargetFriendsList, IAfterIdAddedEvent )
 def _dfl_added(obj, _):
 	nti_session = get_nti_session_id()
 	process_event( _get_job_queue, _add_dfl, obj, nti_session=nti_session )
 
-@component.adapter( IDynamicSharingTargetFriendsList, IIntIdRemovedEvent )
+@component.adapter( IDynamicSharingTargetFriendsList, IBeforeIdRemovedEvent )
 def _dfl_deleted(obj, _):
 	timestamp = datetime.utcnow()
 	dfl_id = get_ds_id( obj )

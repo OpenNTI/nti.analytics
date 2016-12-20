@@ -3,6 +3,7 @@
 """
 .. $Id$
 """
+
 from __future__ import print_function, unicode_literals, absolute_import, division
 __docformat__ = "restructuredtext en"
 
@@ -11,18 +12,19 @@ logger = __import__('logging').getLogger(__name__)
 from zope import component
 from zope import interface
 
-from nti.externalization.interfaces import IInternalObjectUpdater
 from nti.externalization.datastructures import InterfaceObjectIO
+
+from nti.externalization.interfaces import IInternalObjectUpdater
 
 from nti.analytics.interfaces import IVideoEvent
 from nti.analytics.interfaces import IResourceEvent
-from nti.analytics.interfaces import ICourseCatalogViewEvent
 from nti.analytics.interfaces import IBlogViewEvent
 from nti.analytics.interfaces import INoteViewEvent
 from nti.analytics.interfaces import ITopicViewEvent
 from nti.analytics.interfaces import IAnalyticsSession
 from nti.analytics.interfaces import IProfileViewEvent
 from nti.analytics.interfaces import IAssignmentViewEvent
+from nti.analytics.interfaces import ICourseCatalogViewEvent
 from nti.analytics.interfaces import ISelfAssessmentViewEvent
 from nti.analytics.interfaces import IProfileActivityViewEvent
 from nti.analytics.interfaces import IProfileMembershipViewEvent

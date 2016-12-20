@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*
 """
-$Id$
+.. $Id$
 """
+
 from __future__ import print_function, unicode_literals, absolute_import, division
 __docformat__ = "restructuredtext en"
 
@@ -11,7 +12,11 @@ logger = __import__('logging').getLogger(__name__)
 from datetime import datetime
 
 from zope import component
+
 from zope.lifecycleevent.interfaces import IObjectModifiedEvent
+
+from zc.intid.interfaces import IAfterIdAddedEvent
+from zc.intid.interfaces import IBeforeIdRemovedEvent
 
 from nti.app.assessment.interfaces import IUsersCourseAssignmentHistoryItem
 from nti.app.assessment.interfaces import IUsersCourseAssignmentHistoryItemFeedback
@@ -21,12 +26,7 @@ from nti.app.products.gradebook.interfaces import IGrade
 from nti.assessment.interfaces import IQAssessedQuestion
 from nti.assessment.interfaces import IQAssessedQuestionSet
 
-from nti.intid.interfaces import IIntIdAddedEvent
-from nti.intid.interfaces import IIntIdRemovedEvent
-
 from nti.ntiids.ntiids import find_object_with_ntiid
-
-from .identifier import get_ds_id
 
 from nti.analytics.resolvers import get_root_context
 from nti.analytics.resolvers import get_course_for_ntiid
@@ -46,6 +46,8 @@ from nti.analytics.common import get_created_timestamp
 from nti.analytics.database import assessments as db_assessments
 
 from nti.analytics.interfaces import IObjectProcessor
+
+from .identifier import get_ds_id
 
 component.moduleProvides(IObjectProcessor)
 
@@ -109,14 +111,14 @@ def _process_question_set( question_set, nti_session=None ):
 		# there are, we should handle those cases here.
 		pass
 
-@component.adapter(IQAssessedQuestionSet, IIntIdAddedEvent)
+@component.adapter(IQAssessedQuestionSet, IAfterIdAddedEvent)
 def _questionset_assessed( question_set, event ):
 	# We'll have creator for self-assessments, but not for assignments,
 	# which we throw away anyway.
 	nti_session = get_nti_session_id()
 	_process_question_set( question_set, nti_session=nti_session )
 
-@component.adapter(IQAssessedQuestion, IIntIdAddedEvent)
+@component.adapter(IQAssessedQuestion, IAfterIdAddedEvent)
 def _question_grade( question, event ):
 	# These are question level grade events (also modified). These do
 	# not currently occur in the wild, but they may in the future.
@@ -141,7 +143,7 @@ def _assignment_taken( oid, nti_session=None ):
 			for feedback in submission.Feedback.values():
 				_do_add_feedback( nti_session, feedback, submission )
 
-@component.adapter(IUsersCourseAssignmentHistoryItem, IIntIdAddedEvent)
+@component.adapter(IUsersCourseAssignmentHistoryItem, IAfterIdAddedEvent)
 def _assignment_history_item_added( item, event ):
 	nti_session = get_nti_session_id()
 	process_event( _get_job_queue, _assignment_taken, item, nti_session=nti_session )
@@ -184,7 +186,7 @@ def _grade_modified(grade, event):
 	submission = IUsersCourseAssignmentHistoryItem( grade )
 	_grade_submission( grade, submission )
 
-@component.adapter(IGrade, IIntIdAddedEvent)
+@component.adapter(IGrade, IAfterIdAddedEvent)
 def _grade_added(grade, event):
 	submission = IUsersCourseAssignmentHistoryItem( grade, None )
 	_grade_submission( grade, submission )
@@ -217,7 +219,7 @@ def _remove_feedback( feedback_id, timestamp=None ):
 	db_assessments.delete_feedback( timestamp, feedback_id )
 	logger.debug("Assignment feedback removed (%s)", feedback_id )
 
-@component.adapter(IUsersCourseAssignmentHistoryItemFeedback, IIntIdAddedEvent)
+@component.adapter(IUsersCourseAssignmentHistoryItemFeedback, IAfterIdAddedEvent)
 def _feedback_added(feedback, event):
 	nti_session = get_nti_session_id()
 	process_event( _get_job_queue, _add_feedback, feedback, nti_session=nti_session )
@@ -227,7 +229,7 @@ def _feedback_updated(feedback, event):
 	nti_session = get_nti_session_id()
 	process_event( _get_job_queue, _update_feedback, feedback, nti_session=nti_session )
 
-@component.adapter(IUsersCourseAssignmentHistoryItemFeedback, IIntIdRemovedEvent)
+@component.adapter(IUsersCourseAssignmentHistoryItemFeedback, IBeforeIdRemovedEvent)
 def _feedback_removed(feedback, event):
 	timestamp = datetime.utcnow()
 	feedback_id = get_ds_id( feedback )

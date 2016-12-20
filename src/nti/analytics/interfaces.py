@@ -1,15 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*
 """
-$Id$
+.. $Id$
 """
+
 from __future__ import print_function, unicode_literals, absolute_import, division
 __docformat__ = "restructuredtext en"
 
 from zope import interface
+
 from zope.schema import vocabulary
 
 from zope.dublincore.interfaces import IDCTimes
+
 from zope.interface.interfaces import IObjectEvent
 
 from dolmen.builtins.interfaces import IIterable
@@ -19,11 +22,11 @@ from nti.dataserver.interfaces import IUser
 from nti.schema.field import Bool
 from nti.schema.field import List
 from nti.schema.field import Choice
-from nti.schema.field import DateTime
 from nti.schema.field import Number
 from nti.schema.field import Object
-from nti.schema.field import DecodingValidTextLine as ValidTextLine
+from nti.schema.field import DateTime
 from nti.schema.field import IndexedIterable as TypedIterable
+from nti.schema.field import DecodingValidTextLine as ValidTextLine
 
 VIDEO_SKIP = u'SKIP'
 VIDEO_WATCH = u'WATCH'

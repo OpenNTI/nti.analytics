@@ -1,33 +1,34 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*
 """
-$Id$
+.. $Id$
 """
+
 from __future__ import print_function, unicode_literals, absolute_import, division
 __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
+from datetime import datetime
+
 from zope import component
 
 from zope.lifecycleevent.interfaces import IObjectModifiedEvent
 
-from datetime import datetime
+from zc.intid.interfaces import IAfterIdAddedEvent
+from zc.intid.interfaces import IBeforeIdRemovedEvent
 
 from contentratings.interfaces import IObjectRatedEvent
 
+from nti.dataserver.interfaces import INote
 from nti.dataserver.interfaces import IBookmark
 from nti.dataserver.interfaces import IHighlight
-from nti.dataserver.interfaces import INote
 from nti.dataserver.interfaces import IObjectFlaggedEvent
 from nti.dataserver.interfaces import IObjectFlaggingEvent
 
 from nti.dataserver.users.users import User
 
 from nti.ntiids import ntiids
-
-from nti.intid.interfaces import IIntIdAddedEvent
-from nti.intid.interfaces import IIntIdRemovedEvent
 
 from nti.analytics.interfaces import IObjectProcessor
 
@@ -119,7 +120,7 @@ def _note_rated( obj, event ):
 					   nti_session=nti_session,
 					   timestamp=timestamp )
 
-@component.adapter(	INote, IIntIdAddedEvent )
+@component.adapter(	INote, IAfterIdAddedEvent )
 def _note_added( obj, _ ):
 	nti_session = get_nti_session_id()
 	process_event( _get_job_queue, _add_note, obj, nti_session=nti_session )
@@ -129,7 +130,7 @@ def _note_modified( obj, _ ):
 	nti_session = get_nti_session_id()
 	process_event( _get_job_queue, _update_note, obj, nti_session=nti_session )
 
-@component.adapter(	INote, IIntIdRemovedEvent )
+@component.adapter(	INote, IBeforeIdRemovedEvent )
 def _note_removed( obj, _ ):
 	timestamp = datetime.utcnow()
 	note_id = get_ds_id( obj )
@@ -147,13 +148,13 @@ def _remove_highlight( highlight_id, timestamp=None ):
 	db_resource_tags.delete_highlight( timestamp, highlight_id )
 	logger.debug( "Highlight deleted (highlight_id=%s)", highlight_id )
 
-@component.adapter(	IHighlight, IIntIdAddedEvent )
+@component.adapter(	IHighlight, IAfterIdAddedEvent )
 def _highlight_added( obj, _ ):
 	if _is_highlight( obj ):
 		nti_session = get_nti_session_id()
 		process_event( _get_job_queue, _add_highlight, obj, nti_session=nti_session )
 
-@component.adapter(	IHighlight, IIntIdRemovedEvent )
+@component.adapter(	IHighlight, IBeforeIdRemovedEvent )
 def _highlight_removed( obj, _ ):
 	if _is_highlight( obj ):
 		timestamp = datetime.utcnow()
@@ -172,12 +173,12 @@ def _remove_bookmark( bookmark_id, timestamp=None ):
 	db_resource_tags.delete_bookmark( timestamp, bookmark_id )
 	logger.debug( "Bookmark deleted (bookmark_id=%s)", bookmark_id )
 
-@component.adapter(	IBookmark, IIntIdAddedEvent )
+@component.adapter(	IBookmark, IAfterIdAddedEvent )
 def _bookmark_added( obj, _ ):
 	nti_session = get_nti_session_id()
 	process_event( _get_job_queue, _add_bookmark, obj, nti_session=nti_session )
 
-@component.adapter(	IBookmark, IIntIdRemovedEvent )
+@component.adapter(	IBookmark, IBeforeIdRemovedEvent )
 def _bookmark_removed( obj, _ ):
 	timestamp = datetime.utcnow()
 	bookmark_id = get_ds_id( obj )

@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*
 """
-$Id$
+.. $Id$
 """
+
 from __future__ import print_function, unicode_literals, absolute_import, division
 __docformat__ = "restructuredtext en"
 
@@ -10,10 +11,11 @@ logger = __import__('logging').getLogger(__name__)
 
 from zope import component
 
+from zc.intid.interfaces import IBeforeIdRemovedEvent
+
 from nti.analytics.interfaces import IUserResearchStatusEvent
 
 from nti.dataserver.interfaces import IEntity
-from nti.intid.interfaces import IIntIdRemovedEvent
 
 from nti.analytics.common import process_event
 
@@ -43,7 +45,7 @@ def _update_user_research( user_ds_id, allow_research ):
 	db_users.update_user_research( user_ds_id, allow_research )
 	logger.info( 'Updated user research (user_ds_id=%s) (allow_research=%s)', user_ds_id, allow_research )
 
-@component.adapter( IEntity, IIntIdRemovedEvent )
+@component.adapter( IEntity, IBeforeIdRemovedEvent )
 def _entity_removed( entity, event ):
 	entity_id = get_ds_id( entity )
 	process_event( _get_delete_queue, _delete_entity, entity_id=entity_id )

@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*
 """
-$Id$
+.. $Id$
 """
+
 from __future__ import print_function, unicode_literals, absolute_import, division
 __docformat__ = "restructuredtext en"
 
@@ -10,12 +11,12 @@ logger = __import__('logging').getLogger(__name__)
 
 from zope import component
 
+from zc.intid.interfaces import IAfterIdAddedEvent
+
 from nti.app.assessment.interfaces import IUsersCourseInquiryItem
 
 from nti.assessment.interfaces import IQPoll
 from nti.assessment.interfaces import IQSurvey
-
-from nti.intid.interfaces import IIntIdAddedEvent
 
 from nti.ntiids.ntiids import find_object_with_ntiid
 
@@ -73,7 +74,7 @@ def _process_inquiry( oid, nti_session):
 		elif IQSurvey.providedBy( inquiry ):
 			_process_survey( submission, nti_session )
 
-@component.adapter(IUsersCourseInquiryItem, IIntIdAddedEvent)
+@component.adapter(IUsersCourseInquiryItem, IAfterIdAddedEvent)
 def _inquiry_taken( inquiry, event ):
 	nti_session = get_nti_session_id()
 	process_event( _get_job_queue, _process_inquiry, inquiry, nti_session=nti_session )

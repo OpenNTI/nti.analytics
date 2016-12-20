@@ -11,9 +11,9 @@ logger = __import__('logging').getLogger(__name__)
 
 from zope import component
 
-from nti.contenttypes.courses.interfaces import ICourseInstance
+from zc.intid.interfaces import IBeforeIdRemovedEvent
 
-from nti.intid.interfaces import IIntIdRemovedEvent
+from nti.contenttypes.courses.interfaces import ICourseInstance
 
 from .common import process_event
 
@@ -33,7 +33,7 @@ def _delete_course(course_id):
 	db_courses.delete_course(course_id)
 	logger.info('Deleted course (id=%s)', course_id)
 
-@component.adapter(ICourseInstance, IIntIdRemovedEvent)
+@component.adapter(ICourseInstance, IBeforeIdRemovedEvent)
 def _course_removed(entity, _):
 	course_id = get_root_context_id(entity)
 	process_event(_get_job_queue, _delete_course, course_id=course_id)
