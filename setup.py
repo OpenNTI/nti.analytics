@@ -45,7 +45,8 @@ setup(
 		'nti.app.products.courseware',
 		'nti.app.products.courseware_ims',
 		'nti.app.products.gradebook',
-		'nti.async'
+		'nti.async',
+		'nti.namedfile'
 	],
 	entry_points=entry_points
 )

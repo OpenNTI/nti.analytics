@@ -10,6 +10,8 @@
 	<include package="zope.component" />
 	<include package="zope.security" />
 
+	<include package="nti.namedfile" file="configure_named.zcml" />
+
 	<include package="." file="meta.zcml" />
 
 	<!-- Include any nti.analytics plugins -->
