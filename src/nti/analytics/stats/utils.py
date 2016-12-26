@@ -14,7 +14,7 @@ from math import sqrt
 from nti.analytics.stats.model import TimeStats
 from nti.analytics.stats.model import CountStats
 
-from nti.dataserver_core.interfaces import ICanvas
+from nti.coremetadata.interfaces import ICanvas
 
 def get_std_dev(values, summation=None):
 	result = None
