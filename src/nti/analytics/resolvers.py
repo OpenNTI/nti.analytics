@@ -34,7 +34,7 @@ from nti.contenttypes.courses.interfaces import ICourseInstance
 from nti.contenttypes.courses.interfaces import ICourseAssignmentCatalog
 from nti.contenttypes.courses.interfaces import ICourseAssessmentItemCatalog
 
-from nti.dataserver_core.interfaces import IContainerContext
+from nti.coremetadata.interfaces import IContainerContext
 
 from nti.externalization.externalization import to_external_ntiid_oid
 
