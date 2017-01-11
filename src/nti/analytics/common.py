@@ -172,14 +172,7 @@ def _do_execute_job( db, *args, **kwargs ):
 		# Must flush to verify integrity.  If we hit any race
 		# conditions below, this will raise and the job can
 		# be re-run.
-		try:
-			db.session.flush()
-		except:
-			# Most likely a mysql IntegrityError; try rolling back
-			# so our transaction can commit and this job can go to the
-			# failed queue.
-			db.session.rollback()
-			result = None
+		db.session.flush()
 	return result
 
 def _execute_job( *args, **kwargs ):
