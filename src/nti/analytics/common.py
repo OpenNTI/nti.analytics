@@ -110,8 +110,8 @@ def to_external_ntiid_oid(obj):
 	return ntiid
 
 def get_object_root( obj, type_to_find ):
-	""" 
-	Work up the parent tree looking for 'type_to_find', returning None if not found. 
+	"""
+	Work up the parent tree looking for 'type_to_find', returning None if not found.
 	"""
 	return find_interface( obj, type_to_find )
 
@@ -165,14 +165,21 @@ def _do_execute_job( db, *args, **kwargs ):
 	except ( IntIdMissingError, ObjectMissingError ) as e:
 		# Nothing we can do with these events; leave them on the floor.
 		logger.info(
-				'Object missing (deleted) before event could be processed; event dropped. (%s) (%s)',
-				e, func )
+			'Object missing (deleted) before event could be processed; event dropped. (%s) (%s)',
+			e, func )
 		result = None
 	else:
 		# Must flush to verify integrity.  If we hit any race
 		# conditions below, this will raise and the job can
 		# be re-run.
-		db.session.flush()
+		try:
+			db.session.flush()
+		except:
+			# Most likely a mysql IntegrityError; try rolling back
+			# so our transaction can commit and this job can go to the
+			# failed queue.
+			db.session.rollback()
+			result = None
 	return result
 
 def _execute_job( *args, **kwargs ):
@@ -190,8 +197,6 @@ def _execute_job( *args, **kwargs ):
 		event_site = old_site
 	else:
 		# Need to use root site to access the given site.
-		# TODO This does not seem to occur in other code paths
-		# that pull a site by name.
 		dataserver = component.getUtility( IDataserver )
 		ds_folder = dataserver.root_folder['dataserver2']
 
