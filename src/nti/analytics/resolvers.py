@@ -46,6 +46,8 @@ from nti.ntiids.ntiids import find_object_with_ntiid
 
 from nti.site.interfaces import IHostPolicySiteManager
 
+from nti.traversal.traversal import find_interface
+
 def _get_job_queue():
 	factory = get_factory()
 	return factory.get_queue( SESSIONS_ANALYTICS )
@@ -301,8 +303,9 @@ def get_container_context_legacy( obj ):
 	result = get_course_by_container_id( ntiid )
 
 	if result is None:
-		# Ok, not a course (apparently), see if we're a content package.
+		# Ok, not a course (apparently), try to find a content package.
 		result = find_object_with_ntiid( ntiid )
+		result = find_interface(result, IContentPackage, strict=False)
 
 		if 		result is None \
 			or 	not IContentPackage.providedBy( result ):
