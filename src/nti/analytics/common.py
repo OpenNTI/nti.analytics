@@ -72,7 +72,7 @@ def get_favorites( obj ):
 	return rating.rate_count( obj, 'favorites')
 
 def get_flagged( obj ):
-	flag_storage = component.queryUtility( IGlobalFlagStorage, None )
+	flag_storage = component.queryUtility( IGlobalFlagStorage )
 	result = False
 	if flag_storage is not None:
 		result = flag_storage.is_flagged( obj )
