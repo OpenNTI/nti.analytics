@@ -25,8 +25,6 @@ from zope.component.hooks import site as current_site
 from zope.intid.interfaces import IntIdMissingError
 from zope.intid.interfaces import ObjectMissingError
 
-from zc.blist import BList
-
 from ZODB.POSException import POSError
 
 from nti.async import create_job
@@ -157,9 +155,7 @@ def get_root_context_name(course):
 	return course_name
 
 def _do_execute_job( db, *args, **kwargs ):
-	args = BList( args )
-	func = args.pop( 0 )
-
+	func, args = args[0], args[1:]
 	try:
 		result = func( *args, **kwargs )
 	except ( IntIdMissingError, ObjectMissingError ) as e:
