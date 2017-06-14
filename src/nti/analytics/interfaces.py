@@ -15,7 +15,7 @@ from zope.dublincore.interfaces import IDCTimes
 
 from zope.interface.interfaces import IObjectEvent
 
-from dolmen.builtins.interfaces import IIterable
+from nti.base.interfaces import IIterable
 
 from nti.dataserver.interfaces import IUser
 

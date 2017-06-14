@@ -13,8 +13,8 @@ from zope.container.interfaces import IContained
 
 from zope.interface.interfaces import ObjectEvent, IObjectEvent
 
-from dolmen.builtins import IString
-from dolmen.builtins import INumeric
+from nti.base.interfaces import IString
+from nti.base.interfaces import INumeric
 
 from nti.contenttypes.courses.interfaces import ICourseInstance
 from nti.contenttypes.courses.interfaces import	ICourseCatalogEntry
