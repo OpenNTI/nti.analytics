@@ -148,11 +148,19 @@ def timestamp_type(timestamp):
 		result = result.replace( microsecond=0 )
 	return result
 
-def get_root_context_name(course):
-	cat_entry = ICourseCatalogEntry( course, None )
-	course_name = getattr( cat_entry, 'ProviderUniqueID',
-						getattr( course, '__name__', None ) )
-	return course_name
+def get_root_context_name(context):
+	"""
+	Try to fetch a human readable name for the given context.
+	"""
+	cat_entry = ICourseCatalogEntry( context, None )
+	context_name = getattr(cat_entry, 'ProviderUniqueID', '')
+	if not context_name:
+		# content package
+		context_name = getattr(context, 'title', '')
+	if not context_name:
+		# Not ideal
+		context_name = getattr(context, '__name__', '')
+	return context_name
 
 def _do_execute_job( db, *args, **kwargs ):
 	func, args = args[0], args[1:]
