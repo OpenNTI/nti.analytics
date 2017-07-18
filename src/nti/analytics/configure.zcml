@@ -143,8 +143,10 @@
 						 .interfaces.IVideoPlaySpeedChangeEvent
 						 .interfaces.IProfileViewEvent
 						 .interfaces.IProfileActivityViewEvent
-						 .interfaces.IProfileMembershipViewEvent"
-		modules=".model" />
+						 .interfaces.IProfileMembershipViewEvent
+						 .stats.interfaces.IAnalyticsStatsSource"
+		modules=".model
+				 nti.analytics_registration.stats" />
 
 	<adapter factory=".internalization._ResourceEventUpdater"
 			 for=".interfaces.IResourceEvent"
