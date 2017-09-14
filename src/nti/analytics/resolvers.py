@@ -36,13 +36,13 @@ from nti.contenttypes.courses.interfaces import ICourseAssessmentItemCatalog
 
 from nti.coremetadata.interfaces import IContainerContext
 
-from nti.externalization.externalization import to_external_ntiid_oid
-
 from nti.ntiids.ntiids import TYPE_OID
 from nti.ntiids.ntiids import TYPE_UUID
 from nti.ntiids.ntiids import TYPE_INTID
 from nti.ntiids.ntiids import is_ntiid_of_types
 from nti.ntiids.ntiids import find_object_with_ntiid
+
+from nti.ntiids.oids import to_external_ntiid_oid
 
 from nti.site.interfaces import IHostPolicySiteManager
 

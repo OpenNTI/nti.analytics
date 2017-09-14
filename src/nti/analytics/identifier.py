@@ -26,9 +26,9 @@ from nti.analytics_database.interfaces import IAnalyticsRootContextIdentifier
 from nti.contenttypes.courses.interfaces import ICourseInstance
 from nti.contenttypes.courses.interfaces import ICourseCatalogEntry
 
-from nti.externalization.externalization import to_external_ntiid_oid
-
 from nti.ntiids.ntiids import find_object_with_ntiid
+
+from nti.ntiids.oids import to_external_ntiid_oid
 
 @interface.implementer(IAnalyticsIntidIdentifier)
 class _DSIdentifier(object):

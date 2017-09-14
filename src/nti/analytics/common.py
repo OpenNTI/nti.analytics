@@ -46,7 +46,7 @@ from nti.dataserver.interfaces import IGlobalFlagStorage
 from nti.contenttypes.courses.interfaces import ICourseInstance
 from nti.contenttypes.courses.interfaces import ICourseCatalogEntry
 
-from nti.externalization import externalization
+from nti.ntiids import oids
 
 from nti.securitypolicy.utils import is_impersonating
 
@@ -101,7 +101,7 @@ def get_deleted_time( obj ):
 	return deleted_time
 
 def to_external_ntiid_oid(obj):
-	ntiid = externalization.to_external_ntiid_oid(obj) if obj is not None else None
+	ntiid = oids.to_external_ntiid_oid(obj) if obj is not None else None
 	parts = ntiid.split(":") if ntiid else ()
 	if len(parts) > 4:  # check if intid is in the oid
 		ntiid = ':'.join(parts[:4])
