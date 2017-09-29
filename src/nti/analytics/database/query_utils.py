@@ -18,7 +18,7 @@ from nti.analytics.database.users import get_user_db_id
 from nti.contenttypes.courses.interfaces import ICourseSubInstance
 
 def _do_course_and_timestamp_filtering(table, timestamp=None, max_timestamp=None,
-									   course=None, filters=None):
+									   course=None, filters=None, query_builder=None):
 	db = get_analytics_db()
 	result = []
 
@@ -47,7 +47,11 @@ def _do_course_and_timestamp_filtering(table, timestamp=None, max_timestamp=None
 	if max_timestamp is not None:
 		filters.append(table.timestamp <= max_timestamp)
 
-	result = db.session.query(table).filter(*filters).all()
+	query = db.session.query(table).filter(*filters)
+	if query_builder:
+		query = query_builder(query)
+
+	result = query.all()
 	return result
 
 def get_filtered_records(user, table, replies_only=False, filters=None, **kwargs):

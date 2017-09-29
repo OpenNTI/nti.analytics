@@ -23,6 +23,7 @@ from nti.dataserver.tests.mock_dataserver import WithMockDSTrans
 from nti.analytics.tests import NTIAnalyticsTestCase
 
 from nti.analytics.sessions import _add_session
+from nti.analytics.sessions import get_recent_user_sessions
 from nti.analytics.sessions import get_user_sessions
 
 class TestSessions( NTIAnalyticsTestCase ):
@@ -77,3 +78,37 @@ class TestSessions( NTIAnalyticsTestCase ):
 		assert_that( records[0].SessionStartTime, is_( end ) )
 		assert_that( records[0].SessionEndTime, none() )
 		assert_that( records[0].Duration, none() )
+
+	@WithMockDSTrans
+	def test_query_sessions(self):
+		start = datetime( year=2007, month=3, day=6,
+							hour=6, minute=10, second=30 )
+		start2 = start + timedelta( seconds=30 )
+		duration = 3600
+		end = start2 + timedelta( seconds=duration )
+		user = User.create_user( username='new_user1', dataserver=self.ds )
+
+		# Empty
+		records = get_user_sessions( user )
+		assert_that( records, has_length( 0 ) )
+
+		# Test start = end
+		_add_session( user.username, '', '', start_time=start, end_time=start )
+
+		# 30 seconds later, a longer session
+		_add_session( user.username, '', '', start_time=start2, end_time=end )
+
+		records = get_recent_user_sessions(user, limit=1)
+		assert_that( records, has_length( 1 ) )
+		assert_that( records[0].SessionStartTime, is_( start2 ) )
+
+		records = get_recent_user_sessions(user, limit=3)
+		assert_that( records, has_length( 2 ) )
+		assert_that( records[0].SessionStartTime, is_( start2 ) )
+		assert_that( records[1].SessionStartTime, is_( start ) )
+
+
+
+
+
+

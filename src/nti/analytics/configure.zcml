@@ -196,6 +196,10 @@
 			 for=".interfaces.ISelfAssessmentViewEvent"
 			 provides="nti.externalization.interfaces.IInternalObjectUpdater" />
 
+	<adapter factory=".sessions._from_db_session"
+			 for="nti.analytics_database.sessions.Sessions"
+			 provides=".interfaces.IAnalyticsSession" />
+
 	<!-- Research -->
 	<adapter factory=".model._UserResearchStatus" />
 

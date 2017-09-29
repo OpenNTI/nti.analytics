@@ -101,13 +101,15 @@ def get_session_by_id(session_id):
 def _resolve_session(row):
 	return row
 
-def get_user_sessions(user, timestamp=None, max_timestamp=None, for_timestamp=None):
+def get_user_sessions(user, timestamp=None, max_timestamp=None,
+                      for_timestamp=None, open_sessions_only=False,
+                      query_builder=None):
 	"""
 	Fetch any sessions for a user started *after* the optionally given timestamp.
 	"""
 	filters = []
 	if timestamp is not None:
-		filters.append(Sessions.start_time >= timestamp,)
+		filters.append(Sessions.start_time >= timestamp)
 
 	if max_timestamp is not None:
 		filters.append(Sessions.start_time <= max_timestamp)
@@ -116,5 +118,13 @@ def get_user_sessions(user, timestamp=None, max_timestamp=None, for_timestamp=No
 		filters.append(Sessions.start_time <= for_timestamp)
 		filters.append(Sessions.end_time >= for_timestamp)
 
-	results = get_filtered_records(user, Sessions, filters=filters)
+	results = get_filtered_records(user, Sessions, filters=filters, query_builder=query_builder)
 	return resolve_objects(_resolve_session, results)
+
+def get_recent_user_sessions(user, limit=None):
+	def query_builder(query):
+		query = query.order_by(Sessions.start_time.desc())
+		if limit:
+			query = query.limit(limit)
+		return query
+	return get_user_sessions(user, query_builder=query_builder)

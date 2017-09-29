@@ -16,6 +16,8 @@ from pyramid.threadlocal import get_current_request
 
 from zope import component
 
+from zope import interface
+
 from nti.appserver.interfaces import IUserLogoutEvent
 
 from nti.analytics import get_factory
@@ -27,10 +29,17 @@ from nti.analytics.common import process_event
 
 from nti.analytics.database import sessions as db_sessions
 
+from nti.analytics.interfaces import IAnalyticsSession
+
+from nti.analytics.model import AnalyticsSession
+
+from nti.analytics_database.sessions import Sessions
+
 ANALYTICS_SESSION_COOKIE_NAME = str( 'nti.da_session' )
 ANALYTICS_SESSION_HEADER = str( 'x-nti-da-session' )
 
 get_user_sessions = db_sessions.get_user_sessions
+get_recent_user_sessions = db_sessions.get_recent_user_sessions
 
 def _get_session_id_from_val( val ):
 	if val is None:
@@ -179,5 +188,16 @@ def get_current_session_id( event=None ):
 	return result
 
 get_nti_session_id = get_current_session_id
+
+
+def _mktime(dt):
+	return _calendar_timegm(dt.timetuple()) if dt else None
+
+@component.adapter( Sessions )
+@interface.implementer( IAnalyticsSession )
+def _from_db_session(db_session):
+	return AnalyticsSession(SessionID=db_session.SessionID,
+				            SessionEndTime=_mktime(db_session.SessionEndTime),
+			                SessionStartTime=_mktime(db_session.SessionStartTime))
 
 
