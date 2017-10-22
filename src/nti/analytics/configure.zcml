@@ -113,13 +113,16 @@
 	<utility component=".enrollments" provides=".interfaces.IObjectProcessor" name="enrollments"/>
 
 	<utility factory=".identifier._DSIdentifier"
-			provides="nti.analytics_database.interfaces.IAnalyticsIntidIdentifier" />
+			 provides="nti.analytics_database.interfaces.IAnalyticsIntidIdentifier "/>
 
 	<utility factory=".identifier._NTIIDIdentifier"
-			provides="nti.analytics_database.interfaces.IAnalyticsNTIIDIdentifier"/>
+			 provides="nti.analytics_database.interfaces.IAnalyticsNTIIDIdentifier "/>
 
 	<utility factory=".identifier._RootContextIdentifier"
-			provides="nti.analytics_database.interfaces.IAnalyticsRootContextIdentifier"/>
+			 provides="nti.analytics_database.interfaces.IAnalyticsRootContextIdentifier "/>
+
+	<utility factory=".identifier._AnalyticsNTIIDFinder"
+			 provides="nti.analytics_database.interfaces.IAnalyticsNTIIDFinder" />
 
 	<!-- Externalization -->
 
