@@ -84,3 +84,18 @@ class IAnalyticsStatsSource(interface.Interface):
 	"""
 	A utility to provide stats.
 	"""
+
+class IActiveSessionStats(ICountStats):
+	"""
+	Information about sessions that appear to be active.
+	"""
+
+class IActiveSessionStatsSource(IAnalyticsStatsSource):
+	"""
+	A utility for returning IActiveSessionStats object
+	"""
+
+	def __call__():
+		"""
+		A callable that returns an IActiveSessionStats object
+		"""

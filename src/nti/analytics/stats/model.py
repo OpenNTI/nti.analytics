@@ -13,6 +13,7 @@ from zope import interface
 
 from nti.property.property import alias
 
+from nti.analytics.stats.interfaces import IActiveSessionStats
 from nti.analytics.stats.interfaces import ICountStats
 from nti.analytics.stats.interfaces import INoteStats
 from nti.analytics.stats.interfaces import ITimeStats
@@ -79,4 +80,9 @@ class CommentStats(PostStats):
 class ThoughtCommentStats(PostStats):
 	__external_class_name__ = "ThoughtCommentStats"
 	mime_type = mimeType = 'application/vnd.nextthought.learningnetwork.thoughtcommentstats'
+
+@interface.implementer(IActiveSessionStats)
+class ActiveSessionStats(CountStats):
+	__external_class_name__ = "ActiveSessionStats"
+	mime_type = mimeType = 'application/vnd.nextthought.analytics.activesessionstats'
 

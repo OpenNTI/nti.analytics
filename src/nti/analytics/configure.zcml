@@ -32,6 +32,9 @@
 	<!-- Stats -->
 	<include package=".stats" file="configure.zcml" />
 
+	<utility component=".sessions._active_session_count"
+			 provides=".stats.interfaces.IActiveSessionStatsSource" />
+
 	<!-- Subscribers -->
 	<subscriber handler=".users._entity_removed" />
 	<subscriber handler=".users._user_research" />
