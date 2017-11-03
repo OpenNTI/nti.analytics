@@ -138,11 +138,11 @@ def get_recent_user_sessions(user, limit=None):
 	return get_user_sessions(user, query_builder=query_builder)
 
 
-FUZZY_START_DETLA = timedelta(hours=4)
+FUZZY_START_DELTA = timedelta(hours=4)
 FUZZY_END_DELTA = timedelta(minutes=5)
 
 
-def get_active_session_count(fuzzy_start_delta=FUZZY_START_DETLA,
+def get_active_session_count(fuzzy_start_delta=FUZZY_START_DELTA,
                              fuzzy_end_delta=FUZZY_END_DELTA,
                              _now=None):
 	"""
