@@ -29,9 +29,13 @@ from nti.analytics.common import process_event
 
 from nti.analytics.database import sessions as db_sessions
 
+from nti.analytics.database.sessions import get_active_session_count
+
 from nti.analytics.interfaces import IAnalyticsSession
 
 from nti.analytics.model import AnalyticsSession
+
+from nti.analytics.stats.model import ActiveSessionStats
 
 from nti.analytics_database.sessions import Sessions
 
@@ -199,5 +203,9 @@ def _from_db_session(db_session):
 	return AnalyticsSession(SessionID=db_session.SessionID,
 				            SessionEndTime=_mktime(db_session.SessionEndTime),
 			                SessionStartTime=_mktime(db_session.SessionStartTime))
+
+def _active_session_count(**kwargs):
+	count = get_active_session_count(**kwargs)
+	return ActiveSessionStats(Count=count)
 
 

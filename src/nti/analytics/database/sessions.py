@@ -9,12 +9,20 @@ __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
+from datetime import datetime
+from datetime import timedelta
+
+from sqlalchemy import and_
+from sqlalchemy import or_
+
 from nti.analytics_database.sessions import Sessions
 from nti.analytics_database.sessions import UserAgents
 
 from sqlalchemy.orm.session import make_transient
 
 from nti.analytics.common import timestamp_type
+
+from nti.analytics.database import get_analytics_db
 
 from nti.analytics.database.query_utils import get_filtered_records
 
@@ -128,3 +136,36 @@ def get_recent_user_sessions(user, limit=None):
 			query = query.limit(limit)
 		return query
 	return get_user_sessions(user, query_builder=query_builder)
+
+
+FUZZY_START_DELTA = timedelta(hours=4)
+FUZZY_END_DELTA = timedelta(minutes=5)
+
+
+def get_active_session_count(fuzzy_start_delta=FUZZY_START_DELTA,
+                             fuzzy_end_delta=FUZZY_END_DELTA,
+                             _now=None):
+	"""
+	Query sessions that have begun recently (based on fuzzy_start_delta) and
+	have not ended or have ended recently (fuzzy_end_delta). The huersitics
+	attempt to account for the fact that sometime we don't sessions ended properly.
+	"""
+	db = get_analytics_db()
+	query = db.session.query(Sessions)
+
+	now = _now or datetime.utcnow()
+
+	#If not yet ended, it needs to have been started recently
+	started_after = now - fuzzy_start_delta
+	not_ended_filter = and_((Sessions.end_time == None), Sessions.start_time >= started_after)
+
+	#or
+
+	#If it ended recently it is active (to deal with heartbeat style updates)
+	ended_after = now - fuzzy_end_delta
+	ended_recently_filter = (Sessions.end_time >= ended_after)
+
+	query = query.filter(or_(not_ended_filter, ended_recently_filter))
+
+	return query.distinct(Sessions.user_id).count()
+

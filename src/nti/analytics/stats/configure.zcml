@@ -19,7 +19,8 @@
 						.interfaces.ICommentStats
 						.interfaces.IThoughtCommentStats
 						.interfaces.ISelfAssessmentStats
-						.interfaces.IAssignmentStats"
+						.interfaces.IAssignmentStats
+						.interfaces.IActiveSessionStats"
 		modules=".model" />
 
 </configure>
