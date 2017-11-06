@@ -99,3 +99,27 @@ class IActiveSessionStatsSource(IAnalyticsStatsSource):
 		"""
 		A callable that returns an IActiveSessionStats object
 		"""
+
+class IBucketedStatsSource(IAnalyticsStatsSource):
+	"""
+	Something that sources stats or stat sources by bucket.
+	"""
+
+	def __getitem__(bucket):
+		"""
+		Return the stats object or stat source objects for the bucket
+		"""
+
+class IActiveTimesStats(IBucketedStatsSource):
+	"""
+	An IBucketedStatsSource keyed by day index that returns
+	an IBucketedStatsSource keyed by hour
+	"""
+
+class IActiveTimesStatsSource(IAnalyticsStatsSource):
+
+	def active_times_for_window(start, end):
+		"""
+		Returns an IActiveTimesStats object for the given
+		[start, end) time window
+		"""
