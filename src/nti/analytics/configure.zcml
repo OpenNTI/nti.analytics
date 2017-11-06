@@ -35,6 +35,9 @@
 	<utility component=".sessions._active_session_count"
 			 provides=".stats.interfaces.IActiveSessionStatsSource" />
 
+	<utility factory=".stats.activity.ActiveTimeSource"
+			 provides=".stats.interfaces.IActiveTimesStatsSource" />
+
 	<!-- Subscribers -->
 	<subscriber handler=".users._entity_removed" />
 	<subscriber handler=".users._user_research" />
