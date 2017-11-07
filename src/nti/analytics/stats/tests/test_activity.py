@@ -65,7 +65,7 @@ class TestActiveTimeStats(unittest.TestCase):
         for day, hours in timestamps.items():
             for hour, count in hours.items():
                 timestamp = now - timedelta(days=now.weekday())
-                timestamp = now + timedelta(days=day + 1)
+                timestamp = timestamp + timedelta(days=day)
                 timestamp = timestamp.replace(hour=hour)
                 for _ in range(count):
                     event = FakeEvent()
@@ -74,6 +74,6 @@ class TestActiveTimeStats(unittest.TestCase):
 
         for day, hours in timestamps.items():
             for hour, count in hours.items():
-                assert_that(stats[day][hour].Count, is_(count))
+                assert_that(stats[day][hour].Count, is_(count), 'day {} hour {}'.format(day, hour))
 
         assert_that(stats[5][1].Count, is_(0))
