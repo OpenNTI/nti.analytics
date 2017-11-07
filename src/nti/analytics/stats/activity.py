@@ -4,10 +4,9 @@
 .. $Id$
 """
 
-from __future__ import print_function, unicode_literals, absolute_import, division
-__docformat__ = "restructuredtext en"
-
-logger = __import__('logging').getLogger(__name__)
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
 
 from zope import interface
 
@@ -18,6 +17,9 @@ from nti.analytics.stats.model import CountStats
 
 from nti.analytics.resource_views import get_resource_views
 from nti.analytics.resource_views import get_video_views
+
+logger = __import__('logging').getLogger(__name__)
+
 
 class _CountStatsWrapping(object):
 
@@ -52,6 +54,7 @@ class ActiveTimeStats(object):
         day_counts = self.counts.get(key, {})
         return _CountStatsWrapping(day_counts)
 
+
 @interface.implementer(IActiveTimesStatsSource)
 class ActiveTimeSource(object):
 
@@ -65,5 +68,3 @@ class ActiveTimeSource(object):
             for event in events:
                 stats.process_event(event)
         return stats
-
-
