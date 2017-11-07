@@ -23,8 +23,6 @@ logger = __import__('logging').getLogger(__name__)
 
 class _CountStatsWrapping(object):
 
-    stats = None
-
     def __init__(self, stats):
         self.stats = stats
 
@@ -36,7 +34,8 @@ class _CountStatsWrapping(object):
 @interface.implementer(IActiveTimesStats)
 class ActiveTimeStats(object):
 
-    counts = {}
+    def __init__(self):
+        self.counts = {}
 
     def process_event(self, event):
         day = event.timestamp.weekday()
@@ -61,10 +60,17 @@ class ActiveTimeSource(object):
     EVENT_SOURCES = (get_video_views,
                      get_resource_views,)
 
+    def __init__(self, user=None, course=None):
+        self.user = user
+        self.course = course
+
     def active_times_for_window(self, start, end):
         stats = ActiveTimeStats()
         for source in self.EVENT_SOURCES:
-            events = source(timestamp=start, max_timestamp=end)
+            events = source(user=self.user,
+                            course=self.course,
+                            timestamp=start,
+                            max_timestamp=end)
             for event in events:
                 stats.process_event(event)
         return stats

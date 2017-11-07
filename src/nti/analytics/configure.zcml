@@ -38,6 +38,10 @@
 	<utility factory=".stats.activity.ActiveTimeSource"
 			 provides=".stats.interfaces.IActiveTimesStatsSource" />
 
+	<adapter factory=".stats.activity.ActiveTimeSource"
+			 for="nti.dataserver.interfaces.IUser"
+			 provides=".stats.interfaces.IActiveTimesStatsSource" />
+
 	<!-- Subscribers -->
 	<subscriber handler=".users._entity_removed" />
 	<subscriber handler=".users._user_research" />
