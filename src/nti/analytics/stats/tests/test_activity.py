@@ -1,28 +1,29 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*
-"""
-$Id$
-"""
-from __future__ import print_function, unicode_literals, absolute_import, division
-__docformat__ = "restructuredtext en"
+# -*- coding: utf-8 -*-
 
-logger = __import__('logging').getLogger(__name__)
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
+
+# disable: accessing protected members, too many methods
+# pylint: disable=W0212,R0904
+
+from hamcrest import is_
+from hamcrest import assert_that
+
+import unittest
 
 from datetime import datetime
 from datetime import timedelta
 
-import unittest
+from nti.analytics.stats.activity import ActiveTimeStats
 
-from hamcrest import is_
-from hamcrest import none
-from hamcrest import assert_that
-
-from ..activity import ActiveTimeStats
 
 class FakeEvent(object):
     timestamp = None
 
-class TestActiveTimeStats( unittest.TestCase ):
+
+class TestActiveTimeStats(unittest.TestCase):
 
     def test_time_stats(self):
         stats = ActiveTimeStats()
@@ -64,7 +65,7 @@ class TestActiveTimeStats( unittest.TestCase ):
         for day, hours in timestamps.items():
             for hour, count in hours.items():
                 timestamp = now - timedelta(days=now.weekday())
-                timestamp = now + timedelta(days=day+1)
+                timestamp = now + timedelta(days=day + 1)
                 timestamp = timestamp.replace(hour=hour)
                 for _ in range(count):
                     event = FakeEvent()
@@ -76,6 +77,3 @@ class TestActiveTimeStats( unittest.TestCase ):
                 assert_that(stats[day][hour].Count, is_(count))
 
         assert_that(stats[5][1].Count, is_(0))
-
-
-
