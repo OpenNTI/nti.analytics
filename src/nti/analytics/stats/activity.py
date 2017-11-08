@@ -18,8 +18,10 @@ from nti.analytics.stats.interfaces import IDailyActivityStatsSource
 
 from nti.analytics.stats.model import CountStats
 
-from nti.analytics.resource_views import get_resource_views
 from nti.analytics.resource_views import get_video_views
+from nti.analytics.resource_views import get_resource_views
+
+from nti.externalization.interfaces import LocatedExternalDict
 
 logger = __import__('logging').getLogger(__name__)
 
@@ -56,8 +58,10 @@ class ActiveTimeStats(object):
         day_counts = self.counts.get(key, {})
         return _CountStatsWrapping(day_counts)
 
+
 EVENT_SOURCES = (get_video_views,
                  get_resource_views,)
+
 
 def _activity_source(**kwargs):
     for source in EVENT_SOURCES:
@@ -82,6 +86,7 @@ class ActiveTimeSource(object):
         return stats
     stats_for_window = active_times_for_window
 
+
 @interface.implementer(IDailyActivityStatsSource)
 class DailyActivitySource(object):
 
@@ -97,6 +102,4 @@ class DailyActivitySource(object):
                                       max_timestamp=end):
             date = event.timestamp.date()
             dates[date] += 1
-        return {k: CountStats(Count=v) for k,v in dates.items()}
-
-
+        return LocatedExternalDict({k: CountStats(Count=v) for k, v in dates.items()})
