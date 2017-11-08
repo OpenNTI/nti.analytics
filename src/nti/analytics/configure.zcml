@@ -42,6 +42,13 @@
 			 for="nti.dataserver.interfaces.IUser"
 			 provides=".stats.interfaces.IActiveTimesStatsSource" />
 
+	<utility factory=".stats.activity.DailyActivitySource"
+			 provides=".stats.interfaces.IDailyActivityStatsSource" />
+
+	<adapter factory=".stats.activity.DailyActivitySource"
+			 for="nti.dataserver.interfaces.IUser"
+			 provides=".stats.interfaces.IDailyActivityStatsSource" />
+
 	<!-- Subscribers -->
 	<subscriber handler=".users._entity_removed" />
 	<subscriber handler=".users._user_research" />

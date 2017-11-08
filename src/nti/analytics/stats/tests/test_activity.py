@@ -8,8 +8,12 @@ from __future__ import absolute_import
 # disable: accessing protected members, too many methods
 # pylint: disable=W0212,R0904
 
+import fudge
+
 from hamcrest import is_
 from hamcrest import assert_that
+from hamcrest import has_entries
+from hamcrest import has_property
 
 import unittest
 
@@ -17,10 +21,14 @@ from datetime import datetime
 from datetime import timedelta
 
 from nti.analytics.stats.activity import ActiveTimeStats
+from nti.analytics.stats.activity import DailyActivitySource
 
 
 class FakeEvent(object):
     timestamp = None
+
+    def __init__(self, timestamp=None):
+        self.timestamp = timestamp
 
 
 class TestActiveTimeStats(unittest.TestCase):
@@ -77,3 +85,27 @@ class TestActiveTimeStats(unittest.TestCase):
                 assert_that(stats[day][hour].Count, is_(count), 'day {} hour {}'.format(day, hour))
 
         assert_that(stats[5][1].Count, is_(0))
+
+class TestDailyActivitySource(unittest.TestCase):
+
+    TIMES = ['2010-01-01 12:03',
+             '2010-01-01 14:03',
+             '2010-01-02 12:03',
+             '2010-03-01 15:03',]
+
+    @fudge.patch( 'nti.analytics.stats.activity._activity_source' )
+    def test_daily_activity_summary(self, mock_activity_source):
+
+        mock_activity_source.is_callable()
+        mock_activity_source.returns( \
+            [FakeEvent(datetime.strptime(str, "%Y-%m-%d %H:%M")) \
+                for str in self.TIMES] )
+
+        source = DailyActivitySource()
+        result = source.stats_for_window(None, None)
+        assert_that(result, has_entries(datetime(2010, 1, 1).date(),
+                                            has_property('Count', 2),
+                                        datetime(2010, 1, 2).date(),
+                                            has_property('Count', 1),
+                                        datetime(2010, 3, 1).date(),
+                                            has_property('Count', 1)))
