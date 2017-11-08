@@ -149,21 +149,24 @@ class IBucketedStatsSource(IAnalyticsStatsSource):
         Return the stats object or stat source objects for the bucket
         """
 
+
 class IActiveTimesStats(IBucketedStatsSource):
     """
     An IBucketedStatsSource keyed by day index that returns
     an IBucketedStatsSource keyed by hour
     """
 
-class IWindowedStatsSource(IAnalyticsStatsSource):
-	"""
-	Something that can provide stats for a given window of time
-	"""
 
-	def stats_for_window(start, end):
-		"""
-		Provides stats for the given time window.
-		"""
+class IWindowedStatsSource(IAnalyticsStatsSource):
+    """
+    Something that can provide stats for a given window of time
+    """
+
+    def stats_for_window(start, end):
+        """
+        Provides stats for the given time window.
+        """
+
 
 class IActiveTimesStatsSource(IWindowedStatsSource):
 
@@ -173,9 +176,10 @@ class IActiveTimesStatsSource(IWindowedStatsSource):
         [start, end) time window
         """
 
+
 class IDailyActivityStatsSource(IWindowedStatsSource):
-	"""
-	A windowed stats source that returns a dictionary
-	mapping date objects and ICountStats for activity
-	on days in the window
-	"""
+    """
+    A windowed stats source that returns a dictionary
+    mapping date objects and ICountStats for activity
+    on days in the window
+    """
