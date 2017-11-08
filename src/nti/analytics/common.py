@@ -31,6 +31,8 @@ from nti.async import create_job
 
 from nti.analytics.database import get_analytics_db
 
+from nti.analytics.interfaces import IPriorityProcessingAnalyticsEvent
+
 from nti.dataserver import liking
 from nti.dataserver import rating
 
@@ -53,6 +55,7 @@ from nti.securitypolicy.utils import is_impersonating
 from nti.site.site import get_site_for_site_names
 
 from nti.site.transient import TrivialSite
+
 
 def get_rating_from_event( event ):
 	delta = -1 if IObjectUnratedEvent.providedBy( event ) else 1
@@ -118,8 +121,6 @@ def get_course( obj ):
 	Attempt to get the course of an object by traversing up the given
 	object's lineage.
 	"""
-	# TODO We call this for topics; will topics exist in books?
-	# If so, this needs to change.
 	result = get_object_root( obj, ICourseInstance )
 	__traceback_info__ = result, obj
 	return ICourseInstance( result, result )
@@ -134,8 +135,7 @@ def timestamp_type(timestamp):
 	result = timestamp
 	if isinstance( timestamp, ( float, integer_types ) ):
 
-		# We fully expect fractional seconds; if not, a
-		# we attempt to handle it.
+		# We fully expect fractional seconds; if not, we attempt to handle it.
 		ts_string = str( int( timestamp ) )
 		if len( ts_string ) > 12:
 			logger.warn('Timestamp received in ms, converting to seconds (%s)',
@@ -246,7 +246,8 @@ def process_event( get_job_queue, object_op, obj=None, immediate=False, **kwargs
 	else:
 		logger.warn( 'Request did not have site (%s)', request )
 
-	if immediate:
+	event = effective_kwargs.get('event')
+	if immediate or IPriorityProcessingAnalyticsEvent.providedBy(event):
 		_execute_job( object_op, **effective_kwargs )
 	else:
 		queue = get_job_queue()
