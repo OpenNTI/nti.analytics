@@ -54,14 +54,24 @@ class IAnalyticsObjectBase(interface.Interface):
 	user = ValidTextLine(title='User who created the event', required=False)
 	SessionID = Number(title=u"The analytics session id.", required=False)
 
+
 class ITimeLength(interface.Interface):
 
 	Duration = Number(title=u"The time length of the event, in seconds", required=False)
 
+
 class IAnalyticsEvent(IAnalyticsObjectBase):
 	"""An analytics event."""
 
-class IAnalyticsViewEvent(IAnalyticsEvent, ITimeLength):
+
+class IPriorityProcessingAnalyticsEvent(interface.Interface):
+	"""
+	A marker interface for analytics events that are time-sensitive.
+	"""
+
+class IAnalyticsViewEvent(IAnalyticsEvent,
+						  IPriorityProcessingAnalyticsEvent,
+						  ITimeLength):
 	"""
 	A basic analytics viewing event.
 	"""

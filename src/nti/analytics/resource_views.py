@@ -22,6 +22,17 @@ from nti.contentlibrary.interfaces import IContentPackageBundle
 
 from nti.dataserver.interfaces import IEntity
 
+from nti.analytics import SOCIAL_ANALYTICS
+from nti.analytics import BLOG_VIEW_ANALYTICS
+from nti.analytics import NOTE_VIEW_ANALYTICS
+from nti.analytics import TOPIC_VIEW_ANALYTICS
+from nti.analytics import VIDEO_VIEW_ANALYTICS
+from nti.analytics import CATALOG_VIEW_ANALYTICS
+from nti.analytics import RESOURCE_VIEW_ANALYTICS
+
+from nti.analytics import get_factory
+from nti.analytics import get_current_username
+
 from nti.analytics.interfaces import IVideoEvent
 from nti.analytics.interfaces import IBlogViewEvent
 from nti.analytics.interfaces import INoteViewEvent
@@ -63,16 +74,6 @@ from nti.analytics.recorded import ResourceViewedRecordedEvent
 from nti.analytics.recorded import ProfileActivityViewedRecordedEvent
 from nti.analytics.recorded import ProfileMembershipViewedRecordedEvent
 
-from nti.analytics import get_factory
-from nti.analytics import get_current_username
-from nti.analytics import SOCIAL_ANALYTICS
-from nti.analytics import BLOG_VIEW_ANALYTICS
-from nti.analytics import NOTE_VIEW_ANALYTICS
-from nti.analytics import TOPIC_VIEW_ANALYTICS
-from nti.analytics import VIDEO_VIEW_ANALYTICS
-from nti.analytics import CATALOG_VIEW_ANALYTICS
-from nti.analytics import RESOURCE_VIEW_ANALYTICS
-
 get_resource_views = db_resource_views.get_resource_views
 get_user_resource_views = db_resource_views.get_user_resource_views
 get_user_resource_views_for_ntiid = db_resource_views.get_user_resource_views_for_ntiid
@@ -80,6 +81,7 @@ get_video_views = db_resource_views.get_user_video_views
 get_user_video_views = db_resource_views.get_user_video_views
 get_video_views_for_ntiid = db_resource_views.get_video_views_for_ntiid
 get_resource_views_for_ntiid = db_resource_views.get_resource_views_for_ntiid
+
 
 def _has_href_fragment( node, children ):
 	def _has_frag( node ):
@@ -578,10 +580,10 @@ def handle_events( batch_events ):
 		# expect a valid session to exist.
 		if not event.user:
 			event.user = get_current_username()
-		nti_session = get_nti_session_id( event=event )
+		nti_session = get_nti_session_id(event=event)
 
-		kwargs = {  'event':event,
-					'nti_session': nti_session }
+		kwargs = {'event': event,
+				  'nti_session': nti_session}
 
 		if INoteViewEvent.providedBy( event ):
 			process_event( _get_note_queue, _add_note_event, **kwargs )
