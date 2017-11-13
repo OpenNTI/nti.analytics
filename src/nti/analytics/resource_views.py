@@ -45,6 +45,7 @@ from nti.analytics.interfaces import ISelfAssessmentViewEvent
 from nti.analytics.interfaces import IProfileViewEvent
 from nti.analytics.interfaces import IProfileActivityViewEvent
 from nti.analytics.interfaces import IProfileMembershipViewEvent
+from nti.analytics.interfaces import AnalyticsEventValidationError
 
 from nti.analytics.common import get_entity
 from nti.analytics.common import process_event
@@ -571,13 +572,16 @@ def _get_note_queue():
 	factory = get_factory()
 	return factory.get_queue( NOTE_VIEW_ANALYTICS )
 
-def handle_events( batch_events ):
+def handle_events(batch_events, return_invalid=True):
+	"""
+	Handle resource view events, optionally returning or raising on invalid events
+	"""
 
+	validation_errors = []
 	for event in batch_events:
-		# Try to grab a session, careful not to raise so we don't
-		# lose our otherwise valid events.  Since the batch send
-		# time on the client side is currently 10s, we can reasonably
-		# expect a valid session to exist.
+		# Try to grab a session, careful not to raise so we don't lose our
+		# otherwise valid events. Since the batch send time on the client side
+		# is currently 10s, we can reasonably expect a valid session to exist.
 		if not event.user:
 			event.user = get_current_username()
 		nti_session = get_nti_session_id(event=event)
@@ -585,41 +589,49 @@ def handle_events( batch_events ):
 		kwargs = {'event': event,
 				  'nti_session': nti_session}
 
-		if INoteViewEvent.providedBy( event ):
-			process_event( _get_note_queue, _add_note_event, **kwargs )
-		elif IBlogViewEvent.providedBy( event ):
-			process_event( _get_blog_queue, _add_blog_event, **kwargs )
-		elif ITopicViewEvent.providedBy( event ):
-			process_event( _get_topic_queue, _add_topic_event, **kwargs )
-		elif IVideoEvent.providedBy( event ):
-			process_event( _get_video_queue, _add_video_event, **kwargs )
-		elif ISelfAssessmentViewEvent.providedBy( event ):
-			process_event( _get_resource_queue, _add_self_assessment_event, **kwargs )
-		elif IAssignmentViewEvent.providedBy( event ):
-			process_event( _get_resource_queue, _add_assignment_event, **kwargs )
-		elif IResourceEvent.providedBy( event ):
-			process_event( _get_resource_queue, _add_resource_event, **kwargs )
-		elif ICourseCatalogViewEvent.providedBy( event ):
-			process_event( _get_catalog_queue, _add_catalog_event, **kwargs )
-		elif IVideoPlaySpeedChangeEvent.providedBy( event ):
-			process_event( _get_video_queue, _add_play_speed_event, **kwargs )
-		elif IProfileActivityViewEvent.providedBy( event ):
-			process_event( _get_profile_queue, _add_profile_activity_event, **kwargs )
-		elif IProfileMembershipViewEvent.providedBy( event ):
-			process_event( _get_profile_queue, _add_profile_membership_event, **kwargs )
-		elif IProfileViewEvent.providedBy( event ):
-			process_event( _get_profile_queue, _add_profile_event, **kwargs )
+		try:
+			if INoteViewEvent.providedBy( event ):
+				process_event( _get_note_queue, _add_note_event, **kwargs )
+			elif IBlogViewEvent.providedBy( event ):
+				process_event( _get_blog_queue, _add_blog_event, **kwargs )
+			elif ITopicViewEvent.providedBy( event ):
+				process_event( _get_topic_queue, _add_topic_event, **kwargs )
+			elif IVideoEvent.providedBy( event ):
+				process_event( _get_video_queue, _add_video_event, **kwargs )
+			elif ISelfAssessmentViewEvent.providedBy( event ):
+				process_event( _get_resource_queue, _add_self_assessment_event, **kwargs )
+			elif IAssignmentViewEvent.providedBy( event ):
+				process_event( _get_resource_queue, _add_assignment_event, **kwargs )
+			elif IResourceEvent.providedBy( event ):
+				process_event( _get_resource_queue, _add_resource_event, **kwargs )
+			elif ICourseCatalogViewEvent.providedBy( event ):
+				process_event( _get_catalog_queue, _add_catalog_event, **kwargs )
+			elif IVideoPlaySpeedChangeEvent.providedBy( event ):
+				process_event( _get_video_queue, _add_play_speed_event, **kwargs )
+			elif IProfileActivityViewEvent.providedBy( event ):
+				process_event( _get_profile_queue, _add_profile_activity_event, **kwargs )
+			elif IProfileMembershipViewEvent.providedBy( event ):
+				process_event( _get_profile_queue, _add_profile_membership_event, **kwargs )
+			elif IProfileViewEvent.providedBy( event ):
+				process_event( _get_profile_queue, _add_profile_event, **kwargs )
+		except AnalyticsEventValidationError as e:
+			if return_invalid:
+				# If returning, we want to capture all errors and process the rest.
+				validation_errors.append(e)
+			else:
+				raise
 	# If we validated early, we could return something meaningful.
 	# But we'd have to handle all validation exceptions as to not lose the valid
 	# events. The nti.async.processor does this and at least drops the bad
 	# events in a failed queue.
-	return len( batch_events )
+	return len( batch_events ), validation_errors
 
-class UnrecoverableAnalyticsError( Exception ):
+
+class UnrecoverableAnalyticsError(AnalyticsEventValidationError):
 	"""
-	Errors that the analytics process fundamentally cannot recover from. Events
-	with such errors should log the issue and return, such that the event will
-	not be re-run in the future.
+	Event validation errors that the analytics process fundamentally cannot
+	recover from. Events with such errors should log the issue and return,
+	such that the event will not be re-run in the future.
 	"""
 
 	def __init__(self, message):

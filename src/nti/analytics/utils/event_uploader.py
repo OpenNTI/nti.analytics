@@ -97,8 +97,8 @@ BATCH_SIZE = 5000
 
 def _load_events(events):
 	if events:
-		return resource_views.handle_events(events)
-	return 0
+		return resource_views.handle_events(events, return_invalid=False)
+	return 0, 0
 
 def _process_batch_events(events):
 	"""
@@ -122,7 +122,7 @@ def _process_batch_events(events):
 		except ValidationError:
 			malformed_count += 1
 
-	event_count = _load_events(batch_events)
+	event_count, unused_invalid_events = _load_events(batch_events)
 	return event_count, malformed_count, missing_user_count
 
 def _process_args(site, file_name):
