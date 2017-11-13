@@ -4,23 +4,16 @@
 .. $Id$
 """
 
-from __future__ import print_function, unicode_literals, absolute_import, division
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
 __docformat__ = "restructuredtext en"
-
-logger = __import__('logging').getLogger(__name__)
 
 import urlparse
 
+from zope import component
+
 from zope.event import notify
-
-from nti.ntiids import ntiids
-
-from nti.contenttypes.courses.interfaces import ICourseInstance
-
-from nti.contentlibrary.interfaces import IContentPackage
-from nti.contentlibrary.interfaces import IContentPackageBundle
-
-from nti.dataserver.interfaces import IEntity
 
 from nti.analytics import SOCIAL_ANALYTICS
 from nti.analytics import BLOG_VIEW_ANALYTICS
@@ -75,6 +68,18 @@ from nti.analytics.recorded import ResourceViewedRecordedEvent
 from nti.analytics.recorded import ProfileActivityViewedRecordedEvent
 from nti.analytics.recorded import ProfileMembershipViewedRecordedEvent
 
+from nti.contenttypes.courses.interfaces import ICourseCatalog
+from nti.contenttypes.courses.interfaces import ICourseInstance
+
+from nti.contentlibrary.interfaces import IContentPackage
+from nti.contentlibrary.interfaces import IContentPackageBundle
+
+from nti.dataserver.interfaces import IEntity
+
+from nti.ntiids import ntiids
+
+logger = __import__('logging').getLogger(__name__)
+
 get_resource_views = db_resource_views.get_resource_views
 get_user_resource_views = db_resource_views.get_user_resource_views
 get_user_resource_views_for_ntiid = db_resource_views.get_user_resource_views_for_ntiid
@@ -91,11 +96,13 @@ def _has_href_fragment( node, children ):
 	return bool( 	_has_frag( node )
 				or 	_has_frag( next( iter( children ))))
 
+
 def _is_page_container( node ):
 	# Node is only page container if it has children and
 	# does not have a fragment in its href.
 	children = getattr( node, 'children', None )
 	return bool( children and not _has_href_fragment( node, children ) )
+
 
 def get_progress_for_ntiid( user, resource_ntiid ):
 	obj = _get_object( resource_ntiid )
@@ -126,6 +133,7 @@ def get_progress_for_ntiid( user, resource_ntiid ):
 
 	return result
 
+
 def get_video_progress_for_course( user, course ):
 	"""
 	For a given user/course, return a collection of progress for all videos we have on record.
@@ -139,15 +147,23 @@ def get_video_progress_for_course( user, course ):
 	result = [get_progress_for_video_views( ntiid, events ) for ntiid, events in view_dict.items()]
 	return result
 
+
 def _get_object( ntiid ):
 	return ntiids.find_object_with_ntiid( ntiid )
+
 
 def _get_course( event ):
 	__traceback_info__ = event.RootContextID
 	result = _get_object( event.RootContextID )
+	# Global course info objects have an HTML ntiid
+	if result is None:
+		catalog = component.queryUtility(ICourseCatalog)
+		if catalog is not None:
+			result = catalog.getCatalogEntry(event.RootContextID)
 	# Course catalog views may resolve to catalog entries
 	# If not a course, return what we have (e.g. ContentPackage)
 	return ICourseInstance( result, result )
+
 
 def _get_root_context( event ):
 	result = _get_object( event.RootContextID )
@@ -155,8 +171,11 @@ def _get_root_context( event ):
 		result = _get_course( event )
 	return result
 
+
 def _validate_analytics_event( event, object_id=None ):
-	""" Validate our events, sanitizing as we go. """
+	"""
+	Validate our events, sanitizing as we go.
+	"""
 	if object_id:
 		# Cannot do much without an object; probably deleted.
 		# Ideally, we need to capture all id related data
@@ -186,17 +205,22 @@ def _validate_analytics_event( event, object_id=None ):
 
 	event.time_length = time_length and int( time_length )
 
+
 def _valid_course_type( obj ):
 	return ICourseInstance.providedBy( obj ) \
 		or IContentPackageBundle.providedBy( obj ) \
 		or IContentPackage.providedBy( obj )
 
+
 def _valid_root_context_type( obj ):
 	return IEntity.providedBy( obj ) \
 		or _valid_course_type( obj )
 
+
 def _validate_root_context_event( event, object_id=None ):
-	""" Validate we have a root context (course or entity)."""
+	"""
+	Validate we have a root context (course or entity).
+	"""
 	# XXX: We could get the course(s) from the resource id (asset), and then
 	# we could probably guess based on a course the event creator is enrolled in.
 	_validate_analytics_event( event, object_id )
@@ -204,20 +228,24 @@ def _validate_root_context_event( event, object_id=None ):
 	root_context = _get_root_context( event )
 	if 		root_context is None \
 		or 	not _valid_root_context_type( root_context ):
-		raise ValueError( """Event received with non-existent root context id
+		raise ValueError( u"""Event received with non-existent root context id
 							(user=%s) (RootContextID=%s) (event=%s)""" %
 							( event.user, event.RootContextID, event ) )
 
+
 def _validate_course_event( event, object_id=None ):
-	""" Validate we have a course."""
+	"""
+	Validate we have a course.
+	"""
 	_validate_analytics_event( event, object_id )
 
 	course = _get_course( event )
 	if 		course is None \
 		or 	not _valid_course_type( course ):
-		raise ValueError( """Event received with non-existent course id
+		raise ValueError( u"""Event received with non-existent course id
 							(user=%s) (course=%s) (event=%s)""" %
 							( event.user, event.RootContextID, event ) )
+
 
 def _validate_resource_event( event ):
 	""" Validate our events, sanitizing as we go. """
@@ -229,8 +257,11 @@ def _validate_resource_event( event ):
 							(user=%s) (resource=%s) (event=%s)""" %
 							( event.user, event.resource_id, event ) )
 
+
 def _validate_play_speed_event( event ):
-	""" Validate our events, sanitizing as we go. """
+	"""
+	Validate our events, sanitizing as we go.
+	"""
 	_validate_resource_event( event )
 
 	old_play_speed = event.OldPlaySpeed
@@ -238,18 +269,21 @@ def _validate_play_speed_event( event ):
 
 	if 	old_play_speed == new_play_speed:
 		raise UnrecoverableAnalyticsError(
-					'PlaySpeed event has invalid time values (old=%s) (new=%s) (event=%s)' %
+					u'PlaySpeed event has invalid time values (old=%s) (new=%s) (event=%s)' %
 					( old_play_speed, new_play_speed, event.event_type ) )
 
 	video_time = event.VideoTime
 
 	if video_time < 0:
 		raise UnrecoverableAnalyticsError(
-						'Video event has invalid time value (time=%s) (event=%s)' %
+						u'Video event has invalid time value (time=%s) (event=%s)' %
 						( video_time, event.event_type ) )
 
+
 def _validate_video_event( event ):
-	""" Validate our events, sanitizing as we go. """
+	"""
+	Validate our events, sanitizing as we go.
+	"""
 	# Validate our parent fields
 	_validate_resource_event( event )
 
@@ -259,7 +293,7 @@ def _validate_video_event( event ):
 	if 		start < 0 	\
 		or 	(end is not None and end < 0):
 		raise UnrecoverableAnalyticsError(
-						'Video event has invalid time values (start=%s) (end=%s) (event=%s)' %
+						u'Video event has invalid time values (start=%s) (end=%s) (event=%s)' %
 						( start, end, event.event_type ) )
 
 	# Be lenient if watch time is less than max duration due to the way the player events are triggered.
@@ -270,6 +304,7 @@ def _validate_video_event( event ):
 	event.MaxDuration = int( max_time_length ) if max_time_length else None
 	event.video_start_time = int( start )
 	event.video_end_time = int( end ) if end is not None else None
+
 
 def _add_note_event( event, nti_session=None ):
 	try:
@@ -299,11 +334,12 @@ def _add_note_event( event, nti_session=None ):
 									context_path=event.context_path,
 									duration=getattr(event, 'time_length', 1)))
 
+
 def _add_topic_event( event, nti_session=None ):
 	try:
 		_validate_root_context_event( event, object_id=event.topic_id )
 	except UnrecoverableAnalyticsError as e:
-		logger.warn( 'Error while validating event (%s)', e )
+		logger.warn( u'Error while validating event (%s)', e )
 		return
 
 	user = get_entity( event.user )
@@ -328,6 +364,7 @@ def _add_topic_event( event, nti_session=None ):
 									duration=event.time_length,
 									context_path=event.context_path))
 
+
 def _add_blog_event( event, nti_session=None ):
 	try:
 		_validate_analytics_event( event, object_id=event.blog_id )
@@ -351,6 +388,7 @@ def _add_blog_event( event, nti_session=None ):
 								   session=nti_session,
 								   duration=event.time_length,
 								   context_path=event.context_path))
+
 
 def _add_catalog_event( event, nti_session=None ):
 	try:
@@ -378,6 +416,7 @@ def _add_catalog_event( event, nti_session=None ):
 									  duration=event.time_length,
 									  context_path=event.context_path))
 
+
 def _do_resource_view( to_call, event, resource_id, nti_session=None, *args ):
 	user = get_entity( event.user )
 	root_context = _get_root_context( event )
@@ -395,14 +434,16 @@ def _do_resource_view( to_call, event, resource_id, nti_session=None, *args ):
 									   duration=event.time_length,
 									   context_path=event.context_path))
 
+
 def _validate_assessment_event( event, assess_id ):
 	_validate_root_context_event( event )
 
 	if not ntiids.is_valid_ntiid_string( assess_id ):
 		raise UnrecoverableAnalyticsError(
-							"""Event received for invalid assessment id
+							u"""Event received for invalid assessment id
 							(user=%s) (assessment_id=%s) (event=%s)""" %
 							( event.user, assess_id, event ) )
+
 
 def _add_resource_event( event, nti_session=None ):
 	try:
@@ -414,6 +455,7 @@ def _add_resource_event( event, nti_session=None ):
 	_do_resource_view( db_resource_views.create_course_resource_view,
 						event, event.resource_id, nti_session )
 
+
 def _add_self_assessment_event( event, nti_session=None ):
 	try:
 		_validate_assessment_event( event, event.QuestionSetId )
@@ -423,6 +465,7 @@ def _add_self_assessment_event( event, nti_session=None ):
 	_do_resource_view(db_assess_views.create_self_assessment_view,
 					  event, event.content_id, nti_session, event.QuestionSetId )
 
+
 def _add_assignment_event( event, nti_session=None ):
 	try:
 		_validate_assessment_event( event, event.AssignmentId )
@@ -431,6 +474,7 @@ def _add_assignment_event( event, nti_session=None ):
 		return
 	_do_resource_view( db_assess_views.create_assignment_view,
 					event, event.content_id, nti_session, event.AssignmentId )
+
 
 def _add_video_event( event, nti_session=None ):
 	try:
@@ -478,6 +522,7 @@ def _add_video_event( event, nti_session=None ):
 				 video_end_time=event.video_end_time,
 				 with_transcript=event.with_transcript))
 
+
 def _add_play_speed_event( event, nti_session=None ):
 	try:
 		_validate_play_speed_event( event )
@@ -505,6 +550,7 @@ def _add_play_speed_event( event, nti_session=None ):
 					event.OldPlaySpeed,
 					event.NewPlaySpeed )
 
+
 def _validate_profile_event( event ):
 	_validate_analytics_event( event )
 	profile_entity = get_entity( event.ProfileEntity )
@@ -512,6 +558,7 @@ def _validate_profile_event( event ):
 		raise UnrecoverableAnalyticsError(
 							'Event received with non-existent profile user (user=%s) (event=%s)' %
 							( event.ProfileEntity, event ) )
+
 
 def _do_add_profile_event( to_call, event, nti_session=None, recorded=None):
 	try:
@@ -526,11 +573,13 @@ def _do_add_profile_event( to_call, event, nti_session=None, recorded=None):
 		notify(recorded(user=user, profile=event.ProfileEntity, timestamp=event.timestamp,
 						session=nti_session, context_path=event.context_path))
 
+
 def _add_profile_event( event, nti_session=None ):
 	_do_add_profile_event( db_profile_views.create_profile_view,
 						   event,
 						   nti_session,
 						   ProfileViewedRecordedEvent )
+
 
 def _add_profile_activity_event( event, nti_session=None ):
 	_do_add_profile_event( db_profile_views.create_profile_activity_view,
@@ -538,39 +587,48 @@ def _add_profile_activity_event( event, nti_session=None ):
 						   nti_session,
 						   ProfileActivityViewedRecordedEvent )
 
+
 def _add_profile_membership_event( event, nti_session=None ):
 	_do_add_profile_event( db_profile_views.create_profile_membership_view,
 						   event,
 						   nti_session,
 						   ProfileMembershipViewedRecordedEvent )
 
+
 def _get_profile_queue():
 	factory = get_factory()
 	return factory.get_queue( SOCIAL_ANALYTICS )
+
 
 def _get_resource_queue():
 	factory = get_factory()
 	return factory.get_queue( RESOURCE_VIEW_ANALYTICS )
 
+
 def _get_video_queue():
 	factory = get_factory()
 	return factory.get_queue( VIDEO_VIEW_ANALYTICS )
+
 
 def _get_catalog_queue():
 	factory = get_factory()
 	return factory.get_queue( CATALOG_VIEW_ANALYTICS )
 
+
 def _get_topic_queue():
 	factory = get_factory()
 	return factory.get_queue( TOPIC_VIEW_ANALYTICS )
+
 
 def _get_blog_queue():
 	factory = get_factory()
 	return factory.get_queue( BLOG_VIEW_ANALYTICS )
 
+
 def _get_note_queue():
 	factory = get_factory()
 	return factory.get_queue( NOTE_VIEW_ANALYTICS )
+
 
 def handle_events(batch_events, return_invalid=True):
 	"""
