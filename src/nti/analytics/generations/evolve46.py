@@ -35,13 +35,15 @@ def evolve_job():
 
 	# Not sure why this is needed; we would deadlock if we attempt
 	# alter_columns on the same db.
+	# XXX: This migration had weird issues in alpha (hanging tx issues).
+	# a db restart resolved it.
 	global seen_dbs
 	if db.dburi in seen_dbs:
 		return
 	seen_dbs.add( db.dburi )
 
 	connection = db.engine.connect()
-	mc = MigrationContext.configure( connection )
+	mc = MigrationContext.configure(connection)
 	op = Operations(mc)
 
 	op.alter_column( 'Users', 'username',
