@@ -21,6 +21,8 @@ from nti.analytics.stats.model import CountStats
 from nti.analytics.resource_views import get_video_views
 from nti.analytics.resource_views import get_resource_views
 
+from nti.dataserver.interfaces import IUser
+
 from nti.externalization.interfaces import LocatedExternalDict
 
 logger = __import__('logging').getLogger(__name__)
@@ -69,6 +71,19 @@ def _activity_source(**kwargs):
             yield event
 
 
+def _active_time_for_user(user):
+    return ActiveTimeSource(user=user)
+
+def _active_time_for_course(course):
+    return ActiveTimeSource(course=course)
+
+def _active_time_for_enrollment(enrollment):
+    return ActiveTimeSource(user=IUser(enrollment.Principal),
+                            course=enrollment.CourseInstance)
+
+def _active_time(root=None):
+    return ActiveTimeSource()
+
 @interface.implementer(IActiveTimesStatsSource)
 class ActiveTimeSource(object):
 
@@ -85,6 +100,19 @@ class ActiveTimeSource(object):
             stats.process_event(event)
         return stats
     stats_for_window = active_times_for_window
+
+def _daily_activity_for_user(user):
+    return DailyActivitySource(user=user)
+
+def _daily_activity_for_course(course):
+    return DailyActivitySource(course=course)
+
+def _daily_activity_for_enrollment(enrollment):
+    return DailyActivitySource(user=IUser(enrollment.Principal),
+                               course=enrollment.CourseInstance)
+
+def _daily_activity(root=None):
+    return DailyActivitySource()
 
 
 @interface.implementer(IDailyActivityStatsSource)
