@@ -21,7 +21,7 @@
 			 provides=".interfaces.IActiveTimesStatsSource" />
 
 	<adapter factory=".activity._active_time_for_enrollment"
-			 for="nti.contenttypes.courses.interfaces.ICourseInstanceEnrollmentRecord"
+			 for="nti.dataserver.interfaces.IUser nti.contenttypes.courses.interfaces.ICourseInstance"
 			 provides=".interfaces.IActiveTimesStatsSource" />
 
 	<utility factory=".activity._daily_activity"
@@ -36,7 +36,7 @@
 			 provides=".interfaces.IDailyActivityStatsSource" />
 
 	<adapter factory=".activity._daily_activity_for_enrollment"
-			 for="nti.contenttypes.courses.interfaces.ICourseInstanceEnrollmentRecord"
+			 for="nti.dataserver.interfaces.IUser nti.contenttypes.courses.interfaces.ICourseInstance"
 			 provides=".interfaces.IDailyActivityStatsSource" />
 
 

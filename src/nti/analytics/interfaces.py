@@ -19,6 +19,9 @@ from zope.interface.interfaces import IObjectEvent
 
 from nti.base.interfaces import IIterable
 
+from nti.contenttypes.courses.interfaces import ICourseInstance
+from nti.contenttypes.courses.interfaces import ICourseInstanceEnrollmentRecord
+
 from nti.dataserver.interfaces import IUser
 
 from nti.schema.field import Bool

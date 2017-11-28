@@ -17,13 +17,14 @@ from hamcrest import has_property
 
 import unittest
 
+from zope import component
+
 from nti.analytics.tests import NTIAnalyticsTestCase
 
 from datetime import datetime
 from datetime import timedelta
 
 from nti.contenttypes.courses.courses import CourseInstance
-from nti.contenttypes.courses.enrollment import DefaultCourseInstanceEnrollmentRecord
 
 from nti.dataserver.users import User
 
@@ -137,19 +138,7 @@ class TestActiveTimeStatsAdapters(NTIAnalyticsTestCase):
                                                      max_timestamp=self.end)
         mock_activity_source.returns([])
 
-        enrollment = DefaultCourseInstanceEnrollmentRecord()
-
-        def _fake_weak():
-            return self.user
-        enrollment._principal = _fake_weak
-
-        class FakeParent(object):
-            __parent__ = None
-        fake_parent = FakeParent()
-        fake_parent.__parent__ = self.course
-        enrollment.__parent__ = fake_parent
-
-        source = IActiveTimesStatsSource(enrollment)
+        source = component.getMultiAdapter((self.user, self.course), IActiveTimesStatsSource)
         source.stats_for_window(self.start, self.end)
 
 
@@ -214,17 +203,5 @@ class TestDailyActivitySourceAdapters(NTIAnalyticsTestCase):
                                                      max_timestamp=self.end)
         mock_activity_source.returns([])
 
-        enrollment = DefaultCourseInstanceEnrollmentRecord()
-
-        def _fake_weak():
-            return self.user
-        enrollment._principal = _fake_weak
-
-        class FakeParent(object):
-            __parent__ = None
-        fake_parent = FakeParent()
-        fake_parent.__parent__ = self.course
-        enrollment.__parent__ = fake_parent
-
-        source = IDailyActivityStatsSource(enrollment)
+        source = component.getMultiAdapter((self.user, self.course), IDailyActivityStatsSource)
         source.stats_for_window(self.start, self.end)
