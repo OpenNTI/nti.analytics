@@ -47,6 +47,8 @@ setup(
         'python-geoip-geolite2',
         'sqlalchemy',
         'user-agents',
+        'zope.deferredimport',
+        'zope.deprecation',
     ],
     entry_points=entry_points
 )

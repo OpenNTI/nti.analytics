@@ -1,18 +1,19 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*
+# -*- coding: utf-8 -*-
 """
 .. $Id$
 """
 
-from __future__ import print_function, absolute_import, division
-__docformat__ = "restructuredtext en"
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
 
-logger = __import__('logging').getLogger(__name__)
+import zope.deferredimport
+zope.deferredimport.initialize()
 
-from nti.analytics_database.interfaces import IAnalyticsDatabase
-
-
-class IAnalyticsDB(IAnalyticsDatabase):
-    """
-    Interface for the Analytics DB
-    """
+zope.deferredimport.deprecatedFrom(
+    "Moved to nti.analytics_database.interfaces",
+    "nti.analytics_database.interfaces",
+    "IAnalyticsDB",
+    "IAnalyticsDatabase",
+)
