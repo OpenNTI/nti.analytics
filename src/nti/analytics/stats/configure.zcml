@@ -9,6 +9,37 @@
 	<include package="zope.component" />
 	<include package="zope.security" />
 
+	<utility factory=".activity._active_time"
+			 provides=".interfaces.IActiveTimesStatsSource" />
+
+	<adapter factory=".activity._active_time_for_user"
+			 for="nti.dataserver.interfaces.IUser"
+			 provides=".interfaces.IActiveTimesStatsSource" />
+
+	<adapter factory=".activity._active_time_for_course"
+			 for="nti.contenttypes.courses.interfaces.ICourseInstance"
+			 provides=".interfaces.IActiveTimesStatsSource" />
+
+	<adapter factory=".activity._active_time_for_enrollment"
+			 for="nti.dataserver.interfaces.IUser nti.contenttypes.courses.interfaces.ICourseInstance"
+			 provides=".interfaces.IActiveTimesStatsSource" />
+
+	<utility factory=".activity._daily_activity"
+			 provides=".interfaces.IDailyActivityStatsSource" />
+
+	<adapter factory=".activity._daily_activity_for_user"
+			 for="nti.dataserver.interfaces.IUser"
+			 provides=".interfaces.IDailyActivityStatsSource" />
+
+	<adapter factory=".activity._daily_activity_for_course"
+			 for="nti.contenttypes.courses.interfaces.ICourseInstance"
+			 provides=".interfaces.IDailyActivityStatsSource" />
+
+	<adapter factory=".activity._daily_activity_for_enrollment"
+			 for="nti.dataserver.interfaces.IUser nti.contenttypes.courses.interfaces.ICourseInstance"
+			 provides=".interfaces.IDailyActivityStatsSource" />
+
+
 	<!-- Externalization -->
 	<include package="nti.externalization" file="meta.zcml" />
 	<include package="nti.externalization" />
