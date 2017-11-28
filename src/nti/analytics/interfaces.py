@@ -19,9 +19,6 @@ from zope.interface.interfaces import IObjectEvent
 
 from nti.base.interfaces import IIterable
 
-from nti.contenttypes.courses.interfaces import ICourseInstance
-from nti.contenttypes.courses.interfaces import ICourseInstanceEnrollmentRecord
-
 from nti.dataserver.interfaces import IUser
 
 from nti.schema.field import Bool
@@ -324,20 +321,3 @@ class AnalyticsEventValidationError(Exception):
 	"""
 	Raised when an event has invalid data.
 	"""
-
-class IAnalyticsContext(interface.Interface):
-	"""
-	A marker interface for things that are "analytics aware"
-	and can provide analytics information specific to their context
-	"""
-
-IAnalyticsContext.setTaggedValue('_ext_is_marker_interface', True)
-
-# IUser is an appropriate analytics context
-IUser.__bases__ += (IAnalyticsContext, )
-
-# ICourseInstance can be a context analytics scoped to the course
-ICourseInstance.__bases__ += (IAnalyticsContext, )
-
-# ICourseInstanceEnrollmentRecord provides analytics context for a user in course
-ICourseInstanceEnrollmentRecord.__bases__ += (IAnalyticsContext, )
