@@ -7,8 +7,6 @@ __docformat__ = "restructuredtext en"
 # disable: accessing protected members, too many methods
 # pylint: disable=W0212,R0904
 
-import unittest
-
 from zope import component
 
 from hamcrest import is_
@@ -16,8 +14,9 @@ from hamcrest import none
 from hamcrest import has_length
 from hamcrest import assert_that
 
-from nti.analytics.database.interfaces import IAnalyticsDB
 from nti.analytics.database.database import AnalyticsDB
+
+from nti.analytics.database.interfaces import IAnalyticsDB
 
 from nti.analytics.database import users as db_users
 
@@ -25,14 +24,20 @@ from nti.analytics.database.users import Users
 from nti.analytics.database.users import get_or_create_user
 from nti.analytics.database.users import update_user_research
 
-class TestUsers(unittest.TestCase):
+from nti.analytics.tests import AnalyticsTestBase
+
+
+class TestUsers(AnalyticsTestBase):
 
 	def setUp(self):
+		# Want a fresh db here
+		super(TestUsers, self).setUp()
 		self.db = AnalyticsDB( dburi='sqlite://', testmode=True )
 		component.getGlobalSiteManager().registerUtility( self.db, IAnalyticsDB )
 		self.session = self.db.session
 
 	def tearDown(self):
+		super(TestUsers, self).tearDown()
 		component.getGlobalSiteManager().unregisterUtility( self.db )
 		self.session.close()
 

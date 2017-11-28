@@ -9,7 +9,6 @@ __docformat__ = "restructuredtext en"
 
 import time
 import fudge
-import unittest
 
 from zope import component
 
@@ -22,8 +21,9 @@ from hamcrest import assert_that
 from hamcrest import greater_than
 from hamcrest import less_than_or_equal_to
 
-from nti.analytics.database.interfaces import IAnalyticsDB
 from nti.analytics.database.database import AnalyticsDB
+
+from nti.analytics.database.interfaces import IAnalyticsDB
 
 from nti.analytics.database.tests import test_user_ds_id
 
@@ -38,14 +38,20 @@ from nti.analytics.database.locations import Location
 from nti.analytics.database.locations import IpGeoLocation
 from nti.analytics.database.locations import check_ip_location
 
-class TestSessions(unittest.TestCase):
+from nti.analytics.tests import AnalyticsTestBase
+
+
+class TestSessions(AnalyticsTestBase):
 
 	def setUp(self):
+		# Want to start with a fresh db here
+		super(TestSessions, self).setUp()
 		self.db = AnalyticsDB( dburi='sqlite://', testmode=True )
 		component.getGlobalSiteManager().registerUtility( self.db, IAnalyticsDB )
 		self.session = self.db.session
 
 	def tearDown(self):
+		super(TestSessions, self).tearDown()
 		component.getGlobalSiteManager().unregisterUtility( self.db )
 		self.session.close()
 
