@@ -120,7 +120,7 @@ def get_user_sessions(user, timestamp=None, max_timestamp=None,
 		filters.append(Sessions.start_time >= timestamp)
 
 	if max_timestamp is not None:
-		filters.append(Sessions.start_time <= max_timestamp)
+		filters.append(Sessions.start_time < max_timestamp)
 
 	if for_timestamp is not None:
 		filters.append(Sessions.start_time <= for_timestamp)
@@ -129,13 +129,15 @@ def get_user_sessions(user, timestamp=None, max_timestamp=None,
 	results = get_filtered_records(user, Sessions, filters=filters, query_builder=query_builder)
 	return resolve_objects(_resolve_session, results)
 
-def get_recent_user_sessions(user, limit=None):
+def get_recent_user_sessions(user, limit=None, not_after=None):
 	def query_builder(query):
 		query = query.order_by(Sessions.start_time.desc())
 		if limit:
 			query = query.limit(limit)
 		return query
-	return get_user_sessions(user, query_builder=query_builder)
+	return get_user_sessions(user,
+	                         max_timestamp=not_after,
+	                         query_builder=query_builder)
 
 
 FUZZY_START_DELTA = timedelta(hours=4)
