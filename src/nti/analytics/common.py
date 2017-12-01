@@ -27,7 +27,7 @@ from zope.intid.interfaces import ObjectMissingError
 
 from ZODB.POSException import POSError
 
-from nti.async import create_job
+from nti.asynchronous import create_job
 
 from nti.analytics.database import get_analytics_db
 

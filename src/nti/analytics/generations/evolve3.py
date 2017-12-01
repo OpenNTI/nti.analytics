@@ -20,8 +20,8 @@ from nti.analytics import QUEUE_NAME
 from nti.analytics import TOPICS_ANALYTICS
 from nti.analytics import COMMENTS_ANALYTICS
 
-from nti.async import queue
-from nti.async.interfaces import IQueue
+from nti.asynchronous import queue
+from nti.asynchronous.interfaces import IQueue
 
 FAIL_QUEUE = QUEUE_NAME + '++failure'
 QUEUE_NAMES = [ FAIL_QUEUE, TOPICS_ANALYTICS, COMMENTS_ANALYTICS ]

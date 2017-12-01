@@ -16,8 +16,8 @@ import zope.intid
 from zope import component
 from zope.component.hooks import site, setHooks
 
-from nti.async import queue
-from nti.async.interfaces import IQueue
+from nti.asynchronous import queue
+from nti.asynchronous.interfaces import IQueue
 
 from nti.analytics import SOCIAL_ANALYTICS
 from nti.analytics import BLOGS_ANALYTICS
