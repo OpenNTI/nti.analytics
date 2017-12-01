@@ -680,7 +680,7 @@ def handle_events(batch_events, return_invalid=True):
 				raise
 	# If we validated early, we could return something meaningful.
 	# But we'd have to handle all validation exceptions as to not lose the valid
-	# events. The nti.async.processor does this and at least drops the bad
+	# events. The nti.asynchronous.processor does this and at least drops the bad
 	# events in a failed queue.
 	return len( batch_events ), validation_errors
 

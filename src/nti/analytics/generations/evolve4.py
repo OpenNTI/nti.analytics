@@ -14,7 +14,7 @@ import zope.intid
 from zope import component
 from zope.component.hooks import site, setHooks
 
-from nti.async.interfaces import IQueue
+from nti.asynchronous.interfaces import IQueue
 
 generation = 4
 

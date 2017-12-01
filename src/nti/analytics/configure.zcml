@@ -19,7 +19,7 @@
 	<includePlugins package="." />
 
 	<!-- Job runner -->
-	<include package="nti.async" />
+	<include package="nti.asynchronous" />
 
 	<!-- Generations -->
 	<utility factory=".generations.install._AnalyticsSchemaManager"

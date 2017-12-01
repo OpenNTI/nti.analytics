@@ -21,8 +21,8 @@ from nti.analytics.generations import evolve2
 from nti.analytics import QUEUE_NAME as LEGACY_QUEUE_NAME
 from nti.analytics.generations.evolve2 import QUEUE_NAMES
 
-from nti.async import queue
-from nti.async.interfaces import IQueue
+from nti.asynchronous import queue
+from nti.asynchronous.interfaces import IQueue
 
 import nti.dataserver.tests.mock_dataserver as mock_dataserver
 from nti.dataserver.tests.mock_dataserver import WithMockDSTrans
