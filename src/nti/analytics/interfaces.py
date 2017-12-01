@@ -236,6 +236,16 @@ class IAnalyticsSession(interface.Interface):
 	SessionEndTime = Number(title=u"The timestamp when this session ended, in seconds since epoch.",
 							required=False)
 
+	Username = ValidTextLine(title=u'User this session belongs to',
+	                         required=False)
+	Username.setTaggedValue('_ext_excluded_out', True)
+
+	UserAgent = ValidTextLine(title=u'UserAgent this session came from',
+	                         required=False)
+	UserAgent.setTaggedValue('_ext_excluded_out', True)
+
+
+
 
 class IAnalyticsSessions(interface.Interface):
 	"""
