@@ -206,6 +206,14 @@
 			 for="nti.analytics_database.sessions.Sessions"
 			 provides=".interfaces.IAnalyticsSession" />
 
+	<adapter factory=".locations._from_db_location"
+			 for="nti.analytics_database.sessions.Location"
+			 provides=".interfaces.IGeographicalLocation" />
+
+	<adapter factory=".locations._location_for_session"
+			 for=".interfaces.IAnalyticsSession"
+			 provides=".interfaces.IGeographicalLocation" />
+
 	<!-- Research -->
 	<adapter factory=".model._UserResearchStatus" />
 

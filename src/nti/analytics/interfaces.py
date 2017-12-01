@@ -172,8 +172,8 @@ class IVideoEvent(IResourceEvent):
 	Describes a video event.
 	"""
 	event_type = Choice(vocabulary=VIDEO_EVENTS_VOCABULARY,
-					    title=u'The type of video event',
-					    required=True)
+						title=u'The type of video event',
+						required=True)
 
 	video_start_time = Number(title=u"The point in the video that starts playing, in seconds.",
 							default=0)
@@ -222,6 +222,22 @@ class IBatchResourceEvents(IIterable):
 	events = TypedIterable(title=u"The events in this batch",
 						   value_type=Object(IAnalyticsEvent))
 
+class IGeographicalLocation(interface.Interface):
+	Latitude = ValidTextLine(title=u'The latitude of this session',
+							 required=False)
+
+	Longitude = ValidTextLine(title=u'The logitude of this session',
+							 required=False)
+
+	City = ValidTextLine(title=u'The gelocated city of this session',
+							 required=False)
+
+	State = ValidTextLine(title=u'The gelocated state of this session',
+							 required=False)
+
+	Country = ValidTextLine(title=u'The gelocated country of this session',
+							 required=False)
+
 
 class IAnalyticsSession(interface.Interface):
 	"""
@@ -237,12 +253,17 @@ class IAnalyticsSession(interface.Interface):
 							required=False)
 
 	Username = ValidTextLine(title=u'User this session belongs to',
-	                         required=False)
+							 required=False)
 	Username.setTaggedValue('_ext_excluded_out', True)
 
 	UserAgent = ValidTextLine(title=u'UserAgent this session came from',
-	                         required=False)
+							 required=False)
 	UserAgent.setTaggedValue('_ext_excluded_out', True)
+
+	GeographicalLocation = Object(IGeographicalLocation,
+								  title=u'Geographical location data for this session',
+								  required=False)
+	GeographicalLocation.setTaggedValue('_ext_excluded_out', True)
 
 
 
@@ -280,7 +301,7 @@ class IVideoProgress(IProgress):
 	Indicates progress made on a video.
 	"""
 	MostRecentEndTime = Number(title=u"A number indicating the last end point, in seconds, in which the video was watched.",
-						 	   default=0)
+							   default=0)
 
 
 class IUserResearchStatus(IDCTimes):

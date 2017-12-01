@@ -106,6 +106,22 @@ def _get_location_data(locations, location_counts):
 
 	return db_data
 
+def location_for_ip(ip_addr, db=None):
+	if db is None:
+		db = get_analytics_db()
+	geo_location = db.session.query(IpGeoLocation).filter(
+									IpGeoLocation.ip_addr == ip_addr).first()
+	if not geo_location:
+		return None
+	return get_location(geo_location.location_id)
+
+def get_location(location_id, db=None):
+	if db is None:
+		db = get_analytics_db()
+	location = db.session.query(Location).filter(
+								Location.location_id == location_id).first()
+	return location
+
 def get_location_list(course, enrollment_scope=None):
 
 	db = get_analytics_db()
