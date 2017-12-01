@@ -88,7 +88,7 @@ def do_evolve(context, generation=generation):
 
         # set root folder
         mock_ds.root_folder = getSite().__parent__
-        
+
         _load_library()
 
         for name in QUEUE_NAMES:
@@ -102,7 +102,7 @@ def do_evolve(context, generation=generation):
                     logger.error("Cannot execute analytics job %s", job)
             _reset(redis_client, name, hash_key)
 
-            # reset failed 
+            # reset failed
             name += "/failed"
             hash_key = name + '/hash'
             _reset(redis_client, name, hash_key)
