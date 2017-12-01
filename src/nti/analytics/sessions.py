@@ -30,6 +30,9 @@ from nti.analytics.common import process_event
 from nti.analytics.database import sessions as db_sessions
 
 from nti.analytics.database.sessions import get_active_session_count
+from nti.analytics.database.sessions import find_user_agent
+
+from nti.analytics.database.users import get_user
 
 from nti.analytics.interfaces import IAnalyticsSession
 
@@ -200,9 +203,13 @@ def _mktime(dt):
 @component.adapter( Sessions )
 @interface.implementer( IAnalyticsSession )
 def _from_db_session(db_session):
+	username = getattr(get_user(db_session.user_id), 'username', None)
+	agent = getattr(find_user_agent(db_session.user_agent_id), 'user_agent', None)
 	return AnalyticsSession(SessionID=db_session.SessionID,
 				            SessionEndTime=_mktime(db_session.SessionEndTime),
-			                SessionStartTime=_mktime(db_session.SessionStartTime))
+			                SessionStartTime=_mktime(db_session.SessionStartTime),
+			                Username=username,
+			                UserAgent=agent)
 
 def _active_session_count(**kwargs):
 	count = get_active_session_count(**kwargs)

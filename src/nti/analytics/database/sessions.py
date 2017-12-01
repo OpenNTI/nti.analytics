@@ -49,6 +49,15 @@ def _get_user_agent(user_agent):
 	# We have a 512 limit on user agent, truncate if we have to.
 	return user_agent[:512] if len(user_agent) > 512 else user_agent
 
+def find_user_agent(agent_id):
+	"""
+	Retrieves UserAgent with given db id.
+	"""
+	db = get_analytics_db()
+	agent = db.session.query(UserAgents).filter(
+	                         UserAgents.user_agent_id == agent_id).first()
+	return agent
+
 def end_session(user, session_id, timestamp):
 	timestamp = timestamp_type(timestamp)
 	db = get_analytics_db()

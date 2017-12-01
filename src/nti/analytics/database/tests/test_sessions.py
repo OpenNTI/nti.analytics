@@ -20,6 +20,7 @@ from hamcrest import has_length
 from hamcrest import assert_that
 from hamcrest import greater_than
 from hamcrest import less_than_or_equal_to
+from hamcrest import starts_with
 
 from nti.analytics.database.database import AnalyticsDB
 
@@ -33,6 +34,7 @@ from nti.analytics.database.users import Users
 
 from nti.analytics.database.sessions import Sessions
 from nti.analytics.database.sessions import UserAgents
+from nti.analytics.database.sessions import find_user_agent
 
 from nti.analytics.database.locations import Location
 from nti.analytics.database.locations import IpGeoLocation
@@ -82,6 +84,8 @@ class TestSessions(AnalyticsTestBase):
 
 		results = self.session.query(UserAgents).all()
 		assert_that( results, has_length( 1 ) )
+
+		assert_that(find_user_agent( 1 ).user_agent, starts_with('webapp-1.9'))
 
 		user_agent_record = results[0]
 		assert_that( user_agent_record.user_agent, is_( user_agent ) )
