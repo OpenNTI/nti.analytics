@@ -45,6 +45,7 @@ from nti.analytics.interfaces import IAssignmentViewEvent
 from nti.analytics.interfaces import IProfileViewEvent
 from nti.analytics.interfaces import IProfileActivityViewEvent
 from nti.analytics.interfaces import IProfileMembershipViewEvent
+from nti.analytics.interfaces import IGeographicalLocation
 
 from nti.dataserver.interfaces import IUser
 
@@ -231,6 +232,17 @@ class AnalyticsSession(SchemaConfigured):
 	__external_can_create__ = True
 	__external_class_name__ = "AnalyticsSession"
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.analyticssession'
+
+	def __init__(self, *args, **kwargs):
+		SchemaConfigured.__init__(self, *args, **kwargs)
+
+@interface.implementer(IGeographicalLocation)
+@WithRepr
+class GeographicalLocation(SchemaConfigured):
+	createDirectFieldProperties(IGeographicalLocation)
+
+	__external_class_name__ = "GeographicalLocation"
+	mime_type = mimeType = 'application/vnd.nextthought.analytics.geographicallocation'
 
 	def __init__(self, *args, **kwargs):
 		SchemaConfigured.__init__(self, *args, **kwargs)

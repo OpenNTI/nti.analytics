@@ -35,6 +35,7 @@ from nti.analytics.database.sessions import find_user_agent
 from nti.analytics.database.users import get_user
 
 from nti.analytics.interfaces import IAnalyticsSession
+from nti.analytics.interfaces import IGeographicalLocation
 
 from nti.analytics.model import AnalyticsSession
 
@@ -205,11 +206,13 @@ def _mktime(dt):
 def _from_db_session(db_session):
 	username = getattr(get_user(db_session.user_id), 'username', None)
 	agent = getattr(find_user_agent(db_session.user_agent_id), 'user_agent', None)
+	location = IGeographicalLocation(db_session, None)
 	return AnalyticsSession(SessionID=db_session.SessionID,
 				            SessionEndTime=_mktime(db_session.SessionEndTime),
 			                SessionStartTime=_mktime(db_session.SessionStartTime),
 			                Username=username,
-			                UserAgent=agent)
+			                UserAgent=agent,
+			                GeographicalLocation=location)
 
 def _active_session_count(**kwargs):
 	count = get_active_session_count(**kwargs)
