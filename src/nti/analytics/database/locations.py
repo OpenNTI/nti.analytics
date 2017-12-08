@@ -28,6 +28,7 @@ from nti.analytics.database.users import get_user_db_id
 
 ALL_USERS = 'ALL_USERS'
 
+
 def _get_location_ids_for_users(db, user_ids):
 	location_ids = []
 	if user_ids:
@@ -35,6 +36,7 @@ def _get_location_ids_for_users(db, user_ids):
 										IpGeoLocation.user_id.in_( user_ids )).all()
 		location_ids = (x[0] for x in location_ids)
 	return location_ids
+
 
 def _get_locations_for_ids(db, location_ids, location_counts):
 	location_rows = []
@@ -50,6 +52,7 @@ def _get_locations_for_ids(db, location_ids, location_counts):
 			location_rows.append(location)
 			location_counts[location_id] = 1
 	return location_rows
+
 
 def _get_location_data(locations, location_counts):
 	# Handle everything as unicode. The Google API we're
@@ -106,21 +109,6 @@ def _get_location_data(locations, location_counts):
 
 	return db_data
 
-def location_for_ip(ip_addr, db=None):
-	if db is None:
-		db = get_analytics_db()
-	geo_location = db.session.query(IpGeoLocation).filter(
-									IpGeoLocation.ip_addr == ip_addr).first()
-	if not geo_location:
-		return None
-	return get_location(geo_location.location_id)
-
-def get_location(location_id, db=None):
-	if db is None:
-		db = get_analytics_db()
-	location = db.session.query(Location).filter(
-								Location.location_id == location_id).first()
-	return location
 
 def get_location_list(course, enrollment_scope=None):
 
@@ -133,6 +121,7 @@ def get_location_list(course, enrollment_scope=None):
 	data = _get_location_data(locations, location_counts)
 
 	return data
+
 
 def _get_enrolled_user_ids(course, enrollment_scope=None):
 	"""
@@ -151,6 +140,7 @@ def _get_enrolled_user_ids(course, enrollment_scope=None):
 		if id_ is not None:
 			user_ids.append(id_)
 	return user_ids
+
 
 def _get_enrollment_scope_dict(course):
 
@@ -190,9 +180,11 @@ def _get_enrollment_scope_dict(course):
 	results[ALL_USERS] = all_users
 	return results
 
+
 def _lookup_coordinates_for_ip(ip_addr):
 	# Given an IP address, lookup and return the coordinates of its location
 	return geolite2.lookup(ip_addr)
+
 
 def _create_ip_location(db, ip_addr, user_id):
 	ip_info = _lookup_coordinates_for_ip(ip_addr)
@@ -214,6 +206,7 @@ def _create_ip_location(db, ip_addr, user_id):
 													str(round(ip_info.location[1], 4)))
 		db.session.flush()
 
+
 def check_ip_location(db, ip_addr, user_id):
 	# Should only be null in tests.
 	if ip_addr:
@@ -233,6 +226,7 @@ def check_ip_location(db, ip_addr, user_id):
 
 #: To avoid exhausting our service limit.
 UPDATE_LIMIT = 500
+
 
 def update_missing_locations():
 	"""
@@ -255,6 +249,7 @@ def update_missing_locations():
 			if checked_count > UPDATE_LIMIT:
 				break
 	return update_count
+
 
 def _get_location_id(db, lat_str, long_str):
 
@@ -280,6 +275,7 @@ def _get_location_id(db, lat_str, long_str):
 			_create_new_location(db, lat_str, long_str, existing_location)
 		return existing_location.location_id
 
+
 def _lookup_location(lat, long_):
 	# Using Nominatim as our lookup service for now, because
 	# they don't require registration or an API key. The downside
@@ -301,6 +297,7 @@ def _lookup_location(lat, long_):
 		logger.debug('Reverse geolookup for %s, %s failed (%s).', lat, long_, e)
 		_city = _state = _country = ''
 	return (_city, _state, _country)
+
 
 def _create_new_location(db, lat_str, long_str, existing_location=None):
 	lat = float(lat_str)

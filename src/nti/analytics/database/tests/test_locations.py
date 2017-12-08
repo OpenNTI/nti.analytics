@@ -117,26 +117,6 @@ class TestLocations(NTIAnalyticsTestCase):
 													  has_entry('latitude', 12.345),
 													  has_entry('longitude', 67.890))))
 
-	@WithMockDSTrans
-	@fudge.patch('nti.analytics.database.locations._lookup_coordinates_for_ip')
-	@fudge.patch('nti.analytics.database.locations._lookup_location')
-	def test_location_for_ip(self, fake_ip_lookup, fake_location_lookup):
-		# Create a fake user and course
-		principal = User.create_user(username='sjohnson@nextthought.com', dataserver=self.ds)
-		self.ds.root[principal.id] = principal
-		self.principal = principal
-
-		# Use fake web services to look up IP coordinates and location data
-		# Assign this user an IP address and therefore a location.
-		# This user lives at Google.
-		fake_location_lookup.is_callable().calls(fake_location_data_for_coordinates)
-		fake_ip_lookup.is_callable().calls(fake_locations_for_ips)
-		locations._create_ip_location(self.db, '8.8.8.8', 1)
-
-		location = locations.location_for_ip('8.8.8.8')
-		assert_that(location.country, is_('USA'))
-		assert_that(location.latitude, is_('37.422'))
-		assert_that(location.longitude, is_('122.084'))
 
 def fake_locations_for_ips(ip_address):
 	# Helper method for fudging the IP lookup service
