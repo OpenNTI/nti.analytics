@@ -42,7 +42,6 @@ setup(
 		'nti.app.products.courseware_ims',
 		'nti.app.products.gradebook',
 		'nti.asynchronous',
-		'nti.async',
 		'nti.namedfile',
         'python-geoip',
         'python-geoip-geolite2',
