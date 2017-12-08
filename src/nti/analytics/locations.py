@@ -3,26 +3,27 @@
 .. $Id$
 """
 
-from __future__ import print_function, unicode_literals, absolute_import, division
-__docformat__ = "restructuredtext en"
-
-logger = __import__('logging').getLogger(__name__)
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
 
 from zope import component
 from zope import interface
 
+from nti.analytics.database import locations as db_locations
+
 from nti.analytics_database.sessions import Location
 from nti.analytics.database.sessions import Sessions
-
-from nti.analytics.database import locations as db_locations
 
 from nti.analytics.interfaces import IGeographicalLocation
 
 from nti.analytics.model import GeographicalLocation
 
-update_missing_locations = db_locations.update_missing_locations
+logger = __import__('logging').getLogger(__name__)
+
 get_location_list = db_locations.get_location_list
-location_for_ip = db_locations.location_for_ip
+update_missing_locations = db_locations.update_missing_locations
+
 
 @component.adapter(Location)
 @interface.implementer(IGeographicalLocation)
@@ -39,6 +40,6 @@ def _from_db_location(db_location):
 @component.adapter(Sessions)
 @interface.implementer(IGeographicalLocation)
 def _location_for_session(session):
-    location = location_for_ip(session.ip_addr)
-    return IGeographicalLocation(location) if location else None
+    location = session.Location
+    return IGeographicalLocation(location, None)
 
