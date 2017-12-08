@@ -150,6 +150,7 @@
 						 .interfaces.IProfileViewEvent
 						 .interfaces.IProfileActivityViewEvent
 						 .interfaces.IProfileMembershipViewEvent
+						 .interfaces.IGeographicalLocation
 						 .stats.interfaces.IAnalyticsStatsSource"
 		modules=".model
 				 nti.analytics_registration.stats" />
