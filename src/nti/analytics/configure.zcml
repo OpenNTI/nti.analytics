@@ -211,7 +211,7 @@
 			 provides=".interfaces.IGeographicalLocation" />
 
 	<adapter factory=".locations._location_for_session"
-			 for=".interfaces.IAnalyticsSession"
+			 for="nti.analytics_database.sessions.Sessions"
 			 provides=".interfaces.IGeographicalLocation" />
 
 	<!-- Research -->
