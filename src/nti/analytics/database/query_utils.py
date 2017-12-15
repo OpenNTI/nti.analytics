@@ -17,10 +17,16 @@ from nti.analytics.database.users import get_user_db_id
 
 from nti.contenttypes.courses.interfaces import ICourseSubInstance
 
+_yield_all_marker = object()
+
 def _do_course_and_timestamp_filtering(table, timestamp=None, max_timestamp=None,
-									   course=None, filters=None, query_builder=None):
+									   course=None, filters=None, query_builder=None,
+									   yield_per=_yield_all_marker):
 	db = get_analytics_db()
 	result = []
+
+	if filters is None:
+		filters = []
 
 	if course is not None:
 		course_id = get_root_context_id(db, course)
@@ -51,7 +57,12 @@ def _do_course_and_timestamp_filtering(table, timestamp=None, max_timestamp=None
 	if query_builder:
 		query = query_builder(query)
 
-	result = query.all()
+	if yield_per is _yield_all_marker:
+		result = query.all()
+	elif yield_per > 0:
+		result = query.yield_per(yield_per).enable_eagerloads(False)
+	else:
+		result = query
 	return result
 
 def get_filtered_records(user, table, replies_only=False, filters=None, **kwargs):
