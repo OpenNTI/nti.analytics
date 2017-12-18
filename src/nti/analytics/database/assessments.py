@@ -4,10 +4,9 @@
 .. $Id$
 """
 
-from __future__ import print_function, unicode_literals, absolute_import, division
-__docformat__ = "restructuredtext en"
-
-logger = __import__('logging').getLogger(__name__)
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
 
 import json
 
@@ -26,20 +25,6 @@ from nti.analytics_database.assessments import SelfAssessmentsTaken
 from nti.analytics_database.assessments import SelfAssessmentDetails
 from nti.analytics_database.assessments import AssignmentDetailGrades
 from nti.analytics_database.assessments import FeedbackUserFileUploadMimeTypes
-
-from nti.app.products.gradebook.interfaces import IGrade
-
-from nti.assessment.common import grader_for_response
-
-from nti.assessment.interfaces import IQUploadedFile
-from nti.assessment.interfaces import IQAssessedQuestionSet
-from nti.assessment.interfaces import IQModeledContentResponse
-from nti.assessment.interfaces import IQAssignmentDateContext
-
-from nti.assessment.randomized.interfaces import IQRandomizedPart
-from nti.assessment.randomized.interfaces import IRandomizedPartsContainer
-
-from nti.ntiids.ntiids import find_object_with_ntiid
 
 from nti.analytics.common import get_creator
 from nti.analytics.common import timestamp_type
@@ -62,21 +47,41 @@ from nti.analytics.database.resources import get_resource_id
 
 from nti.analytics.database.root_context import get_root_context_id
 
+from nti.analytics.database.query_utils import get_filtered_records
+
 from nti.analytics.database.users import get_or_create_user
 
-from nti.analytics.database.query_utils import get_filtered_records
+from nti.app.products.gradebook.interfaces import IGrade
+
+from nti.assessment.common import grader_for_response
+
+from nti.assessment.interfaces import IQUploadedFile
+from nti.assessment.interfaces import IQAssessedQuestionSet
+from nti.assessment.interfaces import IQModeledContentResponse
+from nti.assessment.interfaces import IQAssignmentDateContext
+
+from nti.assessment.randomized.interfaces import IQRandomizedPart
+from nti.assessment.randomized.interfaces import IRandomizedPartsContainer
+
+from nti.ntiids.ntiids import find_object_with_ntiid
+
+logger = __import__('logging').getLogger(__name__)
+
 
 def _get_duration( submission ):
 	"""
-	For a submission, retrieves how long it took to submit the object, in integer seconds.
-	'-1' is returned if unknown.
+	For a submission, retrieves how long it took to submit the object, in
+	integer seconds. '-1' is returned if unknown.
 	"""
 	time_length = getattr( submission, 'CreatorRecordedEffortDuration', -1 )
 	time_length = time_length or -1
 	return int( time_length )
 
+
 def _get_response( user, question_part, response ):
-	"For a submission part, return the user-provided response."
+	"""
+	For a submission part, return the user-provided response.
+	"""
 	# Part should only be None for unit tests.
 	if 		question_part is not None \
 		and IQRandomizedPart.providedBy( question_part ) \
@@ -104,12 +109,16 @@ def _get_response( user, question_part, response ):
 		# We may be fine as-is with json.
 		result = json.dumps( response )
 	except TypeError:
-		logger.info( 'Submission response is not serializable (type=%s)', type( response ) )
+		logger.info('Submission response is not serializable (type=%s)',
+					type(response))
 
 	return result
 
+
 def _load_response( value ):
-	"For a database response value, transform it into a useable state."
+	"""
+	For a database response value, transform it into a useable state.
+	"""
 	response = json.loads( value )
 	if isinstance( response, dict ):
 		# Convert to int keys, if possible.
@@ -120,8 +129,11 @@ def _load_response( value ):
 			pass
 	return response
 
+
 def _get_grade_val( grade_value ):
-	"""Convert the webapp's "number - letter" scheme to a number, or None."""
+	"""
+	Convert the webapp's "number - letter" scheme to a number, or None.
+	"""
 	result = None
 	if grade_value and isinstance(grade_value, string_types):
 		try:
@@ -135,12 +147,14 @@ def _get_grade_val( grade_value ):
 		result = grade_value
 	return result
 
+
 def _get_self_assessment_id( db, submission_id ):
 	self_assessment = db.session.query(SelfAssessmentsTaken).filter(
 									SelfAssessmentsTaken.submission_id == submission_id ).first()
 	return self_assessment and self_assessment.self_assessment_id
 
 _self_assessment_exists = _get_self_assessment_id
+
 
 def create_self_assessment_taken( user, nti_session, timestamp, course, submission ):
 	db = get_analytics_db()
@@ -208,8 +222,10 @@ def create_self_assessment_taken( user, nti_session, timestamp, course, submissi
 			db.session.add( grade_details )
 	return True
 
+
 def _get_grade( submission ):
 	return IGrade( submission, None )
+
 
 def _get_grader_id( submission ):
 	"""
@@ -227,6 +243,7 @@ def _get_grader_id( submission ):
 			grader = grader.user_id
 	return grader
 
+
 def _is_late( course, submission ):
 	assignment = submission.Assignment
 	date_context = IQAssignmentDateContext( course )
@@ -234,11 +251,13 @@ def _is_late( course, submission ):
 	submitted_late = submission.created > due_date if due_date else False
 	return submitted_late
 
+
 def _get_assignment_taken_id( db, submission_id ):
 	submission = db.session.query(AssignmentsTaken).filter( AssignmentsTaken.submission_id == submission_id ).first()
 	return submission and submission.assignment_taken_id
 
 _assignment_taken_exists = _get_assignment_taken_id
+
 
 def create_assignment_taken( user, nti_session, timestamp, course, submission ):
 	db = get_analytics_db()
@@ -355,6 +374,7 @@ def create_assignment_taken( user, nti_session, timestamp, course, submission ):
 					db.session.add( grade_details )
 	return new_object
 
+
 def grade_submission( user, nti_session, timestamp, grader, graded_val, submission ):
 	# The server creates an assignment placeholder if a grade
 	# is received without a submission, which should jive with
@@ -402,6 +422,7 @@ def grade_submission( user, nti_session, timestamp, grader, graded_val, submissi
 
 		db.session.add( new_object )
 
+
 def _get_grade_entry( db, assignment_taken_id ):
 	# Currently, one assignment means one grade (and one grader).  If that changes, we'll
 	# need to change this (at least)
@@ -409,17 +430,21 @@ def _get_grade_entry( db, assignment_taken_id ):
 								   AssignmentGrades.assignment_taken_id==assignment_taken_id ).first()
 	return grade_entry
 
+
 def _get_grade_id( db, assignment_taken_id ):
 	grade_entry = _get_grade_entry( db, assignment_taken_id )
 	return grade_entry.grade_id
+
 
 def _get_feedback( db, feedback_ds_id ):
 	feedback = db.session.query( AssignmentFeedback ).filter(
 							 AssignmentFeedback.feedback_ds_id == feedback_ds_id ).first()
 	return feedback
 
+
 def _feedback_exists( db, feedback_ds_id ):
 	return _get_feedback( db, feedback_ds_id ) is not None
+
 
 def _set_mime_records( db, feedback_record, feedback ):
 	"""
@@ -434,12 +459,14 @@ def _set_mime_records( db, feedback_record, feedback ):
 	file_mime_types = build_mime_type_records( db, feedback, FeedbackUserFileUploadMimeTypes )
 	feedback_record._file_mime_types.extend( file_mime_types )
 
+
 def _set_feedback_attributes( db, feedback_record, feedback ):
 	"""
 	Set the feedback attributes for this feedback record.
 	"""
 	feedback_record.feedback_length = get_body_text_length( feedback )
 	_set_mime_records( db, feedback_record, feedback )
+
 
 def create_submission_feedback( user, nti_session, timestamp, submission, feedback ):
 	db = get_analytics_db()
@@ -479,6 +506,7 @@ def create_submission_feedback( user, nti_session, timestamp, submission, feedba
 	db.session.flush()
 	return new_object
 
+
 def update_feedback( user, nti_session, timestamp, submission, feedback ):
 	"""
 	Update our feedback record, creating if it does not exist.
@@ -490,6 +518,7 @@ def update_feedback( user, nti_session, timestamp, submission, feedback ):
 		create_submission_feedback( user, nti_session, timestamp, submission, feedback )
 	else:
 		_set_feedback_attributes( db, feedback_record, feedback )
+
 
 def delete_feedback( timestamp, feedback_ds_id ):
 	db = get_analytics_db()
@@ -503,16 +532,19 @@ def delete_feedback( timestamp, feedback_ds_id ):
 	feedback.feedback_ds_id = None
 	db.session.flush()
 
+
 def _assess_view_exists( db, table, user_id, assignment_id, timestamp ):
 	return db.session.query( table ).filter(
 							table.user_id == user_id,
 							table.assignment_id == assignment_id,
 							table.timestamp == timestamp ).first()
 
-def _create_assessment_view( table, user, nti_session, timestamp, course, context_path, resource, time_length, assignment_id ):
+
+def _create_assessment_view(table, user, nti_session, timestamp, course,
+							context_path, resource, time_length, assignment_id):
 	"""
-	Create a basic assessment view event, if necessary.  Also if necessary, may update existing
-	events with appropriate data.
+	Create a basic assessment view event, if necessary.  Also if necessary,
+	may update existing events with appropriate data.
 	"""
 	db = get_analytics_db()
 	user_record = get_or_create_user( user )
@@ -526,14 +558,14 @@ def _create_assessment_view( table, user, nti_session, timestamp, course, contex
 	course_id = get_root_context_id( db, course, create=True )
 	timestamp = timestamp_type( timestamp )
 
-	existing_record = _assess_view_exists( db, table, uid, assignment_id, timestamp )
+	existing_record = _assess_view_exists(db, table, uid, assignment_id, timestamp)
 	if existing_record is not None:
-		if should_update_event( existing_record, time_length ):
+		if should_update_event(existing_record, time_length):
 			existing_record.time_length = time_length
 			return
 		else:
-			logger.warn( '%s view already exists (user=%s) (assess_id=%s) (timestamp=%s)',
-						table.__tablename__, user, assignment_id, timestamp )
+			logger.warn('%s view already exists (user=%s) (assess_id=%s) (timestamp=%s) (time_length=%s)',
+						table.__tablename__, user, assignment_id, timestamp, time_length)
 			return
 	context_path = get_context_path( context_path )
 
@@ -547,13 +579,18 @@ def _create_assessment_view( table, user, nti_session, timestamp, course, contex
 						assignment_id=assignment_id )
 	db.session.add( new_object )
 
-def create_self_assessment_view( user, nti_session, timestamp, course, context_path, resource, time_length, assignment_id ):
+
+def create_self_assessment_view(user, nti_session, timestamp, course,
+								context_path, resource, time_length, assignment_id):
 	return _create_assessment_view( SelfAssessmentViews, user, nti_session, timestamp,
 						course, context_path, resource, time_length, assignment_id )
 
-def create_assignment_view( user, nti_session, timestamp, course, context_path, resource, time_length, assignment_id ):
+
+def create_assignment_view(user, nti_session, timestamp, course, context_path,
+						   resource, time_length, assignment_id ):
 	return _create_assessment_view( AssignmentViews, user, nti_session, timestamp,
 						course, context_path, resource, time_length, assignment_id )
+
 
 def _resolve_self_assessment( row, user=None, course=None ):
 	if course is not None:
@@ -561,6 +598,7 @@ def _resolve_self_assessment( row, user=None, course=None ):
 	if user is not None:
 		row.user = user
 	return row
+
 
 def _resolve_assignment( row, details=None, user=None, course=None ):
 	if course is not None:
@@ -571,33 +609,49 @@ def _resolve_assignment( row, details=None, user=None, course=None ):
 		row.Details = details
 	return row
 
+
 def get_self_assessments_for_user(user, course=None, **kwargs ):
-	"Retrieves all self-assessments for the given user and course."
+	"""
+	Retrieves all self-assessments for the given user and course.
+	"""
 	results = get_filtered_records( user, SelfAssessmentsTaken, course=course, **kwargs )
 	return resolve_objects( _resolve_self_assessment, results, user=user, course=course )
 
+
 def get_self_assessments_for_user_and_id(user, assessment_id):
-	"Pulls all assessment records for the given user matching the passed in assessment id."
+	"""
+	Pulls all assessment records for the given user matching the passed in
+	assessment id.
+	"""
 	filters = (SelfAssessmentsTaken.assignment_id == assessment_id,)
 	results = get_self_assessments_for_user(user, filters=filters)
 	return results
 
+
 def get_assignments_for_user(user, course=None, **kwargs):
-	"Retrieves all assignments for the given user and course."
+	"""
+	Retrieves all assignments for the given user and course.
+	"""
 	results = get_filtered_records( user, AssignmentsTaken, course=course, **kwargs )
 	return resolve_objects( _resolve_assignment, results, user=user, course=course )
 
+
 def get_assignment_for_user( user, assignment_id ):
-	"Pulls all assignment records for the given user matching the passed in assignment id."
+	"""
+	Pulls all assignment records for the given user matching the passed in assignment id.
+	"""
 	filters = (AssignmentsTaken.assignment_id == assignment_id,)
 	results = get_assignments_for_user(user, filters=filters)
 	return results
 
+
 def get_self_assessments_for_course(course):
 	return get_self_assessments_for_user(None, course=course)
 
+
 def get_assignments_for_course(course):
 	return get_assignments_for_user(None, course=course)
+
 
 # AssignmentReport
 def get_assignment_grades_for_course(course, assignment_id):
@@ -607,6 +661,7 @@ def get_assignment_grades_for_course(course, assignment_id):
 
 get_assignment_details_for_course = get_assignment_grades_for_course
 
+
 def _resolve_view( row, course, user ):
 	if course is not None:
 		row.RootContext = course
@@ -614,20 +669,25 @@ def _resolve_view( row, course, user ):
 		row.user = user
 	return row
 
+
 def _resolve_self_assessment_view( row, user=None, course=None ):
 	return _resolve_view( row, course, user )
 
+
 def _resolve_assignment_view( row, user=None, course=None ):
 	return _resolve_view( row, course, user )
+
 
 def get_self_assessment_views( user, course=None, **kwargs ):
 	"""
 	Fetch any self assessment views for a user created *after* the optionally given
 	timestamp.  Optionally, can filter by course.
 	"""
-	results = get_filtered_records( user, SelfAssessmentViews,
-								course=course, **kwargs )
-	return resolve_objects( _resolve_self_assessment_view, results, user=user, course=course )
+	results = get_filtered_records(user, SelfAssessmentViews,
+								   course=course, **kwargs)
+	return resolve_objects(_resolve_self_assessment_view, results,
+						   user=user, course=course)
+
 
 def get_assignment_views( user, course=None, **kwargs ):
 	"""
@@ -636,4 +696,5 @@ def get_assignment_views( user, course=None, **kwargs ):
 	"""
 	results = get_filtered_records( user, AssignmentViews,
 								 	course=course, **kwargs )
-	return resolve_objects( _resolve_assignment_view, results, user=user, course=course )
+	return resolve_objects(_resolve_assignment_view, results,
+						   user=user, course=course )

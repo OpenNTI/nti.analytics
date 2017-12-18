@@ -4,10 +4,9 @@
 .. $Id$
 """
 
-from __future__ import print_function, unicode_literals, absolute_import, division
-__docformat__ = "restructuredtext en"
-
-logger = __import__('logging').getLogger(__name__)
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
 
 from nti.analytics_database.resource_views import UserFileUploadViewEvents
 
@@ -15,15 +14,18 @@ from nti.analytics.common import timestamp_type
 
 from nti.analytics.identifier import get_ntiid_id
 
-from nti.analytics.database.query_utils import get_filtered_records
+from nti.analytics.database import resolve_objects
+from nti.analytics.database import get_analytics_db
 
 from nti.analytics.database.mime_types import get_mime_type_id
 from nti.analytics.database.mime_types import get_item_mime_type
 
+from nti.analytics.database.query_utils import get_filtered_records
+
 from nti.analytics.database.users import get_or_create_user
 
-from nti.analytics.database import resolve_objects
-from nti.analytics.database import get_analytics_db
+logger = __import__('logging').getLogger(__name__)
+
 
 def create_file_view( file_obj, session_id, timestamp, user, referrer, creator ):
 	file_ds_id = get_ntiid_id( file_obj )
@@ -48,13 +50,16 @@ def create_file_view( file_obj, session_id, timestamp, user, referrer, creator )
 	db.session.add( file_view )
 	logger.info('Created file view event (user=%s) (file=%s)',
 				user.username,
-				getattr( file_obj, 'filename', getattr( file_obj, '__name__', '' )))
+				getattr(file_obj, 'filename',
+						getattr( file_obj, '__name__', '' )))
 	return file_view
+
 
 def _resolve_file_view(row, user=None):
 	if user is not None:
 		row.user = user
 	return row
+
 
 def get_user_file_views( user=None, **kwargs  ):
 	results = get_filtered_records( user, UserFileUploadViewEvents, **kwargs )

@@ -4,10 +4,9 @@
 .. $Id$
 """
 
-from __future__ import print_function, unicode_literals, absolute_import, division
-__docformat__ = "restructuredtext en"
-
-logger = __import__('logging').getLogger(__name__)
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
 
 import six
 
@@ -29,6 +28,9 @@ from nti.analytics.database.users import get_or_create_user
 
 from nti.dataserver.interfaces import IEntity
 
+logger = __import__('logging').getLogger(__name__)
+
+
 def get_body_text_length(obj):
 	"""
 	For a given obj with a body, find the length of the textual content.
@@ -44,6 +46,7 @@ def get_body_text_length(obj):
 			pass
 	return text_length
 
+
 def get_context_path(context_path):
 	# Note: we could also sub these resource_ids for the actual
 	# ids off of the Resources table.  That would be a bit tricky, because
@@ -57,6 +60,7 @@ def get_context_path(context_path):
 		result = CONTEXT_PATH_SEPARATOR.join(context_path)
 	return result
 
+
 def get_root_context_ids(root_context):
 	course_id = entity_root_context_id = None
 	if IEntity.providedBy(root_context):
@@ -66,6 +70,7 @@ def get_root_context_ids(root_context):
 		db = get_analytics_db()
 		course_id = get_root_context_id(db, root_context, create=True)
 	return course_id, entity_root_context_id
+
 
 @interface.implementer(IAnalyticsRootContextResolver)
 def get_root_context_obj(root_context_record):

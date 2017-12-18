@@ -4,39 +4,41 @@
 .. $Id$
 """
 
-from __future__ import print_function, unicode_literals, absolute_import, division
-__docformat__ = "restructuredtext en"
-
-logger = __import__('logging').getLogger(__name__)
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
 
 from datetime import datetime
 from datetime import timedelta
 
-from sqlalchemy import and_
 from sqlalchemy import or_
+from sqlalchemy import and_
+
+from sqlalchemy.orm.session import make_transient
 
 from nti.analytics_database.sessions import Sessions
 from nti.analytics_database.sessions import UserAgents
 
-from sqlalchemy.orm.session import make_transient
-
 from nti.analytics.common import timestamp_type
 
 from nti.analytics.database import get_analytics_db
+from nti.analytics.database import resolve_objects
+
+from nti.analytics.database.locations import check_ip_location
 
 from nti.analytics.database.query_utils import get_filtered_records
 
-from nti.analytics.database.locations import check_ip_location
 from nti.analytics.database.users import get_or_create_user
 
-from nti.analytics.database import resolve_objects
-from nti.analytics.database import get_analytics_db
+logger = __import__('logging').getLogger(__name__)
+
 
 def _create_user_agent(db, user_agent):
 	new_agent = UserAgents(user_agent=user_agent)
 	db.session.add(new_agent)
 	db.session.flush()
 	return new_agent
+
 
 def _get_user_agent_id(db, user_agent):
 	user_agent_record = db.session.query(UserAgents).filter(
@@ -45,9 +47,11 @@ def _get_user_agent_id(db, user_agent):
 		user_agent_record = _create_user_agent(db, user_agent)
 	return user_agent_record.user_agent_id
 
+
 def _get_user_agent(user_agent):
 	# We have a 512 limit on user agent, truncate if we have to.
 	return user_agent[:512] if len(user_agent) > 512 else user_agent
+
 
 def find_user_agent(agent_id):
 	"""
@@ -57,6 +61,7 @@ def find_user_agent(agent_id):
 	agent = db.session.query(UserAgents).filter(
 	                         UserAgents.user_agent_id == agent_id).first()
 	return agent
+
 
 def end_session(user, session_id, timestamp):
 	timestamp = timestamp_type(timestamp)
@@ -84,6 +89,7 @@ def end_session(user, session_id, timestamp):
 		result = old_session
 	return result
 
+
 def create_session(user, user_agent, start_time, ip_addr, end_time=None):
 	db = get_analytics_db()
 	user = get_or_create_user(user)
@@ -107,6 +113,7 @@ def create_session(user, user_agent, start_time, ip_addr, end_time=None):
 	make_transient(new_session)
 	return new_session
 
+
 def get_session_by_id(session_id):
 	db = get_analytics_db()
 	session_record = db.session.query(Sessions).filter(
@@ -115,8 +122,10 @@ def get_session_by_id(session_id):
 		make_transient(session_record)
 	return session_record
 
+
 def _resolve_session(row):
 	return row
+
 
 def get_user_sessions(user, timestamp=None, max_timestamp=None,
                       for_timestamp=None, open_sessions_only=False,
@@ -138,6 +147,7 @@ def get_user_sessions(user, timestamp=None, max_timestamp=None,
 	results = get_filtered_records(user, Sessions, filters=filters, query_builder=query_builder)
 	return resolve_objects(_resolve_session, results)
 
+
 def get_recent_user_sessions(user, limit=None, not_after=None):
 	def query_builder(query):
 		query = query.order_by(Sessions.start_time.desc())
@@ -158,21 +168,22 @@ def get_active_session_count(fuzzy_start_delta=FUZZY_START_DELTA,
                              _now=None):
 	"""
 	Query sessions that have begun recently (based on fuzzy_start_delta) and
-	have not ended or have ended recently (fuzzy_end_delta). The huersitics
-	attempt to account for the fact that sometime we don't sessions ended properly.
+	have not ended or have ended recently (fuzzy_end_delta). The heuristics
+	attempt to account for the fact that sometime we don't sessions ended
+	properly.
 	"""
 	db = get_analytics_db()
 	query = db.session.query(Sessions)
 
 	now = _now or datetime.utcnow()
 
-	#If not yet ended, it needs to have been started recently
+	# If not yet ended, it needs to have been started recently
 	started_after = now - fuzzy_start_delta
 	not_ended_filter = and_((Sessions.end_time == None), Sessions.start_time >= started_after)
 
-	#or
+	# or
 
-	#If it ended recently it is active (to deal with heartbeat style updates)
+	# If it ended recently it is active (to deal with heartbeat style updates)
 	ended_after = now - fuzzy_end_delta
 	ended_recently_filter = (Sessions.end_time >= ended_after)
 

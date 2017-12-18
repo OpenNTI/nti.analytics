@@ -4,16 +4,13 @@
 .. $Id$
 """
 
-from __future__ import print_function, unicode_literals, absolute_import, division
-__docformat__ = "restructuredtext en"
-
-logger = __import__('logging').getLogger(__name__)
-
-from nti.analytics_database.users import Users
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
 
 from zope import component
 
-from nti.dataserver.interfaces import IUsernameSubstitutionPolicy
+from nti.analytics_database.users import Users
 
 from nti.analytics.common import get_created_timestamp
 
@@ -23,6 +20,11 @@ from nti.analytics.identifier import get_ds_id
 from nti.analytics.identifier import get_ds_object
 
 from nti.analytics.interfaces import IUserResearchStatus
+
+from nti.dataserver.interfaces import IUsernameSubstitutionPolicy
+
+logger = __import__('logging').getLogger(__name__)
+
 
 def _get_username2(user):
 	"""
@@ -34,6 +36,7 @@ def _get_username2(user):
 	if username == result:
 		result = ''
 	return result
+
 
 def create_user(user):
 	db = get_analytics_db()
@@ -64,6 +67,7 @@ def create_user(user):
 				username, user.user_id, uid)
 	return user
 
+
 def get_user_record(user):
 	# Look into using sqlalchemy baked queries for this
 	# and other high volume calls that return a single row.
@@ -72,6 +76,7 @@ def get_user_record(user):
 	uid = get_ds_id(user)
 	found_user = db.session.query(Users).filter(Users.user_ds_id == uid).first()
 	return found_user
+
 
 def get_or_create_user(user):
 	found_user = get_user_record(user)
@@ -85,9 +90,11 @@ def get_or_create_user(user):
 
 	return found_user or create_user(user)
 
+
 def get_user_db_id(user):
 	found_user = get_user_record(user)
 	return found_user and found_user.user_id
+
 
 def get_user(user_id):
 	"""
@@ -102,12 +109,14 @@ def get_user(user_id):
 
 	return result
 
+
 def delete_entity(entity_ds_id):
 	db = get_analytics_db()
 	found_user = db.session.query(Users).filter(
 								  Users.user_ds_id == entity_ds_id).first()
 	if found_user is not None:
 		found_user.user_ds_id = None
+
 
 def update_user_research(user_ds_id, allow_research):
 	db = get_analytics_db()

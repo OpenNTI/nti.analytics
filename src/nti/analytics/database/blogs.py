@@ -4,10 +4,9 @@
 .. $Id$
 """
 
-from __future__ import print_function, unicode_literals, absolute_import, division
-__docformat__ = "restructuredtext en"
-
-logger = __import__('logging').getLogger(__name__)
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
 
 from nti.analytics_database.blogs import BlogLikes
 from nti.analytics_database.blogs import BlogsViewed
@@ -22,8 +21,6 @@ from nti.analytics.common import get_creator
 from nti.analytics.common import get_ratings
 from nti.analytics.common import timestamp_type
 from nti.analytics.common import get_created_timestamp
-
-from nti.analytics.identifier import get_ds_id
 
 from nti.analytics.database import resolve_objects
 from nti.analytics.database import get_analytics_db
@@ -43,16 +40,23 @@ from nti.analytics.database.query_utils import get_user_replies_to_others as _ge
 
 from nti.analytics.database.users import get_or_create_user
 
+from nti.analytics.identifier import get_ds_id
+
+logger = __import__('logging').getLogger(__name__)
+
+
 def _get_blog( db, blog_ds_id ):
 	blog = db.session.query(BlogsCreated).filter(
 							BlogsCreated.blog_ds_id == blog_ds_id ).first()
 	return blog
+
 
 def _get_blog_id( db, blog_ds_id ):
 	blog = _get_blog( db, blog_ds_id )
 	return blog and blog.blog_id
 
 _blog_exists = _get_blog_id
+
 
 def _set_blog_attributes( blog_record, blog ):
 	"""
@@ -69,6 +73,7 @@ def _set_blog_attributes( blog_record, blog ):
 	blog_record.favorite_count = favorite_count
 	blog_record.is_flagged = is_flagged
 	blog_record.blog_length = blog_length
+
 
 def create_blog( user, nti_session, blog_entry ):
 	db = get_analytics_db()
@@ -95,6 +100,7 @@ def create_blog( user, nti_session, blog_entry ):
 		create_blog_comment(user, nti_session, blog_entry, blog_entry.headline )
 	return new_object
 
+
 def update_blog(user, nti_session, blog):
 	"""
 	Update our blog, creating if it does not exist.
@@ -106,6 +112,7 @@ def update_blog(user, nti_session, blog):
 		create_blog(user, nti_session, blog)
 	else:
 		_set_blog_attributes( blog_record, blog )
+
 
 def delete_blog( timestamp, blog_ds_id ):
 	db = get_analytics_db()
@@ -123,11 +130,13 @@ def delete_blog( timestamp, blog_ds_id ):
 									{ BlogCommentsCreated.deleted : timestamp } )
 	db.session.flush()
 
+
 def _get_blog_rating_record( db, table, user_id, blog_id ):
 	blog_rating_record = db.session.query( table ).filter(
 									table.user_id == user_id,
 									table.blog_id == blog_id ).first()
 	return blog_rating_record
+
 
 def _create_blog_rating_record( db, table, user, session_id, timestamp, blog_id, delta, creator_id ):
 	"""
@@ -155,6 +164,7 @@ def _create_blog_rating_record( db, table, user, session_id, timestamp, blog_id,
 			db.session.delete( blog_rating_record )
 		db.session.flush()
 
+
 def like_blog( blog, user, session_id, timestamp, delta ):
 	db = get_analytics_db()
 	blog_ds_id = get_ds_id( blog )
@@ -169,6 +179,7 @@ def like_blog( blog, user, session_id, timestamp, delta ):
 		_create_blog_rating_record( db, BlogLikes, user,
 								session_id, timestamp,
 								blog_id, delta, creator_id )
+
 
 def favorite_blog( blog, user, session_id, timestamp, delta ):
 	db = get_analytics_db()
@@ -185,6 +196,7 @@ def favorite_blog( blog, user, session_id, timestamp, delta ):
 								session_id, timestamp,
 								blog_id, delta, creator_id )
 
+
 def flag_blog( blog, state ):
 	db = get_analytics_db()
 	blog_ds_id = get_ds_id( blog )
@@ -193,11 +205,13 @@ def flag_blog( blog, state ):
 	db_blog.is_flagged = state
 	db.session.flush()
 
+
 def _blog_view_exists( db, user_id, blog_id, timestamp ):
 	return db.session.query(BlogsViewed ).filter(
 							BlogsViewed.user_id == user_id,
 							BlogsViewed.blog_id == blog_id,
 							BlogsViewed.timestamp == timestamp ).first()
+
 
 def create_blog_view(user, nti_session, timestamp, context_path, blog_entry, time_length):
 	db = get_analytics_db()
@@ -218,12 +232,12 @@ def create_blog_view(user, nti_session, timestamp, context_path, blog_entry, tim
 	existing_record = _blog_view_exists( db, uid, blog_id, timestamp )
 
 	if existing_record is not None:
-		if should_update_event( existing_record, time_length ):
+		if should_update_event(existing_record, time_length):
 			existing_record.time_length = time_length
 			return
 		else:
-			logger.warn( 'Blog view already exists (user=%s) (blog_id=%s)',
-						user, blog_id )
+			logger.warn('Blog view already exists (user=%s) (blog_id=%s) (time_length=%s)',
+						user, blog_id, time_length)
 			return
 
 	context_path = get_context_path( context_path )
@@ -236,13 +250,16 @@ def create_blog_view(user, nti_session, timestamp, context_path, blog_entry, tim
 								time_length=time_length )
 	db.session.add( new_object )
 
+
 def _get_blog_comment( db, cid ):
 	comment = db.session.query( BlogCommentsCreated ).filter(
 								BlogCommentsCreated.comment_id == cid ).first()
 	return comment
 
+
 def _blog_comment_exists( db, cid ):
 	return _get_blog_comment( db, cid ) is not None
+
 
 def _set_mime_records( db, comment_record, blog_comment ):
 	"""
@@ -257,6 +274,7 @@ def _set_mime_records( db, comment_record, blog_comment ):
 	file_mime_types = build_mime_type_records( db, blog_comment, BlogCommentsUserFileUploadMimeTypes )
 	comment_record._file_mime_types.extend( file_mime_types )
 
+
 def _set_blog_comment_attributes( db, comment_record, comment ):
 	"""
 	Set the comment attributes for this comment record.
@@ -267,6 +285,7 @@ def _set_blog_comment_attributes( db, comment_record, comment ):
 	comment_record.is_flagged = is_flagged
 	comment_record.comment_length = get_body_text_length( comment )
 	_set_mime_records( db, comment_record, comment )
+
 
 def create_blog_comment(user, nti_session, blog, comment ):
 	db = get_analytics_db()
@@ -310,6 +329,7 @@ def create_blog_comment(user, nti_session, blog, comment ):
 	db.session.flush()
 	return new_object
 
+
 def update_blog_comment(user, nti_session, blog, comment):
 	"""
 	Update our blog comment, creating if it does not exist.
@@ -322,6 +342,7 @@ def update_blog_comment(user, nti_session, blog, comment):
 	else:
 		_set_blog_comment_attributes( db, comment_record, comment )
 
+
 def delete_blog_comment(timestamp, comment_id):
 	db = get_analytics_db()
 	timestamp = timestamp_type( timestamp )
@@ -333,11 +354,13 @@ def delete_blog_comment(timestamp, comment_id):
 	comment.deleted=timestamp
 	db.session.flush()
 
+
 def _get_blog_comment_rating_record( db, table, user_id, comment_id ):
 	blog_coment_rating_record = db.session.query( table ).filter(
 									table.user_id == user_id,
 									table.comment_id == comment_id ).first()
 	return blog_coment_rating_record
+
 
 def _create_blog_comment_rating_record( db, table, user, session_id, timestamp, comment_id, delta, creator_id ):
 	"""
@@ -365,6 +388,7 @@ def _create_blog_comment_rating_record( db, table, user, session_id, timestamp, 
 			db.session.delete( blog_comment_rating )
 		db.session.flush()
 
+
 def like_comment( comment, user, session_id, timestamp, delta ):
 	db = get_analytics_db()
 	comment_id = get_ds_id( comment )
@@ -378,6 +402,7 @@ def like_comment( comment, user, session_id, timestamp, delta ):
 		_set_blog_comment_attributes( db, db_comment, comment )
 		_create_blog_comment_rating_record( db, BlogCommentLikes, user,
 								session_id, timestamp, comment_id, delta, creator_id )
+
 
 def favorite_comment( comment, user, session_id, timestamp, delta ):
 	db = get_analytics_db()
@@ -393,6 +418,7 @@ def favorite_comment( comment, user, session_id, timestamp, delta ):
 		_create_blog_comment_rating_record( db, BlogCommentFavorites, user,
 								session_id, timestamp, comment_id, delta, creator_id )
 
+
 def flag_comment( comment, state ):
 	db = get_analytics_db()
 	comment_id = get_ds_id( comment )
@@ -401,10 +427,12 @@ def flag_comment( comment, state ):
 	db_comment.is_flagged = state
 	db.session.flush()
 
+
 def _resolve_blog( row, user=None ):
 	if user is not None:
 		row.user = user
 	return row
+
 
 def _resolve_blog_comment( row, user=None, parent_user=None ):
 	if user is not None:
@@ -412,6 +440,7 @@ def _resolve_blog_comment( row, user=None, parent_user=None ):
 	if parent_user is not None:
 		row.RepliedToUser = parent_user
 	return row
+
 
 def get_blogs( user, get_deleted=False, **kwargs ):
 	"""
@@ -425,6 +454,7 @@ def get_blogs( user, get_deleted=False, **kwargs ):
 								filters=filters, **kwargs )
 	return resolve_objects( _resolve_blog, results, user=user )
 
+
 def get_blog_comments( user, get_deleted=False, **kwargs ):
 	"""
 	Fetch any blog comments a user created *after* the optionally given
@@ -437,6 +467,7 @@ def get_blog_comments( user, get_deleted=False, **kwargs ):
 								filters=filters, **kwargs )
 	return resolve_objects( _resolve_blog_comment, results, user=user )
 
+
 def get_user_replies_to_others( user, **kwargs ):
 	"""
 	Fetch any replies our users provided, *after* the optionally given timestamp.
@@ -444,12 +475,14 @@ def get_user_replies_to_others( user, **kwargs ):
 	results = _get_user_replies_to_others( BlogCommentsCreated, user, **kwargs )
 	return resolve_objects( _resolve_blog_comment, results, user=user )
 
+
 def get_replies_to_user( user, **kwargs  ):
 	"""
 	Fetch any replies to our user, *after* the optionally given timestamp.
 	"""
 	results = _get_replies_to_user( BlogCommentsCreated, user, **kwargs )
 	return resolve_objects( _resolve_blog_comment, results, parent_user=user )
+
 
 def get_likes_for_users_blogs( user, **kwargs ):
 	"""
@@ -460,6 +493,7 @@ def get_likes_for_users_blogs( user, **kwargs ):
 	results = get_ratings_for_user_objects( BlogLikes, user, **kwargs )
 	return resolve_objects( resolve_like, results, obj_creator=user )
 
+
 def get_favorites_for_users_blogs( user, **kwargs ):
 	"""
 	Fetch any favorites created for a user's blogs *after* the optionally given
@@ -469,6 +503,7 @@ def get_favorites_for_users_blogs( user, **kwargs ):
 	results = get_ratings_for_user_objects( BlogFavorites, user, **kwargs )
 	return resolve_objects( resolve_favorite, results, obj_creator=user )
 
+
 def get_likes_for_users_comments( user, **kwargs ):
 	"""
 	Fetch any likes created for a user's comments *after* the optionally given
@@ -477,6 +512,7 @@ def get_likes_for_users_comments( user, **kwargs ):
 	"""
 	results = get_ratings_for_user_objects( BlogCommentLikes, user, **kwargs )
 	return resolve_objects( resolve_like, results, obj_creator=user )
+
 
 def get_favorites_for_users_comments( user, **kwargs ):
 	"""

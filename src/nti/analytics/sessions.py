@@ -167,9 +167,9 @@ def update_session( session, user, user_agent=None, ip_addr=None ):
 			session.SessionStartTime = start_time
 		else:
 			# Hmm, invalid information
-			raise ValueError( "Session has invalid values (sessionid=%s) (starttime=%s)"  %
-							( 	session.SessionID,
-								getattr( session_record, 'start_time', None ) ) )
+			raise ValueError("Session has invalid values (sessionid=%s) (starttime=%s)"  %
+							 (session.SessionID,
+							  getattr(session_record, 'start_time', None)))
 	return session
 
 def get_current_session_id( event=None ):
