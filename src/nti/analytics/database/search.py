@@ -4,10 +4,9 @@
 .. $Id$
 """
 
-from __future__ import print_function, unicode_literals, absolute_import, division
-__docformat__ = "restructuredtext en"
-
-logger = __import__('logging').getLogger(__name__)
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
 
 from nti.analytics.common import timestamp_type
 
@@ -25,6 +24,9 @@ from nti.analytics_database.search import SearchQueries
 from nti.dataserver.users import User
 
 from nti.ntiids.ntiids import find_object_with_ntiid
+
+logger = __import__('logging').getLogger(__name__)
+
 
 def create_search_event( timestamp, session_id, username, elapsed, hit_count, term, search_types, course_id ):
 	db = get_analytics_db()
@@ -54,6 +56,7 @@ def create_search_event( timestamp, session_id, username, elapsed, hit_count, te
 	logger.info('Created search event (user=%s) (term=%s)', username, term)
 	return user
 
+
 def _resolve_search_query(row, user=None, course=None):
 	if user is not None:
 		row.user = user
@@ -61,6 +64,8 @@ def _resolve_search_query(row, user=None, course=None):
 		row.RootContext = course
 	return row
 
+
 def get_search_queries( user=None, course=None, **kwargs ):
-	results = get_filtered_records( user, SearchQueries, course=course, **kwargs )
-	return resolve_objects( _resolve_search_query, results, user=user, course=course )
+	results = get_filtered_records(user, SearchQueries, course=course, **kwargs)
+	return resolve_objects(_resolve_search_query, results,
+						   user=user, course=course)
