@@ -4,10 +4,9 @@
 .. $Id$
 """
 
-from __future__ import print_function, unicode_literals, absolute_import, division
-__docformat__ = "restructuredtext en"
-
-logger = __import__('logging').getLogger(__name__)
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
 
 from sqlalchemy import func
 
@@ -21,8 +20,6 @@ from nti.analytics_database.boards import ForumCommentsCreated
 from nti.analytics_database.boards import ForumCommentFavorites
 from nti.analytics_database.boards import ForumCommentsUserFileUploadMimeTypes
 
-from nti.dataserver.interfaces import IEntity
-
 from nti.analytics.common import get_course
 from nti.analytics.common import get_creator
 from nti.analytics.common import get_ratings
@@ -32,6 +29,10 @@ from nti.analytics.common import get_created_timestamp
 
 from nti.analytics.identifier import get_ds_id
 from nti.analytics.identifier import get_ds_object
+
+from nti.analytics.database import resolve_objects
+from nti.analytics.database import get_analytics_db
+from nti.analytics.database import should_update_event
 
 from nti.analytics.database._utils import get_context_path
 from nti.analytics.database._utils import get_body_text_length
@@ -51,24 +52,27 @@ from nti.analytics.database.root_context import get_root_context_id
 from nti.analytics.database.users import get_or_create_user
 from nti.analytics.database.users import get_user_db_id
 
-from nti.analytics.database import resolve_objects
-from nti.analytics.database import get_analytics_db
-from nti.analytics.database import should_update_event
+from nti.dataserver.interfaces import IEntity
+
+logger = __import__('logging').getLogger(__name__)
+
 
 def _get_root_context_ids( obj ):
 	"""
-	For the given object, return the root context ids (tuple of context_id/entity_context_id),
-	creating records if needed.
+	For the given object, return the root context ids (tuple of
+	context_id/entity_context_id), creating records if needed.
 	"""
 	root_context = get_course( obj )
 	if root_context is None:
 		root_context = get_object_root( obj, IEntity )
 	return get_root_context_ids( root_context )
 
+
 def _get_forum( db, forum_ds_id ):
 	forum = db.session.query(ForumsCreated).filter(
 							 ForumsCreated.forum_ds_id == forum_ds_id ).first()
 	return forum
+
 
 def _get_forum_id( db, forum_ds_id ):
 	forum = _get_forum( db, forum_ds_id )
@@ -76,14 +80,17 @@ def _get_forum_id( db, forum_ds_id ):
 
 _forum_exists = _get_forum_id
 
+
 def _get_forum_id_from_forum( db, forum ):
 	forum_ds_id = get_ds_id( forum )
 	return _get_forum_id( db, forum_ds_id )
+
 
 def _get_topic( db, topic_ds_id ):
 	topic = db.session.query(TopicsCreated).filter(
 							 TopicsCreated.topic_ds_id == topic_ds_id ).first()
 	return topic
+
 
 def _get_topic_id( db, topic_ds_id ):
 	topic = _get_topic( db, topic_ds_id )
@@ -91,17 +98,22 @@ def _get_topic_id( db, topic_ds_id ):
 
 _topic_exists = _get_topic_id
 
+
 def _get_topic_id_from_topic( db, topic ):
 	topic_ds_id = get_ds_id( topic )
 	return _get_topic_id( db, topic_ds_id )
 
+
 def _get_topic_from_db_id( topic_id ):
-	"Return the actual topic object represented by the given db id."
+	"""
+	Return the actual topic object represented by the given db id.
+	"""
 	db = get_analytics_db()
 	topic = db.session.query(TopicsCreated).filter(
 							 TopicsCreated.topic_id == topic_id ).first()
 	topic = get_ds_object( topic.topic_ds_id )
 	return topic
+
 
 def create_forum(user, nti_session, forum):
 	db = get_analytics_db()
@@ -128,6 +140,7 @@ def create_forum(user, nti_session, forum):
 	db.session.flush()
 	return new_object
 
+
 def delete_forum(timestamp, forum_ds_id):
 	db = get_analytics_db()
 	timestamp = timestamp_type( timestamp )
@@ -150,6 +163,7 @@ def delete_forum(timestamp, forum_ds_id):
 							{ ForumCommentsCreated.deleted : timestamp } )
 	db.session.flush()
 
+
 def _set_topic_attributes( topic_record, topic ):
 	"""
 	Set the topic attributes for this topic record.
@@ -158,6 +172,7 @@ def _set_topic_attributes( topic_record, topic ):
 	topic_record.like_count = like_count
 	topic_record.favorite_count = favorite_count
 	topic_record.is_flagged = is_flagged
+
 
 def create_topic(user, nti_session, topic):
 	db = get_analytics_db()
@@ -205,6 +220,7 @@ def create_topic(user, nti_session, topic):
 		create_forum_comment(user, nti_session, topic, topic.headline)
 	return new_object
 
+
 def update_topic(user, nti_session, topic):
 	"""
 	Update our topic, creating if it does not exist.
@@ -216,6 +232,7 @@ def update_topic(user, nti_session, topic):
 		create_topic(user, nti_session, topic)
 	else:
 		_set_topic_attributes( topic_record, topic )
+
 
 def delete_topic(timestamp, topic_ds_id):
 	db = get_analytics_db()
@@ -234,13 +251,17 @@ def delete_topic(timestamp, topic_ds_id):
 											{ ForumCommentsCreated.deleted : timestamp } )
 	db.session.flush()
 
+
 def _get_topic_rating_record( db, table, user_id, topic_id ):
 	topic_rating_record = db.session.query( table ).filter(
 									table.user_id == user_id,
 									table.topic_id == topic_id ).first()
 	return topic_rating_record
 
-def _create_topic_rating_record( db, table, user, session_id, timestamp, topic_id, delta, creator_id, course_id, entity_root_context_id ):
+
+def _create_topic_rating_record(db, table, user, session_id, timestamp,
+								topic_id, delta, creator_id, course_id,
+								entity_root_context_id ):
 	"""
 	Creates a like or favorite record, based on given table. If
 	the delta is negative, we delete the like or favorite record.
@@ -268,6 +289,7 @@ def _create_topic_rating_record( db, table, user, session_id, timestamp, topic_i
 			db.session.delete( topic_rating_record )
 		db.session.flush()
 
+
 def like_topic( topic, user, session_id, timestamp, delta ):
 	db = get_analytics_db()
 	topic_ds_id = get_ds_id( topic )
@@ -284,6 +306,7 @@ def like_topic( topic, user, session_id, timestamp, delta ):
 		_create_topic_rating_record( db, TopicLikes, user,
 									session_id, timestamp, topic_id, delta,
 									creator_id, course_id, entity_root_context_id )
+
 
 def favorite_topic( topic, user, session_id, timestamp, delta ):
 	db = get_analytics_db()
@@ -302,6 +325,7 @@ def favorite_topic( topic, user, session_id, timestamp, delta ):
 								session_id, timestamp, topic_id, delta,
 								creator_id, course_id, entity_root_context_id )
 
+
 def flag_topic( topic, state ):
 	db = get_analytics_db()
 	topic_ds_id = get_ds_id( topic )
@@ -310,11 +334,13 @@ def flag_topic( topic, state ):
 	db_topic.is_flagged = state
 	db.session.flush()
 
+
 def _topic_view_exists( db, user_id, topic_id, timestamp ):
 	return db.session.query(TopicsViewed ).filter(
 							TopicsViewed.user_id == user_id,
 							TopicsViewed.topic_id == topic_id,
 							TopicsViewed.timestamp == timestamp ).first()
+
 
 def create_topic_view(user, nti_session, timestamp, root_context, context_path, topic, time_length):
 	db = get_analytics_db()
@@ -361,14 +387,17 @@ def create_topic_view(user, nti_session, timestamp, root_context, context_path, 
 								time_length=time_length )
 	db.session.add( new_object )
 
+
 def _get_comment( db, comment_id ):
 	comment = db.session.query( ForumCommentsCreated ).filter(
 							 	ForumCommentsCreated.comment_id == comment_id ).first()
 	return comment
 
+
 def _comment_exists( db, comment_id ):
 	comment = _get_comment( db, comment_id )
 	return comment is not None
+
 
 def _set_mime_records( db, comment_record, comment ):
 	"""
@@ -383,6 +412,7 @@ def _set_mime_records( db, comment_record, comment ):
 	file_mime_types = build_mime_type_records( db, comment, ForumCommentsUserFileUploadMimeTypes )
 	comment_record._file_mime_types.extend( file_mime_types )
 
+
 def _set_comment_attributes( db, comment_record, comment ):
 	"""
 	Set the comment attributes for this comment record.
@@ -393,6 +423,7 @@ def _set_comment_attributes( db, comment_record, comment ):
 	comment_record.is_flagged = is_flagged
 	comment_record.comment_length = get_body_text_length( comment )
 	_set_mime_records( db, comment_record, comment )
+
 
 def create_forum_comment(user, nti_session, topic, comment):
 	db = get_analytics_db()
@@ -444,6 +475,7 @@ def create_forum_comment(user, nti_session, topic, comment):
 	db.session.flush()
 	return new_object
 
+
 def update_comment(user, nti_session, topic, comment):
 	"""
 	Update our comment, creating if it does not exist.
@@ -456,15 +488,18 @@ def update_comment(user, nti_session, topic, comment):
 	else:
 		_set_comment_attributes( db, comment_record, comment )
 
+
 def delete_forum_comment(timestamp, comment_id):
 	db = get_analytics_db()
 	timestamp = timestamp_type( timestamp )
-	comment = db.session.query(ForumCommentsCreated).filter( ForumCommentsCreated.comment_id==comment_id ).first()
+	comment = db.session.query(ForumCommentsCreated).filter(
+							   ForumCommentsCreated.comment_id==comment_id ).first()
 	if not comment:
 		logger.info( 'Comment never created (%s)', comment_id )
 		return
 	comment.deleted=timestamp
 	db.session.flush()
+
 
 def _get_comment_rating_record( db, table, user_id, comment_id ):
 	comment_rating_record = db.session.query( table ).filter(
@@ -472,7 +507,11 @@ def _get_comment_rating_record( db, table, user_id, comment_id ):
 									table.comment_id == comment_id ).first()
 	return comment_rating_record
 
-def _create_forum_comment_rating_record( db, table, user, session_id, timestamp, comment_id, delta, creator_id, course_id, entity_root_context_id ):
+
+def _create_forum_comment_rating_record( db, table, user, session_id,
+										timestamp, comment_id, delta,
+										creator_id, course_id,
+										entity_root_context_id ):
 	"""
 	Creates a like or favorite record, based on given table. If
 	the delta is negative, we delete the like or favorite record.
@@ -500,6 +539,7 @@ def _create_forum_comment_rating_record( db, table, user, session_id, timestamp,
 			db.session.delete( comment_rating_record )
 		db.session.flush()
 
+
 def like_comment( comment, user, session_id, timestamp, delta ):
 	db = get_analytics_db()
 	comment_id = get_ds_id( comment )
@@ -517,6 +557,7 @@ def like_comment( comment, user, session_id, timestamp, delta ):
 								session_id, timestamp, comment_id, delta,
 								creator_id, course_id, entity_root_context_id )
 
+
 def favorite_comment( comment, user, session_id, timestamp, delta ):
 	db = get_analytics_db()
 	comment_id = get_ds_id( comment )
@@ -533,6 +574,7 @@ def favorite_comment( comment, user, session_id, timestamp, delta ):
 								session_id, timestamp, comment_id, delta,
 								creator_id, course_id, entity_root_context_id )
 
+
 def flag_comment( comment, state ):
 	db = get_analytics_db()
 	comment_id = get_ds_id( comment )
@@ -540,6 +582,7 @@ def flag_comment( comment, state ):
 								ForumCommentsCreated.comment_id == comment_id ).one()
 	db_comment.is_flagged = state
 	db.session.flush()
+
 
 def _resolve_comment( row, user=None, course=None, parent_user=None ):
 	if course is not None:
@@ -550,12 +593,14 @@ def _resolve_comment( row, user=None, course=None, parent_user=None ):
 		row.RepliedToUser = parent_user
 	return row
 
+
 def _resolve_topic( row, user=None, course=None ):
 	if course is not None:
 		row.RootContext = course
 	if user is not None:
 		row.user = user
 	return row
+
 
 def _resolve_topic_view( row, topic=None, user=None, course=None ):
 	if course is not None:
@@ -565,6 +610,7 @@ def _resolve_topic_view( row, topic=None, user=None, course=None ):
 	if topic is not None:
 		row.Topic = topic
 	return row
+
 
 def get_forum_comments_for_user( user=None, course=None,
 						get_deleted=False, top_level_only=False,
@@ -590,6 +636,7 @@ def get_forum_comments_for_user( user=None, course=None,
 
 get_forum_comments = get_forum_comments_for_user
 
+
 def get_topics_created_for_user( user, course=None, get_deleted=False, **kwargs ):
 	"""
 	Fetch any topics for a user created *after* the optionally given
@@ -605,6 +652,7 @@ def get_topics_created_for_user( user, course=None, get_deleted=False, **kwargs 
 
 	return resolve_objects( _resolve_topic, results, course=course )
 
+
 def get_topic_views( user=None, topic=None, course=None, **kwargs ):
 
 	filters = []
@@ -617,6 +665,7 @@ def get_topic_views( user=None, topic=None, course=None, **kwargs ):
 								filters=filters, **kwargs )
 	return resolve_objects( _resolve_topic_view, results, user=user, topic=topic, course=course )
 
+
 def get_topic_last_view( topic, user ):
 	db = get_analytics_db()
 	topic_id = _get_topic_id_from_topic( db, topic )
@@ -625,6 +674,7 @@ def get_topic_last_view( topic, user ):
 										TopicsViewed.topic_id == topic_id,
 										TopicsViewed.user_id == user_id ).one()
 	return result and result[0]
+
 
 def get_comments_for_topic( topic ):
 	db = get_analytics_db()
@@ -643,6 +693,7 @@ def get_comments_for_forum( forum ):
 								ForumCommentsCreated.deleted == None  ).all()
 	return resolve_objects( _resolve_comment, results )
 
+
 def get_topics_created_for_forum( forum ):
 	db = get_analytics_db()
 	forum_id = _get_forum_id_from_forum( db, forum )
@@ -650,6 +701,7 @@ def get_topics_created_for_forum( forum ):
 								TopicsCreated.forum_id == forum_id,
 								TopicsCreated.deleted == None  ).all()
 	return resolve_objects( _resolve_topic, results )
+
 
 def get_topics_created_for_course( course ):
 	db = get_analytics_db()
@@ -659,9 +711,11 @@ def get_topics_created_for_course( course ):
 								TopicsCreated.deleted == None  ).all()
 	return resolve_objects( _resolve_topic, results, course=course )
 
+
 def get_user_replies_to_others( user, course=None, topic=None, **kwargs ):
 	"""
-	Fetch any replies our users provided, *after* the optionally given timestamp.
+	Fetch any replies our users provided, *after* the optionally given
+	timestamp.
 	"""
 	filters = None
 	if topic is not None:
@@ -675,12 +729,14 @@ def get_user_replies_to_others( user, course=None, topic=None, **kwargs ):
 										filters=filters, **kwargs )
 	return resolve_objects( _resolve_comment, results, user=user, course=course )
 
+
 def get_replies_to_user( user, course=None, **kwargs  ):
 	"""
 	Fetch any replies to our user, *after* the optionally given timestamp.
 	"""
 	results = _get_replies_to_user( ForumCommentsCreated, user, **kwargs )
 	return resolve_objects( _resolve_comment, results, course=course, parent_user=user )
+
 
 def get_likes_for_users_topics( user, **kwargs ):
 	"""
@@ -690,13 +746,15 @@ def get_likes_for_users_topics( user, **kwargs ):
 	results = get_ratings_for_user_objects( TopicLikes, user, **kwargs )
 	return resolve_objects( resolve_like, results, obj_creator=user)
 
+
 def get_favorites_for_users_topics( user, **kwargs ):
 	"""
-	Fetch any favorites created for a user's topics *after* the optionally given
-	timestamp.  Optionally, can filter by course.
+	Fetch any favorites created for a user's topics *after* the optionally
+	given timestamp.  Optionally, can filter by course.
 	"""
 	results = get_ratings_for_user_objects( TopicFavorites, user, **kwargs )
 	return resolve_objects( resolve_favorite, results, obj_creator=user)
+
 
 def get_likes_for_users_comments( user, **kwargs ):
 	"""
@@ -706,10 +764,11 @@ def get_likes_for_users_comments( user, **kwargs ):
 	results = get_ratings_for_user_objects( ForumCommentLikes, user, **kwargs)
 	return resolve_objects( resolve_like, results, obj_creator=user)
 
+
 def get_favorites_for_users_comments( user, **kwargs ):
 	"""
-	Fetch any favorites created for a user's topics *after* the optionally given
-	timestamp.  Optionally, can filter by course.
+	Fetch any favorites created for a user's topics *after* the optionally
+	given timestamp.  Optionally, can filter by course.
 	"""
 	results = get_ratings_for_user_objects( ForumCommentFavorites, user, **kwargs )
 	return resolve_objects( resolve_favorite, results, obj_creator=user)
