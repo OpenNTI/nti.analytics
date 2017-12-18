@@ -21,7 +21,7 @@ _yield_all_marker = object()
 
 def _do_course_and_timestamp_filtering(table, timestamp=None, max_timestamp=None,
 									   course=None, filters=None, query_builder=None,
-									   yield_per=_yield_all_marker):
+									   yield_per=_yield_all_marker, limit=None):
 	db = get_analytics_db()
 	result = []
 
@@ -54,6 +54,9 @@ def _do_course_and_timestamp_filtering(table, timestamp=None, max_timestamp=None
 		filters.append(table.timestamp <= max_timestamp)
 
 	query = db.session.query(table).filter(*filters)
+	if limit:
+		query = query.limit(limit)
+
 	if query_builder:
 		query = query_builder(query)
 
