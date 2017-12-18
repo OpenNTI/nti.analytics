@@ -580,12 +580,14 @@ def _create_assessment_view(table, user, nti_session, timestamp, course,
 	db.session.add( new_object )
 
 
-def create_self_assessment_view( user, nti_session, timestamp, course, context_path, resource, time_length, assignment_id ):
+def create_self_assessment_view(user, nti_session, timestamp, course,
+								context_path, resource, time_length, assignment_id):
 	return _create_assessment_view( SelfAssessmentViews, user, nti_session, timestamp,
 						course, context_path, resource, time_length, assignment_id )
 
 
-def create_assignment_view( user, nti_session, timestamp, course, context_path, resource, time_length, assignment_id ):
+def create_assignment_view(user, nti_session, timestamp, course, context_path,
+						   resource, time_length, assignment_id ):
 	return _create_assessment_view( AssignmentViews, user, nti_session, timestamp,
 						course, context_path, resource, time_length, assignment_id )
 
@@ -681,9 +683,10 @@ def get_self_assessment_views( user, course=None, **kwargs ):
 	Fetch any self assessment views for a user created *after* the optionally given
 	timestamp.  Optionally, can filter by course.
 	"""
-	results = get_filtered_records( user, SelfAssessmentViews,
-								course=course, **kwargs )
-	return resolve_objects( _resolve_self_assessment_view, results, user=user, course=course )
+	results = get_filtered_records(user, SelfAssessmentViews,
+								   course=course, **kwargs)
+	return resolve_objects(_resolve_self_assessment_view, results,
+						   user=user, course=course)
 
 
 def get_assignment_views( user, course=None, **kwargs ):
@@ -693,4 +696,5 @@ def get_assignment_views( user, course=None, **kwargs ):
 	"""
 	results = get_filtered_records( user, AssignmentViews,
 								 	course=course, **kwargs )
-	return resolve_objects( _resolve_assignment_view, results, user=user, course=course )
+	return resolve_objects(_resolve_assignment_view, results,
+						   user=user, course=course )

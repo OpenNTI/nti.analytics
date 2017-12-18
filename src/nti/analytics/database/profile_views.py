@@ -45,7 +45,8 @@ def _create_profile_view(event, table, nti_session):
 	timestamp = timestamp_type(event.timestamp)
 	context_path = get_context_path(event.context_path)
 
-	existing_record = _profile_view_exists(db, table, user_id, target_id, timestamp)
+	existing_record = _profile_view_exists(db, table, user_id,
+										   target_id, timestamp)
 	time_length = event.time_length
 	sid = nti_session
 
@@ -61,7 +62,8 @@ def _create_profile_view(event, table, nti_session):
 						context_path=context_path,
 						time_length=time_length)
 	db.session.add(view_record)
-	logger.debug('Profile view event (user=%s) (target=%s)', event.user, event.ProfileEntity)
+	logger.debug('Profile view event (user=%s) (target=%s)',
+				 event.user, event.ProfileEntity)
 
 
 def create_profile_view(event, nti_session):
