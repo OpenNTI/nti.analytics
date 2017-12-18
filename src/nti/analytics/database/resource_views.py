@@ -4,10 +4,9 @@
 .. $Id$
 """
 
-from __future__ import print_function, unicode_literals, absolute_import, division
-__docformat__ = "restructuredtext en"
-
-logger = __import__('logging').getLogger(__name__)
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
 
 from nti.analytics_database.resource_views import VideoEvents
 from nti.analytics_database.resource_views import CourseResourceViews
@@ -33,11 +32,15 @@ from nti.analytics.database import resolve_objects
 from nti.analytics.database import get_analytics_db
 from nti.analytics.database import should_update_event
 
+logger = __import__('logging').getLogger(__name__)
+
+
 def _resource_view_exists( db, table, user_id, resource_id, timestamp ):
 	return db.session.query( table ).filter(
 							table.user_id == user_id,
 							table.resource_id == resource_id,
 							table.timestamp == timestamp ).first()
+
 
 def _create_view( table, user, nti_session, timestamp, root_context, context_path, resource, time_length ):
 	"""
@@ -74,9 +77,11 @@ def _create_view( table, user, nti_session, timestamp, root_context, context_pat
 						time_length=time_length )
 	db.session.add( new_object )
 
+
 def create_course_resource_view( user, nti_session, timestamp, course, context_path, resource, time_length):
 	return _create_view(CourseResourceViews, user, nti_session, timestamp,
 						course, context_path, resource, time_length)
+
 
 def _video_view_exists( db, user_id, resource_id, timestamp, event_type ):
 	return db.session.query( VideoEvents ).filter(
@@ -85,12 +90,14 @@ def _video_view_exists( db, user_id, resource_id, timestamp, event_type ):
 							VideoEvents.timestamp == timestamp,
 							VideoEvents.video_event_type == event_type ).first()
 
+
 def _video_play_speed_exists( db, user_id, resource_id, timestamp, video_time ):
 	return db.session.query( VideoPlaySpeedEvents ).filter(
 							VideoPlaySpeedEvents.user_id == user_id,
 							VideoPlaySpeedEvents.resource_id == resource_id,
 							VideoPlaySpeedEvents.timestamp == timestamp,
 							VideoPlaySpeedEvents.video_time == video_time ).first()
+
 
 def create_play_speed_event( user, nti_session, timestamp, root_context, resource_id,
 							video_time, old_play_speed, new_play_speed ):
@@ -128,11 +135,13 @@ def create_play_speed_event( user, nti_session, timestamp, root_context, resourc
 								new_play_speed=new_play_speed )
 	db.session.add( new_object )
 
+
 def _get_video_play_speed( db, user_id, resource_id, timestamp ):
 	return db.session.query( VideoPlaySpeedEvents ).filter(
 							VideoPlaySpeedEvents.user_id == user_id,
 							VideoPlaySpeedEvents.resource_id == resource_id,
 							VideoPlaySpeedEvents.timestamp == timestamp ).first()
+
 
 def create_video_event(	user,
 						nti_session, timestamp,
@@ -198,12 +207,14 @@ def create_video_event(	user,
 	if video_play_speed:
 		video_play_speed.video_view_id = new_object.video_view_id
 
+
 def _resolve_resource_view( record, course=None, user=None ):
 	if course is not None:
 		record.RootContext = course
 	if user is not None:
 		record.user = user
 	return record
+
 
 def _resolve_video_view( record, course=None, user=None, max_time_length=None ):
 	if course is not None:
@@ -213,6 +224,7 @@ def _resolve_video_view( record, course=None, user=None, max_time_length=None ):
 	if max_time_length is not None:
 		record.MaxDuration = max_time_length
 	return record
+
 
 def get_resource_views_for_ntiid( resource_ntiid, user=None, course=None, **kwargs ):
 	results = ()
@@ -225,8 +237,10 @@ def get_resource_views_for_ntiid( resource_ntiid, user=None, course=None, **kwar
 		results = resolve_objects( _resolve_resource_view, view_records, user=user, course=course )
 	return results
 
+
 def get_user_resource_views_for_ntiid( user, resource_ntiid ):
 	return get_resource_views_for_ntiid( resource_ntiid, user=user )
+
 
 def get_video_views_for_ntiid( resource_ntiid, user=None, course=None, **kwargs ):
 	results = ()
@@ -242,13 +256,16 @@ def get_video_views_for_ntiid( resource_ntiid, user=None, course=None, **kwargs 
 		results = resolve_objects( _resolve_video_view, video_records, user=user, course=course, max_time_length=max_time_length )
 	return results
 
+
 def get_user_video_views_for_ntiid( user, resource_ntiid ):
 	return get_video_views_for_ntiid( resource_ntiid, user=user )
+
 
 def get_user_resource_views( user=None, course=None, **kwargs ):
 	results = get_filtered_records( user, CourseResourceViews,
 								course=course, **kwargs )
 	return resolve_objects( _resolve_resource_view, results, user=user, course=course )
+
 
 def get_user_video_views( user=None, course=None, **kwargs  ):
 	filters = ( VideoEvents.video_event_type == VIDEO_WATCH,
@@ -256,6 +273,7 @@ def get_user_video_views( user=None, course=None, **kwargs  ):
 	results = get_filtered_records( user, VideoEvents,
 								course=course, filters=filters, **kwargs )
 	return resolve_objects( _resolve_video_view, results, user=user, course=course )
+
 
 get_video_views = get_user_video_views
 get_resource_views = get_user_resource_views
