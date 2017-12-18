@@ -526,14 +526,14 @@ def _create_assessment_view( table, user, nti_session, timestamp, course, contex
 	course_id = get_root_context_id( db, course, create=True )
 	timestamp = timestamp_type( timestamp )
 
-	existing_record = _assess_view_exists( db, table, uid, assignment_id, timestamp )
+	existing_record = _assess_view_exists(db, table, uid, assignment_id, timestamp)
 	if existing_record is not None:
-		if should_update_event( existing_record, time_length ):
+		if should_update_event(existing_record, time_length):
 			existing_record.time_length = time_length
 			return
 		else:
-			logger.warn( '%s view already exists (user=%s) (assess_id=%s) (timestamp=%s)',
-						table.__tablename__, user, assignment_id, timestamp )
+			logger.warn('%s view already exists (user=%s) (assess_id=%s) (timestamp=%s) (time_length=%s)',
+						table.__tablename__, user, assignment_id, timestamp, time_length)
 			return
 	context_path = get_context_path( context_path )
 

@@ -342,7 +342,8 @@ def _topic_view_exists( db, user_id, topic_id, timestamp ):
 							TopicsViewed.timestamp == timestamp ).first()
 
 
-def create_topic_view(user, nti_session, timestamp, root_context, context_path, topic, time_length):
+def create_topic_view(user, nti_session, timestamp, root_context, context_path,
+					  topic, time_length):
 	db = get_analytics_db()
 	user_record = get_or_create_user( user )
 	uid = user_record.user_id
@@ -366,12 +367,13 @@ def create_topic_view(user, nti_session, timestamp, root_context, context_path, 
 	existing_record = _topic_view_exists( db, uid, did, timestamp )
 
 	if existing_record is not None:
-		if should_update_event( existing_record, time_length ):
+		if should_update_event(existing_record, time_length):
 			existing_record.time_length = time_length
 			return
 		else:
-			logger.warn( 'Topic view already exists (user=%s) (topic=%s)',
-						user, did )
+			# XXX: Really shouldn't happen anymore
+			logger.warn('Topic view already exists (user=%s) (topic=%s) (time_length=%s)',
+						user, did, time_length)
 			return
 
 	context_path = get_context_path( context_path )

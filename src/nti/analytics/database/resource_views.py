@@ -57,12 +57,12 @@ def _create_view( table, user, nti_session, timestamp, root_context, context_pat
 
 	existing_record = _resource_view_exists( db, table, uid, rid, timestamp )
 	if existing_record is not None:
-		if should_update_event( existing_record, time_length ):
+		if should_update_event(existing_record, time_length):
 			existing_record.time_length = time_length
 			return
 		else:
-			logger.warn( '%s view already exists (user=%s) (resource_id=%s) (timestamp=%s)',
-						table.__tablename__, user, rid, timestamp )
+			logger.warn('%s view already exists (user=%s) (resource_id=%s) (timestamp=%s) (time_length=%s)',
+						table.__tablename__, user, rid, timestamp, time_length)
 			return
 	context_path = get_context_path( context_path )
 	course_id, entity_root_context_id = get_root_context_ids( root_context )
@@ -172,15 +172,16 @@ def create_video_event(	user,
 		time_length = abs( video_end_time - video_start_time )
 
 	if existing_record is not None:
-		if should_update_event( existing_record, time_length ):
+		if should_update_event(existing_record, time_length):
 			existing_record.time_length = time_length
 			existing_record.video_start_time = video_start_time
 			existing_record.video_end_time = video_end_time
 			return
 		else:
 			# Ok, duplicate event received, apparently.
-			logger.warn('Video view already exists (user=%s) (resource_id=%s) (timestamp=%s)',
-						user, vid, timestamp )
+			# XXX: Really shouldn't happen anymore
+			logger.warn('Video view already exists (user=%s) (resource_id=%s) (timestamp=%s) (time_length=%s)',
+						user, vid, timestamp, time_length)
 			return
 
 	context_path = get_context_path( context_path )

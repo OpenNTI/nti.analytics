@@ -218,12 +218,12 @@ def create_blog_view(user, nti_session, timestamp, context_path, blog_entry, tim
 	existing_record = _blog_view_exists( db, uid, blog_id, timestamp )
 
 	if existing_record is not None:
-		if should_update_event( existing_record, time_length ):
+		if should_update_event(existing_record, time_length):
 			existing_record.time_length = time_length
 			return
 		else:
-			logger.warn( 'Blog view already exists (user=%s) (blog_id=%s)',
-						user, blog_id )
+			logger.warn('Blog view already exists (user=%s) (blog_id=%s) (time_length=%s)',
+						user, blog_id, time_length)
 			return
 
 	context_path = get_context_path( context_path )

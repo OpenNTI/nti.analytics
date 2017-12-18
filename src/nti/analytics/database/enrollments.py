@@ -42,12 +42,12 @@ def create_course_catalog_view( user, nti_session, timestamp, context_path, cour
 	existing_record = _course_catalog_view_exists( db, uid, course_id, timestamp )
 
 	if existing_record is not None:
-		if should_update_event( existing_record, time_length ):
+		if should_update_event(existing_record, time_length):
 			existing_record.time_length = time_length
 			return
 		else:
-			logger.debug( 'Course catalog view already exists (user=%s) (catalog=%s)',
-						uid, course_id )
+			logger.debug('Course catalog view already exists (user=%s) (catalog=%s) (time_length=%s)',
+						uid, course_id, time_length)
 			return
 
 	context_path = get_context_path( context_path )
