@@ -12,6 +12,18 @@
 	<utility factory=".activity._active_time"
 			 provides=".interfaces.IActiveTimesStatsSource" />
 
+	<adapter factory=".activity.ActiveTimeSource"
+			 for="nti.dataserver.interfaces.IUser"
+			 provides=".interfaces.IActivitySource" />
+
+	<adapter factory=".activity.ActiveTimeSource"
+			 for="nti.contenttypes.courses.interfaces.ICourseInstance"
+			 provides=".interfaces.IActivitySource" />
+
+	<adapter factory=".activity.ActiveTimeSource"
+			 for="nti.dataserver.interfaces.IUser nti.contenttypes.courses.interfaces.ICourseInstance"
+			 provides=".interfaces.IActivitySource" />
+
 	<adapter factory=".activity._active_time_for_user"
 			 for="nti.dataserver.interfaces.IUser"
 			 provides=".interfaces.IActiveTimesStatsSource" />
