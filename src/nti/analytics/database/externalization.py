@@ -9,6 +9,8 @@ __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
+import calendar
+
 from zope import component
 from zope import interface
 
@@ -31,7 +33,7 @@ class ViewEventSummaryExternalizer(object):
     def toExternalObject(self, **kwargs):
         ext = {}
         ext['SessionID'] = self.event.SessionID
-        ext['Timestamp'] = self.event.timestamp
+        ext['Timestamp'] = calendar.timegm(self.event.timestamp.utctimetuple())
         ext['Username'] = getattr(get_user(self.event.user_id), 'username', None)
         ext[StandardExternalFields.MIMETYPE] = VIEW_EVENT_SUMMARY_MIMETYPE
         return ext
