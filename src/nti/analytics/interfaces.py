@@ -7,7 +7,6 @@
 from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
-__docformat__ = "restructuredtext en"
 
 from zope import interface
 
@@ -18,9 +17,6 @@ from zope.dublincore.interfaces import IDCTimes
 from zope.interface.interfaces import IObjectEvent
 
 from nti.base.interfaces import IIterable
-
-from nti.contenttypes.courses.interfaces import ICourseInstance
-from nti.contenttypes.courses.interfaces import ICourseInstanceEnrollmentRecord
 
 from nti.dataserver.interfaces import IUser
 
@@ -40,7 +36,8 @@ VIDEO_SKIP = u'SKIP'
 VIDEO_WATCH = u'WATCH'
 VIDEO_EVENTS = (VIDEO_SKIP, VIDEO_WATCH)
 VIDEO_EVENTS_VOCABULARY = \
-	vocabulary.SimpleVocabulary([vocabulary.SimpleTerm(_x) for _x in VIDEO_EVENTS])
+	vocabulary.SimpleVocabulary([vocabulary.SimpleTerm(_x)
+								 for _x in VIDEO_EVENTS])
 
 
 class IAnalyticsQueueFactory(interface.Interface):
@@ -59,8 +56,8 @@ class IObjectProcessor(interface.Interface):
 
 class IAnalyticsObjectBase(interface.Interface):
 	timestamp = Number(title=u"The timestamp when this event occurred, in seconds since epoch.",
-						default=0.0,
-						required=True)
+					   default=0.0,
+					   required=True)
 
 	user = ValidTextLine(title=u'User who created the event', required=False)
 	SessionID = Number(title=u"The analytics session id.", required=False)
@@ -222,6 +219,7 @@ class IBatchResourceEvents(IIterable):
 	events = TypedIterable(title=u"The events in this batch",
 						   value_type=Object(IAnalyticsEvent))
 
+
 class IGeographicalLocation(interface.Interface):
 	Latitude = ValidTextLine(title=u'The latitude of this session',
 							 required=False)
@@ -264,8 +262,6 @@ class IAnalyticsSession(interface.Interface):
 								  title=u'Geographical location data for this session',
 								  required=False)
 	GeographicalLocation.setTaggedValue('_ext_excluded_out', True)
-
-
 
 
 class IAnalyticsSessions(interface.Interface):
@@ -355,3 +351,13 @@ class AnalyticsEventValidationError(Exception):
 	"""
 	Raised when an event has invalid data.
 	"""
+
+class IAnalyticsSessionIdProvider(interface.Interface):
+	"""
+	An adapter to retrieve an analytics session id for an event.
+	"""
+
+	def get_session_id():
+		"""
+		Return the applicable session_id for this event.
+		"""

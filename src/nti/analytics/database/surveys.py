@@ -24,7 +24,7 @@ from . import get_analytics_db
 
 def _poll_exists(db, submission_id):
 	return db.session.query(PollsTaken).filter(
-					PollsTaken.submission_id == submission_id).first()
+							PollsTaken.submission_id == submission_id).first()
 
 def create_poll_taken(user, nti_session, timestamp, course, submission):
 	db = get_analytics_db()
