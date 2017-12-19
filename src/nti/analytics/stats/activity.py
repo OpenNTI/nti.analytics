@@ -88,6 +88,9 @@ class ActivitySource(object):
         for event in _activity_source(**kwargs):
             yield event
 
+def _course_activity_source(course):
+    return ActivitySource(course=course)
+
 def _active_time_for_user(user):
     return ActiveTimeSource(user=user)
 

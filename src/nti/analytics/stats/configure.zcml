@@ -9,7 +9,10 @@
 	<include package="zope.component" />
 	<include package="zope.security" />
 
-	<adapter factory=".activity.ActivitySource"
+	<utility factory=".activity.ActivitySource"
+			 provides=".interfaces.IActivitySource" />
+
+	<adapter factory=".activity._course_activity_source"
 			 for="nti.contenttypes.courses.interfaces.ICourseInstance"
 			 provides=".interfaces.IActivitySource" />
 
