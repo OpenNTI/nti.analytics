@@ -9,6 +9,21 @@
 	<include package="zope.component" />
 	<include package="zope.security" />
 
+	<utility factory=".activity.ActivitySource"
+			 provides=".interfaces.IActivitySource" />
+
+	<adapter factory=".activity._course_activity_source"
+			 for="nti.contenttypes.courses.interfaces.ICourseInstance"
+			 provides=".interfaces.IActivitySource" />
+
+	<adapter factory=".activity.ActivitySource"
+			 for="nti.dataserver.interfaces.IUser nti.contenttypes.courses.interfaces.ICourseInstance"
+			 provides=".interfaces.IActivitySource" />
+
+	<adapter factory=".activity.ActivitySource"
+			 for="nti.dataserver.interfaces.IUser"
+			 provides=".interfaces.IActivitySource" />
+
 	<utility factory=".activity._active_time"
 			 provides=".interfaces.IActiveTimesStatsSource" />
 

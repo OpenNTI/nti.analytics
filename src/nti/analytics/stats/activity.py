@@ -10,8 +10,10 @@ from __future__ import absolute_import
 
 from collections import defaultdict
 
+from zope import component
 from zope import interface
 
+from nti.analytics.stats.interfaces import IActivitySource
 from nti.analytics.stats.interfaces import IActiveTimesStats
 from nti.analytics.stats.interfaces import IActiveTimesStatsSource
 from nti.analytics.stats.interfaces import IDailyActivityStatsSource
@@ -64,12 +66,30 @@ class ActiveTimeStats(object):
 EVENT_SOURCES = (get_video_views,
                  get_resource_views,)
 
+_DEFAULT_YIELD_PER = 1000
 
 def _activity_source(**kwargs):
     for source in EVENT_SOURCES:
         for event in source(**kwargs):
             yield event
 
+@interface.implementer(IActivitySource)
+class ActivitySource(object):
+
+    def __init__(self, user=None, course=None):
+        self.user = user
+        self.course = course
+
+    def activity(self, **kwargs):
+        kwargs['user'] = self.user
+        kwargs['course'] = self.course
+        if 'yield_per' not in kwargs:
+            kwargs['yield_per'] = _DEFAULT_YIELD_PER
+        for event in _activity_source(**kwargs):
+            yield event
+
+def _course_activity_source(course):
+    return ActivitySource(course=course)
 
 def _active_time_for_user(user):
     return ActiveTimeSource(user=user)
@@ -93,10 +113,8 @@ class ActiveTimeSource(object):
 
     def active_times_for_window(self, start, end):
         stats = ActiveTimeStats()
-        for event in _activity_source(user=self.user,
-                                      course=self.course,
-                                      timestamp=start,
-                                      max_timestamp=end):
+        activity_source = ActivitySource(user=self.user, course=self.course)
+        for event in activity_source.activity(timestamp=start, max_timestamp=end):
             stats.process_event(event)
         return stats
     stats_for_window = active_times_for_window
@@ -124,10 +142,8 @@ class DailyActivitySource(object):
 
     def stats_for_window(self, start, end):
         dates = defaultdict(lambda: 0)
-        for event in _activity_source(user=self.user,
-                                      course=self.course,
-                                      timestamp=start,
-                                      max_timestamp=end):
+        activity_source = ActivitySource(user=self.user, course=self.course)
+        for event in activity_source.activity(timestamp=start, max_timestamp=end):
             date = event.timestamp.date()
             dates[date] += 1
         return LocatedExternalDict({k: CountStats(Count=v) for k, v in dates.items()})

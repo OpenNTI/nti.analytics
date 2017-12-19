@@ -110,7 +110,7 @@ class TestActiveTimeStatsAdapters(NTIAnalyticsTestCase):
 
     @fudge.patch('nti.analytics.stats.activity._activity_source')
     def test_user_scoped(self, mock_activity_source):
-        mock_activity_source.is_callable().with_args(user=self.user,
+        mock_activity_source.is_callable().with_matching_args(user=self.user,
                                                      course=None,
                                                      timestamp=self.start,
                                                      max_timestamp=self.end)
@@ -121,7 +121,7 @@ class TestActiveTimeStatsAdapters(NTIAnalyticsTestCase):
 
     @fudge.patch('nti.analytics.stats.activity._activity_source')
     def test_course_scoped(self, mock_activity_source):
-        mock_activity_source.is_callable().with_args(user=None,
+        mock_activity_source.is_callable().with_matching_args(user=None,
                                                      course=self.course,
                                                      timestamp=self.start,
                                                      max_timestamp=self.end)
@@ -132,7 +132,7 @@ class TestActiveTimeStatsAdapters(NTIAnalyticsTestCase):
 
     @fudge.patch('nti.analytics.stats.activity._activity_source')
     def test_enrollment_scoped(self, mock_activity_source):
-        mock_activity_source.is_callable().with_args(user=self.user,
+        mock_activity_source.is_callable().with_matching_args(user=self.user,
                                                      course=self.course,
                                                      timestamp=self.start,
                                                      max_timestamp=self.end)
@@ -175,7 +175,7 @@ class TestDailyActivitySourceAdapters(NTIAnalyticsTestCase):
 
     @fudge.patch('nti.analytics.stats.activity._activity_source')
     def test_user_scoped(self, mock_activity_source):
-        mock_activity_source.is_callable().with_args(user=self.user,
+        mock_activity_source.is_callable().with_matching_args(user=self.user,
                                                      course=None,
                                                      timestamp=self.start,
                                                      max_timestamp=self.end)
@@ -186,7 +186,7 @@ class TestDailyActivitySourceAdapters(NTIAnalyticsTestCase):
 
     @fudge.patch('nti.analytics.stats.activity._activity_source')
     def test_course_scoped(self, mock_activity_source):
-        mock_activity_source.is_callable().with_args(user=None,
+        mock_activity_source.is_callable().with_matching_args(user=None,
                                                      course=self.course,
                                                      timestamp=self.start,
                                                      max_timestamp=self.end)
@@ -197,7 +197,7 @@ class TestDailyActivitySourceAdapters(NTIAnalyticsTestCase):
 
     @fudge.patch('nti.analytics.stats.activity._activity_source')
     def test_enrollment_scoped(self, mock_activity_source):
-        mock_activity_source.is_callable().with_args(user=self.user,
+        mock_activity_source.is_callable().with_matching_args(user=self.user,
                                                      course=self.course,
                                                      timestamp=self.start,
                                                      max_timestamp=self.end)
