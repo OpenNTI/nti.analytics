@@ -173,13 +173,3 @@ class TestSessions( NTIAnalyticsTestCase ):
 		baseline += 1
 		stats = _active_session_count(_now=now)
 		assert_that(stats.count, is_(baseline))
-
-
-
-
-
-
-
-
-
-
