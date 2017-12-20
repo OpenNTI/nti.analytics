@@ -533,18 +533,24 @@ def delete_feedback( timestamp, feedback_ds_id ):
 	db.session.flush()
 
 
-def _assess_view_exists( db, table, user_id, assignment_id, timestamp ):
-	return db.session.query( table ).filter(
-							table.user_id == user_id,
-							table.assignment_id == assignment_id,
-							table.timestamp == timestamp ).first()
-
-
-def _create_assessment_view(table, user, nti_session, timestamp, course,
-							context_path, resource, time_length, assignment_id):
+def _assess_view_exists(db, table, user_id, assessment_id, timestamp,
+						assessment_column_name):
 	"""
-	Create a basic assessment view event, if necessary.  Also if necessary,
-	may update existing events with appropriate data.
+	Check if the given record (defined by timestamp, assessment_id, and table)
+	exists already. If so, we return the record.
+	"""
+	filters = [table.user_id == user_id,
+			   table.timestamp == timestamp]
+	filters.append(getattr(table, assessment_column_name) == assessment_id)
+	return db.session.query(table).filter(*filters).first()
+
+
+def create_assessment_view(table, user, nti_session, timestamp, course,
+						   context_path, resource, time_length, assessment_id,
+						   assessment_column_name='assignment_id'):
+	"""
+	Create a basic assessment view event, if necessary. Also if necessary, may
+	 update existing events with appropriate data.
 	"""
 	db = get_analytics_db()
 	user_record = get_or_create_user( user )
@@ -558,16 +564,19 @@ def _create_assessment_view(table, user, nti_session, timestamp, course,
 	course_id = get_root_context_id( db, course, create=True )
 	timestamp = timestamp_type( timestamp )
 
-	existing_record = _assess_view_exists(db, table, uid, assignment_id, timestamp)
+	existing_record = _assess_view_exists(db, table, uid, assessment_id,
+										  timestamp, assessment_column_name)
 	if existing_record is not None:
 		if should_update_event(existing_record, time_length):
 			existing_record.time_length = time_length
 			return
 		else:
-			logger.warn('%s view already exists (user=%s) (assess_id=%s) (timestamp=%s) (time_length=%s)',
-						table.__tablename__, user, assignment_id, timestamp, time_length)
+			logger.warn("""%s view already exists (user=%s) (assessment_id=%s)
+						(timestamp=%s) (time_length=%s)""",
+						table.__tablename__, user, assessment_id, timestamp,
+						time_length)
 			return
-	context_path = get_context_path( context_path )
+	context_path = get_context_path(context_path)
 
 	new_object = table( user_id=uid,
 						session_id=sid,
@@ -575,21 +584,25 @@ def _create_assessment_view(table, user, nti_session, timestamp, course,
 						course_id=course_id,
 						context_path=context_path,
 						resource_id=rid,
-						time_length=time_length,
-						assignment_id=assignment_id )
-	db.session.add( new_object )
+						time_length=time_length)
+	setattr(new_object, assessment_column_name, assessment_id)
+	db.session.add(new_object)
+	return new_object
 
 
 def create_self_assessment_view(user, nti_session, timestamp, course,
-								context_path, resource, time_length, assignment_id):
-	return _create_assessment_view( SelfAssessmentViews, user, nti_session, timestamp,
-						course, context_path, resource, time_length, assignment_id )
+								context_path, resource, time_length,
+								assignment_id):
+	return create_assessment_view(SelfAssessmentViews, user, nti_session,
+								  timestamp, course, context_path, resource,
+								  time_length, assignment_id)
 
 
 def create_assignment_view(user, nti_session, timestamp, course, context_path,
-						   resource, time_length, assignment_id ):
-	return _create_assessment_view( AssignmentViews, user, nti_session, timestamp,
-						course, context_path, resource, time_length, assignment_id )
+						   resource, time_length, assignment_id):
+	return create_assessment_view(AssignmentViews, user, nti_session,
+								  timestamp, course, context_path, resource,
+								  time_length, assignment_id)
 
 
 def _resolve_self_assessment( row, user=None, course=None ):

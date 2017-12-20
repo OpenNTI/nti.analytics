@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from __future__ import print_function, unicode_literals, absolute_import, division
-__docformat__ = "restructuredtext en"
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
 
 # disable: accessing protected members, too many methods
 # pylint: disable=W0212,R0904
@@ -17,10 +18,8 @@ from hamcrest import has_property
 
 import time
 import pickle
-from datetime import datetime
 
-from nti.externalization import internalization
-from nti.externalization.externalization import toExternalObject
+from datetime import datetime
 
 from nti.analytics.model import ResourceEvent
 from nti.analytics.model import BlogViewEvent
@@ -63,11 +62,16 @@ from nti.analytics.interfaces import DEFAULT_ANALYTICS_FREQUENCY
 from nti.analytics.progress import DefaultProgress
 from nti.analytics.progress import VideoProgress
 
+from nti.analytics.tests import NTIAnalyticsTestCase
+
+from nti.externalization import internalization
+
+from nti.externalization.externalization import toExternalObject
+
 from nti.externalization.tests import assert_does_not_pickle
 
 from nti.testing.matchers import verifiably_provides
 
-from nti.analytics.tests import NTIAnalyticsTestCase
 
 timestamp = time.mktime( datetime.utcnow().timetuple() )
 user = 'jzuech@nextthought.com'
@@ -414,15 +418,15 @@ class TestResourceEvents(NTIAnalyticsTestCase):
 	def test_video_event_andrew(self):
 
 		ext_obj = {
-			"course":"tag:nextthought.com,2011-10:system-OID-0x7e30:5573657273:YV7ubjAxx3S",
-			"with_transcript":"false",
+			"course":u"tag:nextthought.com,2011-10:system-OID-0x7e30:5573657273:YV7ubjAxx3S",
+			"with_transcript":u"false",
 			"video_start_time":0,
 			"video_end_time":30,
-			"context_path": ["a test"],
-			"resource_id":"1500101:0_ey2kllmp",
+			"context_path": [u"a test"],
+			"resource_id":u"1500101:0_ey2kllmp",
 			"time_length":24791,
 			"MimeType":"application/vnd.nextthought.analytics.watchvideoevent",
-			"user":"andrew.ligon",
+			"user":u"andrew.ligon",
 			"timestamp": 1407645254.609799}
 
 		factory = internalization.find_factory_for(ext_obj)

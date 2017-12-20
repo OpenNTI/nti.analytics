@@ -7,7 +7,6 @@
 from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
-__docformat__ = "restructuredtext en"
 
 import urlparse
 
@@ -29,8 +28,9 @@ from nti.analytics import get_current_username
 from nti.analytics.interfaces import IVideoEvent
 from nti.analytics.interfaces import IBlogViewEvent
 from nti.analytics.interfaces import INoteViewEvent
-from nti.analytics.interfaces import ITopicViewEvent
 from nti.analytics.interfaces import IResourceEvent
+from nti.analytics.interfaces import ITopicViewEvent
+from nti.analytics.interfaces import ISurveyViewEvent
 from nti.analytics.interfaces import ICourseCatalogViewEvent
 from nti.analytics.interfaces import IVideoPlaySpeedChangeEvent
 from nti.analytics.interfaces import IAssignmentViewEvent
@@ -52,6 +52,7 @@ from nti.analytics.database import resource_tags as db_resource_tags
 from nti.analytics.database import resource_views as db_resource_views
 from nti.analytics.database import assessments as db_assess_views
 from nti.analytics.database import profile_views as db_profile_views
+from nti.analytics.database import surveys as db_survey_views
 
 from nti.analytics.progress import get_progress_for_resource_views
 from nti.analytics.progress import get_progress_for_video_views
@@ -476,6 +477,16 @@ def _add_assignment_event( event, nti_session=None ):
 					event, event.content_id, nti_session, event.AssignmentId )
 
 
+def _add_survey_event(event, nti_session=None):
+	try:
+		_validate_assessment_event(event, event.SurveyId)
+	except UnrecoverableAnalyticsError as e:
+		logger.warn( 'Error while validating event (%s)', e )
+		return
+	_do_resource_view(db_survey_views.create_survey_view,
+					  event, event.content_id, nti_session, event.SurveyId)
+
+
 def _add_video_event( event, nti_session=None ):
 	try:
 		_validate_video_event( event )
@@ -660,6 +671,8 @@ def handle_events(batch_events, return_invalid=True):
 				process_event( _get_resource_queue, _add_self_assessment_event, **kwargs )
 			elif IAssignmentViewEvent.providedBy( event ):
 				process_event( _get_resource_queue, _add_assignment_event, **kwargs )
+			elif ISurveyViewEvent.providedBy( event ):
+				process_event( _get_resource_queue, _add_survey_event, **kwargs )
 			elif IResourceEvent.providedBy( event ):
 				process_event( _get_resource_queue, _add_resource_event, **kwargs )
 			elif ICourseCatalogViewEvent.providedBy( event ):

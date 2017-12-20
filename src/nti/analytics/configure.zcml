@@ -144,6 +144,7 @@
 						 .interfaces.IAnalyticsClientParams
 						 .interfaces.ISelfAssessmentViewEvent
 						 .interfaces.IAssignmentViewEvent
+						 .interfaces.ISurveyViewEvent
 						 .interfaces.IVideoPlaySpeedChangeEvent
 						 .interfaces.IProfileViewEvent
 						 .interfaces.IProfileActivityViewEvent
@@ -196,6 +197,10 @@
 	<adapter factory=".internalization._AssignmentViewEvent"
 			 for=".interfaces.IAssignmentViewEvent"
 			 provides="nti.externalization.interfaces.IInternalObjectUpdater" />
+
+	<adapter factory=".internalization._SurveyViewEvent"
+             for=".interfaces.ISurveyViewEvent"
+             provides="nti.externalization.interfaces.IInternalObjectUpdater" />
 
 	<adapter factory=".internalization._SelfAssessmentViewEvent"
 			 for=".interfaces.ISelfAssessmentViewEvent"
