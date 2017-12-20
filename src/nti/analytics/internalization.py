@@ -20,6 +20,7 @@ from nti.analytics.interfaces import IResourceEvent
 from nti.analytics.interfaces import IBlogViewEvent
 from nti.analytics.interfaces import INoteViewEvent
 from nti.analytics.interfaces import ITopicViewEvent
+from nti.analytics.interfaces import ISurveyViewEvent
 from nti.analytics.interfaces import IAnalyticsSession
 from nti.analytics.interfaces import IProfileViewEvent
 from nti.analytics.interfaces import IAssignmentViewEvent
@@ -140,4 +141,11 @@ class _AssignmentViewEvent(_NTIAnalyticsModelUpdater):
 class _SelfAssessmentViewEvent(_NTIAnalyticsModelUpdater):
 
 	model_interface = ISelfAssessmentViewEvent
+
+
+@interface.implementer(IInternalObjectUpdater)
+@component.adapter(ISurveyViewEvent)
+class _SurveyViewEvent(_NTIAnalyticsModelUpdater):
+
+	model_interface = ISurveyViewEvent
 

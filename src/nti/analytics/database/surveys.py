@@ -4,27 +4,36 @@
 .. $Id$
 """
 
-from __future__ import print_function, unicode_literals, absolute_import, division
-__docformat__ = "restructuredtext en"
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
+
+from nti.analytics_database.surveys import PollsTaken
+from nti.analytics_database.surveys import SurveyViews
+from nti.analytics_database.surveys import SurveysTaken
+
+from nti.analytics.common import timestamp_type
+
+from nti.analytics.database import resolve_objects
+from nti.analytics.database import get_analytics_db
+
+from nti.analytics.database.assessments import create_assessment_view
+
+from nti.analytics.database.root_context import get_root_context_id
+
+from nti.analytics.database.query_utils import get_filtered_records
+
+from nti.analytics.database.users import get_or_create_user
+
+from nti.analytics.identifier import get_ds_id
 
 logger = __import__('logging').getLogger(__name__)
 
-from nti.analytics_database.surveys import PollsTaken
-from nti.analytics_database.surveys import SurveysTaken
-
-from ..common import timestamp_type
-
-from ..identifier import get_ds_id
-
-from .root_context import get_root_context_id
-
-from .users import get_or_create_user
-
-from . import get_analytics_db
 
 def _poll_exists(db, submission_id):
 	return db.session.query(PollsTaken).filter(
 							PollsTaken.submission_id == submission_id).first()
+
 
 def create_poll_taken(user, nti_session, timestamp, course, submission):
 	db = get_analytics_db()
@@ -50,9 +59,11 @@ def create_poll_taken(user, nti_session, timestamp, course, submission):
 	db.session.flush()
 	return new_object
 
+
 def _survey_exists(db, submission_id):
 	return db.session.query(SurveysTaken).filter(
 					SurveysTaken.submission_id == submission_id).first()
+
 
 def create_survey_taken(user, nti_session, timestamp, course, submission):
 	db = get_analytics_db()
@@ -77,3 +88,33 @@ def create_survey_taken(user, nti_session, timestamp, course, submission):
 	db.session.add(new_object)
 	db.session.flush()
 	return new_object
+
+
+def create_survey_view(user, nti_session, timestamp, course, context_path,
+					   resource, time_length, survey_id):
+	return create_assessment_view(SurveyViews, user, nti_session, timestamp,
+								  course, context_path, resource, time_length,
+								  survey_id, 'survey_id')
+
+
+def _resolve_view(row, course, user):
+	if course is not None:
+		row.RootContext = course
+	if user is not None:
+		row.user = user
+	return row
+
+
+def _resolve_survey_view(row, user=None, course=None):
+	return _resolve_view(row, course, user)
+
+
+def get_survey_views(user, course=None, **kwargs):
+	"""
+	Fetch any survey views for a user created *after* the optionally given
+	timestamp. Optionally, can filter by course.
+	"""
+	results = get_filtered_records(user, SurveyViews,
+								   course=course, **kwargs)
+	return resolve_objects(_resolve_survey_view, results,
+						   user=user, course=course)

@@ -126,15 +126,21 @@ class IAssessmentViewEvent( IAnalyticsViewEvent, IRootContextEvent ):
 	ContentId = ValidTextLine(title=u"The resource page ntiid.", required=False)
 
 
-class ISelfAssessmentViewEvent( IAssessmentViewEvent ):
+class ISelfAssessmentViewEvent(IAssessmentViewEvent):
 	"""
 	Describes a self-assessment viewing event.
 	"""
 
 
-class IAssignmentViewEvent( IAssessmentViewEvent ):
+class IAssignmentViewEvent(IAssessmentViewEvent):
 	"""
 	Describes an assignment viewing event.
+	"""
+
+
+class ISurveyViewEvent(IAssessmentViewEvent):
+	"""
+	Describes a survey viewing event.
 	"""
 
 

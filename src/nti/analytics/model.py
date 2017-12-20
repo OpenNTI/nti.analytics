@@ -4,10 +4,9 @@
 .. $Id$
 """
 
-from __future__ import print_function, unicode_literals, absolute_import, division
-__docformat__ = "restructuredtext en"
-
-logger = __import__('logging').getLogger(__name__)
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
 
 from zope import component
 from zope import interface
@@ -15,14 +14,6 @@ from zope import interface
 from zope.annotation.factory import factory as an_factory
 
 from zope.interface.interfaces import ObjectEvent
-
-from nti.externalization.persistence import NoPickle
-from nti.externalization.representation import WithRepr
-
-from nti.property.property import alias
-
-from nti.schema.field import SchemaConfigured
-from nti.schema.fieldproperty import createDirectFieldProperties
 
 from nti.analytics.interfaces import VIDEO_SKIP
 from nti.analytics.interfaces import VIDEO_WATCH
@@ -32,6 +23,7 @@ from nti.analytics.interfaces import IBlogViewEvent
 from nti.analytics.interfaces import INoteViewEvent
 from nti.analytics.interfaces import IResourceEvent
 from nti.analytics.interfaces import ITopicViewEvent
+from nti.analytics.interfaces import ISurveyViewEvent
 from nti.analytics.interfaces import IAnalyticsSession
 from nti.analytics.interfaces import IAnalyticsSessions
 from nti.analytics.interfaces import IBatchResourceEvents
@@ -51,11 +43,23 @@ from nti.dataserver.interfaces import IUser
 
 from nti.dublincore.time_mixins import PersistentCreatedAndModifiedTimeObject
 
+from nti.externalization.persistence import NoPickle
+from nti.externalization.representation import WithRepr
+
+from nti.property.property import alias
+
+from nti.schema.field import SchemaConfigured
+from nti.schema.fieldproperty import createDirectFieldProperties
+
+logger = __import__('logging').getLogger(__name__)
+
+
 def _replace_state(obj, old, new):
 	if old in obj.__dict__:
 		value = obj.__dict__.pop(old)
 		if obj.__dict__.get(new, None) is None:
 			obj.__dict__[new] = value
+
 
 @WithRepr
 class ViewEvent(SchemaConfigured):
@@ -68,6 +72,7 @@ class ViewEvent(SchemaConfigured):
 		self.__dict__ = data
 		_replace_state(self, 'time_length', 'Duration')
 
+
 class RootContextEvent(ViewEvent): # alias
 
 	course = alias('RootContextID')
@@ -77,6 +82,7 @@ class RootContextEvent(ViewEvent): # alias
 		_replace_state(self, 'time_length', 'Duration')
 		_replace_state(self, 'course', 'RootContextID')
 
+
 @interface.implementer(IResourceEvent)
 class ResourceEvent(RootContextEvent):
 	createDirectFieldProperties(IResourceEvent)
@@ -85,6 +91,7 @@ class ResourceEvent(RootContextEvent):
 
 	__external_class_name__ = "ResourceEvent"
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.resourceevent'
+
 
 @interface.implementer(ISelfAssessmentViewEvent)
 class SelfAssessmentViewEvent(RootContextEvent):
@@ -96,6 +103,7 @@ class SelfAssessmentViewEvent(RootContextEvent):
 	__external_class_name__ = "SelfAssessmentViewEvent"
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.selfassessmentviewevent'
 
+
 @interface.implementer(IAssignmentViewEvent)
 class AssignmentViewEvent(RootContextEvent):
 	createDirectFieldProperties(IAssignmentViewEvent)
@@ -105,6 +113,18 @@ class AssignmentViewEvent(RootContextEvent):
 
 	__external_class_name__ = "AssignmentViewEvent"
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.assignmentviewevent'
+
+
+@interface.implementer(ISurveyViewEvent)
+class SurveyViewEvent(RootContextEvent):
+	createDirectFieldProperties(ISurveyViewEvent)
+
+	resource_id = SurveyId = alias('ResourceId')
+	content_id = alias('ContentId')
+
+	__external_class_name__ = "SurveyViewEvent"
+	mime_type = mimeType = 'application/vnd.nextthought.analytics.surveyviewevent'
+
 
 @interface.implementer(IVideoEvent)
 class WatchVideoEvent(RootContextEvent):
@@ -118,6 +138,7 @@ class WatchVideoEvent(RootContextEvent):
 	course = alias('RootContextID')
 	resource_id = alias('ResourceId')
 
+
 @interface.implementer(IVideoEvent)
 class SkipVideoEvent(RootContextEvent):
 	createDirectFieldProperties(IVideoEvent)
@@ -130,12 +151,14 @@ class SkipVideoEvent(RootContextEvent):
 	course = alias('RootContextID')
 	resource_id = alias('ResourceId')
 
+
 @interface.implementer(ICourseCatalogViewEvent)
 class CourseCatalogViewEvent(RootContextEvent):
 	createDirectFieldProperties(ICourseCatalogViewEvent)
 
 	__external_class_name__ = "CourseCatalogViewEvent"
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.coursecatalogviewevent'
+
 
 @interface.implementer(IBlogViewEvent)
 class BlogViewEvent(ViewEvent):
@@ -151,12 +174,14 @@ class NoteViewEvent(RootContextEvent):
 	__external_class_name__ = "NoteViewEvent"
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.noteviewevent'
 
+
 @interface.implementer(ITopicViewEvent)
 class TopicViewEvent(RootContextEvent):
 	createDirectFieldProperties(ITopicViewEvent)
 
 	__external_class_name__ = "TopicViewEvent"
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.topicviewevent'
+
 
 @interface.implementer(IVideoPlaySpeedChangeEvent)
 class VideoPlaySpeedChangeEvent(SchemaConfigured):
@@ -171,12 +196,14 @@ class VideoPlaySpeedChangeEvent(SchemaConfigured):
 	def __init__(self, *args, **kwargs):
 		SchemaConfigured.__init__(self, *args, **kwargs)
 
+
 @interface.implementer(IProfileViewEvent)
 class ProfileViewEvent(ViewEvent):
 	createDirectFieldProperties(IProfileViewEvent)
 
 	__external_class_name__ = "ProfileViewEvent"
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.profileviewevent'
+
 
 @interface.implementer(IProfileActivityViewEvent)
 class ProfileActivityViewEvent(ViewEvent):
@@ -185,12 +212,14 @@ class ProfileActivityViewEvent(ViewEvent):
 	__external_class_name__ = "ProfileActivityViewEvent"
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.profileactivityviewevent'
 
+
 @interface.implementer(IProfileMembershipViewEvent)
 class ProfileMembershipViewEvent(ViewEvent):
 	createDirectFieldProperties(IProfileMembershipViewEvent)
 
 	__external_class_name__ = "ProfileMembershipViewEvent"
 	mime_type = mimeType = 'application/vnd.nextthought.analytics.profilemembershipviewevent'
+
 
 @interface.implementer(IBatchResourceEvents)
 @WithRepr
@@ -208,6 +237,7 @@ class BatchResourceEvents(SchemaConfigured):
 	def __len__(self):
 		return len( self.events )
 
+
 @interface.implementer(IAnalyticsSessions)
 @WithRepr
 @NoPickle
@@ -224,6 +254,7 @@ class AnalyticsSessions(SchemaConfigured):
 	def __len__(self):
 		return len( self.sessions )
 
+
 @interface.implementer(IAnalyticsSession)
 @WithRepr
 class AnalyticsSession(SchemaConfigured):
@@ -236,6 +267,7 @@ class AnalyticsSession(SchemaConfigured):
 	def __init__(self, *args, **kwargs):
 		SchemaConfigured.__init__(self, *args, **kwargs)
 
+
 @interface.implementer(IGeographicalLocation)
 @WithRepr
 class GeographicalLocation(SchemaConfigured):
@@ -246,6 +278,7 @@ class GeographicalLocation(SchemaConfigured):
 
 	def __init__(self, *args, **kwargs):
 		SchemaConfigured.__init__(self, *args, **kwargs)
+
 
 @interface.implementer(IUserResearchStatusEvent)
 class UserResearchStatusEvent(ObjectEvent):
@@ -269,7 +302,9 @@ class _Researchable(PersistentCreatedAndModifiedTimeObject):
 		self.allow_research = False
 		self.lastModified = None
 
-_UserResearchStatus = an_factory( _Researchable, 'research_status' )
+
+_UserResearchStatus = an_factory(_Researchable, 'research_status')
+
 
 def delete_research_status(user):
 	try:
@@ -277,6 +312,7 @@ def delete_research_status(user):
 		annotations.pop('research_status', None)
 	except AttributeError:
 		pass
+
 
 @interface.implementer(IAnalyticsClientParams)
 @WithRepr
