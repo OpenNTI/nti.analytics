@@ -85,8 +85,17 @@ class ActivitySource(object):
         kwargs['course'] = self.course
         if 'yield_per' not in kwargs:
             kwargs['yield_per'] = _DEFAULT_YIELD_PER
-        for event in _activity_source(**kwargs):
-            yield event
+        events = _activity_source(**kwargs)
+
+        order_by = kwargs.get('order_by', None)
+
+        if order_by:
+            events = sorted(events,
+                            key=lambda a: getattr(a, order_by),
+                            reverse=True)
+
+        limit = kwargs.get('limit', None)
+        return events[0:limit] if limit else events
 
 def _course_activity_source(course):
     return ActivitySource(course=course)
