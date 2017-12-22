@@ -128,8 +128,7 @@ def _resolve_session(row):
 
 
 def get_user_sessions(user, timestamp=None, max_timestamp=None,
-                      for_timestamp=None, open_sessions_only=False,
-                      query_builder=None):
+                      for_timestamp=None, query_builder=None):
 	"""
 	Fetch any sessions for a user started *after* the optionally given timestamp.
 	"""
@@ -144,7 +143,9 @@ def get_user_sessions(user, timestamp=None, max_timestamp=None,
 		filters.append(Sessions.start_time <= for_timestamp)
 		filters.append(Sessions.end_time >= for_timestamp)
 
-	results = get_filtered_records(user, Sessions, filters=filters, query_builder=query_builder)
+	results = get_filtered_records(user, Sessions,
+								   filters=filters,
+								   query_builder=query_builder)
 	return resolve_objects(_resolve_session, results)
 
 
@@ -173,13 +174,15 @@ def get_active_session_count(fuzzy_start_delta=FUZZY_START_DELTA,
 	properly.
 	"""
 	db = get_analytics_db()
-	query = db.session.query(Sessions)
+	# Query on column to get proper distinct
+	query = db.session.query(Sessions.user_id)
 
 	now = _now or datetime.utcnow()
 
 	# If not yet ended, it needs to have been started recently
 	started_after = now - fuzzy_start_delta
-	not_ended_filter = and_((Sessions.end_time == None), Sessions.start_time >= started_after)
+	not_ended_filter = and_(Sessions.end_time == None,
+						    Sessions.start_time >= started_after)
 
 	# or
 
@@ -188,6 +191,5 @@ def get_active_session_count(fuzzy_start_delta=FUZZY_START_DELTA,
 	ended_recently_filter = (Sessions.end_time >= ended_after)
 
 	query = query.filter(or_(not_ended_filter, ended_recently_filter))
-
-	return query.distinct(Sessions.user_id).count()
+	return query.distinct().count()
 
