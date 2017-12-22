@@ -113,63 +113,74 @@ class TestSessions( NTIAnalyticsTestCase ):
 	def test_active_session_stats(self):
 		now = datetime( year=2009, month=3, day=6,
 						 hour=6, minute=10, second=30)
-		user = User.create_user( username='new_user1', dataserver=self.ds )
+		user = User.create_user(username='new_user1')
+		user2 = User.create_user(username='new_user2')
+		user3 = User.create_user(username='new_user3')
 
-		#Tests are initialized with one session
+		# Tests are initialized with one session
 		baseline = 1
 
 		stats = _active_session_count(_now=now)
 		assert_that(stats.count, is_(baseline))
 
-		#add a session that began a long time ago, but never finished
+		# add a session that began a long time ago, but never finished
 		long_ago = now - timedelta(weeks=52)
 		_add_session( user.username, '', '',
 		             start_time=long_ago,
 		             end_time=None )
 
-		#this should not be active
+		# this should not be active
 		stats = _active_session_count(_now=now)
 		assert_that(stats.count, is_(baseline))
 
-		#add a session that began long ago, and finished shortly after
+		# add a session that began long ago, and finished shortly after
 		shortly_after_long_ago = long_ago + timedelta(hours=1)
 		_add_session( user.username, '', '',
 		             start_time=long_ago,
 		             end_time=shortly_after_long_ago )
 
-		#this is also not active
+		# this is also not active
 		stats = _active_session_count(_now=now)
 		assert_that(stats.count, is_(baseline))
 
-		#add a session that began long ago, but just finished (it may be continuing)
+		# add a session that began long ago, but just finished (it may be continuing)
 		very_recently = now - timedelta(minutes=1)
 		_add_session( user.username, '', '',
 		             start_time=long_ago,
 		             end_time=very_recently )
 
-		#this is active
+		# this is active
 		baseline += 1
 		stats = _active_session_count(_now=now)
 		assert_that(stats.count, is_(baseline))
 
-		#add a session that began recently but hasn't finished
+		# add a session that began recently but hasn't finished
 		recently = now - timedelta(hours=1)
 		_add_session( user.username, '', '',
 		             start_time=recently,
 		             end_time=None )
 
-		#This is considered active
+		# Same username, same baseline
+		stats = _active_session_count(_now=now)
+		assert_that(stats.count, is_(baseline))
+
+		# Different username, same data increases baseline
+		_add_session(user2.username, '', '',
+		             start_time=recently,
+		             end_time=None)
+
+		# This is considered active
 		baseline += 1
 		stats = _active_session_count(_now=now)
 		assert_that(stats.count, is_(baseline))
 
-		#add a session that began recently and just finished
+		# add a session (new user) that began recently and just finished
 		recently = now - timedelta(hours=1)
-		_add_session( user.username, '', '',
+		_add_session(user3.username, '', '',
 		             start_time=recently,
 		             end_time=very_recently )
 
-		#This is considered active
+		# This is considered active
 		baseline += 1
 		stats = _active_session_count(_now=now)
 		assert_that(stats.count, is_(baseline))
