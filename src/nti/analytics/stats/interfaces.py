@@ -193,3 +193,17 @@ class IActivitySource(interface.Interface):
         or number of items the iterator returns although certain implementations
         may support those contructs by the use of kwargs.
         """
+
+
+class IActiveUsersSource(interface.Interface):
+    """
+    Something that can yield users who have been active on the site.
+    """
+
+    def users(**kwargs):
+        """
+        An iterator yielding tuple of (IUser, ICountStats) objects that represent active users.
+        In general no guarentees are made about the order
+        or number of items the iterator returns although certain implementations
+        may support those contructs by the use of kwargs.
+        """

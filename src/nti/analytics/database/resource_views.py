@@ -8,6 +8,8 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
 
+from sqlalchemy import func
+
 from nti.analytics_database.resource_views import VideoEvents
 from nti.analytics_database.resource_views import CourseResourceViews
 from nti.analytics_database.resource_views import VideoPlaySpeedEvents
@@ -276,6 +278,19 @@ def get_user_resource_views( user=None, course=None, **kwargs ):
 								course=course, **kwargs )
 	return resolve_objects( _resolve_resource_view, results, user=user, course=course )
 
+def get_active_users_with_resource_views(course=None, **kwargs):
+
+	def query_factory(session, table):
+		return session.query(CourseResourceViews.user_id,
+		                     func.count(CourseResourceViews.user_id).label('count')).group_by(CourseResourceViews.user_id)
+
+	return get_filtered_records(None,
+	                            CourseResourceViews,
+	                            course=course,
+	                            yield_per=None,
+	                            query_factory=query_factory,
+	                            order_by='count DESC')
+
 
 def get_user_video_views( user=None, course=None, **kwargs  ):
 	filters = ( VideoEvents.video_event_type == VIDEO_WATCH,
@@ -283,6 +298,23 @@ def get_user_video_views( user=None, course=None, **kwargs  ):
 	results = get_filtered_records( user, VideoEvents,
 								course=course, filters=filters, **kwargs )
 	return resolve_objects( _resolve_video_view, results, user=user, course=course )
+
+def get_active_users_with_video_views(course=None, **kwargs):
+
+	def query_factory(session, table):
+		return session.query(VideoEvents.user_id,
+		                     func.count(VideoEvents.user_id).label('count')).group_by(VideoEvents.user_id)
+
+	filters = ( VideoEvents.video_event_type == VIDEO_WATCH,
+				VideoEvents.time_length > 1 )
+
+	return get_filtered_records(None,
+	                            VideoEvents,
+	                            course=course,
+	                            filters=filters,
+	                            yield_per=None,
+	                            query_factory=query_factory,
+	                            order_by='count DESC')
 
 
 get_video_views = get_user_video_views

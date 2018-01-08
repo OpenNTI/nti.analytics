@@ -16,12 +16,15 @@ from zope import interface
 from nti.analytics.stats.interfaces import IActivitySource
 from nti.analytics.stats.interfaces import IActiveTimesStats
 from nti.analytics.stats.interfaces import IActiveTimesStatsSource
+from nti.analytics.stats.interfaces import IActiveUsersSource
 from nti.analytics.stats.interfaces import IDailyActivityStatsSource
 
 from nti.analytics.stats.model import CountStats
 
 from nti.analytics.resource_views import get_video_views
 from nti.analytics.resource_views import get_resource_views
+from nti.analytics.resource_views import get_active_users_with_resource_views
+from nti.analytics.resource_views import get_active_users_with_video_views
 
 from nti.dataserver.interfaces import IUser
 
@@ -156,3 +159,19 @@ class DailyActivitySource(object):
             date = event.timestamp.date()
             dates[date] += 1
         return LocatedExternalDict({k: CountStats(Count=v) for k, v in dates.items()})
+
+@interface.implementer(IActiveUsersSource)
+class ActiveUsersSource(object):
+
+    def __init__(self, course=None):
+        self.course = course
+
+    def users(self, **kwargs):
+        aggregate = defaultdict(lambda: 0)
+        for source in (get_active_users_with_video_views, get_active_users_with_resource_views):
+            for user, count in source(course=self.course, **kwargs):
+                aggregate[user] += count
+        return sorted(aggregate, key=aggregate.get, reverse=True)
+
+
+
