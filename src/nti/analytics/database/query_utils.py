@@ -19,9 +19,18 @@ from nti.contenttypes.courses.interfaces import ICourseSubInstance
 
 _yield_all_marker = object()
 
-def _do_course_and_timestamp_filtering(table, timestamp=None, max_timestamp=None,
-									   course=None, filters=None, query_builder=None,
-									   yield_per=_yield_all_marker, limit=None, order_by=None):
+def _query_factory(session, table):
+	return session.query(table)
+
+def _do_course_and_timestamp_filtering(table, timestamp=None,
+                                       max_timestamp=None,
+									   course=None,
+									   filters=None,
+									   query_builder=None,
+									   yield_per=_yield_all_marker,
+									   limit=None,
+									   order_by=None,
+									   query_factory=_query_factory):
 	db = get_analytics_db()
 	result = []
 
@@ -53,11 +62,13 @@ def _do_course_and_timestamp_filtering(table, timestamp=None, max_timestamp=None
 	if max_timestamp is not None:
 		filters.append(table.timestamp <= max_timestamp)
 
-	query = db.session.query(table).filter(*filters)
+	query = query_factory(db.session, table).filter(*filters)
 
-	order_by = getattr(table, order_by, None) if order_by else None
-	if order_by:
-		query = query.order_by(order_by.desc())
+	order_by = getattr(table, order_by, order_by) if order_by else None
+	if hasattr(order_by, 'desc'):
+		order_by = order_by.desc()
+	if order_by is not None:
+		query = query.order_by(order_by)
 
 	if limit:
 		query = query.limit(limit)
