@@ -54,6 +54,13 @@
 			 for="nti.dataserver.interfaces.IUser nti.contenttypes.courses.interfaces.ICourseInstance"
 			 provides=".interfaces.IDailyActivityStatsSource" />
 
+	<utility factory=".activity.ActiveUsersSource"
+			 provides=".interfaces.IActiveUsersSource" />
+
+	<adapter factory=".activity.ActiveUsersSource"
+			 for="nti.contenttypes.courses.interfaces.ICourseInstance"
+			 provides=".interfaces.IActiveUsersSource" />
+
 
 	<!-- Externalization -->
 	<include package="nti.externalization" file="meta.zcml" />
