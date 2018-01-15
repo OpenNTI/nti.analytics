@@ -284,12 +284,14 @@ def get_active_users_with_resource_views(course=None, **kwargs):
 		return session.query(CourseResourceViews.user_id,
 		                     func.count(CourseResourceViews.user_id).label('count')).group_by(CourseResourceViews.user_id)
 
+	kwargs = dict(kwargs, course=course,
+	                      yield_per=None,
+	                      query_factory=query_factory,
+	                      order_by='count DESC')
+
 	return get_filtered_records(None,
 	                            CourseResourceViews,
-	                            course=course,
-	                            yield_per=None,
-	                            query_factory=query_factory,
-	                            order_by='count DESC')
+	                            **kwargs)
 
 
 def get_user_video_views( user=None, course=None, **kwargs  ):
@@ -308,13 +310,15 @@ def get_active_users_with_video_views(course=None, **kwargs):
 	filters = ( VideoEvents.video_event_type == VIDEO_WATCH,
 				VideoEvents.time_length > 1 )
 
+	kwargs = dict(kwargs, course=course,
+	                      filters=filters,
+	                      yield_per=None,
+	                      query_factory=query_factory,
+	                      order_by='count DESC')
+
 	return get_filtered_records(None,
 	                            VideoEvents,
-	                            course=course,
-	                            filters=filters,
-	                            yield_per=None,
-	                            query_factory=query_factory,
-	                            order_by='count DESC')
+	                            **kwargs)
 
 
 get_video_views = get_user_video_views
