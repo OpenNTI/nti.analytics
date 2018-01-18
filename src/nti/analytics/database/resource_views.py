@@ -11,28 +11,28 @@ from __future__ import absolute_import
 from sqlalchemy import func
 
 from nti.analytics_database.resource_views import VideoEvents
-from nti.analytics_database.resource_views import CourseResourceViews
+from nti.analytics_database.resource_views import ResourceViews
 from nti.analytics_database.resource_views import VideoPlaySpeedEvents
 
 from nti.analytics.common import timestamp_type
 
-from nti.analytics.identifier import get_ntiid_id
-
-from nti.analytics.interfaces import VIDEO_WATCH
+from nti.analytics.database import resolve_objects
+from nti.analytics.database import get_analytics_db
+from nti.analytics.database import should_update_event
 
 from nti.analytics.database._utils import get_context_path
 from nti.analytics.database._utils import get_root_context_ids
-
-from nti.analytics.database.users import get_or_create_user
 
 from nti.analytics.database.query_utils import get_filtered_records
 
 from nti.analytics.database.resources import get_resource_id
 from nti.analytics.database.resources import get_resource_record
 
-from nti.analytics.database import resolve_objects
-from nti.analytics.database import get_analytics_db
-from nti.analytics.database import should_update_event
+from nti.analytics.database.users import get_or_create_user
+
+from nti.analytics.identifier import get_ntiid_id
+
+from nti.analytics.interfaces import VIDEO_WATCH
 
 logger = __import__('logging').getLogger(__name__)
 
@@ -80,9 +80,10 @@ def _create_view( table, user, nti_session, timestamp, root_context, context_pat
 	db.session.add( new_object )
 
 
-def create_course_resource_view( user, nti_session, timestamp, course, context_path, resource, time_length):
-	return _create_view(CourseResourceViews, user, nti_session, timestamp,
+def create_resource_view( user, nti_session, timestamp, course, context_path, resource, time_length):
+	return _create_view(ResourceViews, user, nti_session, timestamp,
 						course, context_path, resource, time_length)
+create_course_resource_view = create_resource_view
 
 
 def _video_view_exists( db, user_id, resource_id, timestamp, event_type ):
@@ -211,9 +212,9 @@ def create_video_event(	user,
 		video_play_speed.video_view_id = new_object.video_view_id
 
 
-def _resolve_resource_view(record, course=None, user=None):
-	if course is not None:
-		record.RootContext = course
+def _resolve_resource_view(record, root_context=None, user=None):
+	if root_context is not None:
+		record.RootContext = root_context
 	if user is not None:
 		record.user = user
 	return record
@@ -229,24 +230,25 @@ def _resolve_video_view(record, course=None, user=None, max_time_length=None):
 	return record
 
 
-def get_resource_views_for_ntiid(resource_ntiid, user=None, course=None, **kwargs):
+def get_resource_views_for_ntiid(resource_ntiid, user=None,
+								 root_context=None, **kwargs):
 	results = ()
 	db = get_analytics_db()
 	resource_id = get_resource_id( db, resource_ntiid )
 	if resource_id is not None:
-		filters = ( CourseResourceViews.resource_id == resource_id, )
+		filters = ( ResourceViews.resource_id == resource_id, )
 		view_records = get_filtered_records(user,
-											CourseResourceViews,
-											course=course,
+											ResourceViews,
+											root_context=root_context,
 											filters=filters,
 											**kwargs )
 		results = resolve_objects(_resolve_resource_view, view_records,
-								 user=user, course=course)
+								 user=user, root_context=root_context)
 	return results
 
 
-def get_user_resource_views_for_ntiid( user, resource_ntiid ):
-	return get_resource_views_for_ntiid( resource_ntiid, user=user )
+def get_user_resource_views_for_ntiid(user, resource_ntiid):
+	return get_resource_views_for_ntiid(resource_ntiid, user=user)
 
 
 def get_video_views_for_ntiid( resource_ntiid, user=None, course=None, **kwargs ):
@@ -273,16 +275,19 @@ def get_user_video_views_for_ntiid( user, resource_ntiid ):
 	return get_video_views_for_ntiid( resource_ntiid, user=user )
 
 
-def get_user_resource_views( user=None, course=None, **kwargs ):
-	results = get_filtered_records( user, CourseResourceViews,
-								course=course, **kwargs )
-	return resolve_objects( _resolve_resource_view, results, user=user, course=course )
+def get_user_resource_views(user=None, root_context=None, **kwargs):
+	results = get_filtered_records(user, ResourceViews,
+								   root_context=root_context, **kwargs)
+	return resolve_objects(_resolve_resource_view, results,
+						   user=user, root_context=root_context)
+get_resource_views = get_user_resource_views
+
 
 def get_active_users_with_resource_views(course=None, **kwargs):
 
 	def query_factory(session, table):
-		return session.query(CourseResourceViews.user_id,
-		                     func.count(CourseResourceViews.user_id).label('count')).group_by(CourseResourceViews.user_id)
+		return session.query(ResourceViews.user_id,
+		                     func.count(ResourceViews.user_id).label('count')).group_by(ResourceViews.user_id)
 
 	kwargs = dict(kwargs, course=course,
 	                      yield_per=None,
@@ -290,7 +295,7 @@ def get_active_users_with_resource_views(course=None, **kwargs):
 	                      order_by='count DESC')
 
 	return get_filtered_records(None,
-	                            CourseResourceViews,
+	                            ResourceViews,
 	                            **kwargs)
 
 
@@ -300,6 +305,8 @@ def get_user_video_views( user=None, course=None, **kwargs  ):
 	results = get_filtered_records( user, VideoEvents,
 								course=course, filters=filters, **kwargs )
 	return resolve_objects( _resolve_video_view, results, user=user, course=course )
+get_video_views = get_user_video_views
+
 
 def get_active_users_with_video_views(course=None, **kwargs):
 
@@ -319,7 +326,3 @@ def get_active_users_with_video_views(course=None, **kwargs):
 	return get_filtered_records(None,
 	                            VideoEvents,
 	                            **kwargs)
-
-
-get_video_views = get_user_video_views
-get_resource_views = get_user_resource_views

@@ -17,13 +17,13 @@ from zope.component.hooks import setHooks
 from nti.analytics.database import get_analytics_db
 from nti.analytics.database.resources import Resources
 
-from nti.analytics.database.resource_views import CourseResourceViews
+from nti.analytics.database.resource_views import ResourceViews
 from nti.analytics.database.resource_views import VideoEvents
 from nti.analytics.database.resource_tags import NotesCreated
 from nti.analytics.database.resource_tags import NotesViewed
 from nti.analytics.database.resource_tags import HighlightsCreated
 
-FOREIGN_TABLES = [ CourseResourceViews, VideoEvents, NotesCreated, NotesViewed, HighlightsCreated ]
+FOREIGN_TABLES = [ ResourceViews, VideoEvents, NotesCreated, NotesViewed, HighlightsCreated ]
 
 def _fix_references( db, foreign_table, bad_values ):
 	logger.info( 'Fixing references in foreign key table (%s)', foreign_table )

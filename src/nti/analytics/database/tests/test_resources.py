@@ -21,14 +21,12 @@ from hamcrest import assert_that
 from nti.analytics.database.tests import test_user_ds_id
 from nti.analytics.database.tests import test_session_id
 from nti.analytics.database.tests import AnalyticsTestBase
-from nti.analytics.database.tests import MockParent
-MockFL = MockNote = MockHighlight = MockTopic = MockComment = MockThought = MockForum = MockParent
 
 from nti.analytics.database import resource_views as db_views
 
 from nti.analytics.database.resources import Resources
 
-from nti.analytics.database.resource_views import CourseResourceViews
+from nti.analytics.database.resource_views import ResourceViews
 from nti.analytics.database.resource_views import VideoEvents
 from nti.analytics.database.resource_views import VideoPlaySpeedEvents
 from nti.analytics.database._utils import get_context_path
@@ -45,7 +43,7 @@ class TestCourseResources(AnalyticsTestBase):
 		results = db_views.get_user_resource_views( test_user_ds_id, self.course_id )
 		results = [x for x in results]
 		assert_that( results, has_length( 0 ) )
-		results = self.session.query( CourseResourceViews ).all()
+		results = self.session.query( ResourceViews ).all()
 		assert_that( results, has_length( 0 ) )
 
 		resource_val = 'ntiid:course_resource'
@@ -55,10 +53,10 @@ class TestCourseResources(AnalyticsTestBase):
 											test_session_id, event_time,
 											self.course_id, self.context_path,
 											resource_val, time_length )
-		results = self.session.query(CourseResourceViews).all()
+		results = self.session.query(ResourceViews).all()
 		assert_that( results, has_length( 1 ) )
 
-		resource_view = self.session.query(CourseResourceViews).one()
+		resource_view = self.session.query(ResourceViews).one()
 		assert_that( resource_view.user_id, is_( 1 ) )
 		assert_that( resource_view.session_id, is_( test_session_id ) )
 		assert_that( resource_view.timestamp, not_none() )
@@ -83,7 +81,7 @@ class TestCourseResources(AnalyticsTestBase):
 											self.course_id, self.context_path,
 											resource_val, new_time_length )
 
-		results = self.session.query(CourseResourceViews).all()
+		results = self.session.query(ResourceViews).all()
 		assert_that( results, has_length( 1 ) )
 
 		resource_view = results[0]
