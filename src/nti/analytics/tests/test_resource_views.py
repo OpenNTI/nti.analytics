@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from __future__ import print_function, unicode_literals, absolute_import, division
-__docformat__ = "restructuredtext en"
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
 
 # disable: accessing protected members, too many methods
 # pylint: disable=W0212,R0904
@@ -18,11 +19,6 @@ from hamcrest import not_none
 from hamcrest import assert_that
 from hamcrest import has_length
 
-from nti.analytics.tests import test_user_ds_id
-from nti.analytics.tests import test_session_id
-from nti.analytics.tests import AnalyticsTestBase
-from nti.analytics.tests import NTIAnalyticsTestCase
-
 from nti.analytics.database import resource_views as db_views
 
 from nti.analytics.resource_views import get_video_views
@@ -30,13 +26,19 @@ from nti.analytics.resource_views import get_progress_for_ntiid
 from nti.analytics.resource_views import get_video_views_for_ntiid
 from nti.analytics.resource_views import get_video_progress_for_course
 
+from nti.analytics.tests import test_user_ds_id
+from nti.analytics.tests import test_session_id
+from nti.analytics.tests import AnalyticsTestBase
+from nti.analytics.tests import NTIAnalyticsTestCase
+
+from nti.contenttypes.courses.courses import CourseInstance
+
 from nti.dataserver.tests.mock_dataserver import WithMockDSTrans
 
 from nti.dataserver.users import Community
 
-from nti.contenttypes.courses.courses import CourseInstance
-
 from nti.testing.time import time_monotonically_increases
+
 
 def _create_video_event(user_id, resource_val, root_context=None, max_time_length=None):
 	time_length = 30
@@ -46,28 +48,29 @@ def _create_video_event(user_id, resource_val, root_context=None, max_time_lengt
 	root_context = root_context or 1
 	with_transcript = True
 	event_time = time.time()
-	db_views.create_video_event( user_id,
+	db_views.create_video_event(user_id,
 								test_session_id, event_time,
-								root_context, [ 'dashboard' ],
+								root_context, [ u'dashboard' ],
 								resource_val, time_length, max_time_length,
 								video_event_type, video_start_time,
 								video_end_time,  with_transcript, None )
+
 
 class TestResourceProgress(AnalyticsTestBase):
 
 	def setUp(self):
 		super( TestResourceProgress, self ).setUp()
 		self.resource_id = 1
-		self.context_path_flat = 'dashboard'
-		self.context_path= [ 'dashboard' ]
+		self.context_path_flat = u'dashboard'
+		self.context_path= [ u'dashboard' ]
 
 	def _create_resource_view(self, user_id, resource_val):
 		time_length = 30
 		event_time = time.time()
-		db_views.create_course_resource_view( user_id,
-											test_session_id, event_time,
-											self.course_id, self.context_path,
-											resource_val, time_length )
+		db_views.create_course_resource_view(user_id,
+											 test_session_id, event_time,
+											 self.course_id, self.context_path,
+											 resource_val, time_length )
 
 	@time_monotonically_increases
 	def test_progress(self):
@@ -151,6 +154,7 @@ class TestResourceProgress(AnalyticsTestBase):
 		assert_that( progresses, not_none() )
 		assert_that( progresses, has_length( video_count + 1 ) )
 
+
 class TestResourceViews( NTIAnalyticsTestCase ):
 
 	@WithMockDSTrans
@@ -161,7 +165,7 @@ class TestResourceViews( NTIAnalyticsTestCase ):
 		intids = component.getUtility( zope.intid.IIntIds )
 		course = CourseInstance()
 		intids.register( course )
-		community = Community.create_community( username='community_name' )
+		community = Community.create_community( username=u'community_name' )
 		_create_video_event( test_user_ds_id, video_ntiid, community )
 
 		# Empty

@@ -212,9 +212,9 @@ def create_video_event(	user,
 		video_play_speed.video_view_id = new_object.video_view_id
 
 
-def _resolve_resource_view(record, course=None, user=None):
-	if course is not None:
-		record.RootContext = course
+def _resolve_resource_view(record, root_context=None, user=None):
+	if root_context is not None:
+		record.RootContext = root_context
 	if user is not None:
 		record.user = user
 	return record
@@ -230,7 +230,8 @@ def _resolve_video_view(record, course=None, user=None, max_time_length=None):
 	return record
 
 
-def get_resource_views_for_ntiid(resource_ntiid, user=None, course=None, **kwargs):
+def get_resource_views_for_ntiid(resource_ntiid, user=None,
+								 root_context=None, **kwargs):
 	results = ()
 	db = get_analytics_db()
 	resource_id = get_resource_id( db, resource_ntiid )
@@ -238,16 +239,16 @@ def get_resource_views_for_ntiid(resource_ntiid, user=None, course=None, **kwarg
 		filters = ( ResourceViews.resource_id == resource_id, )
 		view_records = get_filtered_records(user,
 											ResourceViews,
-											course=course,
+											root_context=root_context,
 											filters=filters,
 											**kwargs )
 		results = resolve_objects(_resolve_resource_view, view_records,
-								 user=user, course=course)
+								 user=user, root_context=root_context)
 	return results
 
 
-def get_user_resource_views_for_ntiid( user, resource_ntiid ):
-	return get_resource_views_for_ntiid( resource_ntiid, user=user )
+def get_user_resource_views_for_ntiid(user, resource_ntiid):
+	return get_resource_views_for_ntiid(resource_ntiid, user=user)
 
 
 def get_video_views_for_ntiid( resource_ntiid, user=None, course=None, **kwargs ):
@@ -274,10 +275,11 @@ def get_user_video_views_for_ntiid( user, resource_ntiid ):
 	return get_video_views_for_ntiid( resource_ntiid, user=user )
 
 
-def get_user_resource_views( user=None, course=None, **kwargs ):
+def get_user_resource_views(user=None, root_context=None, **kwargs):
 	results = get_filtered_records(user, ResourceViews,
-								   course=course, **kwargs )
-	return resolve_objects( _resolve_resource_view, results, user=user, course=course )
+								   root_context=root_context, **kwargs)
+	return resolve_objects(_resolve_resource_view, results,
+						   user=user, root_context=root_context)
 get_resource_views = get_user_resource_views
 
 
