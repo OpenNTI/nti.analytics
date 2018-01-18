@@ -9,21 +9,22 @@ __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
+from nti.analytics import get_analytics_db
+
 from nti.analytics_database.root_context import Books
 from nti.analytics_database.root_context import Courses
 from nti.analytics_database.root_context import _RootContextId
+
+from nti.analytics.common import get_root_context_name
+
+from nti.analytics.identifier import get_root_context_object
+from nti.analytics.identifier import get_root_context_id as get_root_context_ds_id
 
 from nti.app.products.courseware_ims import get_course_sourcedid
 
 from nti.contenttypes.courses.interfaces import ICourseCatalogEntry
 from nti.contenttypes.courses.interfaces import ICourseInstance
 
-from ..common import get_root_context_name
-
-from ..identifier import get_root_context_object
-from ..identifier import get_root_context_id as get_root_context_ds_id
-
-from . import get_analytics_db
 
 def _get_next_id( db ):
 	"""
@@ -34,6 +35,7 @@ def _get_next_id( db ):
 	db.session.flush()
 	return obj.context_id
 
+
 def _get_course_long_name( context_object ):
 	bundle = getattr( context_object, 'ContentPackageBundle', None )
 	context_long_name = getattr( bundle, 'ntiid', None )
@@ -41,6 +43,7 @@ def _get_course_long_name( context_object ):
 		# Nothing, try legacy
 		context_long_name = getattr( context_object, 'ContentPackageNTIID', None )
 	return context_long_name
+
 
 def _course_catalog( course ):
 	try:
@@ -50,6 +53,7 @@ def _course_catalog( course ):
 		result = ICourseCatalogEntry( course, None )
 
 	return result
+
 
 def _create_course( db, course, course_ds_id ):
 	context_id = _get_next_id( db )
@@ -81,9 +85,11 @@ def _create_course( db, course, course_ds_id ):
 					course.context_id, course_ds_id, course_name )
 	return course
 
+
 def _get_content_package_long_name( context_object ):
 	context_long_name = getattr( context_object, 'ntiid', None )
 	return context_long_name
+
 
 def _create_content_package( db, content_package, context_ds_id ):
 	context_id = _get_next_id( db )
@@ -99,6 +105,7 @@ def _create_content_package( db, content_package, context_ds_id ):
 	logger.debug( 	'Created book (context_id=%s) (context_ds_id=%s) (content_package=%s)',
 					book.context_id, context_ds_id, context_name )
 	return book
+
 
 def _update_course( course_record, course ):
 	# Lazy populate new fields
@@ -130,11 +137,13 @@ def _get_or_create_course( db, course, context_ds_id ):
 
 	return found_course or _create_course( db, course, context_ds_id )
 
+
 def _get_or_create_content_package( db, context_object, context_ds_id ):
 	found_content_package = db.session.query(Books).filter(
 										Books.context_ds_id == context_ds_id ).first()
 	return found_content_package \
 		or _create_content_package( db, context_object, context_ds_id )
+
 
 def get_root_context_id( db, context_object, create=False ):
 	"""
@@ -156,6 +165,7 @@ def get_root_context_id( db, context_object, create=False ):
 												Books.context_ds_id == context_ds_id ).first()
 	return root_context_object.context_id if root_context_object is not None else None
 
+
 def delete_course( context_ds_id ):
 	db = get_analytics_db()
 	found_course = db.session.query(Courses).filter(
@@ -163,8 +173,11 @@ def delete_course( context_ds_id ):
 	if found_course is not None:
 		found_course.context_ds_id = None
 
+
 def get_root_context( context_id ):
-	"Given a database identifier, return the RootContext object."
+	"""
+	Given a database identifier, return the RootContext object.
+	"""
 	db = get_analytics_db()
 	result = None
 	found_course = db.session.query(Courses).filter( Courses.context_id == context_id,

@@ -16,13 +16,13 @@ from zope.component.hooks import setHooks
 
 from nti.analytics.database import get_analytics_db
 
-from nti.analytics.database.resource_views import CourseResourceViews
+from nti.analytics.database.resource_views import ResourceViews
 from nti.analytics.database.resource_views import VideoEvents
 from nti.analytics.database.boards import TopicsViewed
 from nti.analytics.database.enrollments import CourseCatalogViews
 from nti.analytics.database.blogs import BlogsViewed
 
-VIEW_TABLES = [ CourseResourceViews, VideoEvents, CourseCatalogViews, TopicsViewed, BlogsViewed ]
+VIEW_TABLES = [ ResourceViews, VideoEvents, CourseCatalogViews, TopicsViewed, BlogsViewed ]
 
 def _delete_zero_length_records( db, view_table ):
 	deleted_count = db.session.query( view_table ) \

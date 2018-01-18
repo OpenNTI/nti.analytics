@@ -25,7 +25,13 @@
 		</configure>
 
 		<configure zcml:condition="not-have testmode">
+		    <!-- FIXME JZ
 			<adb:registerAnalyticsDB defaultSQLite="True" />
+			<adb:registerAnalyticsDB defaultSQLite="False"
+                                     dburi="mysql+pymysql://root:temp001@localhost:3306/Analytics?charset=utf8" />
+			-->
+			<adb:registerAnalyticsDB defaultSQLite="False"
+                                     dburi="mysql+pymysql://root:temp001@localhost:3306/AnalyticsTest?charset=utf8" />
 		</configure>
 
 	</configure>

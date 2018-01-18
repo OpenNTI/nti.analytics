@@ -4,10 +4,9 @@
 .. $Id$
 """
 
-from __future__ import print_function, unicode_literals, absolute_import, division
-__docformat__ = "restructuredtext en"
-
-logger = __import__('logging').getLogger(__name__)
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
 
 from nti.analytics.database import get_analytics_db
 
@@ -17,20 +16,39 @@ from nti.analytics.database.users import get_user_db_id
 
 from nti.contenttypes.courses.interfaces import ICourseSubInstance
 
+logger = __import__('logging').getLogger(__name__)
+
 _yield_all_marker = object()
+
 
 def _query_factory(session, table):
 	return session.query(table)
 
-def _do_course_and_timestamp_filtering(table, timestamp=None,
-                                       max_timestamp=None,
-									   course=None,
-									   filters=None,
-									   query_builder=None,
-									   yield_per=_yield_all_marker,
-									   limit=None,
-									   order_by=None,
-									   query_factory=_query_factory):
+
+def _do_context_and_timestamp_filtering(table,
+									    timestamp=None,
+                                        max_timestamp=None,
+									    course=None,
+									    root_context=None,
+									    filters=None,
+									    query_builder=None,
+									    yield_per=_yield_all_marker,
+									    limit=None,
+									    order_by=None,
+									    query_factory=_query_factory):
+	"""
+	A helper func that will build a query (and possibly executing), filtering o
+	n various params.
+
+	`root_context` and `course` are treated as synonyms for now.
+
+	:param table: The table the query will run on
+	:param DateTime timestamp: The minimum DateTime value
+	:param DateTime max_timestamp: The maximum DateTime value
+	:param course: The course_id to filter on
+	:param root_context: The root_context to filter on. May be a book or course.
+	:param filters: Existing sqlalchemy filters to apply.
+	"""
 	db = get_analytics_db()
 	result = []
 
@@ -38,20 +56,27 @@ def _do_course_and_timestamp_filtering(table, timestamp=None,
 		filters = []
 
 	if course is not None:
-		course_id = get_root_context_id(db, course)
-		course_ids = [ course_id ]
+		if course is not None:
+			root_context = course
+		context_id = get_root_context_id(db, root_context)
+		context_ids = [context_id]
 
-		# XXX: For courses with super-instances (e.g. History)
-		# we want to aggregate any data that may have been
-		# pinned on the super instance as well. I think we
-		# would want this for any scenario.
-		if ICourseSubInstance.providedBy(course):
+		# XXX: For courses with super-instances (e.g. History) we want to
+		# aggregate any data that may have been pinned on the super instance
+		# as well. I think we would want this for any scenario.
+		if ICourseSubInstance.providedBy(root_context):
 			parent = course.__parent__.__parent__
 			parent_id = get_root_context_id(db, parent)
-			course_ids.append(parent_id)
+			context_ids.append(parent_id)
 
-		if course_ids:
-			filters.append(table.course_id.in_(course_ids))
+		if context_ids:
+			# TODO: Make this explicit; queries for courses query for
+			# `course_id` and those that are agnostic query for
+			# `root_context_id`.
+			try:
+				filters.append(table.root_context_id.in_(context_ids))
+			except AttributeError:
+				filters.append(table.course_id.in_(context_ids))
 		else:
 			# If we have a course, but no course_id (return empty)
 			return result
@@ -84,6 +109,7 @@ def _do_course_and_timestamp_filtering(table, timestamp=None,
 		result = query
 	return result
 
+
 def get_filtered_records(user, table, replies_only=False, filters=None, **kwargs):
 	"""
 	Get the filtered records for the given user, table, timestamp (and course).
@@ -102,8 +128,9 @@ def get_filtered_records(user, table, replies_only=False, filters=None, **kwargs
 	if replies_only:
 		filters.append(table.parent_user_id != None)
 
-	result = _do_course_and_timestamp_filtering(table, filters=filters, **kwargs)
+	result = _do_context_and_timestamp_filtering(table, filters=filters, **kwargs)
 	return result
+
 
 def get_user_replies_to_others(table, user, get_deleted=False, filters=None, **kwargs):
 	"""
@@ -120,6 +147,7 @@ def get_user_replies_to_others(table, user, get_deleted=False, filters=None, **k
 	result = get_filtered_records(user, table, filters=filters, **kwargs)
 	return result
 
+
 def get_replies_to_user(table, user, get_deleted=False, **kwargs):
 	"""
 	Fetch any replies to our user, *after* the optionally given timestamp.
@@ -135,9 +163,10 @@ def get_replies_to_user(table, user, get_deleted=False, **kwargs):
 		filters.append(table.deleted == None)
 
 	if user_id is not None:
-		result = _do_course_and_timestamp_filtering(table, filters=filters, **kwargs)
+		result = _do_context_and_timestamp_filtering(table, filters=filters, **kwargs)
 
 	return result
+
 
 def get_ratings_for_user_objects(table, user, **kwargs):
 	"""
@@ -152,9 +181,10 @@ def get_ratings_for_user_objects(table, user, **kwargs):
 	filters = [ table.creator_id == user_id ]
 
 	if user_id is not None:
-		result = _do_course_and_timestamp_filtering(table, filters=filters, **kwargs)
+		result = _do_context_and_timestamp_filtering(table, filters=filters, **kwargs)
 
 	return result
+
 
 def _do_resolve_rating(row, rater, obj_creator):
 	if rater is not None:
@@ -163,8 +193,10 @@ def _do_resolve_rating(row, rater, obj_creator):
 		row.Creator = obj_creator
 	return row
 
+
 def resolve_like(row, rater=None, obj_creator=None):
 	return _do_resolve_rating(row, rater, obj_creator)
+
 
 def resolve_favorite(row, rater=None, obj_creator=None):
 	return _do_resolve_rating(row, rater, obj_creator)

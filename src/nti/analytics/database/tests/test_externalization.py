@@ -13,17 +13,9 @@ from hamcrest import assert_that
 from hamcrest import has_entries
 from hamcrest import ends_with
 
-from unittest import TestCase
-
-from nti.analytics.database import resource_views as db_views
-
-from nti.analytics.database.resources import Resources
-
 from nti.analytics.tests import NTIAnalyticsTestCase
 
 from nti.analytics_database.resource_views import CourseResourceViews
-
-from nti.analytics_database.mime_types import FileMimeTypes # side effects in the ORM?
 
 from nti.externalization.externalization import to_external_object
 
