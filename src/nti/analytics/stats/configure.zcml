@@ -76,6 +76,9 @@
 			 for="nti.contenttypes.courses.interfaces.ICourseInstance"
 			 provides=".interfaces.IActiveUsersSource" />
 
+    <adapter factory=".activity.ActiveUsersSource"
+             for="nti.contentlibrary.interfaces.IContentPackageBundle"
+             provides=".interfaces.IActiveUsersSource" />
 
 	<!-- Externalization -->
 	<include package="nti.externalization" file="meta.zcml" />
