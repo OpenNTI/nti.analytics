@@ -10,7 +10,6 @@ from __future__ import absolute_import
 
 from collections import defaultdict
 
-from zope import component
 from zope import interface
 
 from nti.analytics.stats.interfaces import IActivitySource
@@ -25,8 +24,6 @@ from nti.analytics.resource_views import get_video_views
 from nti.analytics.resource_views import get_resource_views
 from nti.analytics.resource_views import get_active_users_with_resource_views
 from nti.analytics.resource_views import get_active_users_with_video_views
-
-from nti.dataserver.interfaces import IUser
 
 from nti.externalization.interfaces import LocatedExternalDict
 
@@ -71,21 +68,23 @@ EVENT_SOURCES = (get_video_views,
 
 _DEFAULT_YIELD_PER = 1000
 
+
 def _activity_source(**kwargs):
     for source in EVENT_SOURCES:
         for event in source(**kwargs):
             yield event
 
+
 @interface.implementer(IActivitySource)
 class ActivitySource(object):
 
-    def __init__(self, user=None, course=None):
+    def __init__(self, user=None, root_context=None):
         self.user = user
-        self.course = course
+        self.root_context = root_context
 
     def activity(self, **kwargs):
         kwargs['user'] = self.user
-        kwargs['course'] = self.course
+        kwargs['root_context'] = self.root_context
         if 'yield_per' not in kwargs:
             kwargs['yield_per'] = _DEFAULT_YIELD_PER
         events = _activity_source(**kwargs)
@@ -98,48 +97,60 @@ class ActivitySource(object):
                             reverse=True)
 
         limit = kwargs.get('limit', None)
-        return events[0:limit] if limit else events
+        return events[:limit] if limit else events
 
-def _course_activity_source(course):
-    return ActivitySource(course=course)
+
+def _root_context_activity_source(root_context):
+    return ActivitySource(root_context=root_context)
+
 
 def _active_time_for_user(user):
     return ActiveTimeSource(user=user)
 
-def _active_time_for_course(course):
-    return ActiveTimeSource(course=course)
+
+def _active_time_for_root_context(root_context):
+    return ActiveTimeSource(root_context=root_context)
+
 
 def _active_time_for_enrollment(user, course):
     return ActiveTimeSource(user=user,
-                            course=course)
+                            root_context=course)
+
 
 def _active_time(root=None):
     return ActiveTimeSource()
 
+
 @interface.implementer(IActiveTimesStatsSource)
 class ActiveTimeSource(object):
 
-    def __init__(self, user=None, course=None):
+    def __init__(self, user=None, root_context=None):
         self.user = user
-        self.course = course
+        self.root_context = root_context
 
     def active_times_for_window(self, start, end):
         stats = ActiveTimeStats()
-        activity_source = ActivitySource(user=self.user, course=self.course)
-        for event in activity_source.activity(timestamp=start, max_timestamp=end):
+        activity_source = ActivitySource(user=self.user,
+                                         root_context=self.root_context)
+        for event in activity_source.activity(timestamp=start,
+                                              max_timestamp=end):
             stats.process_event(event)
         return stats
     stats_for_window = active_times_for_window
 
+
 def _daily_activity_for_user(user):
     return DailyActivitySource(user=user)
 
-def _daily_activity_for_course(course):
-    return DailyActivitySource(course=course)
+
+def _daily_activity_for_root_context(root_context):
+    return DailyActivitySource(root_context=root_context)
+
 
 def _daily_activity_for_enrollment(user, course):
     return DailyActivitySource(user=user,
-                               course=course)
+                               root_context=course)
+
 
 def _daily_activity(root=None):
     return DailyActivitySource()
@@ -148,30 +159,33 @@ def _daily_activity(root=None):
 @interface.implementer(IDailyActivityStatsSource)
 class DailyActivitySource(object):
 
-    def __init__(self, user=None, course=None):
+    def __init__(self, user=None, root_context=None):
         self.user = user
-        self.course = course
+        self.root_context = root_context
 
     def stats_for_window(self, start, end):
         dates = defaultdict(lambda: 0)
-        activity_source = ActivitySource(user=self.user, course=self.course)
-        for event in activity_source.activity(timestamp=start, max_timestamp=end):
+        activity_source = ActivitySource(user=self.user,
+                                         root_context=self.root_context)
+        for event in activity_source.activity(timestamp=start,
+                                              max_timestamp=end):
             date = event.timestamp.date()
             dates[date] += 1
-        return LocatedExternalDict({k: CountStats(Count=v) for k, v in dates.items()})
+        return LocatedExternalDict({k: CountStats(Count=v)
+                                    for k, v in dates.items()})
+
 
 @interface.implementer(IActiveUsersSource)
 class ActiveUsersSource(object):
 
-    def __init__(self, course=None):
-        self.course = course
+    def __init__(self, root_context=None):
+        self.root_context = root_context
 
     def users(self, **kwargs):
         aggregate = defaultdict(lambda: 0)
-        for source in (get_active_users_with_video_views, get_active_users_with_resource_views):
-            for user, count in source(course=self.course, **kwargs):
+        for source in (get_active_users_with_video_views,
+                       get_active_users_with_resource_views):
+            for user, count in source(root_context=self.root_context, **kwargs):
                 aggregate[user] += count
         return sorted(aggregate, key=aggregate.get, reverse=True)
-
-
 

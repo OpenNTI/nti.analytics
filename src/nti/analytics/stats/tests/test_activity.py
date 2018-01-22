@@ -8,31 +8,32 @@ from __future__ import absolute_import
 # disable: accessing protected members, too many methods
 # pylint: disable=W0212,R0904
 
-import fudge
-
 from hamcrest import is_
 from hamcrest import assert_that
 from hamcrest import has_entries
 from hamcrest import has_property
 
+import fudge
 import unittest
-
-from zope import component
-
-from nti.analytics.tests import NTIAnalyticsTestCase
 
 from datetime import datetime
 from datetime import timedelta
 
-from nti.contenttypes.courses.courses import CourseInstance
-
-from nti.dataserver.users import User
+from zope import component
 
 from nti.analytics.stats.activity import ActiveTimeStats
 from nti.analytics.stats.activity import DailyActivitySource
 
 from nti.analytics.stats.interfaces import IActiveTimesStatsSource
 from nti.analytics.stats.interfaces import IDailyActivityStatsSource
+
+from nti.analytics.tests import NTIAnalyticsTestCase
+
+from nti.contentlibrary.bundle import ContentPackageBundle
+
+from nti.contenttypes.courses.courses import CourseInstance
+
+from nti.dataserver.users import User
 
 
 class FakeEvent(object):
@@ -105,13 +106,14 @@ class TestActiveTimeStatsAdapters(NTIAnalyticsTestCase):
         super(TestActiveTimeStatsAdapters, self).setUp()
         self.user = User('aspecificuser')
         self.course = CourseInstance()
+        self.bundle = ContentPackageBundle()
         self.start = datetime.now()
         self.end = datetime.now()
 
     @fudge.patch('nti.analytics.stats.activity._activity_source')
     def test_user_scoped(self, mock_activity_source):
         mock_activity_source.is_callable().with_matching_args(user=self.user,
-                                                     course=None,
+                                                     root_context=None,
                                                      timestamp=self.start,
                                                      max_timestamp=self.end)
         mock_activity_source.returns([])
@@ -122,7 +124,7 @@ class TestActiveTimeStatsAdapters(NTIAnalyticsTestCase):
     @fudge.patch('nti.analytics.stats.activity._activity_source')
     def test_course_scoped(self, mock_activity_source):
         mock_activity_source.is_callable().with_matching_args(user=None,
-                                                     course=self.course,
+                                                     root_context=self.course,
                                                      timestamp=self.start,
                                                      max_timestamp=self.end)
         mock_activity_source.returns([])
@@ -131,14 +133,26 @@ class TestActiveTimeStatsAdapters(NTIAnalyticsTestCase):
         source.stats_for_window(self.start, self.end)
 
     @fudge.patch('nti.analytics.stats.activity._activity_source')
-    def test_enrollment_scoped(self, mock_activity_source):
-        mock_activity_source.is_callable().with_matching_args(user=self.user,
-                                                     course=self.course,
+    def test_bundle_scoped(self, mock_activity_source):
+        mock_activity_source.is_callable().with_matching_args(user=None,
+                                                     root_context=self.bundle,
                                                      timestamp=self.start,
                                                      max_timestamp=self.end)
         mock_activity_source.returns([])
 
-        source = component.getMultiAdapter((self.user, self.course), IActiveTimesStatsSource)
+        source = IActiveTimesStatsSource(self.bundle)
+        source.stats_for_window(self.start, self.end)
+
+    @fudge.patch('nti.analytics.stats.activity._activity_source')
+    def test_enrollment_scoped(self, mock_activity_source):
+        mock_activity_source.is_callable().with_matching_args(user=self.user,
+                                                     root_context=self.course,
+                                                     timestamp=self.start,
+                                                     max_timestamp=self.end)
+        mock_activity_source.returns([])
+
+        source = component.getMultiAdapter((self.user, self.course),
+                                           IActiveTimesStatsSource)
         source.stats_for_window(self.start, self.end)
 
 
@@ -170,13 +184,14 @@ class TestDailyActivitySourceAdapters(NTIAnalyticsTestCase):
         super(TestDailyActivitySourceAdapters, self).setUp()
         self.user = User('aspecificuser')
         self.course = CourseInstance()
+        self.bundle = ContentPackageBundle()
         self.start = datetime.now()
         self.end = datetime.now()
 
     @fudge.patch('nti.analytics.stats.activity._activity_source')
     def test_user_scoped(self, mock_activity_source):
         mock_activity_source.is_callable().with_matching_args(user=self.user,
-                                                     course=None,
+                                                     root_context=None,
                                                      timestamp=self.start,
                                                      max_timestamp=self.end)
         mock_activity_source.returns([])
@@ -187,7 +202,7 @@ class TestDailyActivitySourceAdapters(NTIAnalyticsTestCase):
     @fudge.patch('nti.analytics.stats.activity._activity_source')
     def test_course_scoped(self, mock_activity_source):
         mock_activity_source.is_callable().with_matching_args(user=None,
-                                                     course=self.course,
+                                                     root_context=self.course,
                                                      timestamp=self.start,
                                                      max_timestamp=self.end)
         mock_activity_source.returns([])
@@ -196,12 +211,24 @@ class TestDailyActivitySourceAdapters(NTIAnalyticsTestCase):
         source.stats_for_window(self.start, self.end)
 
     @fudge.patch('nti.analytics.stats.activity._activity_source')
-    def test_enrollment_scoped(self, mock_activity_source):
-        mock_activity_source.is_callable().with_matching_args(user=self.user,
-                                                     course=self.course,
+    def test_bundle_scoped(self, mock_activity_source):
+        mock_activity_source.is_callable().with_matching_args(user=None,
+                                                     root_context=self.bundle,
                                                      timestamp=self.start,
                                                      max_timestamp=self.end)
         mock_activity_source.returns([])
 
-        source = component.getMultiAdapter((self.user, self.course), IDailyActivityStatsSource)
+        source = IDailyActivityStatsSource(self.bundle)
+        source.stats_for_window(self.start, self.end)
+
+    @fudge.patch('nti.analytics.stats.activity._activity_source')
+    def test_enrollment_scoped(self, mock_activity_source):
+        mock_activity_source.is_callable().with_matching_args(user=self.user,
+                                                     root_context=self.course,
+                                                     timestamp=self.start,
+                                                     max_timestamp=self.end)
+        mock_activity_source.returns([])
+
+        source = component.getMultiAdapter((self.user, self.course),
+                                           IDailyActivityStatsSource)
         source.stats_for_window(self.start, self.end)
