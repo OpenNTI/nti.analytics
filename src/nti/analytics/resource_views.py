@@ -288,8 +288,8 @@ def _validate_play_speed_event( event ):
 
 	if 	old_play_speed == new_play_speed:
 		raise UnrecoverableAnalyticsError(
-					u'PlaySpeed event has invalid time values (old=%s) (new=%s) (event=%s)' %
-					( old_play_speed, new_play_speed, event.event_type ) )
+					u'PlaySpeed event has invalid time values (old=%s) (new=%s)' %
+					( old_play_speed, new_play_speed) )
 
 	video_time = event.VideoTime
 
