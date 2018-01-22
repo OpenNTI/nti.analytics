@@ -184,6 +184,7 @@ class IDailyActivityStatsSource(IWindowedStatsSource):
     on days in the window
     """
 
+
 class IActivitySource(interface.Interface):
 
     def activity(**kwargs):
@@ -191,7 +192,7 @@ class IActivitySource(interface.Interface):
         Returns an iterator of IAnalyticsEvent objects that represent
         activity.  In general no guarentees are made about the order
         or number of items the iterator returns although certain implementations
-        may support those contructs by the use of kwargs.
+        may support those constructs by the use of kwargs.
         """
 
 

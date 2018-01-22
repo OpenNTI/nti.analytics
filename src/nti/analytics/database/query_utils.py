@@ -55,8 +55,8 @@ def _do_context_and_timestamp_filtering(table,
 	if filters is None:
 		filters = []
 
-	if course is not None:
-		if course is not None:
+	if course is not None or root_context is not None:
+		if root_context is None:
 			root_context = course
 		context_id = get_root_context_id(db, root_context)
 		context_ids = [context_id]

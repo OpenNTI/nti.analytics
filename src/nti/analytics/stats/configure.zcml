@@ -12,12 +12,17 @@
 	<utility factory=".activity.ActivitySource"
 			 provides=".interfaces.IActivitySource" />
 
-	<adapter factory=".activity._course_activity_source"
+	<adapter factory=".activity._root_context_activity_source"
 			 for="nti.contenttypes.courses.interfaces.ICourseInstance"
 			 provides=".interfaces.IActivitySource" />
 
+    <adapter factory=".activity._root_context_activity_source"
+             for="nti.contentlibrary.interfaces.IContentPackageBundle"
+             provides=".interfaces.IActivitySource" />
+
 	<adapter factory=".activity.ActivitySource"
-			 for="nti.dataserver.interfaces.IUser nti.contenttypes.courses.interfaces.ICourseInstance"
+			 for="nti.dataserver.interfaces.IUser
+			      nti.contenttypes.courses.interfaces.ICourseInstance"
 			 provides=".interfaces.IActivitySource" />
 
 	<adapter factory=".activity.ActivitySource"
@@ -31,12 +36,17 @@
 			 for="nti.dataserver.interfaces.IUser"
 			 provides=".interfaces.IActiveTimesStatsSource" />
 
-	<adapter factory=".activity._active_time_for_course"
+	<adapter factory=".activity._active_time_for_root_context"
 			 for="nti.contenttypes.courses.interfaces.ICourseInstance"
 			 provides=".interfaces.IActiveTimesStatsSource" />
 
+	<adapter factory=".activity._active_time_for_root_context"
+             for="nti.contentlibrary.interfaces.IContentPackageBundle"
+             provides=".interfaces.IActiveTimesStatsSource" />
+
 	<adapter factory=".activity._active_time_for_enrollment"
-			 for="nti.dataserver.interfaces.IUser nti.contenttypes.courses.interfaces.ICourseInstance"
+			 for="nti.dataserver.interfaces.IUser
+			      nti.contenttypes.courses.interfaces.ICourseInstance"
 			 provides=".interfaces.IActiveTimesStatsSource" />
 
 	<utility factory=".activity._daily_activity"
@@ -46,12 +56,17 @@
 			 for="nti.dataserver.interfaces.IUser"
 			 provides=".interfaces.IDailyActivityStatsSource" />
 
-	<adapter factory=".activity._daily_activity_for_course"
+	<adapter factory=".activity._daily_activity_for_root_context"
 			 for="nti.contenttypes.courses.interfaces.ICourseInstance"
 			 provides=".interfaces.IDailyActivityStatsSource" />
 
+	<adapter factory=".activity._daily_activity_for_root_context"
+             for="nti.contentlibrary.interfaces.IContentPackageBundle"
+             provides=".interfaces.IDailyActivityStatsSource" />
+
 	<adapter factory=".activity._daily_activity_for_enrollment"
-			 for="nti.dataserver.interfaces.IUser nti.contenttypes.courses.interfaces.ICourseInstance"
+			 for="nti.dataserver.interfaces.IUser
+			      nti.contenttypes.courses.interfaces.ICourseInstance"
 			 provides=".interfaces.IDailyActivityStatsSource" />
 
 	<utility factory=".activity.ActiveUsersSource"
@@ -67,13 +82,13 @@
 	<include package="nti.externalization" />
 	<ext:registerAutoPackageIO
 		root_interfaces=".interfaces.IStats
-						.interfaces.ITimeStats
-						.interfaces.INoteStats
-						.interfaces.ICommentStats
-						.interfaces.IThoughtCommentStats
-						.interfaces.ISelfAssessmentStats
-						.interfaces.IAssignmentStats
-						.interfaces.IActiveSessionStats"
+						 .interfaces.ITimeStats
+						 .interfaces.INoteStats
+						 .interfaces.ICommentStats
+						 .interfaces.IThoughtCommentStats
+						 .interfaces.ISelfAssessmentStats
+						 .interfaces.IAssignmentStats
+						 .interfaces.IActiveSessionStats"
 		modules=".model" />
 
 </configure>

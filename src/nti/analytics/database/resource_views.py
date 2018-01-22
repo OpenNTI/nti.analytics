@@ -80,9 +80,10 @@ def _create_view( table, user, nti_session, timestamp, root_context, context_pat
 	db.session.add( new_object )
 
 
-def create_resource_view( user, nti_session, timestamp, course, context_path, resource, time_length):
+def create_resource_view(user, nti_session, timestamp, root_context,
+						 context_path, resource, time_length):
 	return _create_view(ResourceViews, user, nti_session, timestamp,
-						course, context_path, resource, time_length)
+						root_context, context_path, resource, time_length)
 create_course_resource_view = create_resource_view
 
 
@@ -283,13 +284,13 @@ def get_user_resource_views(user=None, root_context=None, **kwargs):
 get_resource_views = get_user_resource_views
 
 
-def get_active_users_with_resource_views(course=None, **kwargs):
+def get_active_users_with_resource_views(root_context=None, **kwargs):
 
-	def query_factory(session, table):
+	def query_factory(session, unused_table):
 		return session.query(ResourceViews.user_id,
 		                     func.count(ResourceViews.user_id).label('count')).group_by(ResourceViews.user_id)
 
-	kwargs = dict(kwargs, course=course,
+	kwargs = dict(kwargs, root_context=root_context,
 	                      yield_per=None,
 	                      query_factory=query_factory,
 	                      order_by='count DESC')
@@ -308,16 +309,16 @@ def get_user_video_views( user=None, course=None, **kwargs  ):
 get_video_views = get_user_video_views
 
 
-def get_active_users_with_video_views(course=None, **kwargs):
+def get_active_users_with_video_views(root_context=None, **kwargs):
 
-	def query_factory(session, table):
+	def query_factory(session, unused_table):
 		return session.query(VideoEvents.user_id,
 		                     func.count(VideoEvents.user_id).label('count')).group_by(VideoEvents.user_id)
 
 	filters = ( VideoEvents.video_event_type == VIDEO_WATCH,
 				VideoEvents.time_length > 1 )
 
-	kwargs = dict(kwargs, course=course,
+	kwargs = dict(kwargs, root_context=root_context,
 	                      filters=filters,
 	                      yield_per=None,
 	                      query_factory=query_factory,
