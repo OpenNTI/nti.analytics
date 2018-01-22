@@ -23,8 +23,10 @@ from nti.assessment.interfaces import IQAssignment
 from nti.assessment.interfaces import IQuestionSet
 
 from nti.contentlibrary.interfaces import IContentPackage
+from nti.contentlibrary.interfaces import IContentPackageBundle
 
 from nti.contentlibrary.indexed_data import get_catalog
+
 from nti.contentlibrary.indexed_data.interfaces import CONTAINER_IFACES
 
 from nti.contenttypes.courses.common import get_course_packages
@@ -48,9 +50,11 @@ from nti.site.interfaces import IHostPolicySiteManager
 
 from nti.traversal.traversal import find_interface
 
+
 def _get_job_queue():
 	factory = get_factory()
 	return factory.get_queue( SESSIONS_ANALYTICS )
+
 
 # XXX: Copied from nti.app.products.courseware_reports
 def _get_self_assessments_for_course(course):
@@ -91,9 +95,11 @@ def _get_self_assessments_for_course(course):
 	result = [x for x in result if x.ntiid not in qsids_to_strip]
 	return result
 
+
 def _check_ntiid(ntiid):
 	result = ntiid and not is_ntiid_of_types(ntiid, (TYPE_OID, TYPE_UUID, TYPE_INTID))
 	return bool(result)
+
 
 def _indexed_data( unit, iface, accum ):
 	container = iface(unit, None)
@@ -109,6 +115,7 @@ def _indexed_data( unit, iface, accum ):
 		if ntiid:
 			accum.add( ntiid )
 
+
 def recur_children_ntiid_for_unit( node, accum=None ):
 	# ContentUnits only
 	# TODO Do we not have to check children?
@@ -120,6 +127,7 @@ def recur_children_ntiid_for_unit( node, accum=None ):
 
 	_recur( node, result )
 	return result
+
 
 def recur_children_ntiid( node, accum=None ):
 	# Content packages only
@@ -136,15 +144,18 @@ def recur_children_ntiid( node, accum=None ):
 	_recur( node, result )
 	return result
 
+
 def _get_self_assessment_ids_for_course( course ):
 	self_assessments = _get_self_assessments_for_course(course)
 	self_assessment_qsids = {x.ntiid: x for x in self_assessments}
 	return self_assessment_qsids
 
+
 def _get_assignment_ids_for_course( course ):
 	assignment_catalog = ICourseAssignmentCatalog( course )
 	assignment_ids = {asg.ntiid for asg in assignment_catalog.iter_assignments()}
 	return assignment_ids
+
 
 def _do_get_containers_in_course( course ):
 	packages = get_course_packages(course)
@@ -171,6 +182,7 @@ def _do_get_containers_in_course( course ):
 
 	return containers_in_course
 
+
 def _build_ntiid_map():
 	course_dict = dict()
 
@@ -189,10 +201,12 @@ def _build_ntiid_map():
 				len( course_dict ) )
 	return course_dict
 
+
 class IAnalyticsCourseFromChildNTIIDResolver( interface.Interface ):
 	"""
 	An analytics-only interface to fetch courses from an ntiid.
 	"""
+
 
 @interface.implementer( IAnalyticsCourseFromChildNTIIDResolver )
 class _CourseFromChildNTIIDResolver(object):
@@ -235,6 +249,7 @@ def _get_last_sync_time():
 	hostsites = component.getUtility(IEtcNamespace, name='hostsites')
 	return hostsites.lastSynchronized or 0
 
+
 def _get_course_from_ntiid_resolver():
 	# We don't want to register anything except in our sites with courses.
 	if not IHostPolicySiteManager.providedBy( component.getSiteManager() ):
@@ -250,6 +265,7 @@ def _get_course_from_ntiid_resolver():
 		# Ok, we need to refresh.
 		course_resolver.reset( last_sync_time )
 	return course_resolver
+
 
 def get_course_by_container_id( container_id ):
 	"""
@@ -270,15 +286,15 @@ def get_course_by_container_id( container_id ):
 
 get_course_for_ntiid = get_course_by_container_id
 
+
 def get_container_context( obj ):
 	"""
-	Attempt to get the root context from the object itself.
-	We expect this to be a course in most cases, or a
-	ContentPackageBundle in rare cases.
+	Attempt to get the root context from the object itself. We expect this to
+	be a course in most cases, or a ContentPackageBundle.
 
 	TODO: Verify bundles work like we expect.
-	TODO: Once clients have swapped over to using the
-		new course/Pages api, the legacy algorithm can go away.
+	TODO: Once clients have swapped over to using the new course/Pages api,
+	the legacy algorithm can go away.
 	"""
 	result = None
 	container_context = IContainerContext( obj, None )
@@ -286,6 +302,7 @@ def get_container_context( obj ):
 		context_id = container_context.context_id
 		result = find_object_with_ntiid( context_id )
 	return result
+
 
 def get_container_context_legacy( obj ):
 	"""
@@ -304,35 +321,42 @@ def get_container_context_legacy( obj ):
 
 	if result is None:
 		# Ok, not a course (apparently), try to find a content package.
-		result = find_object_with_ntiid( ntiid )
-		result = find_interface(result, IContentPackage, strict=False)
+		package = find_object_with_ntiid( ntiid )
+		package = find_interface(package, IContentPackage, strict=False)
+		# Adapt to an arbitrary bundle.
+		result = IContentPackageBundle(package, package)
 
-		if 		result is None \
-			or 	not IContentPackage.providedBy( result ):
-			raise TypeError( "No course/content-package found for ntiid (%s)" % ntiid )
+		if 	   not IContentPackage.providedBy( result ) \
+			and not IContentPackageBundle.providedBy(result):
+			raise TypeError( "No course/bundle/content-package found for ntiid (%s)" % ntiid )
 
 	return result
 
+
 def get_root_context_from_index( obj ):
 	"""
-	See if our container has an indexed course.  Grab the first
-	course we find (arbitrarily).
+	See if our container has an indexed course. Grab the first arbitrary
+	course/bundle we find.
 	"""
 	catalog = get_catalog()
 	ntiid = getattr( obj, 'containerId',
 					getattr( obj, 'ntiid', None ))
 	obj = find_object_with_ntiid( ntiid )
 	if obj is not None:
-		entries = catalog.get_containers( obj )
+		containers = list(catalog.get_containers( obj ))
+		containers.append(ntiid)
 
-		for ntiid in entries or ():
+		for ntiid in containers or ():
 			context = find_object_with_ntiid(ntiid)
 			# Only bother with CPs for speed
 			if IContentPackage.providedBy(context):
-				result = ICourseInstance( context, None )
+				result = ICourseInstance(context, None)
+				if result is None:
+					result = IContentPackageBundle(context, None)
 				if result is not None:
 					return result
 	return None
+
 
 def get_root_context( obj ):
 	"""

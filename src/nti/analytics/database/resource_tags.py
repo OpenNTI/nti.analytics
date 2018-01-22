@@ -7,15 +7,9 @@
 from __future__ import print_function, unicode_literals, absolute_import, division
 __docformat__ = "restructuredtext en"
 
-logger = __import__('logging').getLogger(__name__)
-
 from sqlalchemy import func
 
 from zope import component
-
-from nti.appserver.policies.interfaces import ISitePolicyUserEventListener
-
-from nti.dataserver.users.communities import Community
 
 from nti.analytics_database.resource_tags import NoteLikes
 from nti.analytics_database.resource_tags import NotesViewed
@@ -30,11 +24,8 @@ from nti.analytics.common import get_ratings
 from nti.analytics.common import timestamp_type
 from nti.analytics.common import get_created_timestamp
 
-from nti.analytics.identifier import get_ds_id
-from nti.analytics.identifier import get_ds_object
-from nti.analytics.identifier import get_ntiid_id
-
-from nti.analytics.resolvers import get_root_context
+from nti.analytics.database import resolve_objects
+from nti.analytics.database import get_analytics_db
 
 from nti.analytics.database._utils import get_context_path
 from nti.analytics.database._utils import get_body_text_length
@@ -56,8 +47,18 @@ from nti.analytics.database.root_context import get_root_context_id
 from nti.analytics.database.users import get_or_create_user
 from nti.analytics.database.users import get_user_db_id
 
-from nti.analytics.database import resolve_objects
-from nti.analytics.database import get_analytics_db
+from nti.analytics.identifier import get_ds_id
+from nti.analytics.identifier import get_ds_object
+from nti.analytics.identifier import get_ntiid_id
+
+from nti.analytics.resolvers import get_root_context
+
+from nti.appserver.policies.interfaces import ISitePolicyUserEventListener
+
+from nti.dataserver.users.communities import Community
+
+logger = __import__('logging').getLogger(__name__)
+
 
 def _get_site_community():
 	site_policy = component.queryUtility( ISitePolicyUserEventListener )
@@ -66,6 +67,7 @@ def _get_site_community():
 	if community_username:
 		result = Community.get_community( community_username )
 	return result
+
 
 def _get_sharing_enum(note, course):
 	# TODO: Logic needs to be updated in courseware_reports.views.admin_views
@@ -100,16 +102,19 @@ def _get_sharing_enum(note, course):
 
 	return result
 
+
 def _get_note(db, note_ds_id):
 	note = db.session.query(NotesCreated).filter(
 							NotesCreated.note_ds_id == note_ds_id).first()
 	return note
+
 
 def _get_note_id(db, note_ds_id):
 	note = _get_note(db, note_ds_id)
 	return note and note.note_id
 
 _note_exists = _get_note_id
+
 
 def _set_mime_records( db, note_record, note ):
 	"""
@@ -124,11 +129,13 @@ def _set_mime_records( db, note_record, note ):
 	file_mime_types = build_mime_type_records( db, note, NotesUserFileUploadMimeTypes )
 	note_record._file_mime_types.extend( file_mime_types )
 
+
 def _set_note_ratings( note_record, note ):
 	like_count, favorite_count, is_flagged = get_ratings(note)
 	note_record.like_count = like_count
 	note_record.favorite_count = favorite_count
 	note_record.is_flagged = is_flagged
+
 
 def _set_note_attributes( db, note_record, note, course ):
 	"""
@@ -138,6 +145,7 @@ def _set_note_attributes( db, note_record, note, course ):
 	_set_note_ratings( note_record, note )
 	note_record.note_length = get_body_text_length( note )
 	_set_mime_records( db, note_record, note )
+
 
 def create_note(user, nti_session, note):
 	db = get_analytics_db()
@@ -188,6 +196,7 @@ def create_note(user, nti_session, note):
 	db.session.flush()
 	return new_object
 
+
 def update_note(user, nti_session, note):
 	"""
 	Update our note record, creating if it does not exist.
@@ -201,6 +210,7 @@ def update_note(user, nti_session, note):
 		course = get_root_context(note)
 		_set_note_attributes( db, note_record, note, course )
 
+
 def delete_note(timestamp, note_ds_id):
 	db = get_analytics_db()
 	timestamp = timestamp_type(timestamp)
@@ -213,11 +223,13 @@ def delete_note(timestamp, note_ds_id):
 	note.note_ds_id = None
 	db.session.flush()
 
+
 def _get_note_rating_record(db, table, user_id, note_id):
 	note_rating_record = db.session.query(table).filter(
 									table.user_id == user_id,
 									table.note_id == note_id).first()
 	return note_rating_record
+
 
 def _create_note_rating_record(db, table, user, session_id, timestamp, delta, note_record):
 	"""
@@ -250,6 +262,7 @@ def _create_note_rating_record(db, table, user, session_id, timestamp, delta, no
 			# Delete
 			db.session.delete(note_rating_record)
 
+
 def like_note(note, user, session_id, timestamp, delta):
 	db = get_analytics_db()
 	note_ds_id = get_ds_id(note)
@@ -261,6 +274,7 @@ def like_note(note, user, session_id, timestamp, delta):
 		_create_note_rating_record(db, NoteLikes, user,
 								session_id, timestamp,
 								delta, db_note)
+
 
 def favorite_note(note, user, session_id, timestamp, delta):
 	db = get_analytics_db()
@@ -274,6 +288,7 @@ def favorite_note(note, user, session_id, timestamp, delta):
 									session_id, timestamp,
 									delta, db_note)
 
+
 def flag_note(note, state):
 	db = get_analytics_db()
 	note_ds_id = get_ds_id(note)
@@ -282,11 +297,13 @@ def flag_note(note, state):
 	db_note.is_flagged = state
 	db.session.flush()
 
+
 def _note_view_exists(db, note_id, user_id, timestamp):
 	return db.session.query(NotesViewed).filter(
 							NotesViewed.note_id == note_id,
 							NotesViewed.user_id == user_id,
 							NotesViewed.timestamp == timestamp).first()
+
 
 def create_note_view(user, nti_session, timestamp, context_path, root_context, note):
 	db = get_analytics_db()
@@ -324,9 +341,11 @@ def create_note_view(user, nti_session, timestamp, context_path, root_context, n
 							 note_id=note_id)
 	db.session.add(new_object)
 
+
 def _highlight_exists(db, highlight_ds_id):
 	return db.session.query(HighlightsCreated).filter(
 							HighlightsCreated.highlight_ds_id == highlight_ds_id).count()
+
 
 def create_highlight(user, nti_session, highlight):
 	db = get_analytics_db()
@@ -355,6 +374,7 @@ def create_highlight(user, nti_session, highlight):
 									resource_id=rid)
 	db.session.add(new_object)
 
+
 def delete_highlight(timestamp, highlight_ds_id):
 	db = get_analytics_db()
 	timestamp = timestamp_type(timestamp)
@@ -371,6 +391,7 @@ def delete_highlight(timestamp, highlight_ds_id):
 def _bookmark_exists(db, bookmark_ds_id):
 	return db.session.query(BookmarksCreated).filter(
 							BookmarksCreated.bookmark_ds_id == bookmark_ds_id).count()
+
 
 def create_bookmark(user, nti_session, bookmark):
 	db = get_analytics_db()
@@ -394,10 +415,11 @@ def create_bookmark(user, nti_session, bookmark):
 	new_object = BookmarksCreated(	user_id=uid,
 									session_id=sid,
 									timestamp=timestamp,
-									course_id=course_id,
+									root_context_id=course_id,
 									bookmark_ds_id=bookmark_ds_id,
 									resource_id=rid)
 	db.session.add(new_object)
+
 
 def delete_bookmark(timestamp, bookmark_ds_id):
 	db = get_analytics_db()
@@ -411,13 +433,17 @@ def delete_bookmark(timestamp, bookmark_ds_id):
 	bookmark.bookmark_ds_id = None
 	db.session.flush()
 
+
 def _get_note_from_db_id(note_id):
-	"Return the actual note object represented by the given db id."
+	"""
+	Return the actual note object represented by the given db id.
+	"""
 	db = get_analytics_db()
 	note = db.session.query(NotesCreated).filter(
 							NotesCreated.note_id == note_id).first()
 	note = get_ds_object(note.note_ds_id)
 	return note
+
 
 def _resolve_note(row, user=None, course=None, parent_user=None):
 	if course is not None:
@@ -427,6 +453,7 @@ def _resolve_note(row, user=None, course=None, parent_user=None):
 	if parent_user is not None:
 		row.RepliedToUser = parent_user
 	return row
+
 
 def get_notes(user=None, course=None, get_deleted=False, replies_only=False, top_level_only=False, **kwargs):
 	"""
@@ -448,6 +475,7 @@ def get_notes(user=None, course=None, get_deleted=False, replies_only=False, top
 									replies_only=replies_only, filters=filters, **kwargs)
 	return resolve_objects(_resolve_note, results, user=user, course=course)
 
+
 def _resolve_note_view(row, note=None, user=None, course=None):
 	if course is not None:
 		row.RootContext = course
@@ -456,6 +484,7 @@ def _resolve_note_view(row, note=None, user=None, course=None):
 	if note is not None:
 		row.Note = note
 	return row
+
 
 def get_note_views(user=None, note=None, course=None, **kwargs):
 	filters = []
@@ -469,6 +498,7 @@ def get_note_views(user=None, note=None, course=None, **kwargs):
 									filters=filters, **kwargs)
 	return resolve_objects(_resolve_note_view, results, note=note, user=user, course=course)
 
+
 def get_note_last_view( note, user ):
 	db = get_analytics_db()
 	note_ds_id = get_ds_id(note)
@@ -479,6 +509,7 @@ def get_note_last_view( note, user ):
 										NotesViewed.user_id == user_id ).one()
 	return result and result[0]
 
+
 def get_likes_for_users_notes(user, course=None, **kwargs):
 	"""
 	Fetch any likes created for a user's notes *after* the optionally given
@@ -486,6 +517,7 @@ def get_likes_for_users_notes(user, course=None, **kwargs):
 	"""
 	results = get_ratings_for_user_objects(NoteLikes, user, course=course, **kwargs)
 	return resolve_objects(resolve_like, results, obj_creator=user)
+
 
 def get_favorites_for_users_notes(user, course=None, **kwargs):
 	"""
@@ -495,12 +527,14 @@ def get_favorites_for_users_notes(user, course=None, **kwargs):
 	results = get_ratings_for_user_objects(NoteFavorites, user, course=course, **kwargs)
 	return resolve_objects(resolve_favorite, results, obj_creator=user)
 
+
 def get_user_replies_to_others(user, course=None, **kwargs):
 	"""
 	Fetch any replies our users provided, *after* the optionally given timestamp.
 	"""
 	results = _get_user_replies_to_others(NotesCreated, user, course, **kwargs)
 	return resolve_objects(_resolve_note, results, user=user, course=course)
+
 
 def get_replies_to_user(user, course=None, **kwargs):
 	"""
@@ -509,12 +543,14 @@ def get_replies_to_user(user, course=None, **kwargs):
 	results = _get_replies_to_user(NotesCreated, user, course, **kwargs)
 	return resolve_objects(_resolve_note, results, course=course, parent_user=user)
 
+
 def _resolve_highlight(row, user=None, course=None):
 	if course is not None:
 		row.RootContext = course
 	if user is not None:
 		row.user = user
 	return row
+
 
 def get_highlights(user=None, course=None, get_deleted=False, **kwargs):
 	"""
@@ -529,8 +565,10 @@ def get_highlights(user=None, course=None, get_deleted=False, **kwargs):
 								filters=filters, **kwargs)
 	return resolve_objects(_resolve_highlight, results, user=user, course=course)
 
+
 def get_highlights_created_for_course(course):
 	return get_highlights(course=course)
+
 
 def _resolve_bookmark(row, user=None, course=None):
 	if course is not None:
@@ -538,6 +576,7 @@ def _resolve_bookmark(row, user=None, course=None):
 	if user is not None:
 		row.user = user
 	return row
+
 
 def get_bookmarks(user, course=None, get_deleted=False, **kwargs):
 	"""
