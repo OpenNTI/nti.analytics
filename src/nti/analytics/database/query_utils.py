@@ -65,7 +65,7 @@ def _do_context_and_timestamp_filtering(table,
 		# aggregate any data that may have been pinned on the super instance
 		# as well. I think we would want this for any scenario.
 		if ICourseSubInstance.providedBy(root_context):
-			parent = course.__parent__.__parent__
+			parent = root_context.__parent__.__parent__
 			parent_id = get_root_context_id(db, parent)
 			context_ids.append(parent_id)
 
