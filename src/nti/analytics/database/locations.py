@@ -210,6 +210,7 @@ def _create_ip_location(db, ip_addr, user_id):
 def check_ip_location(db, ip_addr, user_id):
 	# Should only be null in tests.
 	if ip_addr:
+		__traceback_info__ = ip_addr, user_id
 		old_ip_location = db.session.query(IpGeoLocation).filter(
 										IpGeoLocation.ip_addr == ip_addr,
 										IpGeoLocation.user_id == user_id).first()
@@ -219,7 +220,9 @@ def check_ip_location(db, ip_addr, user_id):
 
 		else:
 			old_location_data = db.session.query(Location).filter(
-												Location.location_id == old_ip_location.location_id).first()
+									Location.location_id == old_ip_location.location_id).first()
+			# Still want to update location info in this path
+			__traceback_info__ = old_location_data.latitude, old_location_data.longitude, old_location_data.location_id
 			old_ip_location.location_id = _get_location_id(db,
 															old_location_data.latitude,
 															old_location_data.longitude)
@@ -252,7 +255,10 @@ def update_missing_locations():
 
 
 def _get_location_id(db, lat_str, long_str):
-
+	"""
+	Fetches the location for a given lat/long, creating if not. If the location
+	exists, we attempt to retrieve and update any missing location info.
+	"""
 	existing_location = db.session.query(Location).filter(
 										Location.latitude == lat_str,
 							 		 	Location.longitude == long_str).first()
