@@ -225,9 +225,9 @@ class TestResourceEvents(NTIAnalyticsTestCase):
 		internalization.update_from_external_object(new_io, ext_obj)
 		assert_that(new_io, has_property('user', is_( user )))
 		assert_that(new_io, has_property('timestamp', is_( timestamp )))
-		assert_that(new_io, has_property( 'RootContextID', is_( course )))
+		assert_that(new_io, has_property('RootContextID', is_( course )))
 		assert_that(new_io, has_property('note_id', is_( note_id )))
-		assert_that(new_io, has_property( 'Duration', is_( time_length )))
+		assert_that(new_io, has_property('Duration', is_( time_length )))
 		assert_that( new_io, is_( NoteViewEvent ) )
 
 	def test_topic_event(self):

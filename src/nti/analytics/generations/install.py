@@ -9,7 +9,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
 
-generation = 48
+generation = 50
 
 from zope.generations.generations import SchemaManager
 
