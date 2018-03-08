@@ -25,6 +25,8 @@ logger = __import__('logging').getLogger(__name__)
 
 generation = 49
 
+CONVERT_STMT = 'ALTER TABLE Resources CONVERT TO CHARACTER SET utf8;'
+
 seen = set()
 seen_dbs = set()
 
@@ -45,6 +47,9 @@ def evolve_job():
 	connection = db.engine.connect()
 	mc = MigrationContext.configure(connection)
 	op = Operations(mc)
+
+	# Need to convert existing items before altering column
+	connection.execute(CONVERT_STMT)
 
 	op.alter_column('Resources', 'resource_display_name',
 					 type_=String(256),
