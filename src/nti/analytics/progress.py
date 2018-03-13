@@ -4,175 +4,155 @@
 .. $Id$
 """
 
-from __future__ import print_function, unicode_literals, absolute_import, division
-__docformat__ = "restructuredtext en"
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
 
-logger = __import__('logging').getLogger(__name__)
+from datetime import datetime
 
 from zope import interface
 
-from nti.analytics.interfaces import IProgress
 from nti.analytics.interfaces import IVideoProgress
-
-from nti.analytics.assessments import get_assignments_for_user
-from nti.analytics.assessments import get_self_assessments_for_user
 
 from nti.analytics.boards import get_topic_views
 
-from nti.externalization.representation import WithRepr
+from nti.contenttypes.completion.progress import Progress
 
-from nti.property.property import alias
+from nti.externalization.representation import WithRepr
 
 from nti.schema.eqhash import EqHash
 
-@WithRepr
-@EqHash( 'ResourceID', 'AbsoluteProgress', 'MaxPossibleProgress', 'HasProgress', 'LastModified' )
-@interface.implementer( IProgress )
-class DefaultProgress( object ):
+from nti.schema.fieldproperty import createDirectFieldProperties
 
-	__external_class_name__ = "Progress"
-	mime_type = mimeType = 'application/vnd.nextthought.progress'
+logger = __import__('logging').getLogger(__name__)
 
-	progress_id = alias('ResourceID')
-	last_modified = alias('LastModified')
-
-	def __init__( self, progress_id, progress, max_progress, has_progress=False, last_modified=None ):
-		self.ResourceID = progress_id
-		self.AbsoluteProgress = progress
-		self.MaxPossibleProgress = max_progress
-		self.HasProgress = has_progress
-		self.LastModified = last_modified
 
 @WithRepr
-@EqHash( 'ResourceID', 'AbsoluteProgress', 'MaxPossibleProgress', 'HasProgress', 'LastModified', 'MostRecentEndTime' )
-@interface.implementer( IVideoProgress )
-class VideoProgress( DefaultProgress ):
+@EqHash('NTIID', 'AbsoluteProgress', 'MaxPossibleProgress',
+        'HasProgress', 'LastModified', 'MostRecentEndTime')
+@interface.implementer(IVideoProgress)
+class VideoProgress(Progress):
 
-	# Re-use the original class for BWC.
-	__external_class_name__ = "Progress"
-	mime_type = mimeType = 'application/vnd.nextthought.videoprogress'
+    createDirectFieldProperties(IVideoProgress)
 
-	def __init__( self, progress_id, progress, max_progress,
-				  has_progress=False, last_modified=None, last_end_time=None ):
-		self.ResourceID = progress_id
-		self.AbsoluteProgress = progress
-		self.MaxPossibleProgress = max_progress
-		self.HasProgress = has_progress
-		self.LastModified = last_modified
-		self.MostRecentEndTime = last_end_time
+    __external_can_create__ = False
 
-def get_progress_for_resource_container( resource_ntiid, resource_view_dict ):
-	"""
-	For a page container, use the children progress to determine
-	aggregate progress for the container, which should typically return a
-	num_of_pages_viewed/num_of_pages fraction.
-	"""
-	# Get progress for each child
-	children_progress = (get_progress_for_resource_views( child_ntiid, child_views )
-						for child_ntiid, child_views in resource_view_dict.items())
+    # Re-use the original class for BWC.
+    __external_class_name__ = "Progress"
+    mime_type = mimeType = 'application/vnd.nextthought.videoprogress'
 
-	children_progress = [x for x in children_progress if x]
 
-	result = None
-	if children_progress:
-		# Each page with *any* progress is viewed
-		viewed_pages = sum( (1 for x in children_progress if x and x.HasProgress) )
-		num_pages = len( resource_view_dict )
-		last_mod = max( (x.LastModified for x in children_progress if x) )
+def _get_last_mod(last_mod):
+    """
+    Gets the last_mod DateTime object.
+    """
+    try:
+        last_mod = datetime.utcfromtimestamp(last_mod)
+    except TypeError:
+        # tests
+        last_mod = last_mod
+    return last_mod
 
-		result = DefaultProgress( resource_ntiid, viewed_pages, num_pages,
-								  has_progress=bool( viewed_pages ),
-								  last_modified=last_mod )
-	return result
 
-def get_progress_for_resource_views( resource_ntiid, resource_views ):
-	"""
-	For a set of events for a given ntiid, looking at a resource constitutes progress.
-	"""
-	result = None
+def get_progress_for_resource_container(resource_ntiid, resource_view_dict):
+    """
+    For a page container, use the children progress to determine
+    aggregate progress for the container, which should typically return a
+    num_of_pages_viewed/num_of_pages fraction.
+    """
+    # Get progress for each child
+    children_progress = (get_progress_for_resource_views( child_ntiid, child_views )
+                        for child_ntiid, child_views in resource_view_dict.items())
 
-	if resource_views:
-		# Grabbing the first timestamp we see for last mod,
-		# because once they have progress, state will not change.
-		last_mod = next( ts for ts in
-						(x.timestamp for x in resource_views)
-						if ts is not None )
-		result = DefaultProgress( resource_ntiid, 1, 1,
-								  has_progress=True, last_modified=last_mod )
-	return result
+    children_progress = [x for x in children_progress if x]
 
-def get_progress_for_video_views( resource_ntiid, video_events  ):
-	"""
-	For a set of events for a given ntiid, looking at a resource constitutes progress.
-	"""
-	result = None
-	# Note: currently, 'None' time_lengths (placeholders for event starts)
-	# are considered progress.
+    progress = None
+    if children_progress:
+        # Each page with *any* progress is viewed
+        viewed_pages = sum(1 for x in children_progress if x and x.HasProgress)
+        num_pages = len(resource_view_dict)
+        last_mod = max(x.LastModified for x in children_progress if x)
+        progress = Progress(NTIID=resource_ntiid,
+                            AbsoluteProgress=viewed_pages,
+                            MaxPossibleProgress=num_pages,
+                            LastModified=last_mod,
+                            HasProgress=bool(viewed_pages))
+    return progress
 
-	if video_events:
-		video_events = list( video_events )
-		# XXX: Perhaps we want the most recent max time.
-		# max time may be null.
-		sorted_events = sorted( video_events, key=lambda x: x.timestamp, reverse=True)
-		most_recent_event = sorted_events[0]
-		max_time = max( (x.MaxDuration for x in video_events) )
-		last_mod = most_recent_event.timestamp
-		last_end_time = most_recent_event.VideoEndTime
-		total_time = sum( (x.time_length for x in video_events if x.time_length is not None) )
-		result = VideoProgress( resource_ntiid, total_time, max_time,
-								has_progress=True, last_modified=last_mod,
-								last_end_time=last_end_time )
-	return result
 
-def _get_last_mod_progress( values, id_val ):
-	"For a collection of items, gather progress based on last modified timestamp."
-	result = None
-	if values:
-		last_mod = max( (x.timestamp for x in values) )
-		result = DefaultProgress( id_val, 1, 1,
-								  has_progress=True, last_modified=last_mod )
-	return result
+def get_progress_for_resource_views(resource_ntiid, resource_views):
+    """
+    For a set of events for a given ntiid, looking at a resource
+    constitutes progress.
+    """
+    progress = None
+    if resource_views:
+        resource_views = tuple(resource_views)
+        # Grabbing the first timestamp we see for last mod,
+        # because once they have progress, state will not change.
+        last_mod = next(ts for ts in
+                        (x.timestamp for x in resource_views)
+                        if ts is not None)
+        last_mod = _get_last_mod(last_mod)
+        total_time = sum(x.time_length for x in resource_views
+						if x.time_length is not None)
+        progress = Progress(NTIID=resource_ntiid,
+                            AbsoluteProgress=total_time,
+                            MaxPossibleProgress=None,
+                            LastModified=last_mod,
+                            HasProgress=True)
+    return progress
 
-def _get_progress_for_assessments( assessment_dict ):
-	"Gather progress for all of the given assessments."
-	result = []
-	for assessment_id, assessments in assessment_dict.items():
-		new_progress = _get_last_mod_progress( assessments, assessment_id )
-		result.append( new_progress )
 
-	return result
+def get_progress_for_video_views(resource_ntiid, video_events):
+    """
+    For a set of events for a given ntiid, looking at a resource
+    constitutes progress.
+    """
+    progress = None
+    # Note: currently, 'None' time_lengths (placeholders for event starts)
+    # are considered progress.
 
-def get_assessment_progresses_for_course( user, course ):
-	"""
-	Returns all assessment progress for a given user and course.
-	"""
-	def _build_dict( vals, id_key ):
-		"Accumulate our assessment into key->val dicts."
-		result = {}
-		if vals:
-			for val in vals:
-				accum = result.setdefault( getattr( val, id_key ), [] )
-				accum.append( val )
-		return result
+    if video_events:
+        video_events = tuple(video_events)
+        # XXX: Perhaps we want the most recent max time (max time may be null)
+        sorted_events = sorted(video_events, key=lambda x: x.timestamp, reverse=True)
+        most_recent_event = sorted_events[0]
+        max_time = max(x.MaxDuration for x in video_events)
+        last_mod = most_recent_event.timestamp
+        last_end_time = most_recent_event.VideoEndTime
+        last_mod = _get_last_mod(last_mod)
+        total_time = sum(x.time_length for x in video_events if x.time_length is not None)
+        progress = VideoProgress(NTIID=resource_ntiid,
+                                 AbsoluteProgress=total_time,
+                                 MaxPossibleProgress=max_time,
+                                 LastModified=last_mod,
+                                 HasProgress=True,
+                                 MostRecentEndTime=last_end_time)
+    return progress
 
-	# Self-assessments
-	id_key = 'AssessmentId'
-	self_assessments = get_self_assessments_for_user( user, course )
-	assess_dict = _build_dict( self_assessments, id_key )
 
-	# Assignments
-	id_key = 'AssignmentId'
-	assignments = get_assignments_for_user( user, course )
-	assignment_dict = _build_dict( assignments, id_key )
+def _get_last_mod_progress(values, id_val):
+    """
+    For a collection of items, gather progress based on last modified
+    timestamp.
+    """
+    progress = None
+    if values:
+        last_mod = max(x.timestamp for x in values)
+        last_mod = _get_last_mod(last_mod)
+        progress = Progress(NTIID=id_val,
+                            AbsoluteProgress=None,
+                            MaxPossibleProgress=None,
+                            LastModified=last_mod,
+                            HasProgress=True)
+    return progress
 
-	# Now build progress
-	assess_dict.update( assignment_dict )
-	return _get_progress_for_assessments( assess_dict )
 
 def get_topic_progress( user, topic ):
-	"""
-	Returns all assessment progress for a given user and topic.
-	"""
-	topic_views = get_topic_views( user, topic )
-	result = _get_last_mod_progress( topic_views, topic.NTIID )
-	return result
+    """
+    Returns all assessment progress for a given user and topic.
+    """
+    topic_views = get_topic_views( user, topic )
+    result = _get_last_mod_progress( topic_views, topic.NTIID )
+    return result
