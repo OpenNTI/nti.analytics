@@ -272,8 +272,8 @@ def get_video_views_for_ntiid( resource_ntiid, user=None, course=None, **kwargs 
 	return results
 
 
-def get_user_video_views_for_ntiid( user, resource_ntiid ):
-	return get_video_views_for_ntiid( resource_ntiid, user=user )
+def get_user_video_views_for_ntiid(user, resource_ntiid):
+	return get_video_views_for_ntiid(resource_ntiid, user=user)
 
 
 def get_user_resource_views(user=None, root_context=None, **kwargs):

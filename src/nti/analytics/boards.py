@@ -53,7 +53,7 @@ from nti.dataserver.interfaces import IDeletedObjectPlaceholder
 
 from nti.dataserver.users.users import User
 
-from nti.ntiids import ntiids
+from nti.ntiids.ntiids import find_object_with_ntiid
 
 def _get_board_queue():
 	factory = get_factory()
@@ -93,7 +93,7 @@ def _is_forum_comment( obj ):
 
 # Comments
 def _add_comment( oid, nti_session=None ):
-	comment = ntiids.find_object_with_ntiid( oid )
+	comment = find_object_with_ntiid( oid )
 	if comment is not None:
 		user = get_creator( comment )
 		topic = get_object_root( comment, ITopic )
@@ -104,7 +104,7 @@ def _add_comment( oid, nti_session=None ):
 							getattr( topic, '__name__', topic ) )
 
 def _update_comment( oid, nti_session=None ):
-	comment = ntiids.find_object_with_ntiid( oid )
+	comment = find_object_with_ntiid( oid )
 	if comment is not None:
 		user = get_creator( comment )
 		topic = get_object_root( comment, ITopic )
@@ -119,20 +119,20 @@ def _remove_comment( comment_id, timestamp ):
 	logger.debug( "Forum comment deleted (comment_id=%s)", comment_id )
 
 def _flag_comment( oid, state=False ):
-	comment = ntiids.find_object_with_ntiid( oid )
+	comment = find_object_with_ntiid( oid )
 	if comment is not None:
 		db_boards.flag_comment( comment, state )
 		logger.debug( 'Comment flagged (comment=%s) (state=%s)', comment, state )
 
 def _favorite_comment( oid, username=None, delta=0, timestamp=None, nti_session=None ):
-	comment = ntiids.find_object_with_ntiid( oid )
+	comment = find_object_with_ntiid( oid )
 	if comment is not None:
 		user = User.get_user( username )
 		db_boards.favorite_comment( comment, user, nti_session, timestamp, delta )
 		logger.debug( 'Comment favorite (comment=%s)', comment )
 
 def _like_comment( oid, username=None, delta=0, timestamp=None, nti_session=None ):
-	comment = ntiids.find_object_with_ntiid( oid )
+	comment = find_object_with_ntiid( oid )
 	if comment is not None:
 		user = User.get_user( username )
 		db_boards.like_comment( comment, user, nti_session, timestamp, delta )
@@ -163,7 +163,7 @@ def _modify_post(comment, _):
 
 # Topic
 def _add_topic( oid, nti_session=None ):
-	topic = ntiids.find_object_with_ntiid( oid )
+	topic = find_object_with_ntiid( oid )
 	if topic is not None:
 		user = get_creator( topic )
 		db_boards.create_topic( user, nti_session, topic )
@@ -172,7 +172,7 @@ def _add_topic( oid, nti_session=None ):
 					getattr( topic, '__name__', topic ))
 
 def _update_topic( oid, nti_session=None ):
-	topic = ntiids.find_object_with_ntiid( oid )
+	topic = find_object_with_ntiid( oid )
 	if topic is not None:
 		user = get_creator( topic )
 		db_boards.update_topic( user, nti_session, topic )
@@ -185,20 +185,20 @@ def _remove_topic( topic_id, timestamp=None ):
 	logger.debug( "Topic deleted (topic_id=%s)", topic_id )
 
 def _flag_topic( oid, state=False ):
-	topic = ntiids.find_object_with_ntiid( oid )
+	topic = find_object_with_ntiid( oid )
 	if topic is not None:
 		db_boards.flag_topic( topic, state )
 		logger.debug( 'Topic flagged (topic=%s) (state=%s)', topic, state )
 
 def _favorite_topic( oid, username=None, delta=0, timestamp=None, nti_session=None):
-	topic = ntiids.find_object_with_ntiid( oid )
+	topic = find_object_with_ntiid( oid )
 	if topic is not None:
 		user = User.get_user( username )
 		db_boards.favorite_topic( topic, user, nti_session, timestamp, delta )
 		logger.debug( 'Topic favorite (topic=%s)', topic )
 
 def _like_topic( oid, username=None, delta=0, timestamp=None, nti_session=None ):
-	topic = ntiids.find_object_with_ntiid( oid )
+	topic = find_object_with_ntiid( oid )
 	if topic is not None:
 		user = User.get_user( username )
 		db_boards.like_topic( topic, user, nti_session, timestamp, delta )
@@ -266,7 +266,7 @@ def _remove_forum( forum_id, timestamp ):
 	logger.debug( "Forum deleted (forum_id=%s)", forum_id )
 
 def _add_forum( oid, nti_session=None ):
-	forum = ntiids.find_object_with_ntiid( oid )
+	forum = find_object_with_ntiid( oid )
 	if forum is not None:
 		user = get_creator( forum )
 		db_boards.create_forum( user, nti_session, forum )

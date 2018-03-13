@@ -34,7 +34,7 @@ from nti.analytics.resource_views import _add_assignment_event
 class TestAssessments( NTIAnalyticsTestCase ):
 
 	@WithMockDSTrans
-	@fudge.patch( 'nti.ntiids.ntiids.find_object_with_ntiid' )
+	@fudge.patch('nti.analytics.resource_views.find_object_with_ntiid')
 	def test_self_assess_event(self, mock_find_object):
 		user = User.create_user( username='new_user1', dataserver=self.ds )
 		time_length = 120
@@ -76,7 +76,7 @@ class TestAssessments( NTIAnalyticsTestCase ):
 		assert_that( results, has_length( 0 ))
 
 	@WithMockDSTrans
-	@fudge.patch( 'nti.ntiids.ntiids.find_object_with_ntiid' )
+	@fudge.patch('nti.analytics.resource_views.find_object_with_ntiid')
 	def test_assignment_event(self, mock_find_object):
 		user = User.create_user( username='new_user1', dataserver=self.ds )
 		time_length = 120
@@ -85,7 +85,7 @@ class TestAssessments( NTIAnalyticsTestCase ):
 		course = CourseInstance()
 		course._ds_intid = 1111
 		mock_find_object.is_callable().returns( course )
-		event = AssignmentViewEvent( ContentId=None,
+		event = AssignmentViewEvent(ContentId=None,
 									user=user.username,
 									RootContextID='ntiid:fudge-lookup',
 									context_path=None,

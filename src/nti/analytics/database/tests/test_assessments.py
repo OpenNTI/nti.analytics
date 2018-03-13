@@ -100,7 +100,8 @@ class TestAssessments(AnalyticsTestBase):
 		super( TestAssessments, self ).setUp()
 
 	def test_assessments(self):
-		sa_records = db_assessments.get_self_assessments_for_user( test_user_ds_id, self.course_id )
+		sa_records = db_assessments.get_self_assessments_for_user(test_user_ds_id,
+																  self.course_id)
 		sa_records = [x for x in sa_records]
 		assert_that( sa_records, has_length( 0 ) )
 		sa_records = db_assessments.get_self_assessments_for_course( self.course_id )
@@ -110,8 +111,13 @@ class TestAssessments(AnalyticsTestBase):
 		assert_that( sa_details, has_length( 0 ))
 
 		new_assessment = _get_assessed_question_set()
-		db_assessments.create_self_assessment_taken(
-								test_user_ds_id, test_session_id, datetime.now(), self.course_id, new_assessment )
+		record = db_assessments.create_self_assessment_taken(test_user_ds_id,
+															test_session_id,
+															datetime.now(),
+															self.course_id,
+															new_assessment )
+
+		submission_id = record.submission_id
 
 		# By course/user
 		sa_records = db_assessments.get_self_assessments_for_user( test_user_ds_id, self.course_id )
@@ -141,7 +147,7 @@ class TestAssessments(AnalyticsTestBase):
 		assert_that( sa_taken.timestamp, not_none() )
 		assert_that( sa_taken.time_length, is_( -1 ) )
 		assert_that( sa_taken.assignment_id, is_( '2' ) )
-		assert_that( sa_taken.submission_id, is_( 101 ) )
+		assert_that( sa_taken.submission_id, is_(submission_id) )
 
 		# Details
 		sa_details = self.db.session.query( SelfAssessmentDetails ).all()

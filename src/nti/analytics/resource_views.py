@@ -8,8 +8,6 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
 
-import urlparse
-
 from zope import component
 
 from zope.event import notify
@@ -56,11 +54,10 @@ from nti.analytics.database import surveys as db_survey_views
 
 from nti.analytics.database.resource_views import get_active_users_with_resource_views as db_get_active_users_with_resource_views
 from nti.analytics.database.resource_views import get_active_users_with_video_views as db_get_active_users_with_video_views
+
 from nti.analytics.database.users import get_user
 
-from nti.analytics.progress import get_progress_for_resource_views
 from nti.analytics.progress import get_progress_for_video_views
-from nti.analytics.progress import get_progress_for_resource_container
 
 from nti.analytics.recorded import VideoSkipRecordedEvent
 from nti.analytics.recorded import BlogViewedRecordedEvent
@@ -81,7 +78,8 @@ from nti.contentlibrary.interfaces import IContentPackageBundle
 
 from nti.dataserver.interfaces import IEntity
 
-from nti.ntiids import ntiids
+from nti.ntiids.ntiids import is_valid_ntiid_string
+from nti.ntiids.ntiids import find_object_with_ntiid
 
 logger = __import__('logging').getLogger(__name__)
 
@@ -92,6 +90,8 @@ get_video_views = db_resource_views.get_user_video_views
 get_user_video_views = db_resource_views.get_user_video_views
 get_video_views_for_ntiid = db_resource_views.get_video_views_for_ntiid
 get_resource_views_for_ntiid = db_resource_views.get_resource_views_for_ntiid
+get_user_video_views_for_ntiid = db_resource_views.get_user_video_views_for_ntiid
+get_user_resource_views_for_ntiid = db_resource_views.get_user_resource_views_for_ntiid
 
 
 def get_active_users_with_resource_views(**kwargs):
@@ -108,51 +108,6 @@ def get_active_users_with_video_views(**kwargs):
 			yield user, count
 
 
-def _has_href_fragment( node, children ):
-	def _has_frag( node ):
-		return urlparse.urldefrag( node.href )[1]
-	# A fragment if we have a frag or if any of our children do
-	return bool( 	_has_frag( node )
-				or 	_has_frag( next( iter( children ))))
-
-
-def _is_page_container( node ):
-	# Node is only page container if it has children and
-	# does not have a fragment in its href.
-	children = getattr( node, 'children', None )
-	return bool( children and not _has_href_fragment( node, children ) )
-
-
-def get_progress_for_ntiid( user, resource_ntiid ):
-	obj = _get_object( resource_ntiid )
-	if _is_page_container( obj ):
-		# Top level container with pages (?)
-		child_views_dict = {}
-		# TODO Some clients might be sending in view events for the container itself
-		# instead of the first page.  We add that in, even through it might
-		# disturb the accuracy of our results.
-		parent_views = get_user_resource_views_for_ntiid( user, obj.ntiid )
-		child_views_dict[obj.ntiid] = parent_views
-
-		for child in obj.children:
-			child_views = get_user_resource_views_for_ntiid( user, child.ntiid )
-			child_views_dict[child.ntiid] = child_views
-		result = get_progress_for_resource_container( resource_ntiid, child_views_dict )
-	else:
-		# Not sure if one of these is more expensive than the other.  Perhaps
-		# the caller would be able to specify video or other?
-		resource_views = get_user_resource_views_for_ntiid( user, resource_ntiid )
-
-		if resource_views:
-			result = get_progress_for_resource_views( resource_ntiid, resource_views )
-
-		else:
-			resource_views = db_resource_views.get_user_video_views_for_ntiid( user, resource_ntiid )
-			result = get_progress_for_video_views( resource_ntiid, resource_views )
-
-	return result
-
-
 def get_video_progress_for_course( user, course ):
 	"""
 	For a given user/course, return a collection of progress for all videos we have on record.
@@ -167,13 +122,9 @@ def get_video_progress_for_course( user, course ):
 	return result
 
 
-def _get_object( ntiid ):
-	return ntiids.find_object_with_ntiid( ntiid )
-
-
 def _get_course( event ):
 	__traceback_info__ = event.RootContextID
-	result = _get_object( event.RootContextID )
+	result = find_object_with_ntiid( event.RootContextID )
 	# Global course info objects have an HTML ntiid
 	if result is None:
 		catalog = component.queryUtility(ICourseCatalog)
@@ -185,7 +136,7 @@ def _get_course( event ):
 
 
 def _get_root_context( event ):
-	result = _get_object( event.RootContextID )
+	result = find_object_with_ntiid( event.RootContextID )
 	if not IEntity.providedBy( result ):
 		result = _get_course( event )
 	return result
@@ -200,7 +151,7 @@ def _validate_analytics_event( event, object_id=None ):
 		# Ideally, we need to capture all id related data
 		# before the event is queued, but that is no guarantee
 		# that the event gets to us in time.
-		obj = _get_object( object_id )
+		obj = find_object_with_ntiid( object_id )
 		if obj is None:
 			raise UnrecoverableAnalyticsError(
 						'Event received for deleted object (id=%s) (event=%s)' %
@@ -270,7 +221,7 @@ def _validate_resource_event( event ):
 	""" Validate our events, sanitizing as we go. """
 	_validate_root_context_event( event )
 
-	if not ntiids.is_valid_ntiid_string( event.resource_id ):
+	if not is_valid_ntiid_string( event.resource_id ):
 		raise UnrecoverableAnalyticsError(
 							"""Event received for invalid resource id
 							(user=%s) (resource=%s) (event=%s)""" %
@@ -334,7 +285,7 @@ def _add_note_event( event, nti_session=None ):
 
 	user = get_entity( event.user )
 	root_context = _get_root_context( event )
-	note = _get_object( event.note_id )
+	note = find_object_with_ntiid( event.note_id )
 
 	db_resource_tags.create_note_view(
 								user,
@@ -363,7 +314,7 @@ def _add_topic_event( event, nti_session=None ):
 
 	user = get_entity( event.user )
 	root_context = _get_root_context( event )
-	topic = _get_object( event.topic_id )
+	topic = find_object_with_ntiid( event.topic_id )
 
 	db_boards.create_topic_view(user,
 								nti_session,
@@ -392,7 +343,7 @@ def _add_blog_event( event, nti_session=None ):
 		return
 
 	user = get_entity( event.user )
-	blog = _get_object( event.blog_id )
+	blog = find_object_with_ntiid( event.blog_id )
 
 	db_blogs.create_blog_view(	user,
 								nti_session,
@@ -457,7 +408,7 @@ def _do_resource_view( to_call, event, resource_id, nti_session=None, *args ):
 def _validate_assessment_event( event, assess_id ):
 	_validate_root_context_event( event )
 
-	if not ntiids.is_valid_ntiid_string( assess_id ):
+	if not is_valid_ntiid_string( assess_id ):
 		raise UnrecoverableAnalyticsError(
 							u"""Event received for invalid assessment id
 							(user=%s) (assessment_id=%s) (event=%s)""" %
