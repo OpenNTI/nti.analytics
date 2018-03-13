@@ -71,7 +71,7 @@ from nti.analytics.resource_views import _add_topic_event
 class TestComments( NTIAnalyticsTestCase ):
 
 	@WithMockDSTrans
-	@fudge.patch( 'nti.ntiids.ntiids.find_object_with_ntiid' )
+	@fudge.patch( 'nti.analytics.boards.find_object_with_ntiid' )
 	def test_reply_comments(self, mock_find_object):
 		user1 = User.create_user( username='new_user1', dataserver=self.ds )
 		user2 = User.create_user( username='new_user2', dataserver=self.ds )
@@ -201,7 +201,7 @@ class TestComments( NTIAnalyticsTestCase ):
 		assert_that( results, has_length( 0 ))
 
 	@WithMockDSTrans
-	@fudge.patch( 'nti.ntiids.ntiids.find_object_with_ntiid' )
+	@fudge.patch( 'nti.analytics.boards.find_object_with_ntiid' )
 	def test_rated_topics_and_comments(self, mock_find_object):
 		user1 = User.create_user( username='new_user1', dataserver=self.ds )
 		user2 = User.create_user( username='new_user2', dataserver=self.ds )
@@ -306,9 +306,10 @@ class TestComments( NTIAnalyticsTestCase ):
 		assert_that( results[0].user, is_( user1 ))
 
 	@WithMockDSTrans
-	@fudge.patch( 'nti.ntiids.ntiids.find_object_with_ntiid' )
+	@fudge.patch( 'nti.analytics.boards.find_object_with_ntiid' )
+	@fudge.patch( 'nti.analytics.resource_views.find_object_with_ntiid' )
 	@fudge.patch( 'nti.analytics.resource_views._get_root_context' )
-	def test_topics(self, mock_find_object, mock_root_context):
+	def test_topics(self, mock_find_object_boards, mock_find_object, mock_root_context):
 		user1 = User.create_user( username='new_user1', dataserver=self.ds )
 		intids = component.getUtility( zope.intid.IIntIds )
 		course = CourseInstance()
@@ -340,7 +341,8 @@ class TestComments( NTIAnalyticsTestCase ):
 		now = now.replace( microsecond=0 )
 		event.user = user1.username
 		event.Duration = time_length
-		mock_find_object.is_callable().returns( topic )
+		mock_find_object.is_callable().returns(topic)
+		mock_find_object_boards.is_callable().returns(topic)
 		_add_topic_event( event )
 
 		results = get_topic_views( user1 )
@@ -362,6 +364,8 @@ class TestComments( NTIAnalyticsTestCase ):
 		community = Community.create_community( username='community_name' )
 		mock_root_context.is_callable().returns( community )
 		event.timestamp = now + timedelta( minutes=5 )
+		mock_find_object.is_callable().returns(topic)
+		mock_find_object_boards.is_callable().returns(topic)
 		_add_topic_event( event )
 
 		results = get_topic_views( user1 )
@@ -382,13 +386,14 @@ class TestComments( NTIAnalyticsTestCase ):
 		intids.register( topic )
 		forum.__parent__ = community
 		mock_find_object.is_callable().returns( topic )
+		mock_find_object_boards.is_callable().returns(topic)
 		_add_topic( topic )
 		topics = get_topics_created_for_user( user2 )
 		assert_that( topics, has_length( 1 ))
 		assert_that( topics[0].RootContext, is_( community ))
 
 	@WithMockDSTrans
-	@fudge.patch( 'nti.ntiids.ntiids.find_object_with_ntiid' )
+	@fudge.patch( 'nti.analytics.boards.find_object_with_ntiid' )
 	def test_topic_user_files(self, mock_find_object):
 		user1 = User.create_user( username='new_user1', dataserver=self.ds )
 		user2 = User.create_user( username='new_user2', dataserver=self.ds )

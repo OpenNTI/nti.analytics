@@ -18,6 +18,8 @@ from zope.interface.interfaces import IObjectEvent
 
 from nti.base.interfaces import IIterable
 
+from nti.contenttypes.completion.interfaces import IProgress
+
 from nti.dataserver.interfaces import IUser
 
 from nti.schema.field import Bool
@@ -25,7 +27,6 @@ from nti.schema.field import List
 from nti.schema.field import Choice
 from nti.schema.field import Number
 from nti.schema.field import Object
-from nti.schema.field import DateTime
 from nti.schema.field import IndexedIterable as TypedIterable
 from nti.schema.field import DecodingValidTextLine as ValidTextLine
 
@@ -278,32 +279,15 @@ class IAnalyticsSessions(interface.Interface):
 							 value_type=Object(IAnalyticsSession))
 
 
-class IProgress(interface.Interface):
-	"""
-	Indicates progress made on underlying content.
-	"""
-
-	AbsoluteProgress = Number(title=u"A number indicating the absolute progress made on an item.",
-							default=0)
-
-	MaxPossibleProgress = Number(title=u"A number indicating the max possible progress that could be made on an item. May be null.",
-							default=0)
-
-	HasProgress = Bool(title=u"Indicates there was some progress made on item.",
-					default=False)
-
-	ResourceID = ValidTextLine(title=u"The ntiid of the object who's progress this object represents.", required=True)
-
-	LastModified = DateTime(title=u"The timestamp when this event occurred.",
-						required=False)
-
-
 class IVideoProgress(IProgress):
 	"""
 	Indicates progress made on a video.
 	"""
-	MostRecentEndTime = Number(title=u"A number indicating the last end point, in seconds, in which the video was watched.",
-							   default=0)
+	MostRecentEndTime = Number(title=u'Most recent end time',
+							   description=u"""A number indicating the last end point,
+							   in seconds, in which the video was watched.""",
+							   default=None,
+							   required=False)
 
 
 class IUserResearchStatus(IDCTimes):

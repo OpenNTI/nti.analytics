@@ -139,7 +139,6 @@
 						 .interfaces.IBatchResourceEvents
 						 .interfaces.IAnalyticsSession
 						 .interfaces.IAnalyticsSessions
-						 .interfaces.IProgress
 						 .interfaces.IVideoProgress
 						 .interfaces.IAnalyticsClientParams
 						 .interfaces.ISelfAssessmentViewEvent

@@ -21,10 +21,14 @@ from hamcrest import has_length
 
 from nti.analytics.database import resource_views as db_views
 
+from nti.analytics.progress import get_progress_for_video_views
+from nti.analytics.progress import get_progress_for_resource_views
+
 from nti.analytics.resource_views import get_video_views
-from nti.analytics.resource_views import get_progress_for_ntiid
 from nti.analytics.resource_views import get_video_views_for_ntiid
 from nti.analytics.resource_views import get_video_progress_for_course
+from nti.analytics.resource_views import get_user_video_views_for_ntiid
+from nti.analytics.resource_views import get_user_resource_views_for_ntiid
 
 from nti.analytics.tests import test_user_ds_id
 from nti.analytics.tests import test_session_id
@@ -74,28 +78,33 @@ class TestResourceProgress(AnalyticsTestBase):
 
 	@time_monotonically_increases
 	def test_progress(self):
-		resource_ntiid = 'tag:resource_id'
-		video_ntiid = 'tag:video_id'
-		progress = get_progress_for_ntiid( test_user_ds_id, resource_ntiid )
+		resource_ntiid = u'tag:resource_id'
+		video_ntiid = u'tag:video_id'
+		events = get_user_resource_views_for_ntiid(test_user_ds_id, resource_ntiid)
+		progress = get_progress_for_resource_views(resource_ntiid, events)
 		assert_that( progress, none() )
 
 		# Create resource view
 		self._create_resource_view( test_user_ds_id, resource_ntiid )
-		progress = get_progress_for_ntiid( test_user_ds_id, resource_ntiid )
+		events = get_user_resource_views_for_ntiid(test_user_ds_id, resource_ntiid)
+		progress = get_progress_for_resource_views(resource_ntiid, events)
 		assert_that( progress, not_none() )
 		assert_that( progress.HasProgress, is_( True ) )
 
-		progress = get_progress_for_ntiid( test_user_ds_id, video_ntiid )
+		events = get_user_video_views_for_ntiid(test_user_ds_id, video_ntiid)
+		progress = get_progress_for_video_views(video_ntiid, events)
 		assert_that( progress, none() )
 
 		# Video view
 		_create_video_event( test_user_ds_id, video_ntiid, max_time_length=60 )
 
-		progress = get_progress_for_ntiid( test_user_ds_id, resource_ntiid )
+		events = get_user_video_views_for_ntiid(test_user_ds_id, video_ntiid)
+		progress = get_progress_for_video_views(video_ntiid, events)
 		assert_that( progress, not_none() )
 		assert_that( progress.HasProgress, is_( True ) )
 
-		progress = get_progress_for_ntiid( test_user_ds_id, video_ntiid )
+		events = get_user_video_views_for_ntiid(test_user_ds_id, video_ntiid)
+		progress = get_progress_for_video_views(video_ntiid, events)
 		assert_that( progress, not_none() )
 		assert_that( progress.HasProgress, is_( True ) )
 		assert_that( progress.AbsoluteProgress, is_( 30 ) )
@@ -105,11 +114,13 @@ class TestResourceProgress(AnalyticsTestBase):
 		self._create_resource_view( test_user_ds_id, resource_ntiid )
 		_create_video_event( test_user_ds_id, video_ntiid  )
 
-		progress = get_progress_for_ntiid( test_user_ds_id, resource_ntiid )
+		events = get_user_resource_views_for_ntiid(test_user_ds_id, resource_ntiid)
+		progress = get_progress_for_resource_views(resource_ntiid, events)
 		assert_that( progress, not_none() )
 		assert_that( progress.HasProgress, is_( True ) )
 
-		progress = get_progress_for_ntiid( test_user_ds_id, video_ntiid )
+		events = get_user_video_views_for_ntiid(test_user_ds_id, video_ntiid)
+		progress = get_progress_for_video_views(video_ntiid, events)
 		assert_that( progress, not_none() )
 		assert_that( progress.HasProgress, is_( True ) )
 		assert_that( progress.AbsoluteProgress, is_( 60 ) )
@@ -117,7 +128,7 @@ class TestResourceProgress(AnalyticsTestBase):
 
 	@time_monotonically_increases
 	def test_course_video_progress(self):
-		video_ntiid = 'tag:video_id'
+		video_ntiid = u'tag:video_id'
 		progresses = get_video_progress_for_course( test_user_ds_id, self.course_id )
 		assert_that( progresses, not_none() )
 		assert_that( progresses, has_length( 0 ) )
@@ -161,7 +172,7 @@ class TestResourceViews( NTIAnalyticsTestCase ):
 	@time_monotonically_increases
 	def test_video_view(self):
 		# Community based
-		video_ntiid = 'tag:video_id'
+		video_ntiid = u'tag:video_id'
 		intids = component.getUtility( zope.intid.IIntIds )
 		course = CourseInstance()
 		intids.register( course )

@@ -220,7 +220,7 @@ def create_self_assessment_taken( user, nti_session, timestamp, course, submissi
 													submission=response,
 													time_length=time_length )
 			db.session.add( grade_details )
-	return True
+	return new_object
 
 
 def _get_grade( submission ):
