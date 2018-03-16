@@ -69,6 +69,12 @@ class ITimeLength(interface.Interface):
 	Duration = Number(title=u"The time length of the event, in seconds", required=False)
 
 
+class IAnalyticsProgressEvent(interface.Interface):
+	"""
+	Marker event for events that may be useful for progress.
+	"""
+
+
 class IAnalyticsEvent(IAnalyticsObjectBase):
 	"""
 	An analytics event.
@@ -115,7 +121,9 @@ class ITopicViewEvent(IAnalyticsViewEvent, IRootContextEvent):
 	topic_id = ValidTextLine(title=u'Topic ntiid')
 
 
-class IResourceEvent(IAnalyticsViewEvent, IRootContextEvent):
+class IResourceEvent(IAnalyticsViewEvent,
+					IRootContextEvent,
+					IAnalyticsProgressEvent):
 	"""
 	Describes a resource viewing event.
 	"""
