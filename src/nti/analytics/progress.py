@@ -23,6 +23,7 @@ from nti.externalization.representation import WithRepr
 from nti.schema.eqhash import EqHash
 
 from nti.schema.fieldproperty import createDirectFieldProperties
+from Finder.Finder_items import item
 
 logger = __import__('logging').getLogger(__name__)
 
@@ -54,7 +55,7 @@ def _get_last_mod(last_mod):
     return last_mod
 
 
-def get_progress_for_resource_container(resource_ntiid, resource_view_dict):
+def get_progress_for_resource_container(resource_ntiid, resource_view_dict, item, user):
     """
     For a page container, use the children progress to determine
     aggregate progress for the container, which should typically return a
@@ -76,11 +77,13 @@ def get_progress_for_resource_container(resource_ntiid, resource_view_dict):
                             AbsoluteProgress=viewed_pages,
                             MaxPossibleProgress=num_pages,
                             LastModified=last_mod,
+                            Item=item,
+                            User=user,
                             HasProgress=bool(viewed_pages))
     return progress
 
 
-def get_progress_for_resource_views(resource_ntiid, resource_views):
+def get_progress_for_resource_views(resource_ntiid, resource_views, item, user):
     """
     For a set of events for a given ntiid, looking at a resource
     constitutes progress.
@@ -100,11 +103,13 @@ def get_progress_for_resource_views(resource_ntiid, resource_views):
                             AbsoluteProgress=total_time,
                             MaxPossibleProgress=None,
                             LastModified=last_mod,
+                            Item=item,
+                            User=user,
                             HasProgress=True)
     return progress
 
 
-def get_progress_for_video_views(resource_ntiid, video_events):
+def get_progress_for_video_views(resource_ntiid, video_events, item, user):
     """
     For a set of events for a given ntiid, looking at a resource
     constitutes progress.
@@ -128,11 +133,13 @@ def get_progress_for_video_views(resource_ntiid, video_events):
                                  MaxPossibleProgress=max_time,
                                  LastModified=last_mod,
                                  HasProgress=True,
+                                 Item=item,
+                                 User=user,
                                  MostRecentEndTime=last_end_time)
     return progress
 
 
-def _get_last_mod_progress(values, id_val):
+def _get_last_mod_progress(values, id_val, item, user):
     """
     For a collection of items, gather progress based on last modified
     timestamp.
@@ -145,14 +152,16 @@ def _get_last_mod_progress(values, id_val):
                             AbsoluteProgress=None,
                             MaxPossibleProgress=None,
                             LastModified=last_mod,
+                            Item=item,
+                            User=user,
                             HasProgress=True)
     return progress
 
 
-def get_topic_progress( user, topic ):
+def get_topic_progress(user, topic):
     """
     Returns all assessment progress for a given user and topic.
     """
-    topic_views = get_topic_views( user, topic )
-    result = _get_last_mod_progress( topic_views, topic.NTIID )
+    topic_views = get_topic_views(user, topic)
+    result = _get_last_mod_progress(topic_views, topic.NTIID, topic, user)
     return result
