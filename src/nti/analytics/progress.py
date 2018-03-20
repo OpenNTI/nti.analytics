@@ -23,7 +23,6 @@ from nti.externalization.representation import WithRepr
 from nti.schema.eqhash import EqHash
 
 from nti.schema.fieldproperty import createDirectFieldProperties
-from Finder.Finder_items import item
 
 logger = __import__('logging').getLogger(__name__)
 
