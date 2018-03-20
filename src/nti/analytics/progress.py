@@ -61,7 +61,10 @@ def get_progress_for_resource_container(resource_ntiid, resource_view_dict, item
     num_of_pages_viewed/num_of_pages fraction.
     """
     # Get progress for each child
-    children_progress = (get_progress_for_resource_views( child_ntiid, child_views )
+    children_progress = (get_progress_for_resource_views(child_ntiid,
+                                                         child_views,
+                                                         item,
+                                                         user)
                         for child_ntiid, child_views in resource_view_dict.items())
 
     children_progress = [x for x in children_progress if x]
