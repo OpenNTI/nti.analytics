@@ -108,17 +108,21 @@ def get_active_users_with_video_views(**kwargs):
 			yield user, count
 
 
-def get_video_progress_for_course( user, course ):
+def get_video_progress_for_course(user, course):
 	"""
 	For a given user/course, return a collection of progress for all videos we have on record.
 	"""
-	resource_views = get_user_video_views( user, course )
+	resource_views = get_user_video_views(user, course)
 	view_dict = {}
 
 	for resource_view in resource_views:
 		view_dict.setdefault( resource_view.ResourceId, [] ).append( resource_view )
 
-	result = [get_progress_for_video_views( ntiid, events ) for ntiid, events in view_dict.items()]
+	result = []
+	for ntiid, events in view_dict.items():
+		video = find_object_with_ntiid(ntiid)
+		progress = get_progress_for_video_views(ntiid, events, video, user)
+		result.append(progress)
 	return result
 
 

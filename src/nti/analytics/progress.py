@@ -14,11 +14,7 @@ from zope import interface
 
 from nti.analytics.interfaces import IVideoProgress
 
-from nti.analytics.boards import get_topic_views
-
 from nti.contenttypes.completion.progress import Progress
-
-from nti.externalization.representation import WithRepr
 
 from nti.schema.eqhash import EqHash
 
@@ -27,7 +23,6 @@ from nti.schema.fieldproperty import createDirectFieldProperties
 logger = __import__('logging').getLogger(__name__)
 
 
-@WithRepr
 @EqHash('NTIID', 'AbsoluteProgress', 'MaxPossibleProgress',
         'HasProgress', 'LastModified', 'MostRecentEndTime')
 @interface.implementer(IVideoProgress)
@@ -158,12 +153,3 @@ def _get_last_mod_progress(values, id_val, item, user):
                             User=user,
                             HasProgress=True)
     return progress
-
-
-def get_topic_progress(user, topic):
-    """
-    Returns all assessment progress for a given user and topic.
-    """
-    topic_views = get_topic_views(user, topic)
-    result = _get_last_mod_progress(topic_views, topic.NTIID, topic, user)
-    return result
