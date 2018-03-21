@@ -62,6 +62,9 @@ from nti.analytics.progress import VideoProgress
 
 from nti.analytics.tests import NTIAnalyticsTestCase
 
+from nti.contenttypes.completion.tests.test_models import MockUser
+from nti.contenttypes.completion.tests.test_models import MockCompletableItem
+
 from nti.externalization import internalization
 
 from nti.externalization.externalization import toExternalObject
@@ -542,6 +545,8 @@ class TestResourceEvents(NTIAnalyticsTestCase):
 class TestProgress(NTIAnalyticsTestCase):
 
 	def test_video_progress(self):
+		user = MockUser(u'username')
+		item = MockCompletableItem(u'item_ntiid')
 		resource_id = u'tag:nt_ntiid1'
 		last_modified = datetime.utcnow()
 		last_end_time = 15
@@ -550,6 +555,8 @@ class TestProgress(NTIAnalyticsTestCase):
 						 		MaxPossibleProgress=20,
 						 		LastModified=last_modified,
 						 		HasProgress=True,
+						 		User=user,
+						 		Item=item,
 						 		MostRecentEndTime=last_end_time)
 		assert_that( progress, verifiably_provides( IVideoProgress ) )
 

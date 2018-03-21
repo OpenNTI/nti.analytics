@@ -9,6 +9,7 @@ from __future__ import absolute_import
 # pylint: disable=W0212,R0904
 
 import time
+import fudge
 import zope.intid
 
 from zope import component
@@ -30,10 +31,12 @@ from nti.analytics.resource_views import get_video_progress_for_course
 from nti.analytics.resource_views import get_user_video_views_for_ntiid
 from nti.analytics.resource_views import get_user_resource_views_for_ntiid
 
-from nti.analytics.tests import test_user_ds_id
 from nti.analytics.tests import test_session_id
 from nti.analytics.tests import AnalyticsTestBase
 from nti.analytics.tests import NTIAnalyticsTestCase
+
+from nti.contenttypes.completion.tests.test_models import MockUser
+from nti.contenttypes.completion.tests.test_models import MockCompletableItem
 
 from nti.contenttypes.courses.courses import CourseInstance
 
@@ -42,6 +45,8 @@ from nti.dataserver.tests.mock_dataserver import WithMockDSTrans
 from nti.dataserver.users import Community
 
 from nti.testing.time import time_monotonically_increases
+
+test_user_ds_id = MockUser(u'78')
 
 
 def _create_video_event(user_id, resource_val, root_context=None, max_time_length=None):
@@ -80,31 +85,33 @@ class TestResourceProgress(AnalyticsTestBase):
 	def test_progress(self):
 		resource_ntiid = u'tag:resource_id'
 		video_ntiid = u'tag:video_id'
+		user = MockUser(u'test_user')
+		item = MockCompletableItem(u'ntiid')
 		events = get_user_resource_views_for_ntiid(test_user_ds_id, resource_ntiid)
-		progress = get_progress_for_resource_views(resource_ntiid, events)
+		progress = get_progress_for_resource_views(resource_ntiid, events, item, user)
 		assert_that( progress, none() )
 
 		# Create resource view
 		self._create_resource_view( test_user_ds_id, resource_ntiid )
 		events = get_user_resource_views_for_ntiid(test_user_ds_id, resource_ntiid)
-		progress = get_progress_for_resource_views(resource_ntiid, events)
+		progress = get_progress_for_resource_views(resource_ntiid, events, item, user)
 		assert_that( progress, not_none() )
 		assert_that( progress.HasProgress, is_( True ) )
 
 		events = get_user_video_views_for_ntiid(test_user_ds_id, video_ntiid)
-		progress = get_progress_for_video_views(video_ntiid, events)
+		progress = get_progress_for_video_views(video_ntiid, events, item, user)
 		assert_that( progress, none() )
 
 		# Video view
 		_create_video_event( test_user_ds_id, video_ntiid, max_time_length=60 )
 
 		events = get_user_video_views_for_ntiid(test_user_ds_id, video_ntiid)
-		progress = get_progress_for_video_views(video_ntiid, events)
+		progress = get_progress_for_video_views(video_ntiid, events, item, user)
 		assert_that( progress, not_none() )
 		assert_that( progress.HasProgress, is_( True ) )
 
 		events = get_user_video_views_for_ntiid(test_user_ds_id, video_ntiid)
-		progress = get_progress_for_video_views(video_ntiid, events)
+		progress = get_progress_for_video_views(video_ntiid, events, item, user)
 		assert_that( progress, not_none() )
 		assert_that( progress.HasProgress, is_( True ) )
 		assert_that( progress.AbsoluteProgress, is_( 30 ) )
@@ -115,20 +122,23 @@ class TestResourceProgress(AnalyticsTestBase):
 		_create_video_event( test_user_ds_id, video_ntiid  )
 
 		events = get_user_resource_views_for_ntiid(test_user_ds_id, resource_ntiid)
-		progress = get_progress_for_resource_views(resource_ntiid, events)
+		progress = get_progress_for_resource_views(resource_ntiid, events, item, user)
 		assert_that( progress, not_none() )
 		assert_that( progress.HasProgress, is_( True ) )
 
 		events = get_user_video_views_for_ntiid(test_user_ds_id, video_ntiid)
-		progress = get_progress_for_video_views(video_ntiid, events)
+		progress = get_progress_for_video_views(video_ntiid, events, item, user)
 		assert_that( progress, not_none() )
 		assert_that( progress.HasProgress, is_( True ) )
 		assert_that( progress.AbsoluteProgress, is_( 60 ) )
 		assert_that( progress.MaxPossibleProgress, is_( 60 ) )
 
 	@time_monotonically_increases
-	def test_course_video_progress(self):
+	@fudge.patch('nti.analytics.resource_views.find_object_with_ntiid')
+	def test_course_video_progress(self, mock_find_object):
 		video_ntiid = u'tag:video_id'
+		item = MockCompletableItem(video_ntiid)
+		mock_find_object.is_callable().returns(item)
 		progresses = get_video_progress_for_course( test_user_ds_id, self.course_id )
 		assert_that( progresses, not_none() )
 		assert_that( progresses, has_length( 0 ) )
