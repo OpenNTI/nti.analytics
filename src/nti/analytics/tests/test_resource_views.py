@@ -37,6 +37,7 @@ from nti.analytics.tests import NTIAnalyticsTestCase
 
 from nti.contenttypes.completion.tests.test_models import MockUser
 from nti.contenttypes.completion.tests.test_models import MockCompletableItem
+from nti.contenttypes.completion.tests.test_models import MockCompletionContext
 
 from nti.contenttypes.courses.courses import CourseInstance
 
@@ -87,31 +88,32 @@ class TestResourceProgress(AnalyticsTestBase):
 		video_ntiid = u'tag:video_id'
 		user = MockUser(u'test_user')
 		item = MockCompletableItem(u'ntiid')
+		context = MockCompletionContext()
 		events = get_user_resource_views_for_ntiid(test_user_ds_id, resource_ntiid)
-		progress = get_progress_for_resource_views(resource_ntiid, events, item, user)
+		progress = get_progress_for_resource_views(resource_ntiid, events, item, user, context)
 		assert_that( progress, none() )
 
 		# Create resource view
 		self._create_resource_view( test_user_ds_id, resource_ntiid )
 		events = get_user_resource_views_for_ntiid(test_user_ds_id, resource_ntiid)
-		progress = get_progress_for_resource_views(resource_ntiid, events, item, user)
+		progress = get_progress_for_resource_views(resource_ntiid, events, item, user, context)
 		assert_that( progress, not_none() )
 		assert_that( progress.HasProgress, is_( True ) )
 
 		events = get_user_video_views_for_ntiid(test_user_ds_id, video_ntiid)
-		progress = get_progress_for_video_views(video_ntiid, events, item, user)
+		progress = get_progress_for_video_views(video_ntiid, events, item, user, context)
 		assert_that( progress, none() )
 
 		# Video view
 		_create_video_event( test_user_ds_id, video_ntiid, max_time_length=60 )
 
 		events = get_user_video_views_for_ntiid(test_user_ds_id, video_ntiid)
-		progress = get_progress_for_video_views(video_ntiid, events, item, user)
+		progress = get_progress_for_video_views(video_ntiid, events, item, user, context)
 		assert_that( progress, not_none() )
 		assert_that( progress.HasProgress, is_( True ) )
 
 		events = get_user_video_views_for_ntiid(test_user_ds_id, video_ntiid)
-		progress = get_progress_for_video_views(video_ntiid, events, item, user)
+		progress = get_progress_for_video_views(video_ntiid, events, item, user, context)
 		assert_that( progress, not_none() )
 		assert_that( progress.HasProgress, is_( True ) )
 		assert_that( progress.AbsoluteProgress, is_( 30 ) )
@@ -122,12 +124,12 @@ class TestResourceProgress(AnalyticsTestBase):
 		_create_video_event( test_user_ds_id, video_ntiid  )
 
 		events = get_user_resource_views_for_ntiid(test_user_ds_id, resource_ntiid)
-		progress = get_progress_for_resource_views(resource_ntiid, events, item, user)
+		progress = get_progress_for_resource_views(resource_ntiid, events, item, user, context)
 		assert_that( progress, not_none() )
 		assert_that( progress.HasProgress, is_( True ) )
 
 		events = get_user_video_views_for_ntiid(test_user_ds_id, video_ntiid)
-		progress = get_progress_for_video_views(video_ntiid, events, item, user)
+		progress = get_progress_for_video_views(video_ntiid, events, item, user, context)
 		assert_that( progress, not_none() )
 		assert_that( progress.HasProgress, is_( True ) )
 		assert_that( progress.AbsoluteProgress, is_( 60 ) )
@@ -138,15 +140,18 @@ class TestResourceProgress(AnalyticsTestBase):
 	def test_course_video_progress(self, mock_find_object):
 		video_ntiid = u'tag:video_id'
 		item = MockCompletableItem(video_ntiid)
+		# Events are stored with a course with intid of 1
+		context = MockCompletionContext()
+		context._ds_intid = 1
 		mock_find_object.is_callable().returns(item)
-		progresses = get_video_progress_for_course( test_user_ds_id, self.course_id )
+		progresses = get_video_progress_for_course( test_user_ds_id, context )
 		assert_that( progresses, not_none() )
 		assert_that( progresses, has_length( 0 ) )
 
 		# Video view
 		_create_video_event( test_user_ds_id, video_ntiid )
 
-		progresses = get_video_progress_for_course( test_user_ds_id, self.course_id )
+		progresses = get_video_progress_for_course( test_user_ds_id, context )
 		assert_that( progresses, not_none() )
 		assert_that( progresses, has_length( 1 ) )
 
@@ -154,7 +159,7 @@ class TestResourceProgress(AnalyticsTestBase):
 		# Specify max time length.
 		_create_video_event( test_user_ds_id, video_ntiid, max_time_length=60 )
 
-		progresses = get_video_progress_for_course( test_user_ds_id, self.course_id )
+		progresses = get_video_progress_for_course( test_user_ds_id, context )
 		assert_that( progresses, not_none() )
 		assert_that( progresses, has_length( 1 ) )
 
@@ -163,7 +168,7 @@ class TestResourceProgress(AnalyticsTestBase):
 		for x in range( video_count ):
 			_create_video_event( test_user_ds_id, video_ntiid + '_' + str( x ) )
 
-		progresses = get_video_progress_for_course( test_user_ds_id, self.course_id )
+		progresses = get_video_progress_for_course( test_user_ds_id, context )
 		assert_that( progresses, not_none() )
 		assert_that( progresses, has_length( video_count + 1 ) )
 
@@ -171,7 +176,7 @@ class TestResourceProgress(AnalyticsTestBase):
 		for x in range( video_count ):
 			_create_video_event( test_user_ds_id, video_ntiid + '_' + str( x ), root_context=9999 )
 
-		progresses = get_video_progress_for_course( test_user_ds_id, self.course_id )
+		progresses = get_video_progress_for_course( test_user_ds_id, context )
 		assert_that( progresses, not_none() )
 		assert_that( progresses, has_length( video_count + 1 ) )
 
