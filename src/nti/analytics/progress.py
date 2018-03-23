@@ -49,7 +49,7 @@ def _get_last_mod(last_mod):
     return last_mod
 
 
-def get_progress_for_resource_container(resource_ntiid, resource_view_dict, item, user):
+def get_progress_for_resource_container(resource_ntiid, resource_view_dict, item, user, course):
     """
     For a page container, use the children progress to determine
     aggregate progress for the container, which should typically return a
@@ -59,7 +59,8 @@ def get_progress_for_resource_container(resource_ntiid, resource_view_dict, item
     children_progress = (get_progress_for_resource_views(child_ntiid,
                                                          child_views,
                                                          item,
-                                                         user)
+                                                         user,
+                                                         course)
                         for child_ntiid, child_views in resource_view_dict.items())
 
     children_progress = [x for x in children_progress if x]
@@ -76,11 +77,12 @@ def get_progress_for_resource_container(resource_ntiid, resource_view_dict, item
                             LastModified=last_mod,
                             Item=item,
                             User=user,
+                            CompletionContext=course,
                             HasProgress=bool(viewed_pages))
     return progress
 
 
-def get_progress_for_resource_views(resource_ntiid, resource_views, item, user):
+def get_progress_for_resource_views(resource_ntiid, resource_views, item, user, course):
     """
     For a set of events for a given ntiid, looking at a resource
     constitutes progress.
@@ -102,11 +104,12 @@ def get_progress_for_resource_views(resource_ntiid, resource_views, item, user):
                             LastModified=last_mod,
                             Item=item,
                             User=user,
+                            CompletionContext=course,
                             HasProgress=True)
     return progress
 
 
-def get_progress_for_video_views(resource_ntiid, video_events, item, user):
+def get_progress_for_video_views(resource_ntiid, video_events, item, user, course):
     """
     For a set of events for a given ntiid, looking at a resource
     constitutes progress.
@@ -132,11 +135,12 @@ def get_progress_for_video_views(resource_ntiid, video_events, item, user):
                                  HasProgress=True,
                                  Item=item,
                                  User=user,
+                                 CompletionContext=course,
                                  MostRecentEndTime=last_end_time)
     return progress
 
 
-def _get_last_mod_progress(values, id_val, item, user):
+def _get_last_mod_progress(values, id_val, item, user, course):
     """
     For a collection of items, gather progress based on last modified
     timestamp.
@@ -151,5 +155,6 @@ def _get_last_mod_progress(values, id_val, item, user):
                             LastModified=last_mod,
                             Item=item,
                             User=user,
+                            CompletionContext=course,
                             HasProgress=True)
     return progress

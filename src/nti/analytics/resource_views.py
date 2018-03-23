@@ -121,7 +121,7 @@ def get_video_progress_for_course(user, course):
 	result = []
 	for ntiid, events in view_dict.items():
 		video = find_object_with_ntiid(ntiid)
-		progress = get_progress_for_video_views(ntiid, events, video, user)
+		progress = get_progress_for_video_views(ntiid, events, video, user, course)
 		result.append(progress)
 	return result
 
