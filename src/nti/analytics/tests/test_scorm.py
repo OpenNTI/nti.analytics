@@ -53,3 +53,7 @@ class TestSCORMResourceViews(NTIAnalyticsTestCase):
     
         results = db_scorm.get_launch_records_for_ntiid(metadata_ntiid)
         assert_that(results, has_length(1))
+        results = db_scorm.get_launch_records()
+        assert_that(results, has_length(1))
+        results = db_scorm.get_launch_records(user=user, root_context=course)
+        assert_that(results, has_length(1))

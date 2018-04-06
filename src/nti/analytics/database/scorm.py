@@ -59,6 +59,12 @@ def _resolve_launch_record(record, root_context=None, user=None):
     if user is not None:
         record.user = user
     return record
+
+
+def get_launch_records(user=None, root_context=None, **kwargs):
+    launch_records = get_filtered_records(user, SCORMResourceViews, root_context=root_context, **kwargs)
+    return resolve_objects(_resolve_launch_record, launch_records,
+                           user=user, root_context=root_context)
     
     
 def get_launch_records_for_ntiid(metadata_ntiid, user=None, root_context=None, **kwargs):
