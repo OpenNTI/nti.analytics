@@ -40,8 +40,6 @@ def create_launch_record(user, course, metadata, nti_session, context_path, time
     context_path = get_context_path(context_path)
     course_id, entity_root_context_id = get_root_context_ids(course)
     
-    # TODO: Check if record exists?
-    
     new_object = SCORMPackageLaunches(user_id=uid,
                                       session_id=sid,
                                       timestamp=timestamp,
