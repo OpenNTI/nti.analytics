@@ -12,9 +12,9 @@ from zope import component
 
 from nti.app.products.courseware_scorm.interfaces import ISCORMPackageLaunchEvent
 
-from .database import scorm as db_scorm
+from nti.analytics.database import scorm as db_scorm
 
-from .sessions import get_nti_session_id
+from nti.analytics.sessions import get_nti_session_id
 
 
 def _add_launch_record(user, course, metadata, nti_session, timestamp):
