@@ -73,7 +73,7 @@ def get_launch_records_for_ntiid(metadata_ntiid, user=None, root_context=None, *
     resource_record = get_resource_record(db, metadata_ntiid)
     if resource_record is not None:
         resource_id = resource_record.resource_id
-        filters = (SCORMPackageLaunches.resource_id == resource_id)
+        filters = (SCORMPackageLaunches.resource_id == resource_id,)
         launch_records = get_filtered_records(user,
                                               SCORMPackageLaunches,
                                               root_context=root_context,
