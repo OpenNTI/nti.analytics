@@ -25,7 +25,7 @@ from nti.analytics.database.users import get_or_create_user
 
 from nti.analytics.identifier import get_ntiid_id
 
-from nti.analytics_database.scorm import SCORMResourceViews
+from nti.analytics_database.scorm import SCORMPackageLaunches
 
 
 def create_launch_record(user, course, metadata, nti_session, context_path, timestamp):
@@ -42,14 +42,14 @@ def create_launch_record(user, course, metadata, nti_session, context_path, time
     
     # TODO: Check if record exists?
     
-    new_object = SCORMResourceViews(user_id=uid,
-                                    session_id=sid,
-                                    timestamp=timestamp,
-                                    course_id=course_id,
-                                    entity_root_context_id=entity_root_context_id,
-                                    context_path=context_path,
-                                    resource_id=rid,
-                                    time_length=None)
+    new_object = SCORMPackageLaunches(user_id=uid,
+                                      session_id=sid,
+                                      timestamp=timestamp,
+                                      course_id=course_id,
+                                      entity_root_context_id=entity_root_context_id,
+                                      context_path=context_path,
+                                      resource_id=rid,
+                                      time_length=None)
     db.session.add(new_object)
     
     
@@ -62,7 +62,7 @@ def _resolve_launch_record(record, root_context=None, user=None):
 
 
 def get_launch_records(user=None, root_context=None, **kwargs):
-    launch_records = get_filtered_records(user, SCORMResourceViews, root_context=root_context, **kwargs)
+    launch_records = get_filtered_records(user, SCORMPackageLaunches, root_context=root_context, **kwargs)
     return resolve_objects(_resolve_launch_record, launch_records,
                            user=user, root_context=root_context)
     
@@ -73,9 +73,9 @@ def get_launch_records_for_ntiid(metadata_ntiid, user=None, root_context=None, *
     resource_record = get_resource_record(db, metadata_ntiid)
     if resource_record is not None:
         resource_id = resource_record.resource_id
-        filters = (SCORMResourceViews.resource_id == resource_id)
+        filters = (SCORMPackageLaunches.resource_id == resource_id)
         launch_records = get_filtered_records(user,
-                                              SCORMResourceViews,
+                                              SCORMPackageLaunches,
                                               root_context=root_context,
                                               filters=filters,
                                               **kwargs)
