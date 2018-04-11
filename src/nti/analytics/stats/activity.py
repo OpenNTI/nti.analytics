@@ -25,6 +25,8 @@ from nti.analytics.resource_views import get_resource_views
 from nti.analytics.resource_views import get_active_users_with_resource_views
 from nti.analytics.resource_views import get_active_users_with_video_views
 
+from nti.analytics.scorm import get_scorm_package_launches
+
 from nti.externalization.interfaces import LocatedExternalDict
 
 logger = __import__('logging').getLogger(__name__)
@@ -64,7 +66,8 @@ class ActiveTimeStats(object):
 
 
 EVENT_SOURCES = (get_video_views,
-                 get_resource_views,)
+                 get_resource_views,
+                 get_scorm_package_launches,)
 
 _DEFAULT_YIELD_PER = 1000
 

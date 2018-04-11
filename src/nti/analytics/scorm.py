@@ -16,6 +16,9 @@ from nti.analytics.database import scorm as db_scorm
 
 from nti.analytics.sessions import get_nti_session_id
 
+get_scorm_package_launches = db_scorm.get_launch_records
+get_scorm_package_launches_for_ntiid = db_scorm.get_launch_records_for_ntiid
+
 
 def _add_launch_record(user, course, metadata, nti_session, timestamp):
     context_path = [course.ntiid]
