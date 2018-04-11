@@ -18,6 +18,9 @@ from zope import component
 
 from nti.analytics.database import scorm as db_scorm
 
+from nti.analytics.scorm import get_scorm_package_launches
+from nti.analytics.scorm import get_scorm_package_launches_for_ntiid
+
 from nti.analytics.tests import test_session_id
 from nti.analytics.tests import NTIAnalyticsTestCase
 
@@ -48,12 +51,12 @@ class TestSCORMResourceViews(NTIAnalyticsTestCase):
         _create_scorm_package_launch_event(user, course, metadata_ntiid, [course_ntiid])
     
         # Empty
-        results = db_scorm.get_launch_records_for_ntiid(metadata_ntiid + u'dne')
+        results = get_scorm_package_launches_for_ntiid(metadata_ntiid + u'dne')
         assert_that(results, has_length(0))
     
-        results = db_scorm.get_launch_records_for_ntiid(metadata_ntiid)
+        results = get_scorm_package_launches_for_ntiid(metadata_ntiid)
         assert_that(results, has_length(1))
-        results = db_scorm.get_launch_records()
+        results = get_scorm_package_launches()
         assert_that(results, has_length(1))
-        results = db_scorm.get_launch_records(user=user, root_context=course)
+        results = get_scorm_package_launches(user=user, root_context=course)
         assert_that(results, has_length(1))
