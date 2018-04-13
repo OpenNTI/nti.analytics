@@ -39,6 +39,7 @@ setup(
 		'nti.analytics_database',
 		'nti.app.assessment',
 		'nti.app.products.courseware',
+        'nti.app.products.courseware_scorm',
 		'nti.app.products.courseware_ims',
 		'nti.app.products.gradebook',
 		'nti.asynchronous',
