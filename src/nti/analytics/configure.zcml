@@ -105,6 +105,8 @@
 	<subscriber handler=".enrollments._enrolled" />
 	<subscriber handler=".enrollments._dropped" />
 
+	<subscriber handler=".scorm._scorm_package_launched" />
+
 	<!-- Utilities -->
 	<utility component=".blogs" provides=".interfaces.IObjectProcessor" name="blogs"/>
 	<utility component=".boards" provides=".interfaces.IObjectProcessor" name="boards"/>
