@@ -38,10 +38,11 @@ def _get_or_create_resource(db, resource_val, max_time_length):
 	found_resource = db.session.query(Resources).filter(
 									Resources.resource_ds_id == resource_val).first()
 	if found_resource is not None:
-		# Lazy populate fields
-		if found_resource.resource_display_name is None:
-			found_resource.resource_display_name = _get_resource_display_name(resource_val)
-		if found_resource.max_time_length is None:
+		# Always update fields (to fix possible issues)
+		display_name = _get_resource_display_name(resource_val)
+		if display_name is not None:
+			found_resource.resource_display_name = display_name
+		if max_time_length:
 			found_resource.max_time_length = max_time_length
 	return found_resource or _create_resource(db, resource_val, max_time_length)
 
