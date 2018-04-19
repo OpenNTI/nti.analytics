@@ -40,9 +40,11 @@ def _get_or_create_resource(db, resource_val, max_time_length):
 	if found_resource is not None:
 		# Always update fields (to fix possible issues)
 		display_name = _get_resource_display_name(resource_val)
-		if display_name:
+		if 		display_name \
+			and found_resource.resource_display_name != display_name:
 			found_resource.resource_display_name = display_name
-		if max_time_length:
+		if 		max_time_length \
+			and found_resource.max_time_length != max_time_length:
 			found_resource.max_time_length = max_time_length
 	return found_resource or _create_resource(db, resource_val, max_time_length)
 
