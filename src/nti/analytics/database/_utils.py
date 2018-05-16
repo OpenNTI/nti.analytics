@@ -58,6 +58,8 @@ def get_context_path(context_path):
 		# not have scattered duplicates, which would be an error condition.
 		context_path = list(OrderedDict.fromkeys(context_path))
 		result = CONTEXT_PATH_SEPARATOR.join(context_path)
+		# Cap this length to ensure it fits in our tables
+		result = result[:1048]
 	return result
 
 
