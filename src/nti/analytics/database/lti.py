@@ -79,4 +79,4 @@ def get_launch_records_for_ntiid(metadata_ntiid, user=None, root_context=None, *
                                               **kwargs)
         results = resolve_objects(_resolve_launch_record, launch_records,
                                   user=user, root_context=root_context)
-        return results
+    return results
