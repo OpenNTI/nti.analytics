@@ -158,3 +158,33 @@ def _get_last_mod_progress(values, id_val, item, user, course):
                             CompletionContext=course,
                             HasProgress=True)
     return progress
+
+
+def get_progress_for_lti_launches(ntiid, launch_records, asset, user, course):
+    progress = None
+
+    # Progress is 1 (max) if the asset has ever been launched
+    if len(launch_records) > 0:
+        launch_records = tuple(launch_records)
+        last_mod = max(x.timestamp for x in launch_records)
+        last_mod = _get_last_mod(last_mod)
+        last_mod = _get_last_mod(last_mod)
+        progress = Progress(NTIID=ntiid,
+                            AbsoluteProgress=1,
+                            MaxPossibleProgress=1,
+                            HasProgress=True,
+                            Item=asset,
+                            User=user,
+                            CompletionContext=course,
+                            LastModified=last_mod)
+    else:
+        progress = Progress(NTIID=ntiid,
+                            AbsoluteProgress=0,
+                            MaxPossibleProgress=1,
+                            HasProgress=False,
+                            Item=asset,
+                            User=user,
+                            CompletionContext=course)
+
+    return progress
+
