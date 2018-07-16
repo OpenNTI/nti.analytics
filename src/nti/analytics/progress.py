@@ -27,7 +27,6 @@ logger = __import__('logging').getLogger(__name__)
         'HasProgress', 'LastModified', 'MostRecentEndTime')
 @interface.implementer(IVideoProgress)
 class VideoProgress(Progress):
-
     createDirectFieldProperties(IVideoProgress)
 
     __external_can_create__ = False
@@ -61,7 +60,7 @@ def get_progress_for_resource_container(resource_ntiid, resource_view_dict, item
                                                          item,
                                                          user,
                                                          course)
-                        for child_ntiid, child_views in resource_view_dict.items())
+                         for child_ntiid, child_views in resource_view_dict.items())
 
     children_progress = [x for x in children_progress if x]
 
@@ -97,7 +96,7 @@ def get_progress_for_resource_views(resource_ntiid, resource_views, item, user, 
                         if ts is not None)
         last_mod = _get_last_mod(last_mod)
         total_time = sum(x.time_length for x in resource_views
-						if x.time_length is not None)
+                         if x.time_length is not None)
         progress = Progress(NTIID=resource_ntiid,
                             AbsoluteProgress=total_time,
                             MaxPossibleProgress=None,
@@ -161,30 +160,21 @@ def _get_last_mod_progress(values, id_val, item, user, course):
 
 
 def get_progress_for_lti_launches(ntiid, launch_records, asset, user, course):
-    progress = None
+    progress = progress = Progress(NTIID=ntiid,
+                                   MaxPossibleProgress=1,
+                                   HasProgress=False,
+                                   Item=asset,
+                                   User=user,
+                                   CompletionContext=course)
 
     # Progress is 1 (max) if the asset has ever been launched
     if len(launch_records) > 0:
         launch_records = tuple(launch_records)
         last_mod = max(x.timestamp for x in launch_records)
         last_mod = _get_last_mod(last_mod)
-        last_mod = _get_last_mod(last_mod)
-        progress = Progress(NTIID=ntiid,
-                            AbsoluteProgress=1,
-                            MaxPossibleProgress=1,
-                            HasProgress=True,
-                            Item=asset,
-                            User=user,
-                            CompletionContext=course,
-                            LastModified=last_mod)
+        progress.LastModified = last_mod
+        progress.AbsoluteProgress = 1
+        progress.HasProgress = True
     else:
-        progress = Progress(NTIID=ntiid,
-                            AbsoluteProgress=0,
-                            MaxPossibleProgress=1,
-                            HasProgress=False,
-                            Item=asset,
-                            User=user,
-                            CompletionContext=course)
-
+        progress.AbsoluteProgress = 0
     return progress
-
