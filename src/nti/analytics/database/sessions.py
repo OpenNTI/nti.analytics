@@ -151,7 +151,7 @@ def get_user_sessions(user, timestamp=None, max_timestamp=None,
 
 def get_recent_user_sessions(user, limit=None, not_after=None):
 	def query_builder(query):
-		query = query.order_by(Sessions.start_time.desc())
+		query = query.order_by(Sessions.session_id.desc())
 		if limit:
 			query = query.limit(limit)
 		return query
