@@ -613,12 +613,12 @@ def _get_note_queue():
 	return factory.get_queue( NOTE_VIEW_ANALYTICS )
 
 
-def handle_events(batch_events, return_invalid=True):
+def handle_events(batch_events, return_invalid=True, handled=None):
 	"""
 	Handle resource view events, optionally returning or raising on invalid events
 	"""
-
 	validation_errors = []
+	handled = [] if handled is None else handled
 	for event in batch_events:
 		# Try to grab a session, careful not to raise so we don't lose our
 		# otherwise valid events. Since the batch send time on the client side
@@ -663,6 +663,8 @@ def handle_events(batch_events, return_invalid=True):
 				validation_errors.append(e)
 			else:
 				raise
+		else:
+			handled.append(event)
 	# If we validated early, we could return something meaningful.
 	# But we'd have to handle all validation exceptions as to not lose the valid
 	# events. The nti.asynchronous.processor does this and at least drops the bad
