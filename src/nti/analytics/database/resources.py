@@ -20,6 +20,8 @@ logger = __import__('logging').getLogger(__name__)
 def _get_resource_display_name(resource_val):
 	content_unit = ntiids.find_object_with_ntiid(resource_val)
 	display_name = getattr(content_unit, 'label', None)
+	if display_name:
+		display_name = display_name[:256]
 	return display_name
 
 
