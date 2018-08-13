@@ -71,8 +71,8 @@ class IAnalyticsObjectBase(interface.Interface):
 
 class ITimeLength(interface.Interface):
 
-    Duration = Number(
-        title=u"The time length of the event, in seconds", required=False)
+    Duration = Number(title=u"The time length of the event, in seconds",
+					required=False)
 
 
 class IAnalyticsProgressEvent(interface.Interface):
@@ -139,8 +139,8 @@ class IResourceEvent(IAnalyticsViewEvent,
 
 class IAssessmentViewEvent(IAnalyticsViewEvent, IRootContextEvent):
     ResourceId = ValidTextLine(title=u"The assessment ntiid.", required=True)
-    ContentId = ValidTextLine(
-        title=u"The resource page ntiid.", required=False)
+    ContentId = ValidTextLine(title=u"The resource page ntiid.",
+							  required=False)
 
 
 class ISelfAssessmentViewEvent(IAssessmentViewEvent):
@@ -172,8 +172,8 @@ class IProfileViewEvent(IAnalyticsViewEvent):
     """
     A profile viewing event.
     """
-    ProfileEntity = ValidTextLine(
-        title=u"The profile entity username.", required=True)
+    ProfileEntity = ValidTextLine(title=u"The profile entity username.",
+								  required=True)
 
 
 class IProfileActivityViewEvent(IProfileViewEvent):
@@ -205,8 +205,7 @@ class IVideoEvent(IResourceEvent):
     MaxDuration = Number(title=u"The maximum length of the video, in seconds.",
                          required=False)
 
-    with_transcript = Bool(
-        title=u"Whether the video was viewed with a transcript or not.")
+    with_transcript = Bool(title=u"Whether the video was viewed with a transcript or not.")
 
     PlaySpeed = Number(title=u"The play speed of the video", required=False)
 
