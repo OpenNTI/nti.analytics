@@ -283,17 +283,16 @@ def _get_location_id(db, lat_str, long_str):
 
 
 def _lookup_location(lat, long_):
-	# Using Nominatim as our lookup service for now, because
-	# they don't require registration or an API key. The downside
-	# is that they have a usage limit of 1 lookup/second.
-	# See http://wiki.openstreetmap.org/wiki/Nominatim_usage_policy
-	# for more details on the usage policy.
+	# Using Nominatim as our lookup service for now, because they don't require
+	# registration or an API key. The downside is that they have a usage limit
+	# of 1 lookup/second.
+	# See http://wiki.openstreetmap.org/wiki/Nominatim_usage_policy for more
+	# details on the usage policy.
 	try:
 		geolocator = geocoders.Nominatim()
 		# TODO: Hard coding to english location names.
-		# We probably want to store these in 'en' and
-		# use the message factory translation layer to
-		# use client's accept-language headers.
+		# We probably want to store these in 'en' and use the message factory
+		# translation layer to use client's accept-language headers.
 		location = geolocator.reverse((lat, long_), language='en')
 		location_address = location.raw.get('address')
 		_city = location_address.get('city') or location_address.get( 'town' )
