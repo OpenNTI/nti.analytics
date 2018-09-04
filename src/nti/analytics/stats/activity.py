@@ -10,6 +10,8 @@ from __future__ import absolute_import
 
 from collections import defaultdict
 
+from gevent import sleep
+
 from zope import interface
 
 from nti.analytics.lti import get_lti_asset_launches
@@ -76,9 +78,15 @@ _DEFAULT_YIELD_PER = 1000
 
 
 def _activity_source(**kwargs):
+    yield_to_hub_per = kwargs.get('yield_per', None) or _DEFAULT_YIELD_PER
     for source in EVENT_SOURCES:
+        count_provided = 0
         for event in source(**kwargs):
+            count_provided += 1
             yield event
+            if count_provided >= yield_to_hub_per:
+                count_provided = 0
+                sleep() # Yield to the gevent hub
 
 
 @interface.implementer(IActivitySource)
