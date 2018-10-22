@@ -435,7 +435,7 @@ class TestAssignments(NTIAnalyticsTestCase):
 		# Create object
 		new_assignment, result_creator = _get_history_item()
 		course = self.course
-		new_assignment.__parent__.__parent__ = course
+		new_assignment.__parent__.__parent__.__parent__ = course
 		feedback = UsersCourseAssignmentHistoryItemFeedback()
 		feedback.__dict__['creator'] = feedback_creator = Principal( username='9999' )
 		feedback_creator.__dict__['_ds_intid'] = 9999
