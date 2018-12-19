@@ -172,8 +172,7 @@ def _validate_analytics_event( event, object_id=None ):
 	# If we have zero second events, we ignore them.
 	if time_length and time_length <= 0:
 		raise UnrecoverableAnalyticsError(
-							"""Event received with negative time_length
-							(user=%s) (time_length=%s) (event=%s)""" %
+							"Event received with negative time_length (user=%s) (time_length=%s) (event=%s)" %
 							( event.user, time_length, event ) )
 
 	event.time_length = time_length and int( time_length )
