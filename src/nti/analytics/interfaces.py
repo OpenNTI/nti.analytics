@@ -45,10 +45,10 @@ VIDEO_EVENTS_VOCABULARY = \
     vocabulary.SimpleVocabulary([vocabulary.SimpleTerm(_x)
                                  for _x in VIDEO_EVENTS])
 
-PLAYER_CONFIGURATION_TYPERS = (u'inline', u'mediaviewer-full', u'mediaviewer-split', u'mediaviewer-transcript')
+PLAYER_CONFIGURATION_TYPES = (u'inline', u'mediaviewer-full', u'mediaviewer-split', u'mediaviewer-transcript')
 PLAYER_CONFIGURATION_VOCABULARY = \
     vocabulary.SimpleVocabulary([vocabulary.SimpleTerm(_x)
-                                 for _x in PLAYER_CONFIGURATION_TYPERS])
+                                 for _x in PLAYER_CONFIGURATION_TYPES])
 
 
 class IAnalyticsQueueFactory(interface.Interface):
