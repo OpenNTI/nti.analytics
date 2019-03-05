@@ -140,13 +140,14 @@ class TestCourseResources(AnalyticsTestBase):
 		video_end_time = 60
 		with_transcript = True
 		play_speed = 2
+		player_configuration = u'inline'
 		event_time = datetime.now()
 		db_views.create_video_event( test_user_ds_id,
 									test_session_id, event_time,
 									self.course_id, self.context_path,
 									resource_val, time_length, max_time_length,
 									video_event_type, video_start_time,
-									video_end_time,  with_transcript, play_speed )
+									video_end_time,  with_transcript, play_speed, player_configuration )
 		results = self.session.query(VideoEvents).all()
 		assert_that( results, has_length( 1 ) )
 
@@ -163,6 +164,7 @@ class TestCourseResources(AnalyticsTestBase):
 		assert_that( resource_view.time_length, is_( time_length ) )
 		assert_that( resource_view.with_transcript )
 		assert_that( resource_view.play_speed, is_( str( play_speed )) )
+		assert_that( resource_view.player_configuration, is_( str('inline')) )
 
 		results = db_views.get_user_video_views( test_user_ds_id, self.course_id )
 		results = [x for x in results]
@@ -176,6 +178,7 @@ class TestCourseResources(AnalyticsTestBase):
 		assert_that( resource_view.VideoEndTime, is_( video_end_time ))
 		assert_that( resource_view.WithTranscript, is_( with_transcript ))
 		assert_that( resource_view.Duration, is_( time_length ))
+		assert_that( resource_view.player_configuration, is_('inline'))
 
 		# Idempotent check; fields can be updated.
 		new_time_length = time_length + 1
@@ -185,7 +188,7 @@ class TestCourseResources(AnalyticsTestBase):
 									self.course_id, self.context_path,
 									resource_val, new_time_length, max_time_length,
 									video_event_type, video_start_time,
-									new_video_end_time,  with_transcript, None )
+									new_video_end_time,  with_transcript, None, None )
 
 		results = self.session.query(VideoEvents).all()
 		assert_that( results, has_length( 1 ) )
@@ -194,6 +197,7 @@ class TestCourseResources(AnalyticsTestBase):
 		assert_that( resource_view.video_start_time, is_( video_start_time ) )
 		assert_that( resource_view.video_end_time, is_( new_video_end_time ) )
 		assert_that( resource_view.time_length, is_( new_time_length ) )
+		assert_that( resource_view.player_configuration, is_('inline') )
 
 	def test_video_start_view(self):
 		"""
@@ -216,7 +220,7 @@ class TestCourseResources(AnalyticsTestBase):
 									self.course_id, self.context_path,
 									resource_val, time_length, max_time_length,
 									video_event_type, video_start_time,
-									video_end_time,  with_transcript, None )
+									video_end_time,  with_transcript, None, None )
 
 		results = self.session.query(VideoEvents).all()
 		assert_that( results, has_length( 1 ) )
@@ -272,7 +276,7 @@ class TestCourseResources(AnalyticsTestBase):
 									self.course_id, self.context_path,
 									resource_val, time_length, max_time_length,
 									video_event_type, video_start_time,
-									video_end_time,  with_transcript, None )
+									video_end_time,  with_transcript, None, None )
 
 		results = self.session.query(VideoEvents).all()
 		assert_that( results, has_length( 1 ) )

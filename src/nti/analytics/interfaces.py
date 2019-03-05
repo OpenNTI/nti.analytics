@@ -45,6 +45,11 @@ VIDEO_EVENTS_VOCABULARY = \
     vocabulary.SimpleVocabulary([vocabulary.SimpleTerm(_x)
                                  for _x in VIDEO_EVENTS])
 
+PLAYER_CONFIGURATION_TYPES = (u'inline', u'mediaviewer-full', u'mediaviewer-split', u'mediaviewer-transcript')
+PLAYER_CONFIGURATION_VOCABULARY = \
+    vocabulary.SimpleVocabulary([vocabulary.SimpleTerm(_x)
+                                 for _x in PLAYER_CONFIGURATION_TYPES])
+
 
 class IAnalyticsQueueFactory(interface.Interface):
     """
@@ -208,6 +213,10 @@ class IVideoEvent(IResourceEvent):
     with_transcript = Bool(title=u"Whether the video was viewed with a transcript or not.")
 
     PlaySpeed = Number(title=u"The play speed of the video", required=False)
+
+    player_configuration = Choice(vocabulary=PLAYER_CONFIGURATION_VOCABULARY,
+                                  title=u'The way how the video was watched.',
+                                  required=False)
 
 
 class IVideoPlaySpeedChangeEvent(IAnalyticsEvent, IRootContextEvent):
