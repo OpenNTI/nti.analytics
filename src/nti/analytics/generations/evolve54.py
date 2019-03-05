@@ -27,27 +27,16 @@ from sqlalchemy import Interval
 
 from nti.analytics.database import get_analytics_db
 
-
-COLUMN_EXISTS_QUERY =   """
-                        SELECT *
-                        FROM information_schema.COLUMNS
-                        WHERE TABLE_SCHEMA = 'Analytics'
-                            AND TABLE_NAME = '%s'
-                            AND COLUMN_NAME = '%s'
-                        """
+from nti.analytics.generations.utils import do_evolve
+from nti.analytics.generations.utils import mysql_column_exists
 
 
-def _column_exists( con, table, column ):
-    res = con.execute( COLUMN_EXISTS_QUERY % ( table, column ) )
-    return res.scalar()
-
-def do_evolve():
+def evolve_job():
     setHooks()
 
     db = get_analytics_db()
 
-    if db.defaultSQLite and db.dburi == "sqlite://":
-        # In-memory mode for dev
+    if db.defaultSQLite:
         return
 
     # Cannot use transaction with alter table scripts and mysql
@@ -55,7 +44,7 @@ def do_evolve():
     mc = MigrationContext.configure( connection )
     op = Operations(mc)
 
-    if not _column_exists( connection, 'VideoEvents', 'player_configuration' ):
+    if not mysql_column_exists( connection, 'Analytics', 'VideoEvents', 'player_configuration' ):
         op.add_column( "VideoEvents", Column('player_configuration',
                                              Enum('inline', 'mediaviewer-full', 'mediaviewer-split', 'mediaviewer-transcript', validate_strings=True),
                                              nullable=True) )
@@ -66,4 +55,4 @@ def evolve(context):
     """
     Evolve to generation 54
     """
-    do_evolve()
+    do_evolve( context, evolve_job, generation, with_library=False )
