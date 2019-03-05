@@ -24,6 +24,7 @@ from sqlalchemy import Column
 from sqlalchemy import DateTime
 from sqlalchemy import Enum
 from sqlalchemy import Interval
+from sqlalchemy import inspect
 
 from nti.analytics.database import get_analytics_db
 
@@ -44,7 +45,10 @@ def evolve_job():
     mc = MigrationContext.configure( connection )
     op = Operations(mc)
 
-    if not mysql_column_exists( connection, 'Analytics', 'VideoEvents', 'player_configuration' ):
+    inspector=inspect(db.engine)
+    schema = inspector.default_schema_name
+
+    if not mysql_column_exists( connection, schema, 'VideoEvents', 'player_configuration' ):
         op.add_column( "VideoEvents", Column('player_configuration',
                                              Enum('inline', 'mediaviewer-full', 'mediaviewer-split', 'mediaviewer-transcript', validate_strings=True),
                                              nullable=True) )
