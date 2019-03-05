@@ -63,7 +63,7 @@ def _create_video_event(user_id, resource_val, root_context=None, max_time_lengt
 								root_context, [ u'dashboard' ],
 								resource_val, time_length, max_time_length,
 								video_event_type, video_start_time,
-								video_end_time,  with_transcript, None )
+								video_end_time,  with_transcript, None, None )
 
 
 class TestResourceProgress(AnalyticsTestBase):

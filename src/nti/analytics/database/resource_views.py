@@ -157,7 +157,8 @@ def create_video_event(	user,
 						video_start_time,
 						video_end_time,
 						with_transcript,
-						play_speed ):
+						play_speed,
+						player_configuration ):
 	db = get_analytics_db()
 	user_record = get_or_create_user( user )
 	uid = user_record.user_id
@@ -203,7 +204,8 @@ def create_video_event(	user,
 								video_start_time=video_start_time,
 								video_end_time=video_end_time,
 								with_transcript=with_transcript,
-								play_speed=play_speed )
+								play_speed=play_speed,
+								player_configuration=player_configuration )
 	db.session.add( new_object )
 	db.session.flush()
 

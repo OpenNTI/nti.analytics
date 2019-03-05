@@ -13,6 +13,8 @@ from zope.container.interfaces import IContained
 
 from zope.interface.interfaces import ObjectEvent, IObjectEvent
 
+from nti.analytics.interfaces import PLAYER_CONFIGURATION_VOCABULARY
+
 from nti.base.interfaces import IString
 from nti.base.interfaces import INumeric
 
@@ -27,6 +29,7 @@ from nti.property.property import alias
 
 from nti.schema.field import Bool
 from nti.schema.field import List
+from nti.schema.field import Choice
 from nti.schema.field import Number
 from nti.schema.field import Object
 from nti.schema.field import Variant
@@ -83,6 +86,10 @@ class IVideoRecordedEvent(IObjectViewedRecordedEvent):
 					   Object(INumeric, title="the context id"),
 					   Object(ICourseInstance, title="the context course")),
 					 title="context object", required=False)
+	player_configuration = Choice(vocabulary=PLAYER_CONFIGURATION_VOCABULARY,
+								  title=u'The way how the video was watched.',
+								  required=False)
+
 
 class IVideoWatchRecordedEvent(IVideoRecordedEvent):
 	pass
@@ -191,13 +198,14 @@ class VideoRecordedEvent(ObjectViewedRecordedEvent):
 
 	def __init__(self, user, video, context=None, timestamp=None, session=None,
 				 context_path=None, duration=0, video_start_time=0,
-				 video_end_time=0, with_transcript=False):
+				 video_end_time=0, with_transcript=False, player_configuration=None):
 		super(VideoRecordedEvent, self).__init__(user, video, timestamp, session, context_path)
 		self.context = context
 		self.duration = duration
 		self.video_end_time = video_end_time
 		self.with_transcript = with_transcript
 		self.video_start_time = video_start_time
+		self.player_configuration = player_configuration
 
 @interface.implementer(IVideoWatchRecordedEvent)
 class VideoWatchRecordedEvent(VideoRecordedEvent):

@@ -481,7 +481,8 @@ def _add_video_event( event, nti_session=None ):
 						event.video_start_time,
 						event.video_end_time,
 						event.with_transcript,
-						event.PlaySpeed )
+						event.PlaySpeed,
+						event.player_configuration )
 	logger.debug( 	"Video event (user=%s) (root_context=%s) (resource=%s) (type=%s) (start=%s) (end=%s) (time_length=%s)",
 					user,
 					getattr( root_context, '__name__', root_context ),
@@ -502,7 +503,8 @@ def _add_video_event( event, nti_session=None ):
 				 duration=event.time_length,
 				 video_start_time=event.video_start_time,
 				 video_end_time=event.video_end_time,
-				 with_transcript=event.with_transcript))
+				 with_transcript=event.with_transcript,
+				 player_configuration=event.player_configuration))
 
 
 def _add_play_speed_event( event, nti_session=None ):
