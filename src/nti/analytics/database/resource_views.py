@@ -9,6 +9,7 @@ from __future__ import print_function
 from __future__ import absolute_import
 
 from sqlalchemy import func
+from sqlalchemy import text
 
 from nti.analytics_database.resource_views import VideoEvents
 from nti.analytics_database.resource_views import ResourceViews
@@ -295,7 +296,7 @@ def get_active_users_with_resource_views(root_context=None, **kwargs):
 	kwargs = dict(kwargs, root_context=root_context,
 	                      yield_per=None,
 	                      query_factory=query_factory,
-	                      order_by='count DESC')
+	                      order_by=text('count DESC'))
 
 	return get_filtered_records(None,
 	                            ResourceViews,
@@ -324,7 +325,7 @@ def get_active_users_with_video_views(root_context=None, **kwargs):
 	                      filters=filters,
 	                      yield_per=None,
 	                      query_factory=query_factory,
-	                      order_by='count DESC')
+	                      order_by=text('count DESC'))
 
 	return get_filtered_records(None,
 	                            VideoEvents,
