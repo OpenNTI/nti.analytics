@@ -49,9 +49,8 @@ def evolve_job():
     schema = inspector.default_schema_name
 
     if not mysql_column_exists( connection, schema, 'VideoEvents', 'player_configuration' ):
-        op.add_column( "VideoEvents", Column('player_configuration',
-                                             Enum('inline', 'mediaviewer-full', 'mediaviewer-split', 'mediaviewer-transcript', validate_strings=True),
-                                             nullable=True) )
+        sql = "ALTER TABLE VideoEvents ADD COLUMN player_configuration enum('inline', 'mediaviewer-full', 'mediaviewer-split', 'mediaviewer-transcript') NULL, ALGORITHM=INPLACE, LOCK=NONE;"
+        op.execute(sql)
 
     logger.info('Finished analytics migration %s, add player_configuration column for VideoEvents.', generation)
 
