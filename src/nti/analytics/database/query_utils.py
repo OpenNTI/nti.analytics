@@ -89,8 +89,11 @@ def _do_context_and_timestamp_filtering(table,
 
 	query = query_factory(db.session, table).filter(*filters)
 
-	# This should be a `text` clause
 	if order_by is not None:
+		order_by = getattr(table, order_by, order_by)
+		# Default to descending
+		if hasattr(order_by, 'desc'):
+			order_by = order_by.desc()
 		query = query.order_by(order_by)
 
 	if limit:

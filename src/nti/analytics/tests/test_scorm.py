@@ -41,7 +41,7 @@ def _create_scorm_package_launch_event(user, course, metadata_ntiid, context_pat
 
 
 class TestSCORMResourceViews(NTIAnalyticsTestCase):
-    
+
     @WithMockDSTrans
     def test_launch_records(self):
         intids = component.getUtility(zope.intid.IIntIds)
@@ -53,21 +53,21 @@ class TestSCORMResourceViews(NTIAnalyticsTestCase):
         assert_that(metadata_ntiid, is_not(none()))
         timestamp_min = timestamp_type(datetime.min)
         _create_scorm_package_launch_event(user, course, metadata_ntiid, [course_ntiid], timestamp_min)
-    
+
         # Empty
         results = get_scorm_package_launches_for_ntiid(metadata_ntiid + u'dne')
         assert_that(results, has_length(0))
-    
+
         results = get_scorm_package_launches_for_ntiid(metadata_ntiid)
         assert_that(results, has_length(1))
         results = get_scorm_package_launches()
         assert_that(results, has_length(1))
         results = get_scorm_package_launches(user=user, root_context=course)
         assert_that(results, has_length(1))
-        
+
         timestamp_max = timestamp_type(datetime.max)
         _create_scorm_package_launch_event(user, course, metadata_ntiid, [course_ntiid], timestamp_max)
-        
+
         results = get_scorm_package_launches_for_ntiid(metadata_ntiid)
         assert_that(results, has_length(2))
         results = get_scorm_package_launches()
@@ -83,4 +83,4 @@ class TestSCORMResourceViews(NTIAnalyticsTestCase):
         results = get_scorm_package_launches(order_by='timestamp')
         assert_that(results, has_length(2))
         assert_that(results[0].timestamp, is_(timestamp_max))
-        assert_that(results[1].timestamp, is_(timestamp_min))     
+        assert_that(results[1].timestamp, is_(timestamp_min))
