@@ -8,6 +8,8 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
 
+import six
+
 from nti.analytics.database import get_analytics_db
 
 from nti.analytics.database.root_context import get_root_context_id
@@ -90,7 +92,8 @@ def _do_context_and_timestamp_filtering(table,
 	query = query_factory(db.session, table).filter(*filters)
 
 	if order_by is not None:
-		order_by = getattr(table, order_by, order_by)
+		if isinstance(order_by, six.string_types):
+			order_by = getattr(table, order_by, order_by)
 		# Default to descending
 		if hasattr(order_by, 'desc'):
 			order_by = order_by.desc()
