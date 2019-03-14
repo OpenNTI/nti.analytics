@@ -179,13 +179,15 @@ def _set_grade( oid, username, graded_val, nti_session=None, timestamp=None ):
 
 def _grade_submission( grade, submission ):
 	# Perhaps a grade is being assigned without a submission. That should be a rare case
-	# and is not something useful to persist (?).
+	# and is not something useful to persist.
+	# This is quite common. This will be a MetaGrade stored on the grade container. Not
+	# sure this is useful to store outside of a submission.
 	if submission is None or not grade.creator:
 		return
 	user = get_creator( grade )
 	nti_session = get_nti_session_id()
 	timestamp = datetime.utcnow()
-	graded_val = grade.grade
+	graded_val = grade.value
 	process_event( _get_job_queue,
 					_set_grade,
 					submission,

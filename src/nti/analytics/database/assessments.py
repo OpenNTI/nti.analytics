@@ -10,9 +10,6 @@ from __future__ import absolute_import
 
 import json
 
-from six import string_types
-from six import integer_types
-
 from zope import interface
 
 from nti.analytics_database.assessments import AssignmentViews
@@ -52,6 +49,8 @@ from nti.analytics.database.query_utils import get_filtered_records
 from nti.analytics.database.users import get_or_create_user
 
 from nti.app.products.gradebook.interfaces import IGrade
+
+from nti.app.products.gradebook.gradebook import numeric_grade_val
 
 from nti.assessment.common import grader_for_response
 
@@ -128,24 +127,6 @@ def _load_response( value ):
 		except ValueError:
 			pass
 	return response
-
-
-def _get_grade_val( grade_value ):
-	"""
-	Convert the webapp's "number - letter" scheme to a number, or None.
-	"""
-	result = None
-	if grade_value and isinstance(grade_value, string_types):
-		try:
-			if grade_value.endswith(' -'):
-				result = float(grade_value.split()[0])
-			else:
-				result = float(grade_value)
-		except ValueError:
-			pass
-	elif grade_value and isinstance( grade_value, ( integer_types, float ) ):
-		result = grade_value
-	return result
 
 
 def _get_self_assessment_id( db, submission_id ):
@@ -336,7 +317,7 @@ def create_assignment_taken( user, nti_session, timestamp, course, submission ):
 	# If None, we're pending right?
 	if graded_submission is not None:
 		grade = graded_submission.grade
-		grade_num = _get_grade_val( grade )
+		grade_num = numeric_grade_val(grade.value)
 
 		grader = _get_grader_id( submission )
 
@@ -397,7 +378,7 @@ def grade_submission( user, nti_session, timestamp, grader, graded_val, submissi
 	grade_entry = _get_grade_entry( db, assignment_taken_id )
 	timestamp = timestamp_type( timestamp )
 
-	grade_num = _get_grade_val( graded_val )
+	grade_num = numeric_grade_val(graded_val)
 
 	if grade_entry:
 		# Update
