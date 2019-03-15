@@ -199,7 +199,7 @@ def _grade_submission( grade, submission ):
 
 @component.adapter(IGrade, IObjectModifiedEvent)
 def _grade_modified(grade, unused_event):
-	submission = IUsersCourseAssignmentHistoryItem( grade )
+	submission = IUsersCourseAssignmentHistoryItem(grade, None)
 	_grade_submission( grade, submission )
 
 
