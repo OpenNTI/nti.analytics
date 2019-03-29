@@ -9,10 +9,6 @@ from __future__ import print_function
 from __future__ import absolute_import
 from __future__ import division
 
-__docformat__ = "restructuredtext en"
-
-logger = __import__('logging').getLogger(__name__)
-
 generation = 54
 
 from zope.component.hooks import setHooks
@@ -20,16 +16,14 @@ from zope.component.hooks import setHooks
 from alembic.operations import Operations
 from alembic.migration import MigrationContext
 
-from sqlalchemy import Column
-from sqlalchemy import DateTime
-from sqlalchemy import Enum
-from sqlalchemy import Interval
 from sqlalchemy import inspect
 
 from nti.analytics.database import get_analytics_db
 
 from nti.analytics.generations.utils import do_evolve
 from nti.analytics.generations.utils import mysql_column_exists
+
+logger = __import__('logging').getLogger(__name__)
 
 
 def evolve_job():
