@@ -16,6 +16,8 @@ from zope import interface
 
 from nti.analytics.lti import get_lti_asset_launches
 
+from nti.analytics.assessments import get_assignment_views
+
 from nti.analytics.stats.interfaces import IActivitySource
 from nti.analytics.stats.interfaces import IActiveTimesStats
 from nti.analytics.stats.interfaces import IActiveTimesStatsSource
@@ -72,7 +74,8 @@ class ActiveTimeStats(object):
 EVENT_SOURCES = (get_video_views,
                  get_resource_views,
                  get_scorm_package_launches,
-                 get_lti_asset_launches)
+                 get_lti_asset_launches,
+                 get_assignment_views)
 
 _DEFAULT_YIELD_PER = 1000
 
