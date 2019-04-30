@@ -691,6 +691,10 @@ def _resolve_assignment_view( row, user=None, course=None ):
 	return _resolve_view( row, course, user )
 
 
+def _resolve_assignment_taken_view( row, user=None, course=None ):
+    return _resolve_view( row, course, user )
+
+
 def get_self_assessment_views( user, course=None, **kwargs ):
 	"""
 	Fetch any self assessment views for a user created *after* the optionally given
@@ -710,4 +714,15 @@ def get_assignment_views( user, course=None, **kwargs ):
 	results = get_filtered_records( user, AssignmentViews,
 								 	course=course, **kwargs )
 	return resolve_objects(_resolve_assignment_view, results,
+						   user=user, course=course )
+
+
+def get_assignment_taken_views( user=None, course=None, **kwargs ):
+	"""
+	Fetch any assignment takens for a user created *after* the optionally given
+	timestamp.  Optionally, can filter by course.
+	"""
+	results = get_filtered_records( user, AssignmentsTaken,
+									course=course, **kwargs )
+	return resolve_objects(_resolve_assignment_taken_view, results,
 						   user=user, course=course )
