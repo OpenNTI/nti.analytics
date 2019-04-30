@@ -717,7 +717,7 @@ def get_assignment_views( user, course=None, **kwargs ):
 						   user=user, course=course )
 
 
-def get_assignment_taken_views( user, course=None, **kwargs ):
+def get_assignment_taken_views( user=None, course=None, **kwargs ):
 	"""
 	Fetch any assignment takens for a user created *after* the optionally given
 	timestamp.  Optionally, can filter by course.
