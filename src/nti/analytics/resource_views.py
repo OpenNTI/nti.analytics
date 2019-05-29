@@ -52,9 +52,6 @@ from nti.analytics.database import assessments as db_assess_views
 from nti.analytics.database import profile_views as db_profile_views
 from nti.analytics.database import surveys as db_survey_views
 
-from nti.analytics.database.resource_views import get_active_users_with_resource_views as db_get_active_users_with_resource_views
-from nti.analytics.database.resource_views import get_active_users_with_video_views as db_get_active_users_with_video_views
-
 from nti.analytics.database.users import get_user
 
 from nti.analytics.progress import get_progress_for_video_views
@@ -84,24 +81,26 @@ from nti.ntiids.ntiids import find_object_with_ntiid
 logger = __import__('logging').getLogger(__name__)
 
 get_resource_views = db_resource_views.get_resource_views
+get_resource_views_by_user = db_resource_views.get_resource_views_by_user
 get_user_resource_views = db_resource_views.get_user_resource_views
 get_user_resource_views_for_ntiid = db_resource_views.get_user_resource_views_for_ntiid
 get_video_views = db_resource_views.get_user_video_views
 get_user_video_views = db_resource_views.get_user_video_views
+get_video_views_by_user = db_resource_views.get_video_views_by_user
 get_video_views_for_ntiid = db_resource_views.get_video_views_for_ntiid
 get_resource_views_for_ntiid = db_resource_views.get_resource_views_for_ntiid
 get_user_video_views_for_ntiid = db_resource_views.get_user_video_views_for_ntiid
 
 
 def get_active_users_with_resource_views(**kwargs):
-	for user_id, count in db_get_active_users_with_resource_views(**kwargs):
+	for user_id, count in get_resource_views_by_user(**kwargs):
 		user = get_user(user_id)
 		if user:
 			yield user, count
 
 
 def get_active_users_with_video_views(**kwargs):
-	for user_id, count in db_get_active_users_with_video_views(**kwargs):
+	for user_id, count in get_video_views_by_user(**kwargs):
 		user = get_user(user_id)
 		if user:
 			yield user, count

@@ -18,6 +18,9 @@ from nti.analytics.database.users import get_user_db_id
 
 from nti.contenttypes.courses.interfaces import ICourseSubInstance
 
+from sqlalchemy import func
+from sqlalchemy import text
+
 logger = __import__('logging').getLogger(__name__)
 
 _yield_all_marker = object()
@@ -204,3 +207,22 @@ def resolve_like(row, rater=None, obj_creator=None):
 
 def resolve_favorite(row, rater=None, obj_creator=None):
 	return _do_resolve_rating(row, rater, obj_creator)
+
+
+def count_by(column):
+
+	def query_factory(session, unused_table):
+		return session.query(column, func.count(column).label('count')).group_by(column)
+
+	return query_factory
+
+
+def get_record_count_by_user(table, root_context=None, filters=None, **kwargs):
+
+	kwargs = dict(kwargs, root_context=root_context,
+				  filters=filters,
+				  yield_per=None,
+				  query_factory=(count_by(table.user_id)),
+				  order_by=text('count DESC'))
+
+	return get_filtered_records(None, table, **kwargs)

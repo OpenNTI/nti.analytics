@@ -14,8 +14,10 @@ from gevent import sleep
 
 from zope import interface
 
+from nti.analytics.lti import get_active_users_with_lti_asset_launches
 from nti.analytics.lti import get_lti_asset_launches
 
+from nti.analytics.assessments import get_active_users_with_assignments_taken
 from nti.analytics.assessments import get_assignment_taken_views
 
 from nti.analytics.stats.interfaces import IActivitySource
@@ -31,6 +33,7 @@ from nti.analytics.resource_views import get_resource_views
 from nti.analytics.resource_views import get_active_users_with_resource_views
 from nti.analytics.resource_views import get_active_users_with_video_views
 
+from nti.analytics.scorm import get_active_users_with_scorm_package_launches
 from nti.analytics.scorm import get_scorm_package_launches
 
 from nti.externalization.interfaces import LocatedExternalDict
@@ -192,6 +195,13 @@ class DailyActivitySource(object):
                                     for k, v in dates.items()})
 
 
+BY_USER_EVENTS = (get_active_users_with_video_views,
+                  get_active_users_with_resource_views,
+                  get_active_users_with_scorm_package_launches,
+                  get_active_users_with_lti_asset_launches,
+                  get_active_users_with_assignments_taken)
+
+
 @interface.implementer(IActiveUsersSource)
 class ActiveUsersSource(object):
 
@@ -200,8 +210,7 @@ class ActiveUsersSource(object):
 
     def users(self, **kwargs):
         aggregate = defaultdict(lambda: 0)
-        for source in (get_active_users_with_video_views,
-                       get_active_users_with_resource_views):
+        for source in BY_USER_EVENTS:
             for user, count in source(root_context=self.root_context, **kwargs):
                 aggregate[user] += count
         return sorted(aggregate, key=aggregate.get, reverse=True)
