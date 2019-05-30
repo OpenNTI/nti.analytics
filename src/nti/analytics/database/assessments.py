@@ -41,6 +41,8 @@ from nti.analytics.database import should_update_event
 from nti.analytics.database._utils import get_context_path
 from nti.analytics.database._utils import get_body_text_length
 
+from nti.analytics.database.query_utils import get_record_count_by_user
+
 from nti.analytics.database.mime_types import build_mime_type_records
 
 from nti.analytics.database.resources import get_resource_id
@@ -726,3 +728,8 @@ def get_assignment_taken_views( user=None, course=None, **kwargs ):
 									course=course, **kwargs )
 	return resolve_objects(_resolve_assignment_taken_view, results,
 						   user=user, course=course )
+
+
+def get_assignments_taken_by_user(root_context=None, **kwargs):
+
+	return get_record_count_by_user(AssignmentsTaken, root_context=root_context, **kwargs)

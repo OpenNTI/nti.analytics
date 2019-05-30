@@ -8,9 +8,6 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
 
-from sqlalchemy import func
-from sqlalchemy import text
-
 from nti.analytics_database.resource_views import VideoEvents
 from nti.analytics_database.resource_views import ResourceViews
 from nti.analytics_database.resource_views import VideoPlaySpeedEvents
@@ -25,6 +22,7 @@ from nti.analytics.database._utils import get_context_path
 from nti.analytics.database._utils import get_root_context_ids
 
 from nti.analytics.database.query_utils import get_filtered_records
+from nti.analytics.database.query_utils import get_record_count_by_user
 
 from nti.analytics.database.resources import get_resource_id
 from nti.analytics.database.resources import get_resource_record
@@ -287,20 +285,10 @@ def get_user_resource_views(user=None, root_context=None, **kwargs):
 get_resource_views = get_user_resource_views
 
 
-def get_active_users_with_resource_views(root_context=None, **kwargs):
-
-	def query_factory(session, unused_table):
-		return session.query(ResourceViews.user_id,
-		                     func.count(ResourceViews.user_id).label('count')).group_by(ResourceViews.user_id)
-
-	kwargs = dict(kwargs, root_context=root_context,
-	                      yield_per=None,
-	                      query_factory=query_factory,
-	                      order_by=text('count DESC'))
-
-	return get_filtered_records(None,
-	                            ResourceViews,
-	                            **kwargs)
+def get_resource_views_by_user(root_context=None, **kwargs):
+	return get_record_count_by_user(ResourceViews,
+									root_context=root_context,
+									**kwargs)
 
 
 def get_user_video_views( user=None, course=None, **kwargs  ):
@@ -311,22 +299,11 @@ def get_user_video_views( user=None, course=None, **kwargs  ):
 	return resolve_objects( _resolve_video_view, results, user=user, course=course )
 get_video_views = get_user_video_views
 
+def get_video_views_by_user(root_context=None, **kwargs):
+	filters = (VideoEvents.video_event_type == VIDEO_WATCH,
+			   VideoEvents.time_length > 1)
 
-def get_active_users_with_video_views(root_context=None, **kwargs):
-
-	def query_factory(session, unused_table):
-		return session.query(VideoEvents.user_id,
-		                     func.count(VideoEvents.user_id).label('count')).group_by(VideoEvents.user_id)
-
-	filters = ( VideoEvents.video_event_type == VIDEO_WATCH,
-				VideoEvents.time_length > 1 )
-
-	kwargs = dict(kwargs, root_context=root_context,
-	                      filters=filters,
-	                      yield_per=None,
-	                      query_factory=query_factory,
-	                      order_by=text('count DESC'))
-
-	return get_filtered_records(None,
-	                            VideoEvents,
-	                            **kwargs)
+	return get_record_count_by_user(VideoEvents,
+									root_context=root_context,
+									filters=filters,
+									**kwargs)

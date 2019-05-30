@@ -15,6 +15,7 @@ from nti.analytics.database._utils import get_context_path
 from nti.analytics.database._utils import get_root_context_ids
 
 from nti.analytics.database.query_utils import get_filtered_records
+from nti.analytics.database.query_utils import get_record_count_by_user
 
 from nti.analytics.database.resources import get_resource_id
 from nti.analytics.database.resources import get_resource_record
@@ -63,6 +64,11 @@ def get_launch_records(user=None, root_context=None, **kwargs):
     launch_records = get_filtered_records(user, LTIAssetLaunches, root_context=root_context, **kwargs)
     return resolve_objects(_resolve_launch_record, launch_records,
                            user=user, root_context=root_context)
+
+
+def get_launch_records_by_user(root_context=None, **kwargs):
+
+    return get_record_count_by_user(LTIAssetLaunches, root_context=root_context, **kwargs)
 
 
 def get_launch_records_for_ntiid(metadata_ntiid, user=None, root_context=None, **kwargs):

@@ -30,6 +30,8 @@ from nti.analytics.common import get_created_timestamp
 
 from nti.analytics.database import assessments as db_assessments
 
+from nti.analytics.database.users import get_user
+
 from nti.analytics.identifier import get_ds_id
 
 from nti.analytics.interfaces import IObjectProcessor
@@ -61,6 +63,14 @@ get_self_assessments_for_user_and_id = db_assessments.get_self_assessments_for_u
 get_self_assessment_views = db_assessments.get_self_assessment_views
 get_assignment_views = db_assessments.get_assignment_views
 get_assignment_taken_views = db_assessments.get_assignment_taken_views
+get_assignments_taken_by_user = db_assessments.get_assignments_taken_by_user
+
+
+def get_active_users_with_assignments_taken(**kwargs):
+	for user_id, count in get_assignments_taken_by_user(**kwargs):
+		user = get_user(user_id)
+		if user:
+			yield user, count
 
 
 def _get_job_queue():

@@ -13,11 +13,12 @@ from datetime import timedelta
 
 # disable: accessing protected members, too many methods
 # pylint: disable=W0212,R0904
+from hamcrest import assert_that
+from hamcrest import has_entry
+from hamcrest import has_length
 from hamcrest import is_
 from hamcrest import none
-from hamcrest import assert_that
 from hamcrest import not_none
-from hamcrest import has_length
 
 from zope.interface import directlyProvides
 
@@ -45,6 +46,7 @@ from nti.analytics.database import assessments as db_assessments
 from nti.analytics.database import get_analytics_db
 
 from nti.analytics.database.assessments import _get_grade_val
+from nti.analytics.database.assessments import get_assignments_taken_by_user
 from nti.analytics.database.assessments import _get_response
 from nti.analytics.database.assessments import _load_response
 from nti.analytics.database.assessments import AssignmentsTaken
@@ -58,7 +60,13 @@ from nti.analytics.database.assessments import SelfAssessmentsTaken
 from nti.analytics.database.assessments import SelfAssessmentDetails
 
 from nti.dataserver.interfaces import IUser
+
+from nti.dataserver.tests.mock_dataserver import WithMockDSTrans
+
 from nti.dataserver.users.users import Principal
+from nti.dataserver.users.users import User
+
+from nti.testing.time import time_monotonically_increases
 
 _question_id = '1968'
 _question_set_id = '2'
@@ -555,3 +563,73 @@ class TestAssignments(NTIAnalyticsTestCase):
 
 		results = self.db.session.query( AssignmentViews ).all()
 		assert_that( results, has_length( 2 ))
+
+
+def assn_taken(username, timestamp=None, course_id=None, assignment_id=None, time_length=None):
+	return AssignmentsTaken(user_id=username,
+							session_id=None,
+							timestamp=timestamp,
+							course_id=course_id,
+							assignment_id=assignment_id,
+							is_late=False,
+							time_length=time_length)
+
+class TestUserActivity(NTIAnalyticsTestCase):
+
+	@WithMockDSTrans
+	@time_monotonically_increases
+	def test_assignment_by_user(self):
+
+		assignment_id = 'tag:nextthought.com,2011-10:OU-HTML-CLC3403_LawAndJustice.sec:QUIZ_01.01'
+
+		# Base
+		db = self.db
+		results = db.session.query(AssignmentsTaken).all()
+		assert_that(results, has_length(0))
+
+		# Create event
+		user = User.create_user(username='new_user1', dataserver=self.ds)
+		user2 = User.create_user(username='new_user2', dataserver=self.ds)
+
+		now = datetime.now()
+		time_length = 30
+		before_window = now - timedelta(seconds=time_length)
+		max_time = now + timedelta(seconds=time_length)
+
+		events = [
+			# Events included in user activity
+			assn_taken(user.username,
+					   timestamp=now,
+					   course_id=self.course_id,
+					   assignment_id=assignment_id,
+					   time_length=5),
+			assn_taken(user.username,
+					   timestamp=now,
+					   course_id=self.course_id,
+					   assignment_id=assignment_id,
+					   time_length=5),
+			assn_taken(user2.username,
+					   timestamp=now,
+					   course_id=self.course_id,
+					   assignment_id=assignment_id,
+					   time_length=5),
+
+			# Excluded b/c timestamp is prior to `now`
+			assn_taken(user2.username,
+					   timestamp=before_window,
+					   course_id=self.course_id,
+					   assignment_id=assignment_id,
+					   time_length=5)
+		]
+
+		for event in events:
+			db.session.add(event)
+
+		db.session.flush()
+
+		user_map = {user_id: count for user_id, count in
+					get_assignments_taken_by_user(root_context=self.course_id, timestamp=now, max_timestamp=max_time)}
+
+		assert_that(user_map, has_length(2))
+		assert_that(user_map, has_entry(user.username, 2))
+		assert_that(user_map, has_entry(user2.username, 1))
