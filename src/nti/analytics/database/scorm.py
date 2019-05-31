@@ -30,18 +30,18 @@ from nti.analytics.identifier import get_ntiid_id
 from nti.analytics_database.scorm import SCORMPackageLaunches
 
 
-def create_launch_record(user, course, metadata, nti_session, context_path, timestamp):
+def create_launch_record(user, course, scorm_content, nti_session, context_path, timestamp):
     db = get_analytics_db()
-    
+
     user_record = get_or_create_user(user)
     uid = user_record.user_id
     sid = nti_session
-    rid = get_ntiid_id(metadata)
+    rid = get_ntiid_id(scorm_content)
     rid = get_resource_id(db, rid, create=True)
     timestamp = timestamp_type(timestamp)
     context_path = get_context_path(context_path)
     course_id, entity_root_context_id = get_root_context_ids(course)
-    
+
     new_object = SCORMPackageLaunches(user_id=uid,
                                       session_id=sid,
                                       timestamp=timestamp,
@@ -51,8 +51,8 @@ def create_launch_record(user, course, metadata, nti_session, context_path, time
                                       resource_id=rid,
                                       time_length=None)
     db.session.add(new_object)
-    
-    
+
+
 def _resolve_launch_record(record, root_context=None, user=None):
     if root_context is not None:
         record.RootContext = root_context
@@ -87,4 +87,3 @@ def get_launch_records_for_ntiid(metadata_ntiid, user=None, root_context=None, *
         results = resolve_objects(_resolve_launch_record, launch_records,
                                   user=user, root_context=root_context)
     return results
-    
