@@ -280,8 +280,10 @@ def get_user_video_views_for_ntiid(user, resource_ntiid):
 def get_user_resource_views(user=None, root_context=None, **kwargs):
 	results = get_filtered_records(user, ResourceViews,
 								   root_context=root_context, **kwargs)
-	return resolve_objects(_resolve_resource_view, results,
-						   user=user, root_context=root_context)
+	if user is not None or root_context is not None:
+		results = resolve_objects(_resolve_resource_view, results,
+						   		 user=user, root_context=root_context)
+	return results
 get_resource_views = get_user_resource_views
 
 
@@ -296,7 +298,9 @@ def get_user_video_views( user=None, course=None, **kwargs  ):
 				VideoEvents.time_length > 1 )
 	results = get_filtered_records( user, VideoEvents,
 								course=course, filters=filters, **kwargs )
-	return resolve_objects( _resolve_video_view, results, user=user, course=course )
+	if user is not None or course is not None:
+		results = resolve_objects( _resolve_video_view, results, user=user, course=course )
+	return results
 get_video_views = get_user_video_views
 
 def get_video_views_by_user(root_context=None, **kwargs):
