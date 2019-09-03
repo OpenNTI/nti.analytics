@@ -4,10 +4,9 @@
 .. $Id$
 """
 
-from __future__ import print_function, unicode_literals, absolute_import, division
-__docformat__ = "restructuredtext en"
-
-logger = __import__('logging').getLogger(__name__)
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
 
 import zope.i18nmessageid
 MessageFactory = zope.i18nmessageid.MessageFactory('nti.analytics')
@@ -48,6 +47,8 @@ SESSIONS_ANALYTICS = QUEUE_NAME + '++sessions'
 DELETE_ANALYTICS = QUEUE_NAME + '++delete'
 USERS_ANALYTICS = QUEUE_NAME + '++users'
 SEARCH_ANALYTICS = USERS_ANALYTICS
+
+logger = __import__('logging').getLogger(__name__)
 
 # Order is important here.  We happen to know that
 # nti.async processes these queues in order.  The boards (and blogs)
