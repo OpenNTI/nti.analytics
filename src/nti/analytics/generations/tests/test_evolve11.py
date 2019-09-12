@@ -32,51 +32,49 @@ class TestEvolve11(NTIAnalyticsTestCase):
 	@WithMockDSTrans
 	def test_evolve11(self):
 		# Populate with relevant data
-		with mock_dataserver.mock_db_trans(self.ds):
-			db = get_analytics_db()
+		db = get_analytics_db()
 
-			user = Users( 	user_ds_id=1,
-						allow_research=False,
-						username='robert',
-						username2='paulson' )
+		user = Users( 	user_ds_id=1,
+					allow_research=False,
+					username='robert',
+					username2='paulson' )
 
-			course = Courses(
-							context_id=1,
-							context_ds_id=1,
-							context_name='hard',
-							context_long_name='knocks' )
+		course = Courses(
+						context_id=1,
+						context_ds_id=1,
+						context_name='hard',
+						context_long_name='knocks' )
 
-			db.session.add( user )
-			db.session.add( course )
+		db.session.add( user )
+		db.session.add( course )
 
-			for _ in range( 5 ):
-				view_event = CourseCatalogViews(
-										user_id=1,
-										session_id=1,
-										timestamp=datetime.now(),
-										course_id=1,
-										time_length=0 )
+		for _ in range( 5 ):
+			view_event = CourseCatalogViews(
+									user_id=1,
+									session_id=1,
+									timestamp=datetime.now(),
+									course_id=1,
+									time_length=0 )
 
-				db.session.add( view_event )
+			db.session.add( view_event )
 
-			for _ in range( 5 ):
-				view_event = CourseCatalogViews(
-										user_id=1,
-										session_id=1,
-										timestamp=datetime.now(),
-										course_id=1,
-										time_length=100 )
+		for _ in range( 5 ):
+			view_event = CourseCatalogViews(
+									user_id=1,
+									session_id=1,
+									timestamp=datetime.now(),
+									course_id=1,
+									time_length=100 )
 
-				db.session.add( view_event )
+			db.session.add( view_event )
 
 		db = get_analytics_db()
 		all_resources = db.session.query( CourseCatalogViews ).all()
 		assert_that( all_resources, has_length( 10 ))
 
 		# Do it
-		with mock_dataserver.mock_db_trans(self.ds):
-			db = get_analytics_db()
-			_delete_zero_length_records( db, CourseCatalogViews )
+		db = get_analytics_db()
+		_delete_zero_length_records( db, CourseCatalogViews )
 
 		db = get_analytics_db()
 		all_resources = db.session.query( CourseCatalogViews ).all()

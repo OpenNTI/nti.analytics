@@ -58,13 +58,12 @@ class TestEvolve15(NTIAnalyticsTestCase):
 
 	@WithMockDSTrans
 	def test_evolve15(self):
-		with mock_dataserver.mock_db_trans(self.ds):
-			db = get_analytics_db()
-			self._prep( db )
+		db = get_analytics_db()
+		self._prep( db )
 
-			do_evolve()
+		do_evolve()
 
-			inspector = Inspector.from_engine( db.engine )
+		inspector = Inspector.from_engine( db.engine )
 
 		# Verify table rename
 		table_names = inspector.get_table_names()
@@ -95,6 +94,5 @@ class TestEvolve15(NTIAnalyticsTestCase):
 		assert_that( index_names, has_item( 'ix_Courses_context_name' ))
 
 		# Re-migrate does not fail
-		with mock_dataserver.mock_db_trans(self.ds):
-			db = get_analytics_db()
-			do_evolve()
+		db = get_analytics_db()
+		do_evolve()

@@ -29,31 +29,27 @@ class TestEvolve10(NTIAnalyticsTestCase):
 	@WithMockDSTrans
 	def test_evolve10(self):
 		# Populate with relevant data
-		with mock_dataserver.mock_db_trans(self.ds):
-			db = get_analytics_db()
-			for i in range( 5 ):
-				new_resource = Resources(
-								resource_ds_id=str( i ),
-								resource_display_name='bleh')
-
-				db.session.add( new_resource )
-			for i in [ 'a', 'b', 'c', 'd', 'e']:
-				new_resource = Resources(
-								resource_ds_id=i,
-								resource_display_name='blah')
-
-				db.session.add( new_resource )
-
 		db = get_analytics_db()
+		for i in range( 5 ):
+			new_resource = Resources(
+							resource_ds_id=str( i ),
+							resource_display_name='bleh')
+
+			db.session.add( new_resource )
+		for i in [ 'a', 'b', 'c', 'd', 'e']:
+			new_resource = Resources(
+							resource_ds_id=i,
+							resource_display_name='blah')
+
+			db.session.add( new_resource )
+
 		all_resources = db.session.query( Resources ).all()
 		assert_that( all_resources, has_length( 10 ))
 
 		# Do it
-		with mock_dataserver.mock_db_trans(self.ds):
-			db = get_analytics_db()
-			bad_values = _gather_invalid_records( db )
-			assert_that( bad_values, has_length( 5 ))
-			_delete_from_resources( db, bad_values )
+		bad_values = _gather_invalid_records( db )
+		assert_that( bad_values, has_length( 5 ))
+		_delete_from_resources( db, bad_values )
 
 		db = get_analytics_db()
 		all_resources = db.session.query( Resources ).all()
