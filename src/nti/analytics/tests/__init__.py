@@ -154,7 +154,7 @@ class AnalyticsTestBase(unittest.TestCase):
     """
 
     def setUp(self):
-        self.db = AnalyticsDB(dburi='sqlite://')
+        self.db = AnalyticsDB(dburi='sqlite://', autocommit=True)
         component.getGlobalSiteManager().registerUtility(self.db, IAnalyticsDB)
         self.session = self.db.session
 
@@ -169,7 +169,7 @@ class AnalyticsTestBase(unittest.TestCase):
         db_users.create_user(test_user_ds_id)
         user_agent = 'webapp-1.9'
         ip_addr = '156.110.241.13'
-        db_sessions.create_session(test_user_ds_id, user_agent, 
+        db_sessions.create_session(test_user_ds_id, user_agent,
                                    time.time(), ip_addr)
         self.course_id = 1
         db_courses.get_root_context_id(self.db, self.course_id, create=True)

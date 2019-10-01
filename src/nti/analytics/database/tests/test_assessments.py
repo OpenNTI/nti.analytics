@@ -626,7 +626,6 @@ class TestUserActivity(NTIAnalyticsTestCase):
 			db.session.add(event)
 
 		db.session.flush()
-
 		user_map = {user_id: count for user_id, count in
 					get_assignments_taken_by_user(root_context=self.course_id, timestamp=now, max_timestamp=max_time)}
 
