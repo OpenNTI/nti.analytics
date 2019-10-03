@@ -104,9 +104,6 @@ def _get_history_item():
 
 class TestAssessments(AnalyticsTestBase):
 
-	def setUp(self):
-		super( TestAssessments, self ).setUp()
-
 	def test_assessments(self):
 		sa_records = db_assessments.get_self_assessments_for_user(test_user_ds_id,
 																  self.course_id)

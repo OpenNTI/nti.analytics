@@ -113,13 +113,15 @@ class TestIdentifier(object):
         elif hasattr(obj, 'intid'):
             result = getattr(obj, 'intid', None)
 
-        if result is None:
-            if obj in cache:
-                return cache.get(obj)
+        if result is None and obj in cache:
+            return cache.get(obj)
 
-        if result is None:
-            result = TestIdentifier.default_intid
+        while result is None:
+            # We have poor test cleanup; ensure we get unique id
             TestIdentifier.default_intid += 1
+            if TestIdentifier.default_intid not in id_map:
+                result = TestIdentifier.default_intid
+                break
 
         try:
             # Some objects attempt to access the backing db.
