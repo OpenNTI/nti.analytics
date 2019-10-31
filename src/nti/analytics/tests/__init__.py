@@ -200,7 +200,7 @@ class NTIAnalyticsApplicationTestLayer(ApplicationTestLayer):
 
     @classmethod
     def setUp(self):
-        self.db = AnalyticsDB(dburi='sqlite://')
+        self.db = AnalyticsDB(dburi='sqlite://', autocommit=True)
         component.getGlobalSiteManager().registerUtility(self.db, IAnalyticsDB)
 
     @classmethod

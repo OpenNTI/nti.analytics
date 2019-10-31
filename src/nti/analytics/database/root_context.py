@@ -150,6 +150,9 @@ def get_root_context_id( db, context_object, create=False ):
 	Retrieves the db id for the given root context object (e.g. course, book),
 	optionally creating the context object if it does not exist.
 	"""
+	if isinstance(context_object, int):
+		# Tests
+		return context_object
 	context_ds_id = get_root_context_ds_id( context_object )
 	if create:
 		if ICourseInstance.providedBy( context_object ):

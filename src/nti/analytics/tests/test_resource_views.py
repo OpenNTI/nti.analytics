@@ -149,7 +149,7 @@ class TestResourceProgress(AnalyticsTestBase):
 		assert_that( progresses, has_length( 0 ) )
 
 		# Video view
-		_create_video_event( test_user_ds_id, video_ntiid )
+		_create_video_event(test_user_ds_id, video_ntiid, root_context=context)
 
 		progresses = get_video_progress_for_course( test_user_ds_id, context )
 		assert_that( progresses, not_none() )
@@ -157,16 +157,21 @@ class TestResourceProgress(AnalyticsTestBase):
 
 		# Dupe does not change anything
 		# Specify max time length.
-		_create_video_event( test_user_ds_id, video_ntiid, max_time_length=60 )
+		_create_video_event(test_user_ds_id,
+						video_ntiid,
+						max_time_length=60,
+						root_context=context)
 
-		progresses = get_video_progress_for_course( test_user_ds_id, context )
+		progresses = get_video_progress_for_course(test_user_ds_id, context)
 		assert_that( progresses, not_none() )
 		assert_that( progresses, has_length( 1 ) )
 
 		# Multiple videos
 		video_count = 5
 		for x in range( video_count ):
-			_create_video_event( test_user_ds_id, video_ntiid + '_' + str( x ) )
+			_create_video_event(test_user_ds_id,
+								video_ntiid + '_' + str( x ),
+								root_context=context)
 
 		progresses = get_video_progress_for_course( test_user_ds_id, context )
 		assert_that( progresses, not_none() )
@@ -174,7 +179,8 @@ class TestResourceProgress(AnalyticsTestBase):
 
 		# Different course changes nothing
 		for x in range( video_count ):
-			_create_video_event( test_user_ds_id, video_ntiid + '_' + str( x ), root_context=9999 )
+			_create_video_event(test_user_ds_id, video_ntiid + '_' + str( x ),
+								root_context=9999)
 
 		progresses = get_video_progress_for_course( test_user_ds_id, context )
 		assert_that( progresses, not_none() )

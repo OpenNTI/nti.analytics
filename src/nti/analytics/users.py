@@ -4,10 +4,9 @@
 .. $Id$
 """
 
-from __future__ import print_function, unicode_literals, absolute_import, division
-__docformat__ = "restructuredtext en"
-
-logger = __import__('logging').getLogger(__name__)
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
 
 from zope import component
 
@@ -26,6 +25,9 @@ from .identifier import get_ds_id
 from nti.analytics import get_factory
 from nti.analytics import DELETE_ANALYTICS
 from nti.analytics import USERS_ANALYTICS
+
+logger = __import__('logging').getLogger(__name__)
+
 
 get_user_record = db_users.get_user_record
 
@@ -46,7 +48,7 @@ def _update_user_research( user_ds_id, allow_research ):
 	logger.info( 'Updated user research (user_ds_id=%s) (allow_research=%s)', user_ds_id, allow_research )
 
 @component.adapter( IEntity, IBeforeIdRemovedEvent )
-def _entity_removed( entity, event ):
+def _entity_removed( entity, unused_event ):
 	entity_id = get_ds_id( entity )
 	process_event( _get_delete_queue, _delete_entity, entity_id=entity_id )
 

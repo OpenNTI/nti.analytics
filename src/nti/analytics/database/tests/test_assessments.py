@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from __future__ import print_function, unicode_literals, absolute_import, division
-__docformat__ = "restructuredtext en"
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
 
 import fudge
 import time
@@ -59,19 +60,22 @@ from nti.analytics.database.assessments import AssignmentDetailGrades
 from nti.analytics.database.assessments import SelfAssessmentsTaken
 from nti.analytics.database.assessments import SelfAssessmentDetails
 
+from nti.analytics.database.root_context import get_root_context_id
+
 from nti.dataserver.interfaces import IUser
 
 from nti.dataserver.tests.mock_dataserver import WithMockDSTrans
 
-from nti.dataserver.users.users import Principal
 from nti.dataserver.users.users import User
+from nti.dataserver.users.users import Principal
 
 from nti.testing.time import time_monotonically_increases
 
-_question_id = '1968'
-_question_set_id = '2'
-_assignment_id = 'b'
-_response = 'bleh'
+_question_id = u'1968'
+_question_set_id = u'2'
+_assignment_id = u'b'
+_response = u'bleh'
+
 
 def _get_assessed_question_set():
 	assessed_parts = []
@@ -80,6 +84,7 @@ def _get_assessed_question_set():
 	assessed.append( QAssessedQuestion(questionId=_question_id, parts=assessed_parts) )
 
 	return QAssessedQuestionSet(questionSetId=_question_set_id, questions=assessed)
+
 
 def _get_history_item():
 	question_set = _get_assessed_question_set()
@@ -101,6 +106,7 @@ def _get_history_item():
 	result.createdTime = time.time()
 	result.Assignment = QAssignment( parts=() )
 	return result, result_creator
+
 
 class TestAssessments(AnalyticsTestBase):
 
@@ -297,7 +303,8 @@ class TestAssignments(NTIAnalyticsTestCase):
 
 		assignment_taken = assignment_records[0]
 		assert_that( assignment_taken.user_id, is_( 1 ))
-		assert_that( assignment_taken.course_id, is_( self.course_id ))
+		root_context_id = get_root_context_id(self.db, self.course)
+		assert_that( assignment_taken.course_id, is_(root_context_id))
 		assert_that( assignment_taken.timestamp, not_none() )
 		assert_that( assignment_taken.time_length, is_( -1 ) )
 		assert_that( assignment_taken.assignment_id, is_( 'b' ) )
@@ -317,7 +324,7 @@ class TestAssignments(NTIAnalyticsTestCase):
 
 	@fudge.patch( 'nti.analytics.database.assessments._get_grade' )
 	def test_assignment_with_grade(self, mock_get_grade):
-		my_grade = Grade( grade='20' )
+		my_grade = Grade( grade=u'20' )
 		mock_get_grade.is_callable().returns( my_grade )
 
 		# Submit assignment w/no grade

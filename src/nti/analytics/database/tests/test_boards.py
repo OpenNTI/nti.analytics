@@ -241,10 +241,10 @@ class TestTopics(NTIAnalyticsTestCase):
 
 		# View topic
 		time_length = 30
-		db_boards.create_topic_view( test_user_ds_id,
-										test_session_id, datetime.now(),
-										self.course_id, context_path, my_topic,
-										time_length )
+		db_boards.create_topic_view(test_user_ds_id,
+									test_session_id, datetime.now(),
+									self.course_id, context_path, my_topic,
+									time_length)
 
 		results = self.session.query( TopicsViewed ).all()
 		assert_that( results, has_length( 1 ) )
