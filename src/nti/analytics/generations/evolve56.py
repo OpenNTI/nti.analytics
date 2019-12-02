@@ -16,13 +16,11 @@ from zope.component.hooks import setHooks
 from alembic.operations import Operations
 from alembic.migration import MigrationContext
 
-from sqlalchemy import inspect
 from sqlalchemy import Enum
 
 from nti.analytics.database import get_analytics_db
 
 from nti.analytics.generations.utils import do_evolve
-from nti.analytics.generations.utils import mysql_column_exists
 
 logger = __import__('logging').getLogger(__name__)
 
