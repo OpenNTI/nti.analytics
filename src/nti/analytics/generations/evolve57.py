@@ -19,15 +19,15 @@ from nti.analytics.database import get_analytics_db
 from .utils import do_evolve
 
 UPDATE_CITY_SQL = """ALTER TABLE Location
-					MODIFY city VARCHAR(64) CHARACTER SET utf8 COLLATE utf8mb4_unicode_ci;"""
+					MODIFY city VARCHAR(64) CHARACTER SET utf8 COLLATE utf8_unicode_ci;"""
 
 UPDATE_STATE_SQL = """ALTER TABLE Location
-					MODIFY state VARCHAR(64) CHARACTER SET utf8 COLLATE utf8mb4_unicode_ci;"""
+					MODIFY state VARCHAR(64) CHARACTER SET utf8 COLLATE utf8_unicode_ci;"""
 
 UPDATE_COUNTRY_SQL = """ALTER TABLE Location
-					MODIFY country VARCHAR(128) CHARACTER SET utf8 COLLATE utf8mb4_unicode_ci;"""
+					MODIFY country VARCHAR(128) CHARACTER SET utf8 COLLATE utf8_unicode_ci;"""
 
-UPDATE_RESOURCES_SQL = "ALTER TABLE Resources MODIFY resource_display_name VARCHAR(256) CHARACTER SET utf8 COLLATE utf8mb4_unicode_ci;"
+UPDATE_RESOURCES_SQL = "ALTER TABLE Resources MODIFY resource_display_name VARCHAR(256) CHARACTER SET utf8 COLLATE utf8_unicode_ci;"
 
 SQL_CMDS = [UPDATE_CITY_SQL, UPDATE_STATE_SQL, UPDATE_COUNTRY_SQL, UPDATE_RESOURCES_SQL]
 
