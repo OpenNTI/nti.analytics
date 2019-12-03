@@ -3,6 +3,8 @@
 """
 generation 37.
 
+
+If 'character_set_client' we can move to utf8mb4_unicode_ci
 .. $Id$
 """
 
