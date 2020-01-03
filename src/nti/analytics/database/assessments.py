@@ -187,8 +187,7 @@ def create_self_assessment_taken( user, nti_session, timestamp, course, submissi
 										assignment_id=self_assessment_id,
 										submission_id=submission_id,
 										time_length=time_length )
-	db.session.add( new_object )
-	db.session.flush()
+	db.session.add(new_object)
 	self_assessment_id = new_object.self_assessment_id
 	qset = find_object_with_ntiid( submission.questionSetId )
 
@@ -221,7 +220,7 @@ def create_self_assessment_taken( user, nti_session, timestamp, course, submissi
 													grader=grader,
 													submission=response,
 													time_length=time_length )
-			db.session.add( grade_details )
+			new_object.details.append(grade_details)
 	return new_object
 
 
@@ -289,7 +288,6 @@ def create_assignment_taken( user, nti_session, timestamp, course, submission ):
 									is_late=is_late,
 									time_length=time_length )
 	db.session.add( new_object )
-	db.session.flush()
 	assignment_taken_id = new_object.assignment_taken_id
 
 	question_part_dict = dict()
@@ -327,10 +325,8 @@ def create_assignment_taken( user, nti_session, timestamp, course, submission ):
 											question_part_id=idx,
 											submission=response,
 											time_length=time_length )
-				db.session.add( parts )
+				new_object.details.append( parts )
 				question_part_dict[ (question_id,idx) ] = parts
-
-	db.session.flush()
 
 	# Grade
 	graded_submission = _get_grade( submission )
@@ -349,7 +345,7 @@ def create_assignment_taken( user, nti_session, timestamp, course, submission ):
 									grade=grade,
 									grade_num=grade_num,
 									grader=grader )
-		db.session.add( graded )
+		new_object.grade = graded
 
 		# Submission Part Grades
 		for maybe_assessed in submission.pendingAssessment.parts:
@@ -366,14 +362,13 @@ def create_assignment_taken( user, nti_session, timestamp, course, submission ):
 					grade_details = AssignmentDetailGrades( user_id=uid,
 															session_id=sid,
 															timestamp=timestamp,
-															assignment_details_id=parts.assignment_details_id,
-															assignment_taken_id=assignment_taken_id,
 															question_id=question_id,
 															question_part_id=idx,
 															is_correct=is_correct,
-															grade=grade,
+															grade=str(grade),
 															grader=grader )
-					db.session.add( grade_details )
+					parts.grade = grade_details
+					new_object.grade_details.append(grade_details)
 	return new_object
 
 
@@ -386,9 +381,9 @@ def grade_submission( user, nti_session, timestamp, grader, graded_val, submissi
 	grader = get_or_create_user( grader )
 	grader_id  = grader.user_id
 	submission_id = get_ds_id( submission )
-	assignment_taken_id = _get_assignment_taken_id( db, submission_id )
+	assignment_taken = db.session.query(AssignmentsTaken).filter(AssignmentsTaken.submission_id == submission_id).first()
 
-	if assignment_taken_id is None:
+	if assignment_taken is None:
 		# Somehow, in prod, we got a grade before a placeholder submission event.
 		course = get_course_from_object( submission )
 		create_assignment_taken( user, nti_session, timestamp, course, submission )
@@ -396,7 +391,7 @@ def grade_submission( user, nti_session, timestamp, grader, graded_val, submissi
 		# Creating an assignment also takes care of the grade
 		return
 
-	grade_entry = _get_grade_entry( db, assignment_taken_id )
+	grade_entry = _get_grade_entry( db, assignment_taken.assignment_taken_id )
 	timestamp = timestamp_type( timestamp )
 
 	grade_num = _get_grade_val( graded_val )
@@ -417,12 +412,10 @@ def grade_submission( user, nti_session, timestamp, grader, graded_val, submissi
 		new_object = AssignmentGrades( 	user_id=uid,
 										session_id=sid,
 										timestamp=timestamp,
-										assignment_taken_id=assignment_taken_id,
 										grade=graded_val,
 										grade_num=grade_num,
 										grader=grader_id )
-
-		db.session.add( new_object )
+		assignment_taken.grade = new_object
 
 
 def _get_grade_entry( db, assignment_taken_id ):
@@ -483,29 +476,26 @@ def create_submission_feedback( user, nti_session, timestamp, submission, feedba
 		return
 
 	submission_id = get_ds_id( submission )
-	assignment_taken_id = _get_assignment_taken_id( db, submission_id )
+	assignment_taken = db.session.query(AssignmentsTaken).filter(AssignmentsTaken.submission_id == submission_id).first()
 
-	if assignment_taken_id is None:
+	if assignment_taken is None:
 		assignment_creator = get_creator( submission )
 		timestamp = get_created_timestamp( submission )
 		course = get_course_from_object( submission )
-		new_assignment = create_assignment_taken( assignment_creator, None, timestamp, course, submission )
+		assignment_taken = create_assignment_taken( assignment_creator, None, timestamp, course, submission )
 		logger.info( 'Assignment created (%s) (%s)', assignment_creator, submission )
-		assignment_taken_id = new_assignment.assignment_taken_id
 
 	# Do we need to handle any of these being None?
 	# That's an error condition, right?
-	grade_id = _get_grade_id( db, assignment_taken_id )
+	grade_id = _get_grade_id( db, assignment_taken.assignment_taken_id )
 
 	new_object = AssignmentFeedback( user_id=uid,
 									session_id=sid,
 									timestamp=timestamp,
-									assignment_taken_id=assignment_taken_id,
 									feedback_ds_id=feedback_ds_id,
 									grade_id=grade_id )
 	_set_feedback_attributes( db, new_object, feedback )
-	db.session.add( new_object )
-	db.session.flush()
+	assignment_taken.feedback.append(new_object)
 	return new_object
 
 
@@ -532,7 +522,6 @@ def delete_feedback( timestamp, feedback_ds_id ):
 		return
 	feedback.deleted=timestamp
 	feedback.feedback_ds_id = None
-	db.session.flush()
 
 
 def _assess_view_exists(db, table, user_id, assessment_id, timestamp,

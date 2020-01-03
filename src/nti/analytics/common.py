@@ -5,9 +5,6 @@
 """
 
 from __future__ import print_function, unicode_literals, absolute_import, division
-__docformat__ = "restructuredtext en"
-
-logger = __import__('logging').getLogger(__name__)
 
 from datetime import datetime
 
@@ -55,6 +52,8 @@ from nti.securitypolicy.utils import is_impersonating
 from nti.site.site import get_site_for_site_names
 
 from nti.site.transient import TrivialSite
+
+logger = __import__('logging').getLogger(__name__)
 
 
 def get_rating_from_event( event ):
@@ -162,7 +161,7 @@ def get_root_context_name(context):
 		context_name = getattr(context, '__name__', '')
 	return context_name
 
-def _do_execute_job( db, *args, **kwargs ):
+def _do_execute_job(*args, **kwargs):
 	func, args = args[0], args[1:]
 	try:
 		result = func( *args, **kwargs )
@@ -172,14 +171,13 @@ def _do_execute_job( db, *args, **kwargs ):
 			'Object missing (deleted) before event could be processed; event dropped. (%s) (%s)',
 			e, func )
 		result = None
-	else:
-		# Must flush to verify integrity.  If we hit any race
-		# conditions below, this will raise and the job can
-		# be re-run.
-		db.session.flush()
+	# We used to manually flush here to find integrity issues, raising and
+	# retrying the transaction. That is a bad idea because it issues a DDL
+	# statement (locking appropriate records or the whole db in the sqlite
+	# case).
 	return result
 
-def _execute_job( *args, **kwargs ):
+def _execute_job(*args, **kwargs):
 	"""
 	Performs the actual execution of a job.  We'll attempt to do
 	so in the site the event occurred in, otherwise, we'll run in
@@ -213,7 +211,7 @@ def _execute_job( *args, **kwargs ):
 						 event_site_name )
 			return None
 
-		return _do_execute_job( db, *args, **kwargs )
+		return _do_execute_job(*args, **kwargs)
 
 
 def should_create_analytics(request):

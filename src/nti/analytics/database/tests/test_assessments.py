@@ -354,6 +354,7 @@ class TestAssignments(NTIAnalyticsTestCase):
 		assignment_taken = assignment_records[0]
 		assert_that( assignment_taken.Submission, is_( new_assignment ))
 		assert_that( assignment_taken.timestamp, not_none() )
+		from IPython.terminal.debugger import set_trace;set_trace()
 		assert_that( assignment_taken.Grade, is_( '20' ) )
 		assert_that( assignment_taken.GradeNum, is_( 20 ) )
 
