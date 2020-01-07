@@ -78,7 +78,6 @@ def _set_blog_attributes( blog_record, blog ):
 def create_blog( user, nti_session, blog_entry ):
 	db = get_analytics_db()
 	user_record = get_or_create_user( user )
-	uid = user_record.user_id
 	sid = nti_session
 	blog_ds_id = get_ds_id( blog_entry )
 
@@ -88,13 +87,12 @@ def create_blog( user, nti_session, blog_entry ):
 
 	timestamp = get_created_timestamp( blog_entry )
 
-	new_object = BlogsCreated( 	user_id=uid,
-								session_id=sid,
+	new_object = BlogsCreated( 	session_id=sid,
 								timestamp=timestamp,
 								blog_ds_id=blog_ds_id )
+	new_object._user_record = user_record
 	_set_blog_attributes( new_object, blog_entry )
 	db.session.add( new_object )
-	db.session.flush()
 	# See .boards.py
 	if getattr( blog_entry, 'headline', None ) is not None:
 		create_blog_comment(user, nti_session, blog_entry, blog_entry.headline )
@@ -131,9 +129,9 @@ def delete_blog( timestamp, blog_ds_id ):
 	db.session.flush()
 
 
-def _get_blog_rating_record( db, table, user_id, blog_id ):
+def _get_blog_rating_record( db, table, user_record, blog_id ):
 	blog_rating_record = db.session.query( table ).filter(
-									table.user_id == user_id,
+									table.user_id == user_record.user_id,
 									table.blog_id == blog_id ).first()
 	return blog_rating_record
 
@@ -145,19 +143,17 @@ def _create_blog_rating_record( db, table, user, session_id, timestamp, blog_id,
 	"""
 	if user is not None:
 		user_record = get_or_create_user( user )
-		user_id = user_record.user_id
-
 		blog_rating_record = _get_blog_rating_record( db, table,
-													user_id, blog_id )
+													user_record, blog_id )
 
 		if not blog_rating_record and delta > 0:
 			# Create
 			timestamp = timestamp_type( timestamp )
 			blog_rating_record = table( blog_id=blog_id,
-								user_id=user_id,
 								timestamp=timestamp,
 								session_id=session_id,
 								creator_id=creator_id )
+			blog_rating_record._user_record = user_record
 			db.session.add( blog_rating_record )
 		elif blog_rating_record and delta < 0:
 			# Delete
