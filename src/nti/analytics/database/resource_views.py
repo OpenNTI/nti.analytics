@@ -37,26 +37,25 @@ logger = __import__('logging').getLogger(__name__)
 
 
 def _resource_view_exists( db, table, user_id, resource_id, timestamp ):
-	return db.session.query( table ).filter(
+	return db.session.query(table).filter(
 							table.user_id == user_id,
 							table.resource_id == resource_id,
-							table.timestamp == timestamp ).first()
+							table.timestamp == timestamp).first()
 
 
-def _create_view( table, user, nti_session, timestamp, root_context, context_path, resource, time_length ):
+def _create_view(table, user, nti_session, timestamp, root_context, context_path, resource, time_length):
 	"""
 	Create a basic view event, if necessary.  Also if necessary, may update existing
 	events with appropriate data.
 	"""
 	db = get_analytics_db()
 	user_record = get_or_create_user( user )
-	uid = user_record.user_id
 	sid = nti_session
 	rid = get_ntiid_id( resource )
 	rid = get_resource_id( db, rid, create=True )
 	timestamp = timestamp_type( timestamp )
 
-	existing_record = _resource_view_exists( db, table, uid, rid, timestamp )
+	existing_record = _resource_view_exists(db, table, user_record.user_id, rid, timestamp)
 	if existing_record is not None:
 		if should_update_event(existing_record, time_length):
 			existing_record.time_length = time_length
@@ -68,15 +67,15 @@ def _create_view( table, user, nti_session, timestamp, root_context, context_pat
 	context_path = get_context_path( context_path )
 	course_id, entity_root_context_id = get_root_context_ids( root_context )
 
-	new_object = table( user_id=uid,
-						session_id=sid,
-						timestamp=timestamp,
-						course_id=course_id,
-						entity_root_context_id=entity_root_context_id,
-						context_path=context_path,
-						resource_id=rid,
-						time_length=time_length )
-	db.session.add( new_object )
+	new_object = table(session_id=sid,
+					   timestamp=timestamp,
+					   course_id=course_id,
+					   entity_root_context_id=entity_root_context_id,
+					   context_path=context_path,
+					   resource_id=rid,
+					   time_length=time_length)
+	new_object._user_record = user_record
+	db.session.add(new_object)
 
 
 def create_resource_view(user, nti_session, timestamp, root_context,
@@ -106,37 +105,36 @@ def create_play_speed_event( user, nti_session, timestamp, root_context, resourc
 							video_time, old_play_speed, new_play_speed ):
 	db = get_analytics_db()
 	user = get_or_create_user( user )
-	uid = user.user_id
 	sid = nti_session
 	vid = get_ntiid_id( resource_id )
 	vid = get_resource_id( db, vid, create=True )
 
 	timestamp = timestamp_type( timestamp )
 
-	existing_record = _video_play_speed_exists( db, uid, vid, timestamp, video_time )
+	existing_record = _video_play_speed_exists(db, user.user_id, vid, timestamp, video_time)
 
 	if existing_record is not None:
 		# Should only have one record for timestamp, video_time, user, video.
 		# Ok, duplicate event received, apparently.
 		logger.warn('Video play_speed already exists (user=%s) (video_time=%s) (timestamp=%s)',
-					user, video_time, timestamp )
+					user, video_time, timestamp)
 		return
 
 	course_id, entity_root_context_id = get_root_context_ids( root_context )
-	video_record = _video_view_exists( db, uid, vid, timestamp, 'WATCH' )
+	video_record = _video_view_exists(db, user.user_id, vid, timestamp, 'WATCH')
 	video_view_id = video_record.video_view_id if video_record else None
 
-	new_object = VideoPlaySpeedEvents(	user_id=uid,
-								session_id=sid,
-								timestamp=timestamp,
-								course_id=course_id,
-								entity_root_context_id=entity_root_context_id,
-								resource_id=vid,
-								video_view_id=video_view_id,
-								video_time=video_time,
-								old_play_speed=old_play_speed,
-								new_play_speed=new_play_speed )
-	db.session.add( new_object )
+	new_object = VideoPlaySpeedEvents(session_id=sid,
+									  timestamp=timestamp,
+									  course_id=course_id,
+									  entity_root_context_id=entity_root_context_id,
+									  resource_id=vid,
+									  video_view_id=video_view_id,
+									  video_time=video_time,
+									  old_play_speed=old_play_speed,
+									  new_play_speed=new_play_speed)
+	new_object._user_record = user
+	db.session.add(new_object)
 
 
 def _get_video_play_speed( db, user_id, resource_id, timestamp ):
@@ -159,15 +157,14 @@ def create_video_event(	user,
 						play_speed,
 						player_configuration ):
 	db = get_analytics_db()
-	user_record = get_or_create_user( user )
-	uid = user_record.user_id
+	user_record = get_or_create_user(user)
 	sid = nti_session
 	vid = get_ntiid_id( video_resource )
 	vid = get_resource_id( db, vid, create=True, max_time_length=max_time_length )
 
 	timestamp = timestamp_type( timestamp )
 
-	existing_record = _video_view_exists( db, uid, vid, timestamp, video_event_type )
+	existing_record = _video_view_exists(db, user_record.user_id, vid, timestamp, video_event_type)
 
 	if 		time_length is None \
 		and video_start_time is not None \
@@ -191,25 +188,24 @@ def create_video_event(	user,
 	context_path = get_context_path( context_path )
 	course_id, entity_root_context_id = get_root_context_ids( root_context )
 
-	new_object = VideoEvents(	user_id=uid,
-								session_id=sid,
-								timestamp=timestamp,
-								course_id=course_id,
-								entity_root_context_id=entity_root_context_id,
-								context_path=context_path,
-								resource_id=vid,
-								time_length=time_length,
-								video_event_type=video_event_type,
-								video_start_time=video_start_time,
-								video_end_time=video_end_time,
-								with_transcript=with_transcript,
-								play_speed=play_speed,
-								player_configuration=player_configuration )
-	db.session.add( new_object )
-	db.session.flush()
+	new_object = VideoEvents(session_id=sid,
+							 timestamp=timestamp,
+							 course_id=course_id,
+							 entity_root_context_id=entity_root_context_id,
+							 context_path=context_path,
+							 resource_id=vid,
+							 time_length=time_length,
+							 video_event_type=video_event_type,
+							 video_start_time=video_start_time,
+							 video_end_time=video_end_time,
+							 with_transcript=with_transcript,
+							 play_speed=play_speed,
+							 player_configuration=player_configuration)
+	new_object._user_record = user_record
+	db.session.add(new_object)
 
 	# Update our referenced field, if necessary.
-	video_play_speed = _get_video_play_speed( db, uid, vid, timestamp )
+	video_play_speed = _get_video_play_speed(db, user_record.user_id, vid, timestamp)
 	if video_play_speed:
 		video_play_speed.video_view_id = new_object.video_view_id
 
@@ -302,6 +298,7 @@ def get_user_video_views( user=None, course=None, **kwargs  ):
 		results = resolve_objects( _resolve_video_view, results, user=user, course=course )
 	return results
 get_video_views = get_user_video_views
+
 
 def get_video_views_by_user(root_context=None, **kwargs):
 	filters = (VideoEvents.video_event_type == VIDEO_WATCH,
