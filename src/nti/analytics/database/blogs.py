@@ -87,9 +87,9 @@ def create_blog(user, nti_session, blog_entry):
 
 	timestamp = get_created_timestamp( blog_entry )
 
-	new_object = BlogsCreated( 	session_id=sid,
-								timestamp=timestamp,
-								blog_ds_id=blog_ds_id )
+	new_object = BlogsCreated(session_id=sid,
+							  timestamp=timestamp,
+							  blog_ds_id=blog_ds_id )
 	new_object._user_record = user_record
 	_set_blog_attributes( new_object, blog_entry )
 	db.session.add( new_object )
@@ -210,17 +210,16 @@ def create_blog_view(user, nti_session, timestamp, context_path, blog_entry, tim
 	uid = user_record.user_id
 	sid = nti_session
 	blog_ds_id = get_ds_id( blog_entry )
-	blog_id = _get_blog_id( db, blog_ds_id )
+	blog_record = _get_blog(db, blog_ds_id)
 
-	if blog_id is None:
+	if blog_record is None:
 		blog_creator = get_creator( blog_entry )
-		new_blog = create_blog( blog_creator, None, blog_entry )
+		blog_record = create_blog( blog_creator, None, blog_entry )
 		logger.info( 'Created new blog (%s) (%s)', blog_creator, blog_entry )
-		blog_id = new_blog.blog_id
 
 	timestamp = timestamp_type( timestamp )
 
-	existing_record = _blog_view_exists( db, uid, blog_id, timestamp )
+	existing_record = _blog_view_exists( db, uid, blog_record.blog_id, timestamp )
 
 	if existing_record is not None:
 		if should_update_event(existing_record, time_length):
@@ -228,7 +227,7 @@ def create_blog_view(user, nti_session, timestamp, context_path, blog_entry, tim
 			return
 		else:
 			logger.warn('Blog view already exists (user=%s) (blog_id=%s) (time_length=%s)',
-						user, blog_id, time_length)
+						user, blog_record.blog_id, time_length)
 			return
 
 	context_path = get_context_path( context_path )
@@ -237,8 +236,8 @@ def create_blog_view(user, nti_session, timestamp, context_path, blog_entry, tim
 								session_id=sid,
 								timestamp=timestamp,
 								context_path=context_path,
-								blog_id=blog_id,
 								time_length=time_length )
+	new_object._blog_record = blog_record
 	db.session.add( new_object )
 
 
@@ -283,14 +282,13 @@ def create_blog_comment(user, nti_session, blog, comment ):
 	user = get_or_create_user( user )
 	sid = nti_session
 	blog_ds_id = get_ds_id( blog )
-	bid = _get_blog_id( db, blog_ds_id )
+	blog_record = _get_blog( db, blog_ds_id )
 	cid = get_ds_id( comment )
 
-	if bid is None:
+	if blog_record is None:
 		blog_creator = get_creator( blog )
-		new_blog = create_blog( blog_creator, None, blog )
+		blog_record = create_blog( blog_creator, None, blog )
 		logger.info( 'Created new blog (%s) (%s)', blog_creator, blog )
-		bid = new_blog.blog_id
 
 	if _blog_comment_exists( db, cid ):
 		logger.warn( 'Blog comment already exists (comment_id=%s)', cid )
@@ -308,11 +306,11 @@ def create_blog_comment(user, nti_session, blog, comment ):
 
 	new_object = BlogCommentsCreated(session_id=sid,
 									 timestamp=timestamp,
-									 blog_id=bid,
 									 parent_id=pid,
 									 parent_user_id=parent_user_id,
 									 comment_id=cid)
 
+	new_object._blog_record = blog_record
 	_set_blog_comment_attributes( db, new_object, comment )
 	new_object._user_record = user
 	db.session.add(new_object)
