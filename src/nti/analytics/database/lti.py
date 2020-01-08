@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
-from __future__ import division
 
 from nti.analytics import get_analytics_db
 
@@ -28,11 +28,8 @@ from nti.analytics_database.lti import LTIAssetLaunches
 
 
 def create_launch_record(user, course, asset, nti_session, context_path, timestamp):
-
     db = get_analytics_db()
-
     user_record = get_or_create_user(user)
-    uid = user_record.user_id
     sid = nti_session
     rid = get_ntiid_id(asset)
     rid = get_resource_id(db, rid, create=True)
@@ -40,15 +37,14 @@ def create_launch_record(user, course, asset, nti_session, context_path, timesta
     context_path = get_context_path(context_path)
     course_id, entity_root_context_id = get_root_context_ids(course)
 
-    new_object = LTIAssetLaunches(user_id=uid,
-                                  session_id=sid,
+    new_object = LTIAssetLaunches(session_id=sid,
                                   timestamp=timestamp,
                                   course_id=course_id,
                                   entity_root_context_id=entity_root_context_id,
                                   context_path=context_path,
                                   resource_id=rid,
                                   time_length=None)
-
+    new_object._user_record = user_record
     db.session.add(new_object)
 
 
