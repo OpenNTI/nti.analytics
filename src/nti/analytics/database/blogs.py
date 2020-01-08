@@ -65,7 +65,7 @@ def _set_blog_attributes(blog_record, blog):
 	blog_length = 0
 	try:
 		if blog.description is not None:
-			blog_length = len( blog.description )
+			blog_length = len(blog.description)
 	except AttributeError:
 		blog_length = get_body_text_length( blog )
 	like_count, favorite_count, is_flagged = get_ratings( blog )
@@ -91,7 +91,7 @@ def create_blog(user, nti_session, blog_entry):
 							  timestamp=timestamp,
 							  blog_ds_id=blog_ds_id )
 	new_object._user_record = user_record
-	_set_blog_attributes( new_object, blog_entry )
+	_set_blog_attributes(new_object, blog_entry)
 	db.session.add( new_object )
 	# See .boards.py
 	if getattr( blog_entry, 'headline', None ) is not None:
