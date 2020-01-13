@@ -47,7 +47,7 @@ from nti.analytics.database.mime_types import build_mime_type_records
 
 from nti.analytics.database.resources import get_resource_id
 
-from nti.analytics.database.root_context import get_root_context_id
+from nti.analytics.database.root_context import get_root_context_record
 
 from nti.analytics.database.query_utils import get_filtered_records
 
@@ -161,9 +161,8 @@ _self_assessment_exists = _get_self_assessment_id
 def create_self_assessment_taken( user, nti_session, timestamp, course, submission ):
 	db = get_analytics_db()
 	user_record = get_or_create_user( user )
-	uid = user_record.user_id
 	sid = nti_session
-	course_id = get_root_context_id( db, course, create=True )
+	root_context_record = get_root_context_record(db, course, create=True)
 	timestamp = timestamp_type( timestamp )
 	submission_id = get_ds_id( submission )
 
@@ -180,13 +179,13 @@ def create_self_assessment_taken( user, nti_session, timestamp, course, submissi
 	# We'd have to transfer it during adaptation perhaps.
 	time_length = _get_duration( submission )
 
-	new_object = SelfAssessmentsTaken( 	user_id=uid,
-										session_id=sid,
-										timestamp=timestamp,
-										course_id=course_id,
-										assignment_id=self_assessment_id,
-										submission_id=submission_id,
-										time_length=time_length )
+	new_object = SelfAssessmentsTaken(session_id=sid,
+									  timestamp=timestamp,
+									  assignment_id=self_assessment_id,
+									  submission_id=submission_id,
+									  time_length=time_length)
+	new_object._root_context_record = root_context_record
+	new_object._user_record = user_record
 	db.session.add(new_object)
 	self_assessment_id = new_object.self_assessment_id
 	qset = find_object_with_ntiid( submission.questionSetId )
@@ -209,17 +208,17 @@ def create_self_assessment_taken( user, nti_session, timestamp, course, submissi
 				if IRandomizedPartsContainer.providedBy( qset ):
 					interface.noLongerProvides(question_part, IQRandomizedPart)
 
-			grade_details = SelfAssessmentDetails( user_id=uid,
-													session_id=sid,
-													timestamp=timestamp,
-													self_assessment_id=self_assessment_id,
-													question_id=question_id,
-													question_part_id=idx,
-													is_correct=is_correct,
-													grade=grade,
-													grader=grader,
-													submission=response,
-													time_length=time_length )
+			grade_details = SelfAssessmentDetails(session_id=sid,
+												  timestamp=timestamp,
+												  self_assessment_id=self_assessment_id,
+												  question_id=question_id,
+												  question_part_id=idx,
+												  is_correct=is_correct,
+												  grade=grade,
+												  grader=grader,
+												  submission=response,
+												  time_length=time_length )
+			grade_details._user_record = user_record
 			new_object.details.append(grade_details)
 	return new_object
 
@@ -263,9 +262,8 @@ _assignment_taken_exists = _get_assignment_taken_id
 def create_assignment_taken( user, nti_session, timestamp, course, submission ):
 	db = get_analytics_db()
 	user_record = get_or_create_user( user )
-	uid = user_record.user_id
 	sid = nti_session
-	course_id = get_root_context_id( db, course, create=True )
+	root_context_record = get_root_context_record(db, course, create=True)
 	timestamp = timestamp_type( timestamp )
 	submission_id = get_ds_id( submission )
 
@@ -279,15 +277,15 @@ def create_assignment_taken( user, nti_session, timestamp, course, submission ):
 	time_length = _get_duration( submission_obj )
 	is_late = _is_late( course, submission )
 
-	new_object = AssignmentsTaken( 	user_id=uid,
-									session_id=sid,
-									timestamp=timestamp,
-									course_id=course_id,
-									assignment_id=assignment_id,
-									submission_id=submission_id,
-									is_late=is_late,
-									time_length=time_length )
-	db.session.add( new_object )
+	new_object = AssignmentsTaken(session_id=sid,
+								  timestamp=timestamp,
+								  assignment_id=assignment_id,
+								  submission_id=submission_id,
+								  is_late=is_late,
+								  time_length=time_length)
+	new_object._root_context_record = root_context_record
+	new_object._user_record = user_record
+	db.session.add(new_object)
 	assignment_taken_id = new_object.assignment_taken_id
 
 	question_part_dict = dict()
@@ -317,14 +315,14 @@ def create_assignment_taken( user, nti_session, timestamp, course, submission ):
 				finally:
 					if IRandomizedPartsContainer.providedBy( qset ):
 						interface.noLongerProvides(question_part, IQRandomizedPart)
-				parts = AssignmentDetails( 	user_id=uid,
-											session_id=sid,
+				parts = AssignmentDetails( 	session_id=sid,
 											timestamp=timestamp,
 											assignment_taken_id=assignment_taken_id,
 											question_id=question_id,
 											question_part_id=idx,
 											submission=response,
 											time_length=time_length )
+				parts._user_record = user_record
 				new_object.details.append( parts )
 				question_part_dict[ (question_id,idx) ] = parts
 
@@ -338,13 +336,13 @@ def create_assignment_taken( user, nti_session, timestamp, course, submission ):
 
 		grader = _get_grader_id( submission )
 
-		graded = AssignmentGrades( 	user_id=uid,
-									session_id=sid,
+		graded = AssignmentGrades( 	session_id=sid,
 									timestamp=timestamp,
 									assignment_taken_id=assignment_taken_id,
 									grade=grade,
 									grade_num=grade_num,
 									grader=grader )
+		graded._user_record = user_record
 		new_object.grade = graded
 
 		# Submission Part Grades
@@ -359,14 +357,14 @@ def create_assignment_taken( user, nti_session, timestamp, course, submission ):
 					grade = part.assessedValue
 					is_correct = grade == 1
 					parts = question_part_dict[ (question_id,idx) ]
-					grade_details = AssignmentDetailGrades( user_id=uid,
-															session_id=sid,
+					grade_details = AssignmentDetailGrades( session_id=sid,
 															timestamp=timestamp,
 															question_id=question_id,
 															question_part_id=idx,
 															is_correct=is_correct,
 															grade=str(grade),
 															grader=grader )
+					grade_details._user_record = user_record
 					parts.grade = grade_details
 					new_object.grade_details.append(grade_details)
 	return new_object
@@ -405,16 +403,14 @@ def grade_submission( user, nti_session, timestamp, grader, graded_val, submissi
 		grade_entry.grader = grader_id
 	else:
 		# New grade
-		user = get_or_create_user(user )
-		uid = user.user_id
+		user = get_or_create_user(user)
 		sid = nti_session
-
-		new_object = AssignmentGrades( 	user_id=uid,
-										session_id=sid,
+		new_object = AssignmentGrades( 	session_id=sid,
 										timestamp=timestamp,
 										grade=graded_val,
 										grade_num=grade_num,
 										grader=grader_id )
+		new_object._user_record = user
 		assignment_taken.grade = new_object
 
 
@@ -466,7 +462,6 @@ def _set_feedback_attributes( db, feedback_record, feedback ):
 def create_submission_feedback( user, nti_session, timestamp, submission, feedback ):
 	db = get_analytics_db()
 	user_record = get_or_create_user( user )
-	uid = user_record.user_id
 	sid = nti_session
 	timestamp = timestamp_type( timestamp )
 	feedback_ds_id = get_ds_id( feedback )
@@ -489,11 +484,11 @@ def create_submission_feedback( user, nti_session, timestamp, submission, feedba
 	# That's an error condition, right?
 	grade_id = _get_grade_id( db, assignment_taken.assignment_taken_id )
 
-	new_object = AssignmentFeedback( user_id=uid,
-									session_id=sid,
+	new_object = AssignmentFeedback(session_id=sid,
 									timestamp=timestamp,
 									feedback_ds_id=feedback_ds_id,
 									grade_id=grade_id )
+	new_object._user_record = user_record
 	_set_feedback_attributes( db, new_object, feedback )
 	assignment_taken.feedback.append(new_object)
 	return new_object
@@ -545,17 +540,16 @@ def create_assessment_view(table, user, nti_session, timestamp, course,
 	"""
 	db = get_analytics_db()
 	user_record = get_or_create_user( user )
-	uid = user_record.user_id
 	sid = nti_session
 	rid = None
 	if resource is not None:
 		rid = get_ntiid_id( resource )
 		rid = get_resource_id( db, rid, create=True )
 
-	course_id = get_root_context_id( db, course, create=True )
+	root_context_record = get_root_context_record(db, course, create=True)
 	timestamp = timestamp_type( timestamp )
 
-	existing_record = _assess_view_exists(db, table, uid, assessment_id,
+	existing_record = _assess_view_exists(db, table, user_record.user_id, assessment_id,
 										  timestamp, assessment_column_name)
 	if existing_record is not None:
 		if should_update_event(existing_record, time_length):
@@ -569,14 +563,14 @@ def create_assessment_view(table, user, nti_session, timestamp, course,
 			return
 	context_path = get_context_path(context_path)
 
-	new_object = table( user_id=uid,
-						session_id=sid,
+	new_object = table( session_id=sid,
 						timestamp=timestamp,
-						course_id=course_id,
 						context_path=context_path,
 						resource_id=rid,
 						time_length=time_length)
 	setattr(new_object, assessment_column_name, assessment_id)
+	new_object._root_context_record = root_context_record
+	new_object._user_record = user_record
 	db.session.add(new_object)
 	return new_object
 

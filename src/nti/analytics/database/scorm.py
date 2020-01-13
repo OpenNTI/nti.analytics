@@ -14,7 +14,7 @@ from nti.analytics.database import resolve_objects
 from nti.analytics.database import get_analytics_db
 
 from nti.analytics.database._utils import get_context_path
-from nti.analytics.database._utils import get_root_context_ids
+from nti.analytics.database._utils import get_root_context_records
 
 from nti.analytics.database.query_utils import get_filtered_records
 from nti.analytics.database.query_utils import get_record_count_by_user
@@ -34,22 +34,21 @@ def create_launch_record(user, course, scorm_content, nti_session, context_path,
     db = get_analytics_db()
 
     user_record = get_or_create_user(user)
-    uid = user_record.user_id
     sid = nti_session
     rid = get_ntiid_id(scorm_content)
     rid = get_resource_id(db, rid, create=True)
     timestamp = timestamp_type(timestamp)
     context_path = get_context_path(context_path)
-    course_id, entity_root_context_id = get_root_context_ids(course)
+    root_context, entity_root_context = get_root_context_records(course)
 
-    new_object = SCORMPackageLaunches(user_id=uid,
-                                      session_id=sid,
+    new_object = SCORMPackageLaunches(session_id=sid,
                                       timestamp=timestamp,
-                                      course_id=course_id,
-                                      entity_root_context_id=entity_root_context_id,
                                       context_path=context_path,
                                       resource_id=rid,
                                       time_length=None)
+    new_object._root_context_record = root_context
+    new_object._entity_root_context_record = entity_root_context
+    new_object._user_record = user_record
     db.session.add(new_object)
 
 

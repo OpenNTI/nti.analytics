@@ -29,7 +29,7 @@ from nti.analytics.database import get_analytics_db
 
 from nti.analytics.database._utils import get_context_path
 from nti.analytics.database._utils import get_body_text_length
-from nti.analytics.database._utils import get_root_context_ids
+from nti.analytics.database._utils import get_root_context_records
 
 from nti.analytics.database.mime_types import build_mime_type_records
 
@@ -42,7 +42,7 @@ from nti.analytics.database.query_utils import get_user_replies_to_others as _ge
 
 from nti.analytics.database.resources import get_resource_id
 
-from nti.analytics.database.root_context import get_root_context_id
+from nti.analytics.database.root_context import get_root_context_record
 
 from nti.analytics.database.users import get_or_create_user
 from nti.analytics.database.users import get_user_db_id
@@ -162,7 +162,7 @@ def create_note(user, nti_session, note):
 		return
 
 	course = get_root_context(note)
-	course_id = get_root_context_id(db, course, create=True)
+	root_context_record = get_root_context_record(db, course, create=True)
 	timestamp = get_created_timestamp(note)
 
 	parent_id = parent_user_id = None
@@ -184,12 +184,12 @@ def create_note(user, nti_session, note):
 
 	new_object = NotesCreated(	session_id=sid,
 								timestamp=timestamp,
-								course_id=course_id,
 								note_ds_id=note_ds_id,
 								resource_id=rid,
 								parent_id=parent_id,
 								parent_user_id=parent_user_id)
 	_set_note_attributes( db, new_object, note, course )
+	new_object._root_context_record = root_context_record
 	new_object._user_record = user_record
 	db.session.add(new_object)
 	return new_object
@@ -324,16 +324,16 @@ def create_note_view(user, nti_session, timestamp, context_path, root_context, n
 		return
 
 	context_path = get_context_path(context_path)
-	course_id, entity_root_context_id = get_root_context_ids(root_context)
+	root_context, entity_root_context = get_root_context_records(root_context)
 
 	new_object = NotesViewed(session_id=sid,
 							 timestamp=timestamp,
-							 course_id=course_id,
-							 entity_root_context_id=entity_root_context_id,
 							 context_path=context_path,
 							 resource_id=rid,
 							 note_id=note_id)
 	new_object._user_record = user_record
+	new_object._root_context_record = root_context
+	new_object._entity_root_context_record = entity_root_context
 	db.session.add(new_object)
 
 
@@ -356,15 +356,15 @@ def create_highlight(user, nti_session, highlight):
 		return
 
 	course = get_root_context(highlight)
-	course_id = get_root_context_id(db, course, create=True)
+	root_context_record = get_root_context_record(db, course, create=True)
 	timestamp = get_created_timestamp(highlight)
 
 	new_object = HighlightsCreated(	session_id=sid,
 									timestamp=timestamp,
-									course_id=course_id,
 									highlight_ds_id=highlight_ds_id,
 									resource_id=rid)
 	new_object._user_record = user_record
+	new_object._root_context_record = root_context_record
 	db.session.add(new_object)
 
 
@@ -400,15 +400,15 @@ def create_bookmark(user, nti_session, bookmark):
 		return
 
 	course = get_root_context(bookmark)
-	course_id = get_root_context_id(db, course, create=True)
+	root_context_record = get_root_context_record(db, course, create=True)
 	timestamp = get_created_timestamp(bookmark)
 
 	new_object = BookmarksCreated(	session_id=sid,
 									timestamp=timestamp,
-									root_context_id=course_id,
 									bookmark_ds_id=bookmark_ds_id,
 									resource_id=rid)
 	new_object._user_record = user_record
+	new_object._root_context_record = root_context_record
 	db.session.add(new_object)
 
 

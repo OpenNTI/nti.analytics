@@ -21,6 +21,7 @@ from nti.analytics.database import should_update_event
 from nti.analytics.database._utils import get_context_path
 
 from nti.analytics.database.root_context import get_root_context_id
+from nti.analytics.database.root_context import get_root_context_record
 
 from nti.analytics.database.users import get_or_create_user
 
@@ -39,10 +40,13 @@ def create_course_catalog_view(user, nti_session, timestamp, context_path,
 	db = get_analytics_db()
 	user = get_or_create_user(user)
 	sid = nti_session
-	course_id = get_root_context_id( db, course, create=True )
+	course_record = get_root_context_record(db, course, create=True)
 	timestamp = timestamp_type( timestamp )
 
-	existing_record = _course_catalog_view_exists(db, user.user_id, course_id, timestamp)
+	existing_record = _course_catalog_view_exists(db,
+												  user.user_id,
+												  course_record.course_id,
+												  timestamp)
 
 	if existing_record is not None:
 		if should_update_event(existing_record, time_length):
@@ -50,7 +54,9 @@ def create_course_catalog_view(user, nti_session, timestamp, context_path,
 			return
 		else:
 			logger.debug('Course catalog view already exists (user=%s) (catalog=%s) (time_length=%s)',
-						 user.user_id, course_id, time_length)
+						 user.user_id,
+						 course_record.course_id,
+						 time_length)
 			return
 
 	context_path = get_context_path( context_path )
@@ -58,15 +64,15 @@ def create_course_catalog_view(user, nti_session, timestamp, context_path,
 	new_object = CourseCatalogViews( session_id=sid,
 									 timestamp=timestamp,
 									 context_path=context_path,
-									 course_id=course_id,
 									 time_length=time_length )
+	new_object._course_record = course_record
 	new_object._user_record = user
 	db.session.add( new_object )
 
 
 def _create_enrollment_type(db, type_name):
 	enrollment_type = EnrollmentTypes( type_name=type_name )
-	db.session.add( enrollment_type )
+	db.session.add(enrollment_type)
 	db.session.flush()
 	return enrollment_type
 
@@ -89,11 +95,11 @@ def create_course_enrollment(user, nti_session, timestamp, course,
 
 	user_record = get_or_create_user(user)
 	sid = nti_session
-	course_id = get_root_context_id( db, course, create=True )
+	course_record = get_root_context_record(db, course, create=True)
 
-	if _enrollment_exists( db, user_record.user_id, course_id ):
+	if _enrollment_exists(db, user_record.user_id, course_record.course_id):
 		logger.debug('Enrollment already exists (user=%s) (course=%s)',
-					user, course_id)
+					user, course_record.course_id)
 		return
 
 	timestamp = timestamp_type(timestamp)
@@ -103,9 +109,9 @@ def create_course_enrollment(user, nti_session, timestamp, course,
 
 	new_object = CourseEnrollments(session_id=sid,
 								   timestamp=timestamp,
-								   course_id=course_id,
 								   type_id=type_id )
 	new_object._user_record = user_record
+	new_object._course_record = course_record
 	db.session.add(new_object)
 	return new_object
 
@@ -114,29 +120,29 @@ def _course_drop_exists( db, user_id, course_id, timestamp ):
 	return db.session.query(CourseDrops ).filter(
 							CourseDrops.user_id == user_id,
 							CourseDrops.course_id == course_id,
-							CourseDrops.timestamp == timestamp ).count()
+							CourseDrops.timestamp == timestamp).count()
 
 
 def create_course_drop(user, nti_session, timestamp, course):
 	db = get_analytics_db()
 	user_record = get_or_create_user(user)
 	sid = nti_session
-	course_id = get_root_context_id( db, course, create=True )
+	course_record = get_root_context_record(db, course, create=True)
 	timestamp = timestamp_type( timestamp )
 
-	if _course_drop_exists(db, user_record.user_id, course_id, timestamp):
+	if _course_drop_exists(db, user_record.user_id, course_record.course_id, timestamp):
 		logger.debug('Course drop already exists (user=%s) (course=%s)',
-					user, course_id)
+					user, course_record.course_id)
 		return
 
 	new_object = CourseDrops(session_id=sid,
-							 timestamp=timestamp,
-							 course_id=course_id )
+							 timestamp=timestamp)
 	new_object._user_record = user_record
+	new_object._course_record = course_record
 	db.session.add(new_object)
 
 	db.session.query(CourseEnrollments).filter( CourseEnrollments.user_id == user_record.user_id,
-												CourseEnrollments.course_id == course_id ).delete()
+												CourseEnrollments.course_id == course_record.course_id ).delete()
 
 
 def get_enrollments_for_course( course ):

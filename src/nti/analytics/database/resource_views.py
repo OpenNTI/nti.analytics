@@ -19,7 +19,7 @@ from nti.analytics.database import get_analytics_db
 from nti.analytics.database import should_update_event
 
 from nti.analytics.database._utils import get_context_path
-from nti.analytics.database._utils import get_root_context_ids
+from nti.analytics.database._utils import get_root_context_records
 
 from nti.analytics.database.query_utils import get_filtered_records
 from nti.analytics.database.query_utils import get_record_count_by_user
@@ -65,16 +65,16 @@ def _create_view(table, user, nti_session, timestamp, root_context, context_path
 						table.__tablename__, user, rid, timestamp, time_length)
 			return
 	context_path = get_context_path( context_path )
-	course_id, entity_root_context_id = get_root_context_ids( root_context )
+	root_context, entity_root_context = get_root_context_records(root_context)
 
 	new_object = table(session_id=sid,
 					   timestamp=timestamp,
-					   course_id=course_id,
-					   entity_root_context_id=entity_root_context_id,
 					   context_path=context_path,
 					   resource_id=rid,
 					   time_length=time_length)
 	new_object._user_record = user_record
+	new_object._root_context_record = root_context
+	new_object._entity_root_context_record = entity_root_context
 	db.session.add(new_object)
 
 
@@ -120,20 +120,20 @@ def create_play_speed_event( user, nti_session, timestamp, root_context, resourc
 					user, video_time, timestamp)
 		return
 
-	course_id, entity_root_context_id = get_root_context_ids( root_context )
+	root_context, entity_root_context = get_root_context_records(root_context)
 	video_record = _video_view_exists(db, user.user_id, vid, timestamp, 'WATCH')
 	video_view_id = video_record.video_view_id if video_record else None
 
 	new_object = VideoPlaySpeedEvents(session_id=sid,
 									  timestamp=timestamp,
-									  course_id=course_id,
-									  entity_root_context_id=entity_root_context_id,
 									  resource_id=vid,
 									  video_view_id=video_view_id,
 									  video_time=video_time,
 									  old_play_speed=old_play_speed,
 									  new_play_speed=new_play_speed)
 	new_object._user_record = user
+	new_object._root_context_record = root_context
+	new_object._entity_root_context_record = entity_root_context
 	db.session.add(new_object)
 
 
@@ -186,12 +186,10 @@ def create_video_event(	user,
 			return
 
 	context_path = get_context_path( context_path )
-	course_id, entity_root_context_id = get_root_context_ids( root_context )
+	root_context, entity_root_context = get_root_context_records(root_context)
 
 	new_object = VideoEvents(session_id=sid,
 							 timestamp=timestamp,
-							 course_id=course_id,
-							 entity_root_context_id=entity_root_context_id,
 							 context_path=context_path,
 							 resource_id=vid,
 							 time_length=time_length,
@@ -202,6 +200,8 @@ def create_video_event(	user,
 							 play_speed=play_speed,
 							 player_configuration=player_configuration)
 	new_object._user_record = user_record
+	new_object._root_context_record = root_context
+	new_object._entity_root_context_record = entity_root_context
 	db.session.add(new_object)
 
 	# Update our referenced field, if necessary.

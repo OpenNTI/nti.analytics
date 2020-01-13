@@ -82,9 +82,9 @@ def get_root_context_records(root_context):
 
 @interface.implementer(IAnalyticsRootContextResolver)
 def get_root_context_obj(root_context_record):
-	course_id = root_context_record.course_id
-	if course_id:
-		root_context = get_root_context(course_id)
+	root_context_id = root_context_record.root_context_id
+	if root_context_id:
+		root_context = get_root_context(root_context_id)
 	else:
 		entity_root_context_id = root_context_record.entity_root_context_id
 		root_context = get_user(entity_root_context_id)
