@@ -21,7 +21,7 @@ from nti.analytics.database import get_analytics_db
 from nti.analytics_database.interfaces import IAnalyticsRootContextResolver
 
 from nti.analytics.database.root_context import get_root_context
-from nti.analytics.database.root_context import get_root_context_id
+from nti.analytics.database.root_context import get_root_context_record
 
 from nti.analytics.database.users import get_user
 from nti.analytics.database.users import get_or_create_user
@@ -64,14 +64,20 @@ def get_context_path(context_path):
 
 
 def get_root_context_ids(root_context):
-	course_id = entity_root_context_id = None
+	context, entity = get_root_context_records(root_context)
+	context_id = context.context_id if context is not None else None
+	entity_id = entity.user_id if entity is not None else None
+	return context_id, entity_id
+
+
+def get_root_context_records(root_context):
+	course = entity = None
 	if IEntity.providedBy(root_context):
 		entity = get_or_create_user(root_context)
-		entity_root_context_id = entity.user_id
 	else:
 		db = get_analytics_db()
-		course_id = get_root_context_id(db, root_context, create=True)
-	return course_id, entity_root_context_id
+		course = get_root_context_record(db, root_context, create=True)
+	return course, entity
 
 
 @interface.implementer(IAnalyticsRootContextResolver)

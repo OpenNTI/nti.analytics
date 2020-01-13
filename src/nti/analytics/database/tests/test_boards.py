@@ -328,7 +328,7 @@ class TestTopics(NTIAnalyticsTestCase):
 		topic_view = results[0]
 		assert_that( topic_view.time_length, new_time_length )
 
-	def _do_test_rating(self, table, _rating_call ):
+	def _do_test_rating(self, table, _rating_call):
 		"For table and rating call, do basic tests."
 		results = self.session.query( table ).all()
 		assert_that( results, has_length( 0 ) )
@@ -341,8 +341,8 @@ class TestTopics(NTIAnalyticsTestCase):
 
 		delta = 1
 		new_user_ds_id = 111111
-		_rating_call( my_topic, new_user_ds_id,
-						test_session_id, event_time, delta )
+		_rating_call(my_topic, new_user_ds_id,
+					 test_session_id, event_time, delta )
 
 		results = self.session.query( table ).all()
 		assert_that( results, has_length( 1 ) )
@@ -364,11 +364,12 @@ class TestTopics(NTIAnalyticsTestCase):
 
 	@WithMockDSTrans
 	def test_likes(self):
-		self._do_test_rating( TopicLikes, db_boards.like_topic )
+		self._do_test_rating(TopicLikes, db_boards.like_topic)
 
 	@WithMockDSTrans
 	def test_favorites(self):
-		self._do_test_rating( TopicFavorites, db_boards.favorite_topic )
+		self._do_test_rating(TopicFavorites, db_boards.favorite_topic)
+
 
 class TestForumComments(NTIAnalyticsTestCase):
 
