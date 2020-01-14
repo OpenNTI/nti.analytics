@@ -24,6 +24,7 @@ from nti.analytics.database._utils import get_root_context_records
 from nti.analytics.database.query_utils import get_filtered_records
 from nti.analytics.database.query_utils import get_record_count_by_user
 
+from nti.analytics.database.resources import get_resource_id
 from nti.analytics.database.resources import get_resource_record
 
 from nti.analytics.database.users import get_or_create_user

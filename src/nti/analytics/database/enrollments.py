@@ -45,7 +45,7 @@ def create_course_catalog_view(user, nti_session, timestamp, context_path,
 
 	existing_record = _course_catalog_view_exists(db,
 												  user.user_id,
-												  course_record.course_id,
+												  course_record.context_id,
 												  timestamp)
 
 	if existing_record is not None:
@@ -55,7 +55,7 @@ def create_course_catalog_view(user, nti_session, timestamp, context_path,
 		else:
 			logger.debug('Course catalog view already exists (user=%s) (catalog=%s) (time_length=%s)',
 						 user.user_id,
-						 course_record.course_id,
+						 course_record.context_id,
 						 time_length)
 			return
 
@@ -95,9 +95,9 @@ def create_course_enrollment(user, nti_session, timestamp, course,
 	sid = nti_session
 	course_record = get_root_context_record(db, course, create=True)
 
-	if _enrollment_exists(db, user_record.user_id, course_record.course_id):
+	if _enrollment_exists(db, user_record.user_id, course_record.context_id):
 		logger.debug('Enrollment already exists (user=%s) (course=%s)',
-					user, course_record.course_id)
+					user, course_record.context_id)
 		return
 
 	timestamp = timestamp_type(timestamp)
@@ -127,9 +127,9 @@ def create_course_drop(user, nti_session, timestamp, course):
 	course_record = get_root_context_record(db, course, create=True)
 	timestamp = timestamp_type( timestamp )
 
-	if _course_drop_exists(db, user_record.user_id, course_record.course_id, timestamp):
+	if _course_drop_exists(db, user_record.user_id, course_record.context_id, timestamp):
 		logger.debug('Course drop already exists (user=%s) (course=%s)',
-					user, course_record.course_id)
+					user, course_record.context_id)
 		return
 
 	new_object = CourseDrops(session_id=sid,
@@ -139,7 +139,7 @@ def create_course_drop(user, nti_session, timestamp, course):
 	db.session.add(new_object)
 
 	db.session.query(CourseEnrollments).filter( CourseEnrollments.user_id == user_record.user_id,
-												CourseEnrollments.course_id == course_record.course_id ).delete()
+												CourseEnrollments.course_id == course_record.context_id ).delete()
 
 
 def get_enrollments_for_course( course ):
