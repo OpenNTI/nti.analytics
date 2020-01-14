@@ -163,7 +163,7 @@ def like_blog( blog, user, session_id, timestamp, delta ):
 	db = get_analytics_db()
 	blog_ds_id = get_ds_id( blog )
 	db_blog = db.session.query(BlogsCreated).filter(
-								BlogsCreated.blog_ds_id == blog_ds_id ).first()
+								BlogsCreated.blog_ds_id == blog_ds_id).first()
 
 	if db_blog is not None:
 		creator_id = db_blog.user_id
