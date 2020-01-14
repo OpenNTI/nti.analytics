@@ -76,7 +76,7 @@ def _create_course( db, course, course_ds_id ):
 					 duration=duration)
 	# For race conditions, let's just throw since we cannot really handle retrying
 	# gracefully at this level. A job-level retry should work though.
-	course._context_id_record = _get_next_id_record(course)
+	course._context_id_record = _get_next_id_record(db)
 	db.session.add(course)
 	logger.debug('Created course (course_id=%s) (course_ds_id=%s) (course=%s)',
 				 course.context_id, course_ds_id, course_name )
@@ -94,8 +94,8 @@ def _create_content_package( db, content_package, context_ds_id ):
 
 	book = Books(context_ds_id=context_ds_id,
 				 context_name=context_name,
-				 context_long_name=context_long_name )
-	book._context_id_record = _get_next_id_record(book)
+				 context_long_name=context_long_name)
+	book._context_id_record = _get_next_id_record(db)
 	db.session.add(book)
 	logger.debug('Created book (context_id=%s) (context_ds_id=%s) (content_package=%s)',
 				 book.context_id, context_ds_id, context_name )
