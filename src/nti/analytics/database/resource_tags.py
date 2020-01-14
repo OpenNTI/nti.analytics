@@ -40,7 +40,7 @@ from nti.analytics.database.query_utils import get_ratings_for_user_objects
 from nti.analytics.database.query_utils import get_replies_to_user as _get_replies_to_user
 from nti.analytics.database.query_utils import get_user_replies_to_others as _get_user_replies_to_others
 
-from nti.analytics.database.resources import get_resource_id
+from nti.analytics.database.resources import get_resource_record
 
 from nti.analytics.database.root_context import get_root_context_record
 
@@ -152,8 +152,7 @@ def create_note(user, nti_session, note):
 	user_record = get_or_create_user(user)
 	sid = nti_session
 	rid = get_ntiid_id(note.containerId)
-	rid = get_resource_id(db, rid, create=True)
-
+	resource_record = get_resource_record(db, rid, create=True)
 	note_ds_id = get_ds_id(note)
 
 	if _note_exists(db, note_ds_id):
@@ -185,10 +184,10 @@ def create_note(user, nti_session, note):
 	new_object = NotesCreated(	session_id=sid,
 								timestamp=timestamp,
 								note_ds_id=note_ds_id,
-								resource_id=rid,
 								parent_id=parent_id,
 								parent_user_id=parent_user_id)
 	_set_note_attributes( db, new_object, note, course )
+	new_object._resource = resource_record
 	new_object._root_context_record = root_context_record
 	new_object._user_record = user_record
 	db.session.add(new_object)
@@ -235,25 +234,25 @@ def _create_note_rating_record(db, table, user, session_id, timestamp, delta, no
 	"""
 	if user is not None:
 		user_record = get_or_create_user(user)
-		user_id = user_record.user_id
 		creator_id = note_record.user_id
 		note_id = note_record.note_id
 		course_id = note_record.course_id
 		entity_root_context_id = note_record.entity_root_context_id
 
 		note_rating_record = _get_note_rating_record(db, table,
-													 user_id, note_id)
+													 user_record.user_id,
+													 note_id)
 
 		if not note_rating_record and delta > 0:
 			# Create
 			timestamp = timestamp_type(timestamp)
 			note_rating_record = table(	note_id=note_id,
-										user_id=user_id,
 										timestamp=timestamp,
 										session_id=session_id,
 										creator_id=creator_id,
 										course_id=course_id,
 										entity_root_context_id=entity_root_context_id)
+			note_rating_record._user_record = user_record
 			db.session.add(note_rating_record)
 		elif note_rating_record and delta < 0:
 			# Delete
@@ -306,7 +305,7 @@ def create_note_view(user, nti_session, timestamp, context_path, root_context, n
 	user_record = get_or_create_user(user)
 	sid = nti_session
 	rid = get_ntiid_id(note.containerId)
-	rid = get_resource_id(db, rid, create=True)
+	resource_record = get_resource_record(db, rid, create=True)
 
 	note_ds_id = get_ds_id(note)
 	note_id = _get_note_id(db, note_ds_id)
@@ -329,8 +328,8 @@ def create_note_view(user, nti_session, timestamp, context_path, root_context, n
 	new_object = NotesViewed(session_id=sid,
 							 timestamp=timestamp,
 							 context_path=context_path,
-							 resource_id=rid,
 							 note_id=note_id)
+	new_object._resource = resource_record
 	new_object._user_record = user_record
 	new_object._root_context_record = root_context
 	new_object._entity_root_context_record = entity_root_context
@@ -347,7 +346,7 @@ def create_highlight(user, nti_session, highlight):
 	user_record = get_or_create_user(user)
 	sid = nti_session
 	rid = get_ntiid_id(highlight.containerId)
-	rid = get_resource_id(db, rid, create=True)
+	rid = get_resource_record(db, rid, create=True)
 	highlight_ds_id = get_ds_id(highlight)
 
 	if _highlight_exists(db, highlight_ds_id):
@@ -390,7 +389,7 @@ def create_bookmark(user, nti_session, bookmark):
 	user_record = get_or_create_user(user)
 	sid = nti_session
 	rid = get_ntiid_id(bookmark.containerId)
-	rid = get_resource_id(db, rid, create=True)
+	resource_record = get_resource_record(db, rid, create=True)
 
 	bookmark_ds_id = get_ds_id(bookmark)
 
@@ -403,10 +402,10 @@ def create_bookmark(user, nti_session, bookmark):
 	root_context_record = get_root_context_record(db, course, create=True)
 	timestamp = get_created_timestamp(bookmark)
 
-	new_object = BookmarksCreated(	session_id=sid,
-									timestamp=timestamp,
-									bookmark_ds_id=bookmark_ds_id,
-									resource_id=rid)
+	new_object = BookmarksCreated(session_id=sid,
+								  timestamp=timestamp,
+								  bookmark_ds_id=bookmark_ds_id)
+	new_object._resource = resource_record
 	new_object._user_record = user_record
 	new_object._root_context_record = root_context_record
 	db.session.add(new_object)

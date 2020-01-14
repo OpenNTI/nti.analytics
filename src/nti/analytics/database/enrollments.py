@@ -71,28 +71,26 @@ def create_course_catalog_view(user, nti_session, timestamp, context_path,
 
 
 def _create_enrollment_type(db, type_name):
-	enrollment_type = EnrollmentTypes( type_name=type_name )
+	enrollment_type = EnrollmentTypes(type_name=type_name)
 	db.session.add(enrollment_type)
-	db.session.flush()
 	return enrollment_type
 
 
-def _get_enrollment_type_id(db, type_name):
+def _get_enrollment_type(db, type_name):
 	enrollment_type = db.session.query(EnrollmentTypes).filter(
-									   EnrollmentTypes.type_name == type_name ).first()
-	return enrollment_type or _create_enrollment_type( db, type_name )
+									   EnrollmentTypes.type_name == type_name).first()
+	return enrollment_type or _create_enrollment_type(db, type_name)
 
 
 def _enrollment_exists( db, user_id, course_id ):
 	return db.session.query(CourseEnrollments ).filter(
 							CourseEnrollments.user_id == user_id,
-							CourseEnrollments.course_id == course_id ).count()
+							CourseEnrollments.course_id == course_id).count()
 
 
 def create_course_enrollment(user, nti_session, timestamp, course,
 							 enrollment_type_name):
 	db = get_analytics_db()
-
 	user_record = get_or_create_user(user)
 	sid = nti_session
 	course_record = get_root_context_record(db, course, create=True)
@@ -104,14 +102,13 @@ def create_course_enrollment(user, nti_session, timestamp, course,
 
 	timestamp = timestamp_type(timestamp)
 
-	enrollment_type = _get_enrollment_type_id( db, enrollment_type_name )
-	type_id = enrollment_type.type_id
+	enrollment_type = _get_enrollment_type(db, enrollment_type_name)
 
 	new_object = CourseEnrollments(session_id=sid,
-								   timestamp=timestamp,
-								   type_id=type_id )
+								   timestamp=timestamp)
 	new_object._user_record = user_record
 	new_object._course_record = course_record
+	new_object._type_record = enrollment_type
 	db.session.add(new_object)
 	return new_object
 

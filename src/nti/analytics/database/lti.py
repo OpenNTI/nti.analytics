@@ -17,7 +17,6 @@ from nti.analytics.database._utils import get_root_context_records
 from nti.analytics.database.query_utils import get_filtered_records
 from nti.analytics.database.query_utils import get_record_count_by_user
 
-from nti.analytics.database.resources import get_resource_id
 from nti.analytics.database.resources import get_resource_record
 
 from nti.analytics.database.users import get_or_create_user
@@ -32,7 +31,7 @@ def create_launch_record(user, course, asset, nti_session, context_path, timesta
     user_record = get_or_create_user(user)
     sid = nti_session
     rid = get_ntiid_id(asset)
-    rid = get_resource_id(db, rid, create=True)
+    resource_record = get_resource_record(db, rid, create=True)
     timestamp = timestamp_type(timestamp)
     context_path = get_context_path(context_path)
     root_context, entity_root_context = get_root_context_records(course)
@@ -40,8 +39,8 @@ def create_launch_record(user, course, asset, nti_session, context_path, timesta
     new_object = LTIAssetLaunches(session_id=sid,
                                   timestamp=timestamp,
                                   context_path=context_path,
-                                  resource_id=rid,
                                   time_length=None)
+    new_object._resource = resource_record
     new_object._user_record = user_record
     new_object._root_context_record = root_context
     new_object._entity_root_context_record = entity_root_context

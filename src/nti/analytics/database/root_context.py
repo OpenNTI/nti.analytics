@@ -26,14 +26,13 @@ from nti.contenttypes.courses.interfaces import ICourseCatalogEntry
 from nti.contenttypes.courses.interfaces import ICourseInstance
 
 
-def _get_next_id( db ):
+def _get_next_id_record(db):
 	"""
 	Return the next id in our pseudo-sequence.
 	"""
 	obj = _RootContextId()
-	db.session.add( obj )
-	db.session.flush()
-	return obj.context_id
+	db.session.add(obj)
+	return obj
 
 
 def _get_course_long_name( context_object ):
@@ -56,7 +55,6 @@ def _course_catalog( course ):
 
 
 def _create_course( db, course, course_ds_id ):
-	context_id = _get_next_id( db )
 	course_name = get_root_context_name( course )
 	course_long_name = _get_course_long_name( course )
 	catalog = _course_catalog( course )
@@ -68,8 +66,7 @@ def _create_course( db, course, course_ds_id ):
 	term = getattr( course_sid, 'Term', None )
 	crn = getattr( course_sid, 'CRN', None )
 
-	course = Courses(context_id=context_id,
-					 context_ds_id=course_ds_id,
+	course = Courses(context_ds_id=course_ds_id,
 					 context_name=course_name,
 					 context_long_name=course_long_name,
 					 start_date=start_date,
@@ -79,10 +76,10 @@ def _create_course( db, course, course_ds_id ):
 					 duration=duration)
 	# For race conditions, let's just throw since we cannot really handle retrying
 	# gracefully at this level. A job-level retry should work though.
-	db.session.add( course )
-	db.session.flush()
-	logger.debug( 	'Created course (course_id=%s) (course_ds_id=%s) (course=%s)',
-					course.context_id, course_ds_id, course_name )
+	course._context_id_record = _get_next_id_record(course)
+	db.session.add(course)
+	logger.debug('Created course (course_id=%s) (course_ds_id=%s) (course=%s)',
+				 course.context_id, course_ds_id, course_name )
 	return course
 
 
@@ -92,18 +89,16 @@ def _get_content_package_long_name( context_object ):
 
 
 def _create_content_package( db, content_package, context_ds_id ):
-	context_id = _get_next_id( db )
 	context_name = get_root_context_name( content_package )
 	context_long_name = _get_content_package_long_name( content_package )
 
-	book = Books( 	context_id=context_id,
-					context_ds_id=context_ds_id,
-					context_name=context_name,
- 					context_long_name=context_long_name )
-	db.session.add( book )
-	db.session.flush()
-	logger.debug( 	'Created book (context_id=%s) (context_ds_id=%s) (content_package=%s)',
-					book.context_id, context_ds_id, context_name )
+	book = Books(context_ds_id=context_ds_id,
+				 context_name=context_name,
+				 context_long_name=context_long_name )
+	book._context_id_record = _get_next_id_record(book)
+	db.session.add(book)
+	logger.debug('Created book (context_id=%s) (context_ds_id=%s) (content_package=%s)',
+				 book.context_id, context_ds_id, context_name )
 	return book
 
 

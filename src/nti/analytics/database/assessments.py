@@ -45,7 +45,7 @@ from nti.analytics.database.query_utils import get_record_count_by_user
 
 from nti.analytics.database.mime_types import build_mime_type_records
 
-from nti.analytics.database.resources import get_resource_id
+from nti.analytics.database.resources import get_resource_record
 
 from nti.analytics.database.root_context import get_root_context_record
 
@@ -541,10 +541,10 @@ def create_assessment_view(table, user, nti_session, timestamp, course,
 	db = get_analytics_db()
 	user_record = get_or_create_user( user )
 	sid = nti_session
-	rid = None
+	resource_record = None
 	if resource is not None:
-		rid = get_ntiid_id( resource )
-		rid = get_resource_id( db, rid, create=True )
+		rid = get_ntiid_id(resource)
+		resource_record = get_resource_record(db, rid, create=True)
 
 	root_context_record = get_root_context_record(db, course, create=True)
 	timestamp = timestamp_type( timestamp )
@@ -566,9 +566,9 @@ def create_assessment_view(table, user, nti_session, timestamp, course,
 	new_object = table( session_id=sid,
 						timestamp=timestamp,
 						context_path=context_path,
-						resource_id=rid,
 						time_length=time_length)
 	setattr(new_object, assessment_column_name, assessment_id)
+	new_object._resource = resource_record
 	new_object._root_context_record = root_context_record
 	new_object._user_record = user_record
 	db.session.add(new_object)

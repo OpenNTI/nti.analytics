@@ -24,7 +24,6 @@ from nti.analytics.database._utils import get_root_context_records
 from nti.analytics.database.query_utils import get_filtered_records
 from nti.analytics.database.query_utils import get_record_count_by_user
 
-from nti.analytics.database.resources import get_resource_id
 from nti.analytics.database.resources import get_resource_record
 
 from nti.analytics.database.users import get_or_create_user
@@ -52,10 +51,11 @@ def _create_view(table, user, nti_session, timestamp, root_context, context_path
 	user_record = get_or_create_user( user )
 	sid = nti_session
 	rid = get_ntiid_id( resource )
-	rid = get_resource_id( db, rid, create=True )
+	resource_record = get_resource_record(db, rid, create=True)
 	timestamp = timestamp_type( timestamp )
 
-	existing_record = _resource_view_exists(db, table, user_record.user_id, rid, timestamp)
+	existing_record = _resource_view_exists(db, table, user_record.user_id,
+											resource_record.resource_id, timestamp)
 	if existing_record is not None:
 		if should_update_event(existing_record, time_length):
 			existing_record.time_length = time_length
@@ -70,8 +70,8 @@ def _create_view(table, user, nti_session, timestamp, root_context, context_path
 	new_object = table(session_id=sid,
 					   timestamp=timestamp,
 					   context_path=context_path,
-					   resource_id=rid,
 					   time_length=time_length)
+	new_object._resource = resource_record
 	new_object._user_record = user_record
 	new_object._root_context_record = root_context
 	new_object._entity_root_context_record = entity_root_context
@@ -101,17 +101,19 @@ def _video_play_speed_exists( db, user_id, resource_id, timestamp, video_time ):
 							VideoPlaySpeedEvents.video_time == video_time ).first()
 
 
-def create_play_speed_event( user, nti_session, timestamp, root_context, resource_id,
-							video_time, old_play_speed, new_play_speed ):
+def create_play_speed_event(user, nti_session, timestamp, root_context, resource_id,
+							video_time, old_play_speed, new_play_speed):
 	db = get_analytics_db()
 	user = get_or_create_user( user )
 	sid = nti_session
 	vid = get_ntiid_id( resource_id )
-	vid = get_resource_id( db, vid, create=True )
+	resource_record = get_resource_record(db, vid, create=True)
 
 	timestamp = timestamp_type( timestamp )
 
-	existing_record = _video_play_speed_exists(db, user.user_id, vid, timestamp, video_time)
+	existing_record = _video_play_speed_exists(db, user.user_id,
+											   resource_record.resource_id,
+											   timestamp, video_time)
 
 	if existing_record is not None:
 		# Should only have one record for timestamp, video_time, user, video.
@@ -126,11 +128,11 @@ def create_play_speed_event( user, nti_session, timestamp, root_context, resourc
 
 	new_object = VideoPlaySpeedEvents(session_id=sid,
 									  timestamp=timestamp,
-									  resource_id=vid,
 									  video_view_id=video_view_id,
 									  video_time=video_time,
 									  old_play_speed=old_play_speed,
 									  new_play_speed=new_play_speed)
+	new_object._resource = resource_record
 	new_object._user_record = user
 	new_object._root_context_record = root_context
 	new_object._entity_root_context_record = entity_root_context
@@ -160,11 +162,14 @@ def create_video_event(	user,
 	user_record = get_or_create_user(user)
 	sid = nti_session
 	vid = get_ntiid_id( video_resource )
-	vid = get_resource_id( db, vid, create=True, max_time_length=max_time_length )
+	resource_record = get_resource_record(db, vid, create=True,
+										  max_time_length=max_time_length)
 
 	timestamp = timestamp_type( timestamp )
 
-	existing_record = _video_view_exists(db, user_record.user_id, vid, timestamp, video_event_type)
+	existing_record = _video_view_exists(db, user_record.user_id,
+										 resource_record.resource_id,
+										 timestamp, video_event_type)
 
 	if 		time_length is None \
 		and video_start_time is not None \
@@ -191,7 +196,6 @@ def create_video_event(	user,
 	new_object = VideoEvents(session_id=sid,
 							 timestamp=timestamp,
 							 context_path=context_path,
-							 resource_id=vid,
 							 time_length=time_length,
 							 video_event_type=video_event_type,
 							 video_start_time=video_start_time,
@@ -199,6 +203,7 @@ def create_video_event(	user,
 							 with_transcript=with_transcript,
 							 play_speed=play_speed,
 							 player_configuration=player_configuration)
+	new_object._resource = resource_record
 	new_object._user_record = user_record
 	new_object._root_context_record = root_context
 	new_object._entity_root_context_record = entity_root_context
@@ -232,7 +237,7 @@ def get_resource_views_for_ntiid(resource_ntiid, user=None,
 								 root_context=None, **kwargs):
 	results = ()
 	db = get_analytics_db()
-	resource_id = get_resource_id( db, resource_ntiid )
+	resource_id = get_resource_id(db, resource_ntiid)
 	if resource_id is not None:
 		filters = ( ResourceViews.resource_id == resource_id, )
 		view_records = get_filtered_records(user,

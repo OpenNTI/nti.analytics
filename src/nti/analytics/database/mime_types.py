@@ -4,10 +4,9 @@
 .. $Id$
 """
 
-from __future__ import print_function, unicode_literals, absolute_import, division
-__docformat__ = "restructuredtext en"
-
-logger = __import__('logging').getLogger(__name__)
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
 
 from zope.file.interfaces import IFile
 
@@ -19,6 +18,9 @@ from nti.dataserver.interfaces import ICanvasURLShape
 
 from nti.dataserver.interfaces import ICanvas
 
+logger = __import__('logging').getLogger(__name__)
+
+
 def get_item_mime_type( obj ):
 	try:
 		mime_type = obj.contentType
@@ -27,15 +29,17 @@ def get_item_mime_type( obj ):
 					or 	getattr( obj, 'mime_type', None )
 	return mime_type
 
+
 def _add_mime_type_record( mime_type, mime_dict, db, factory ):
 	if mime_type is not None:
 		record = mime_dict.get( mime_type )
 		if record is None:
-			mime_type_id = get_mime_type_id( db, mime_type )
+			mime_type_id = get_mime_type_id(db, mime_type)
 			record = factory( file_mime_type_id=mime_type_id,
 					 		  count=0 )
 			mime_dict[mime_type] = record
 		record.count += 1
+
 
 def build_mime_type_records( db, obj, factory ):
 	"""
@@ -61,17 +65,26 @@ def build_mime_type_records( db, obj, factory ):
 		result = mime_dict.values()
 	return result
 
-def get_mime_type_id( db, mime_type, create=True ):
+
+def get_mime_type_record(db, mime_type, create=True):
 	"""
 	Get the mime type database id, optionally creating it.
 	"""
 	result = db.session.query(FileMimeTypes).filter(
-							  FileMimeTypes.mime_type == mime_type ).first()
+							  FileMimeTypes.mime_type == mime_type).first()
 	if result is None and create:
 		result = FileMimeTypes( mime_type=mime_type )
-		db.session.add( result )
-		db.session.flush()
-	return result.file_mime_type_id
+		db.session.add(result)
+	return result
+
+
+def get_mime_type_id(db, mime_type, create=True):
+	"""
+	Get the mime type database id, optionally creating it.
+	"""
+	result = get_mime_type_record(db, mime_type, create)
+	return result and result.file_mime_type_id
+
 
 def get_all_mime_types():
 	"""
