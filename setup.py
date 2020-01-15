@@ -6,6 +6,7 @@ VERSION = '0.0.0'
 entry_points = {
     'console_scripts': [
         "nti_analytics_migrator = nti.analytics.utils.ds_migrator:main",
+        "nti_analytics_database_migrator = nti.analytics.utils.database_migrator:main",
         "nti_analytics_event_uploader = nti.analytics.utils.event_uploader:main",
         "nti_analytics_video_duration = nti.analytics.utils.upload_video_durations:main",
     ],
