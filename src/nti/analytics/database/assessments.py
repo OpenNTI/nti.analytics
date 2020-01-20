@@ -158,7 +158,7 @@ def _get_self_assessment_id( db, submission_id ):
 _self_assessment_exists = _get_self_assessment_id
 
 
-def create_self_assessment_taken( user, nti_session, timestamp, course, submission ):
+def create_self_assessment_taken(user, nti_session, timestamp, course, submission):
 	db = get_analytics_db()
 	user_record = get_or_create_user( user )
 	sid = nti_session
@@ -173,7 +173,7 @@ def create_self_assessment_taken( user, nti_session, timestamp, course, submissi
 
 	self_assessment_id = get_ntiid_id( submission.questionSetId )
 	# We likely will not have a grader.
-	grader = _get_grader_id( submission )
+	grader = _get_grader_record(submission)
 	# TODO: As a QAssessedQuestionSet. we will not have a duration.
 	# I don't believe the submission was saved; so we cannot get it back.
 	# We'd have to transfer it during adaptation perhaps.
@@ -181,10 +181,17 @@ def create_self_assessment_taken( user, nti_session, timestamp, course, submissi
 
 	new_object = SelfAssessmentsTaken(session_id=sid,
 									  timestamp=timestamp,
+<<<<<<< Updated upstream
 									  assignment_id=self_assessment_id,
 									  submission_id=submission_id,
 									  time_length=time_length)
 	new_object._root_context_record = root_context_record
+=======
+									  course_id=course_id,
+									  assignment_id=self_assessment_id,
+									  submission_id=submission_id,
+									  time_length=time_length)
+>>>>>>> Stashed changes
 	new_object._user_record = user_record
 	db.session.add(new_object)
 	self_assessment_id = new_object.self_assessment_id
@@ -215,32 +222,38 @@ def create_self_assessment_taken( user, nti_session, timestamp, course, submissi
 												  question_part_id=idx,
 												  is_correct=is_correct,
 												  grade=grade,
+<<<<<<< Updated upstream
 												  grader=grader,
 												  submission=response,
 												  time_length=time_length )
 			grade_details._user_record = user_record
+=======
+												  submission=response,
+												  time_length=time_length)
+			grade_details._user_record = user_record
+			grade_details._grader_record = grader
+>>>>>>> Stashed changes
 			new_object.details.append(grade_details)
 	return new_object
 
 
-def _get_grade( submission ):
-	return IGrade( submission, None )
+def _get_grade(submission):
+	return IGrade(submission, None)
 
 
-def _get_grader_id( submission ):
+def _get_grader_record( submission ):
 	"""
 	Returns a grader id for the submission if one exists (otherwise None).
 	Currently, we have a one-to-one mapping between submission and grader.  That
 	would need to change for things like peer grading.
 	"""
 	grader = None
-	graded_submission = _get_grade( submission )
+	grade_obj = _get_grade( submission )
 	# If None, we're pending right?
-	if graded_submission is not None:
-		grader = get_creator( graded_submission )
+	if grade_obj is not None:
+		grader = get_creator(grade_obj)
 		if grader is not None:
-			grader = get_or_create_user(grader )
-			grader = grader.user_id
+			grader = get_or_create_user(grader)
 	return grader
 
 
@@ -277,6 +290,7 @@ def create_assignment_taken( user, nti_session, timestamp, course, submission ):
 	time_length = _get_duration( submission_obj )
 	is_late = _is_late( course, submission )
 
+<<<<<<< Updated upstream
 	new_object = AssignmentsTaken(session_id=sid,
 								  timestamp=timestamp,
 								  assignment_id=assignment_id,
@@ -284,6 +298,15 @@ def create_assignment_taken( user, nti_session, timestamp, course, submission ):
 								  is_late=is_late,
 								  time_length=time_length)
 	new_object._root_context_record = root_context_record
+=======
+	new_object = AssignmentsTaken( 	session_id=sid,
+									timestamp=timestamp,
+									course_id=course_id,
+									assignment_id=assignment_id,
+									submission_id=submission_id,
+									is_late=is_late,
+									time_length=time_length )
+>>>>>>> Stashed changes
 	new_object._user_record = user_record
 	db.session.add(new_object)
 	assignment_taken_id = new_object.assignment_taken_id
@@ -334,15 +357,21 @@ def create_assignment_taken( user, nti_session, timestamp, course, submission ):
 		grade = graded_submission.grade
 		grade_num = _get_grade_val( grade )
 
-		grader = _get_grader_id( submission )
+		grader = _get_grader_record( submission )
 
 		graded = AssignmentGrades( 	session_id=sid,
 									timestamp=timestamp,
 									assignment_taken_id=assignment_taken_id,
 									grade=grade,
+<<<<<<< Updated upstream
 									grade_num=grade_num,
 									grader=grader )
 		graded._user_record = user_record
+=======
+									grade_num=grade_num)
+		graded._user_record = user_record
+		graded._grader_record = grader
+>>>>>>> Stashed changes
 		new_object.grade = graded
 
 		# Submission Part Grades
@@ -362,9 +391,15 @@ def create_assignment_taken( user, nti_session, timestamp, course, submission ):
 															question_id=question_id,
 															question_part_id=idx,
 															is_correct=is_correct,
+<<<<<<< Updated upstream
 															grade=str(grade),
 															grader=grader )
 					grade_details._user_record = user_record
+=======
+															grade=str(grade))
+					grade_details._user_record = user_record
+					grade_details._grader_record = grader
+>>>>>>> Stashed changes
 					parts.grade = grade_details
 					new_object.grade_details.append(grade_details)
 	return new_object
@@ -376,8 +411,7 @@ def grade_submission( user, nti_session, timestamp, grader, graded_val, submissi
 	# what we are expecting here.
 
 	db = get_analytics_db()
-	grader = get_or_create_user( grader )
-	grader_id  = grader.user_id
+	grader = get_or_create_user(grader)
 	submission_id = get_ds_id( submission )
 	assignment_taken = db.session.query(AssignmentsTaken).filter(AssignmentsTaken.submission_id == submission_id).first()
 
@@ -400,17 +434,27 @@ def grade_submission( user, nti_session, timestamp, grader, graded_val, submissi
 		grade_entry.grade = graded_val
 		grade_entry.grade_num = grade_num
 		grade_entry.timestamp = timestamp
-		grade_entry.grader = grader_id
+		grade_entry._grader_record = grader
 	else:
 		# New grade
 		user = get_or_create_user(user)
 		sid = nti_session
+<<<<<<< Updated upstream
 		new_object = AssignmentGrades( 	session_id=sid,
 										timestamp=timestamp,
 										grade=graded_val,
 										grade_num=grade_num,
 										grader=grader_id )
 		new_object._user_record = user
+=======
+
+		new_object = AssignmentGrades(session_id=sid,
+									  timestamp=timestamp,
+									  grade=graded_val,
+									  grade_num=grade_num)
+		new_object._user_recod = user
+		new_object._grader_record = grader
+>>>>>>> Stashed changes
 		assignment_taken.grade = new_object
 
 
