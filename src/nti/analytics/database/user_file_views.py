@@ -35,15 +35,14 @@ def create_file_view(file_obj, session_id, timestamp, user, referrer, creator):
 	timestamp = timestamp_type( timestamp )
 
 	creator = get_or_create_user( creator )
-	creator_id = creator.user_id
 	mime_type = get_item_mime_type( file_obj )
 	mime_type_record = get_mime_type_record(db, mime_type)
 
 	file_view = UserFileUploadViewEvents(session_id=session_id,
 										 timestamp=timestamp,
 										 referrer=referrer,
-										 creator_id=creator_id,
 										 file_ds_id=file_ds_id)
+	file_view._creator_record = creator
 	file_view._mime_type = mime_type_record
 	file_view._user_record = user_record
 	db.session.add(file_view)

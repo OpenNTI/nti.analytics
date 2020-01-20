@@ -675,7 +675,7 @@ def _resolve_assignment_view( row, user=None, course=None ):
 
 
 def _resolve_assignment_taken_view( row, user=None, course=None ):
-    return _resolve_view( row, course, user )
+	return _resolve_view( row, course, user )
 
 
 def get_self_assessment_views( user, course=None, **kwargs ):
