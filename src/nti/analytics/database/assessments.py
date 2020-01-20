@@ -181,17 +181,10 @@ def create_self_assessment_taken(user, nti_session, timestamp, course, submissio
 
 	new_object = SelfAssessmentsTaken(session_id=sid,
 									  timestamp=timestamp,
-<<<<<<< Updated upstream
 									  assignment_id=self_assessment_id,
 									  submission_id=submission_id,
 									  time_length=time_length)
 	new_object._root_context_record = root_context_record
-=======
-									  course_id=course_id,
-									  assignment_id=self_assessment_id,
-									  submission_id=submission_id,
-									  time_length=time_length)
->>>>>>> Stashed changes
 	new_object._user_record = user_record
 	db.session.add(new_object)
 	self_assessment_id = new_object.self_assessment_id
@@ -222,17 +215,10 @@ def create_self_assessment_taken(user, nti_session, timestamp, course, submissio
 												  question_part_id=idx,
 												  is_correct=is_correct,
 												  grade=grade,
-<<<<<<< Updated upstream
-												  grader=grader,
-												  submission=response,
-												  time_length=time_length )
-			grade_details._user_record = user_record
-=======
 												  submission=response,
 												  time_length=time_length)
 			grade_details._user_record = user_record
 			grade_details._grader_record = grader
->>>>>>> Stashed changes
 			new_object.details.append(grade_details)
 	return new_object
 
@@ -290,7 +276,6 @@ def create_assignment_taken( user, nti_session, timestamp, course, submission ):
 	time_length = _get_duration( submission_obj )
 	is_late = _is_late( course, submission )
 
-<<<<<<< Updated upstream
 	new_object = AssignmentsTaken(session_id=sid,
 								  timestamp=timestamp,
 								  assignment_id=assignment_id,
@@ -298,15 +283,6 @@ def create_assignment_taken( user, nti_session, timestamp, course, submission ):
 								  is_late=is_late,
 								  time_length=time_length)
 	new_object._root_context_record = root_context_record
-=======
-	new_object = AssignmentsTaken( 	session_id=sid,
-									timestamp=timestamp,
-									course_id=course_id,
-									assignment_id=assignment_id,
-									submission_id=submission_id,
-									is_late=is_late,
-									time_length=time_length )
->>>>>>> Stashed changes
 	new_object._user_record = user_record
 	db.session.add(new_object)
 	assignment_taken_id = new_object.assignment_taken_id
@@ -363,15 +339,9 @@ def create_assignment_taken( user, nti_session, timestamp, course, submission ):
 									timestamp=timestamp,
 									assignment_taken_id=assignment_taken_id,
 									grade=grade,
-<<<<<<< Updated upstream
-									grade_num=grade_num,
-									grader=grader )
-		graded._user_record = user_record
-=======
 									grade_num=grade_num)
 		graded._user_record = user_record
 		graded._grader_record = grader
->>>>>>> Stashed changes
 		new_object.grade = graded
 
 		# Submission Part Grades
@@ -391,15 +361,9 @@ def create_assignment_taken( user, nti_session, timestamp, course, submission ):
 															question_id=question_id,
 															question_part_id=idx,
 															is_correct=is_correct,
-<<<<<<< Updated upstream
-															grade=str(grade),
-															grader=grader )
-					grade_details._user_record = user_record
-=======
 															grade=str(grade))
 					grade_details._user_record = user_record
 					grade_details._grader_record = grader
->>>>>>> Stashed changes
 					parts.grade = grade_details
 					new_object.grade_details.append(grade_details)
 	return new_object
@@ -439,22 +403,12 @@ def grade_submission( user, nti_session, timestamp, grader, graded_val, submissi
 		# New grade
 		user = get_or_create_user(user)
 		sid = nti_session
-<<<<<<< Updated upstream
-		new_object = AssignmentGrades( 	session_id=sid,
-										timestamp=timestamp,
-										grade=graded_val,
-										grade_num=grade_num,
-										grader=grader_id )
-		new_object._user_record = user
-=======
-
 		new_object = AssignmentGrades(session_id=sid,
 									  timestamp=timestamp,
 									  grade=graded_val,
 									  grade_num=grade_num)
 		new_object._user_recod = user
 		new_object._grader_record = grader
->>>>>>> Stashed changes
 		assignment_taken.grade = new_object
 
 
