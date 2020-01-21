@@ -43,7 +43,7 @@ def create_file_view(file_obj, session_id, timestamp, user, referrer, creator):
 										 referrer=referrer,
 										 file_ds_id=file_ds_id)
 	file_view._creator_record = creator
-	file_view._mime_type = mime_type_record
+	file_view._file_mime_type = mime_type_record
 	file_view._user_record = user_record
 	db.session.add(file_view)
 	logger.info('Created file view event (user=%s) (file=%s)',
