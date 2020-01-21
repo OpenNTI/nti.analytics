@@ -78,7 +78,7 @@ def chat_joined(user, nti_session, timestamp, chat):
 
 def _get_chat_members(db, chat_id):
 	results = db.session.query(ChatsJoined).filter(
-								ChatsJoined.chat_id == chat_id).all()
+							   ChatsJoined.chat_id == chat_id).all()
 	return results
 
 
@@ -89,6 +89,7 @@ def update_chat(timestamp, chat, new_members):
 	chat_id = _get_chat_id(db, chat_ds_id)
 
 	old_members = _get_chat_members(db, chat_id)
+	old_members = [x._user_record for x in old_members]
 	members_to_add, _ = _find_members(new_members, old_members)
 
 	for new_member in members_to_add:
@@ -188,7 +189,7 @@ def remove_dynamic_friends_member(user, nti_session, timestamp, dynamic_friends_
 	new_object._user_record = user
 	new_object._target_record = target
 	db.session.add(new_object)
-	_delete_dynamic_friend_list_member(db, dfl_id, target.target_id)
+	_delete_dynamic_friend_list_member(db, dfl_id, target.user_id)
 
 
 # FLs
@@ -235,8 +236,8 @@ def remove_friends_list(timestamp, friends_list_ds_id):
 
 def _delete_friend_list_member(db, friends_list_id, target_id):
 	friend = db.session.query(FriendsListsMemberAdded).filter(
-									FriendsListsMemberAdded.friends_list_id == friends_list_id,
-									FriendsListsMemberAdded.target_id == target_id).first()
+							  FriendsListsMemberAdded.friends_list_id == friends_list_id,
+							  FriendsListsMemberAdded.target_id == target_id).first()
 	db.session.delete(friend)
 
 
@@ -301,7 +302,7 @@ def update_contacts(user, nti_session, timestamp, friends_list):
 		new_object._user_record = user
 		new_object._target_record = old_member
 		db.session.add(new_object)
-		_delete_contact_added(db, user.user_id, old_member)
+		_delete_contact_added(db, user.user_id, old_member.user_id)
 
 	return len(members_to_add) - len(members_to_remove)
 
@@ -343,7 +344,7 @@ def update_friends_list(user, nti_session, timestamp, friends_list):
 		new_object._user_record = user
 		new_object._target_record = old_member
 		db.session.add(new_object)
-		_delete_friend_list_member(db, friends_list_id, old_member)
+		_delete_friend_list_member(db, friends_list_id, old_member.user_id)
 
 	return len(members_to_add) - len(members_to_remove)
 

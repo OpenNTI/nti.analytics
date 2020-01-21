@@ -52,7 +52,7 @@ class TestSocial(AnalyticsTestBase):
 		test_chat_id = 1
 		test_chat_ds_id = 999
 
-		db_social.create_chat_initiated( test_user_ds_id, test_session_id, test_chat_ds_id )
+		db_social.create_chat_initiated( self.db_user, test_session_id, test_chat_ds_id )
 		results = self.session.query(ChatsInitiated).all()
 		assert_that( results, has_length( 1 ) )
 
@@ -63,7 +63,7 @@ class TestSocial(AnalyticsTestBase):
 		assert_that( new_chat.chat_id, is_( test_chat_id ) )
 
 		# Chat joined
-		db_social.chat_joined( test_user_ds_id, test_session_id, datetime.now(), test_chat_ds_id )
+		db_social.chat_joined( self.db_user, test_session_id, datetime.now(), test_chat_ds_id )
 		results = self.session.query(ChatsJoined).all()
 		assert_that( results, has_length( 1 ) )
 
@@ -216,7 +216,7 @@ class TestSocial(AnalyticsTestBase):
 		test_fl_id = 1
 		test_fl_ds_id = 999
 		# Create FL
-		db_social.create_friends_list( test_user_ds_id, test_session_id, datetime.now(), test_fl_ds_id )
+		db_social.create_friends_list( self.db_user, test_session_id, datetime.now(), test_fl_ds_id )
 		results = self.session.query(FriendsListsCreated).all()
 		assert_that( results, has_length( 1 ) )
 
@@ -233,52 +233,52 @@ class TestSocial(AnalyticsTestBase):
 		friend3 = 1001
 		friends = [ friend1, friend2 ]
 		fl = MockFL( None, intid=test_fl_ds_id, vals=friends )
-		db_social.update_friends_list( test_user_ds_id, test_session_id, datetime.now(), fl )
+		db_social.update_friends_list( self.db_user, test_session_id, datetime.now(), fl )
 
-		friend1_id = get_or_create_user( friend1 ).user_id
-		friend2_id = get_or_create_user( friend2 ).user_id
-		friend3_id = get_or_create_user( friend3 ).user_id
+		friend1_record = get_or_create_user(friend1)
+		friend2_record = get_or_create_user(friend2)
+		friend3_record = get_or_create_user(friend3)
 
 		results = self.session.query(FriendsListsMemberAdded).all()
 		assert_that( results, has_length( 2 ) )
 		results = _get_friends_list_members( self.db, test_fl_id )
 		assert_that( results, has_length( 2 ) )
 		results = [x.target_id for x in results]
-		assert_that( results, contains_inanyorder( friend1_id, friend2_id ) )
+		assert_that( results, contains_inanyorder( friend1_record.user_id, friend2_record.user_id ) )
 
 		# Add third friend
 		friends.append( friend3 )
-		db_social.update_friends_list( test_user_ds_id, test_session_id, datetime.now(), fl )
+		db_social.update_friends_list( self.db_user, test_session_id, datetime.now(), fl )
 		results = self.session.query(FriendsListsMemberAdded).all()
 		assert_that( results, has_length( 3 ) )
 		results = _get_friends_list_members( self.db, test_fl_id )
 		assert_that( results, has_length( 3 ) )
 		results = [x.target_id for x in results]
-		assert_that( results, contains_inanyorder( friend1_id, friend2_id, friend3_id ) )
+		assert_that( results, contains_inanyorder(friend1_record.user_id, friend2_record.user_id, friend3_record.user_id) )
 
 		# Leave FL
 		friends.remove( friend1 )
-		db_social.update_friends_list( test_user_ds_id, test_session_id, datetime.now(), fl )
+		db_social.update_friends_list( self.db_user, test_session_id, datetime.now(), fl )
 		results = self.session.query(FriendsListsMemberAdded).all()
 		assert_that( results, has_length( 2 ) )
 		results = _get_friends_list_members( self.db, test_fl_id )
 		assert_that( results, has_length( 2 ) )
 		results = [x.target_id for x in results]
-		assert_that( results, contains_inanyorder( friend2_id, friend3_id ) )
+		assert_that( results, contains_inanyorder(friend2_record.user_id, friend3_record.user_id) )
 
 		results = self.session.query(FriendsListsMemberRemoved).all()
 		assert_that( results, has_length( 1 ) )
 
 		friend_removed = self.session.query(FriendsListsMemberRemoved).one()
 		assert_that( friend_removed.user_id, is_( 1 ) )
-		assert_that( friend_removed.target_id, is_( friend1_id ) )
+		assert_that( friend_removed.target_id, is_(friend1_record.user_id) )
 		assert_that( friend_removed.session_id, is_( test_session_id ) )
 		assert_that( friend_removed.timestamp, not_none() )
 		assert_that( friend_removed.friends_list_id, is_( test_fl_id ) )
 
 		# Empty FL
 		friends[:] = []
-		db_social.update_friends_list( test_user_ds_id, test_session_id, datetime.now(), fl )
+		db_social.update_friends_list(test_user_ds_id, test_session_id, datetime.now(), fl)
 		results = self.session.query(FriendsListsMemberAdded).all()
 		assert_that( results, has_length( 0 ) )
 		results = _get_friends_list_members( self.db, test_fl_id )
@@ -304,12 +304,12 @@ class TestSocial(AnalyticsTestBase):
 		test_fl_ds_id = 999
 		event_time = datetime.now()
 		# Create FL
-		db_social.create_friends_list( test_user_ds_id, test_session_id, event_time, test_fl_ds_id )
+		db_social.create_friends_list( self.db_user, test_session_id, event_time, test_fl_ds_id )
 
 		results = self.session.query( FriendsListsCreated ).all()
 		assert_that( results, has_length( 1 ) )
 
-		db_social.create_friends_list( test_user_ds_id, test_session_id, event_time, test_fl_ds_id )
+		db_social.create_friends_list( self.db_user, test_session_id, event_time, test_fl_ds_id )
 
 		results = self.session.query( FriendsListsCreated ).all()
 		assert_that( results, has_length( 1 ) )
@@ -324,22 +324,22 @@ class TestSocial(AnalyticsTestBase):
 		new_contact1 = 999
 		new_contact2 = 1000
 		contacts = [ new_contact1, new_contact2 ]
-		result = db_social.update_contacts( test_user_ds_id, test_session_id, datetime.now(), contacts )
+		result = db_social.update_contacts( self.db_user, test_session_id, datetime.now(), contacts )
 		results = self.session.query(ContactsAdded).all()
 		assert_that( results, has_length( 2 ) )
 		assert_that( result, is_( 2 ) )
 
-		nc1_id = get_or_create_user( new_contact1 ).user_id
-		nc2_id = get_or_create_user( new_contact2 ).user_id
+		nc1_record = get_or_create_user(new_contact1)
+		nc2_record = get_or_create_user(new_contact2)
 
 		db_contacts = _get_contacts( self.db, uid=1 )
 		assert_that( db_contacts, has_length( 2 ) )
 		db_contacts = [x.target_id for x in db_contacts]
-		assert_that( db_contacts, contains_inanyorder( nc1_id, nc2_id ) )
+		assert_that(db_contacts, contains_inanyorder(nc1_record.user_id, nc2_record.user_id))
 
 		# Remove contact
 		contacts = [ new_contact1 ]
-		result = db_social.update_contacts( test_user_ds_id, test_session_id, datetime.now(), contacts )
+		result = db_social.update_contacts( self.db_user, test_session_id, datetime.now(), contacts )
 		assert_that( result, is_( -1 ) )
 		results = self.session.query(ContactsAdded).all()
 		assert_that( results, has_length( 1 ) )
@@ -349,13 +349,13 @@ class TestSocial(AnalyticsTestBase):
 		# new_contact2 removed
 		contact_removed = self.session.query(ContactsRemoved).one()
 		assert_that( contact_removed.user_id, is_( 1 ) )
-		assert_that( contact_removed.target_id, is_( nc2_id ) )
+		assert_that( contact_removed.target_id, is_(nc2_record.user_id) )
 		assert_that( contact_removed.session_id, is_( test_session_id ) )
 		assert_that( contact_removed.timestamp, not_none() )
 
 		# Empty contacts
 		contacts = []
-		result = db_social.update_contacts( test_user_ds_id, test_session_id, datetime.now(), contacts )
+		result = db_social.update_contacts( self.db_user, test_session_id, datetime.now(), contacts )
 		assert_that( result, is_( -1 ) )
 		results = self.session.query(ContactsAdded).all()
 		assert_that( results, has_length( 0 ) )
