@@ -346,7 +346,7 @@ def create_highlight(user, nti_session, highlight):
 	user_record = get_or_create_user(user)
 	sid = nti_session
 	rid = get_ntiid_id(highlight.containerId)
-	rid = get_resource_record(db, rid, create=True)
+	resource_record = get_resource_record(db, rid, create=True)
 	highlight_ds_id = get_ds_id(highlight)
 
 	if _highlight_exists(db, highlight_ds_id):
@@ -360,8 +360,8 @@ def create_highlight(user, nti_session, highlight):
 
 	new_object = HighlightsCreated(	session_id=sid,
 									timestamp=timestamp,
-									highlight_ds_id=highlight_ds_id,
-									resource_id=rid)
+									highlight_ds_id=highlight_ds_id)
+	new_object._resource = resource_record
 	new_object._user_record = user_record
 	new_object._root_context_record = root_context_record
 	db.session.add(new_object)
