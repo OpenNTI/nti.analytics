@@ -51,11 +51,15 @@ class TestResourceTags(AnalyticsTestBase):
 
 	@fudge.patch('nti.analytics.database.resource_tags._get_sharing_enum',
 				 'dm.zope.schema.schema.Object._validate',
-				 'nti.analytics.database.resource_tags.get_root_context')
-	def test_note(self, mock_sharing_enum, mock_validate, mock_root_context):
+				 'nti.analytics.database.resource_tags.get_root_context',
+				 'nti.analytics.database.resource_tags.get_root_context_record',
+				 'nti.analytics.database.resource_tags.get_root_context_records')
+	def test_note(self, mock_sharing_enum, mock_validate, mock_root_context, mock_record, mock_records):
 		mock_validate.is_callable().returns( True )
 		mock_sharing_enum.is_callable().returns( u'PRIVATE' )
-		mock_root_context.is_callable().returns( self.course_id )
+		mock_root_context.is_callable().returns(self.course_record)
+		mock_record.is_callable().returns(self.course_record)
+		mock_records.is_callable().returns((self.course_record, None))
 		context_path = None
 
 		results = self.session.query( NotesCreated ).all()
@@ -91,7 +95,7 @@ class TestResourceTags(AnalyticsTestBase):
 		db_tags.create_note_view( 	test_user_ds_id,
 									test_session_id, datetime.now(),
 									context_path,
-									self.course_id, my_note )
+									self.course_record, my_note )
 		results = self.session.query( NotesViewed ).all()
 		assert_that( results, has_length( 1 ) )
 
@@ -117,10 +121,12 @@ class TestResourceTags(AnalyticsTestBase):
 		assert_that( note.deleted, not_none() )
 
 	@fudge.patch('nti.analytics.database.resource_tags._get_sharing_enum',
-				 'nti.analytics.database.resource_tags.get_root_context')
-	def test_idempotent_note(self, mock_sharing_enum, mock_root_context):
+				 'nti.analytics.database.resource_tags.get_root_context',
+				 'nti.analytics.database.resource_tags.get_root_context_record')
+	def test_idempotent_note(self, mock_sharing_enum, mock_root_context, mock_record):
 		mock_sharing_enum.is_callable().returns( 'PRIVATE' )
-		mock_root_context.is_callable().returns( self.course_id )
+		mock_root_context.is_callable().returns(self.course_record)
+		mock_record.is_callable().returns(self.course_record)
 		context_path = None
 
 		results = self.session.query( NotesCreated ).all()
@@ -148,7 +154,7 @@ class TestResourceTags(AnalyticsTestBase):
 		db_tags.create_note_view( 	test_user_ds_id,
 									test_session_id, event_time,
 									context_path,
-									self.course_id, my_note )
+									self.course_record, my_note )
 
 		results = self.session.query( NotesViewed ).all()
 		assert_that( results, has_length( 1 ) )
@@ -156,18 +162,20 @@ class TestResourceTags(AnalyticsTestBase):
 		db_tags.create_note_view( 	test_user_ds_id,
 									test_session_id, event_time,
 									context_path,
-									self.course_id, my_note )
+									self.course_record, my_note )
 
 		results = self.session.query( NotesViewed ).all()
 		assert_that( results, has_length( 1 ) )
 
 	@fudge.patch('nti.analytics.database.resource_tags._get_sharing_enum',
 				 'dm.zope.schema.schema.Object._validate',
-				 'nti.analytics.database.resource_tags.get_root_context')
-	def test_lazy_note_create(self, mock_sharing_enum, mock_validate, mock_root_context):
+				 'nti.analytics.database.resource_tags.get_root_context',
+				 'nti.analytics.database.resource_tags.get_root_context_record')
+	def test_lazy_note_create(self, mock_sharing_enum, mock_validate, mock_root_context, mock_record):
 		mock_validate.is_callable().returns( True )
 		mock_sharing_enum.is_callable().returns( u'PRIVATE' )
-		mock_root_context.is_callable().returns( self.course_id )
+		mock_root_context.is_callable().returns(self.course_record)
+		mock_record.is_callable().returns(self.course_record)
 		context_path = None
 
 		results = self.session.query( NotesCreated ).all()
@@ -199,13 +207,15 @@ class TestResourceTags(AnalyticsTestBase):
 		assert_that( results, has_length( 1 ) )
 		assert_that( results[0].user_id, is_( note_db_id ))
 
-	@fudge.patch( 	'nti.analytics.database.resource_tags._get_sharing_enum',
-					'dm.zope.schema.schema.Object._validate',
-					'nti.analytics.database.resource_tags.get_root_context'    )
-	def test_lazy_note_create_parent(self, mock_sharing_enum, mock_validate, mock_root_context):
+	@fudge.patch('nti.analytics.database.resource_tags._get_sharing_enum',
+				 'dm.zope.schema.schema.Object._validate',
+				 'nti.analytics.database.resource_tags.get_root_context',
+				 'nti.analytics.database.resource_tags.get_root_context_record')
+	def test_lazy_note_create_parent(self, mock_sharing_enum, mock_validate, mock_root_context, mock_record):
 		mock_validate.is_callable().returns( True )
 		mock_sharing_enum.is_callable().returns( 'PRIVATE' )
-		mock_root_context.is_callable().returns( self.course_id )
+		mock_root_context.is_callable().returns(self.course_record)
+		mock_record.is_callable().returns(self.course_record)
 
 		results = self.session.query( NotesCreated ).all()
 		assert_that( results, has_length( 0 ) )
@@ -275,19 +285,25 @@ class TestResourceTags(AnalyticsTestBase):
 		results = self.session.query( table ).all()
 		assert_that( results, has_length( 0 ) )
 
-	@fudge.patch( 'nti.analytics.database.resource_tags.get_root_context' )
-	def test_likes(self, mock_root_context):
-		mock_root_context.is_callable().returns( self.course_id )
+	@fudge.patch('nti.analytics.database.resource_tags.get_root_context',
+				 'nti.analytics.database.resource_tags.get_root_context_record')
+	def test_likes(self, mock_root_context, mock_record):
+		mock_root_context.is_callable().returns(self.course_record)
+		mock_record.is_callable().returns(self.course_record)
 		self._do_test_rating( NoteLikes, db_tags.like_note )
 
-	@fudge.patch( 'nti.analytics.database.resource_tags.get_root_context' )
-	def test_favorites(self, mock_root_context):
-		mock_root_context.is_callable().returns( self.course_id )
+	@fudge.patch('nti.analytics.database.resource_tags.get_root_context',
+				 'nti.analytics.database.resource_tags.get_root_context_record')
+	def test_favorites(self, mock_root_context, mock_record):
+		mock_root_context.is_callable().returns(self.course_record)
+		mock_record.is_callable().returns(self.course_record)
 		self._do_test_rating( NoteFavorites, db_tags.favorite_note )
 
-	@fudge.patch( 'nti.analytics.database.resource_tags.get_root_context' )
-	def test_highlight(self, mock_root_context):
-		mock_root_context.is_callable().returns( self.course_id )
+	@fudge.patch('nti.analytics.database.resource_tags.get_root_context',
+				 'nti.analytics.database.resource_tags.get_root_context_record')
+	def test_highlight(self, mock_root_context, mock_record):
+		mock_root_context.is_callable().returns(self.course_record)
+		mock_record.is_callable().returns(self.course_record)
 		results = self.session.query( HighlightsCreated ).all()
 		assert_that( results, has_length( 0 ) )
 
@@ -322,9 +338,11 @@ class TestResourceTags(AnalyticsTestBase):
 		assert_that( highlight.deleted, not_none() )
 		assert_that( highlight.highlight_ds_id, none() )
 
-	@fudge.patch( 'nti.analytics.database.resource_tags.get_root_context' )
-	def test_idempotent_highlights(self, mock_root_context):
-		mock_root_context.is_callable().returns( self.course_id )
+	@fudge.patch('nti.analytics.database.resource_tags.get_root_context',
+				 'nti.analytics.database.resource_tags.get_root_context_record')
+	def test_idempotent_highlights(self, mock_root_context, mock_record):
+		mock_root_context.is_callable().returns(self.course_record)
+		mock_record.is_callable().returns(self.course_record)
 		results = self.session.query( HighlightsCreated ).all()
 		assert_that( results, has_length( 0 ) )
 
@@ -343,9 +361,11 @@ class TestResourceTags(AnalyticsTestBase):
 		results = self.session.query( HighlightsCreated ).all()
 		assert_that( results, has_length( 1 ) )
 
-	@fudge.patch( 'nti.analytics.database.resource_tags.get_root_context' )
-	def test_bookmark(self, mock_root_context):
-		mock_root_context.is_callable().returns( self.course_id )
+	@fudge.patch('nti.analytics.database.resource_tags.get_root_context',
+				 'nti.analytics.database.resource_tags.get_root_context_record')
+	def test_bookmark(self, mock_root_context, mock_record):
+		mock_root_context.is_callable().returns(self.course_record)
+		mock_record.is_callable().returns(self.course_record)
 		results = self.session.query( BookmarksCreated ).all()
 		assert_that( results, has_length( 0 ) )
 
@@ -380,9 +400,11 @@ class TestResourceTags(AnalyticsTestBase):
 		assert_that( bookmark.deleted, not_none() )
 		assert_that( bookmark.bookmark_ds_id, none() )
 
-	@fudge.patch( 'nti.analytics.database.resource_tags.get_root_context' )
-	def test_idempotent_bookmarks(self, mock_root_context):
-		mock_root_context.is_callable().returns( self.course_id )
+	@fudge.patch('nti.analytics.database.resource_tags.get_root_context',
+				 'nti.analytics.database.resource_tags.get_root_context_record')
+	def test_idempotent_bookmarks(self, mock_root_context, mock_record):
+		mock_root_context.is_callable().returns(self.course_record)
+		mock_record.is_callable().returns(self.course_record)
 		results = self.session.query( BookmarksCreated ).all()
 		assert_that( results, has_length( 0 ) )
 

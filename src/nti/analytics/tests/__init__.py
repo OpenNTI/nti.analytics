@@ -174,7 +174,7 @@ class AnalyticsTestBase(unittest.TestCase):
         db_sessions.create_session(test_user_ds_id, user_agent,
                                    time.time(), ip_addr)
         self.course_id = 1
-        db_courses.get_root_context_id(self.db, self.course_id, create=True)
+        self.course_record = db_courses.get_root_context_record(self.db, self.course_id, create=True)
 
     def tearDown(self):
         component.getGlobalSiteManager().unregisterUtility(self.db)

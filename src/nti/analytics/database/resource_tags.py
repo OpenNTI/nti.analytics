@@ -308,18 +308,17 @@ def create_note_view(user, nti_session, timestamp, context_path, root_context, n
 	resource_record = get_resource_record(db, rid, create=True)
 
 	note_ds_id = get_ds_id(note)
-	note_id = _get_note_id(db, note_ds_id)
-	if note_id is None:
+	note_record = _get_note(db, note_ds_id)
+	if note_record is None:
 		note_creator = get_creator(note)
-		new_note = create_note(note_creator, None, note)
-		note_id = new_note.note_id
-		logger.info('Created note (user=%s) (note=%s)', note_creator, note_id)
+		note_record = create_note(note_creator, None, note)
+		logger.info('Created note (user=%s)', note_creator)
 
 	timestamp = timestamp_type(timestamp)
 
-	if _note_view_exists(db, note_id, user_record.user_id, timestamp):
+	if _note_view_exists(db, note_record.note_id, user_record.user_id, timestamp):
 		logger.warn('Note view already exists (user=%s) (note_id=%s)',
-					user, note_id)
+					user, note_record.note_id)
 		return
 
 	context_path = get_context_path(context_path)
@@ -327,8 +326,8 @@ def create_note_view(user, nti_session, timestamp, context_path, root_context, n
 
 	new_object = NotesViewed(session_id=sid,
 							 timestamp=timestamp,
-							 context_path=context_path,
-							 note_id=note_id)
+							 context_path=context_path)
+	new_object._note_record = note_record
 	new_object._resource = resource_record
 	new_object._user_record = user_record
 	new_object._root_context_record = root_context
