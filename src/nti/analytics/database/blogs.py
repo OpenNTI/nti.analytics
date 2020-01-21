@@ -45,9 +45,9 @@ from nti.analytics.identifier import get_ds_id
 logger = __import__('logging').getLogger(__name__)
 
 
-def _get_blog( db, blog_ds_id ):
+def _get_blog(db, blog_ds_id):
 	blog = db.session.query(BlogsCreated).filter(
-							BlogsCreated.blog_ds_id == blog_ds_id ).first()
+							BlogsCreated.blog_ds_id == blog_ds_id).first()
 	return blog
 
 
@@ -58,14 +58,14 @@ def _get_blog_id( db, blog_ds_id ):
 _blog_exists = _get_blog_id
 
 
-def _set_blog_attributes( blog_record, blog ):
+def _set_blog_attributes(blog_record, blog):
 	"""
 	Set the blog attributes for this blog record.
 	"""
 	blog_length = 0
 	try:
 		if blog.description is not None:
-			blog_length = len( blog.description )
+			blog_length = len(blog.description)
 	except AttributeError:
 		blog_length = get_body_text_length( blog )
 	like_count, favorite_count, is_flagged = get_ratings( blog )
@@ -75,26 +75,24 @@ def _set_blog_attributes( blog_record, blog ):
 	blog_record.blog_length = blog_length
 
 
-def create_blog( user, nti_session, blog_entry ):
+def create_blog(user, nti_session, blog_entry):
 	db = get_analytics_db()
 	user_record = get_or_create_user( user )
-	uid = user_record.user_id
 	sid = nti_session
 	blog_ds_id = get_ds_id( blog_entry )
 
-	if _blog_exists( db, blog_ds_id ):
-		logger.warn( 'Blog already exists (blog_id=%s) (user=%s)', blog_ds_id, user )
+	if _blog_exists(db, blog_ds_id):
+		logger.warn('Blog already exists (blog_id=%s) (user=%s)', blog_ds_id, user)
 		return
 
 	timestamp = get_created_timestamp( blog_entry )
 
-	new_object = BlogsCreated( 	user_id=uid,
-								session_id=sid,
-								timestamp=timestamp,
-								blog_ds_id=blog_ds_id )
-	_set_blog_attributes( new_object, blog_entry )
+	new_object = BlogsCreated(session_id=sid,
+							  timestamp=timestamp,
+							  blog_ds_id=blog_ds_id )
+	new_object._user_record = user_record
+	_set_blog_attributes(new_object, blog_entry)
 	db.session.add( new_object )
-	db.session.flush()
 	# See .boards.py
 	if getattr( blog_entry, 'headline', None ) is not None:
 		create_blog_comment(user, nti_session, blog_entry, blog_entry.headline )
@@ -127,13 +125,12 @@ def delete_blog( timestamp, blog_ds_id ):
 
 	db.session.query(BlogCommentsCreated ).filter(
 					 BlogCommentsCreated.blog_id == blog_id ).update(
-									{ BlogCommentsCreated.deleted : timestamp } )
-	db.session.flush()
+									{BlogCommentsCreated.deleted : timestamp})
 
 
-def _get_blog_rating_record( db, table, user_id, blog_id ):
+def _get_blog_rating_record( db, table, user_record, blog_id ):
 	blog_rating_record = db.session.query( table ).filter(
-									table.user_id == user_id,
+									table.user_id == user_record.user_id,
 									table.blog_id == blog_id ).first()
 	return blog_rating_record
 
@@ -144,41 +141,37 @@ def _create_blog_rating_record( db, table, user, session_id, timestamp, blog_id,
 	the delta is negative, we delete the like or favorite record.
 	"""
 	if user is not None:
-		user_record = get_or_create_user( user )
-		user_id = user_record.user_id
-
-		blog_rating_record = _get_blog_rating_record( db, table,
-													user_id, blog_id )
+		user_record = get_or_create_user(user)
+		blog_rating_record = _get_blog_rating_record(db, table,
+													 user_record, blog_id)
 
 		if not blog_rating_record and delta > 0:
 			# Create
-			timestamp = timestamp_type( timestamp )
-			blog_rating_record = table( blog_id=blog_id,
-								user_id=user_id,
-								timestamp=timestamp,
-								session_id=session_id,
-								creator_id=creator_id )
+			timestamp = timestamp_type(timestamp)
+			blog_rating_record = table(blog_id=blog_id,
+									   timestamp=timestamp,
+									   session_id=session_id,
+									   creator_id=creator_id)
+			blog_rating_record._user_record = user_record
 			db.session.add( blog_rating_record )
 		elif blog_rating_record and delta < 0:
 			# Delete
 			db.session.delete( blog_rating_record )
-		db.session.flush()
 
 
 def like_blog( blog, user, session_id, timestamp, delta ):
 	db = get_analytics_db()
 	blog_ds_id = get_ds_id( blog )
 	db_blog = db.session.query(BlogsCreated).filter(
-								BlogsCreated.blog_ds_id == blog_ds_id ).first()
+								BlogsCreated.blog_ds_id == blog_ds_id).first()
 
 	if db_blog is not None:
-		db.session.flush()
 		creator_id = db_blog.user_id
 		blog_id = db_blog.blog_id
 		_set_blog_attributes( db_blog, blog )
-		_create_blog_rating_record( db, BlogLikes, user,
-								session_id, timestamp,
-								blog_id, delta, creator_id )
+		_create_blog_rating_record(db, BlogLikes, user,
+								   session_id, timestamp,
+								   blog_id, delta, creator_id)
 
 
 def favorite_blog( blog, user, session_id, timestamp, delta ):
@@ -188,13 +181,12 @@ def favorite_blog( blog, user, session_id, timestamp, delta ):
 							   BlogsCreated.blog_ds_id == blog_ds_id ).first()
 
 	if db_blog is not None:
-		db.session.flush()
 		creator_id = db_blog.user_id
 		blog_id = db_blog.blog_id
 		_set_blog_attributes( db_blog, blog )
 		_create_blog_rating_record( db, BlogFavorites, user,
-								session_id, timestamp,
-								blog_id, delta, creator_id )
+									session_id, timestamp,
+									blog_id, delta, creator_id )
 
 
 def flag_blog( blog, state ):
@@ -203,7 +195,6 @@ def flag_blog( blog, state ):
 	db_blog = db.session.query(BlogsCreated).filter(
 							   BlogsCreated.blog_ds_id == blog_ds_id ).first()
 	db_blog.is_flagged = state
-	db.session.flush()
 
 
 def _blog_view_exists( db, user_id, blog_id, timestamp ):
@@ -219,17 +210,16 @@ def create_blog_view(user, nti_session, timestamp, context_path, blog_entry, tim
 	uid = user_record.user_id
 	sid = nti_session
 	blog_ds_id = get_ds_id( blog_entry )
-	blog_id = _get_blog_id( db, blog_ds_id )
+	blog_record = _get_blog(db, blog_ds_id)
 
-	if blog_id is None:
+	if blog_record is None:
 		blog_creator = get_creator( blog_entry )
-		new_blog = create_blog( blog_creator, None, blog_entry )
+		blog_record = create_blog( blog_creator, None, blog_entry )
 		logger.info( 'Created new blog (%s) (%s)', blog_creator, blog_entry )
-		blog_id = new_blog.blog_id
 
 	timestamp = timestamp_type( timestamp )
 
-	existing_record = _blog_view_exists( db, uid, blog_id, timestamp )
+	existing_record = _blog_view_exists( db, uid, blog_record.blog_id, timestamp )
 
 	if existing_record is not None:
 		if should_update_event(existing_record, time_length):
@@ -237,7 +227,7 @@ def create_blog_view(user, nti_session, timestamp, context_path, blog_entry, tim
 			return
 		else:
 			logger.warn('Blog view already exists (user=%s) (blog_id=%s) (time_length=%s)',
-						user, blog_id, time_length)
+						user, blog_record.blog_id, time_length)
 			return
 
 	context_path = get_context_path( context_path )
@@ -246,8 +236,8 @@ def create_blog_view(user, nti_session, timestamp, context_path, blog_entry, tim
 								session_id=sid,
 								timestamp=timestamp,
 								context_path=context_path,
-								blog_id=blog_id,
 								time_length=time_length )
+	new_object._blog_record = blog_record
 	db.session.add( new_object )
 
 
@@ -290,17 +280,15 @@ def _set_blog_comment_attributes( db, comment_record, comment ):
 def create_blog_comment(user, nti_session, blog, comment ):
 	db = get_analytics_db()
 	user = get_or_create_user( user )
-	uid = user.user_id
 	sid = nti_session
 	blog_ds_id = get_ds_id( blog )
-	bid = _get_blog_id( db, blog_ds_id )
+	blog_record = _get_blog( db, blog_ds_id )
 	cid = get_ds_id( comment )
 
-	if bid is None:
+	if blog_record is None:
 		blog_creator = get_creator( blog )
-		new_blog = create_blog( blog_creator, None, blog )
+		blog_record = create_blog( blog_creator, None, blog )
 		logger.info( 'Created new blog (%s) (%s)', blog_creator, blog )
-		bid = new_blog.blog_id
 
 	if _blog_comment_exists( db, cid ):
 		logger.warn( 'Blog comment already exists (comment_id=%s)', cid )
@@ -316,17 +304,16 @@ def create_blog_comment(user, nti_session, blog, comment ):
 		parent_user_record = get_or_create_user( parent_creator )
 		parent_user_id = parent_user_record.user_id
 
-	new_object = BlogCommentsCreated( 	user_id=uid,
-										session_id=sid,
-										timestamp=timestamp,
-										blog_id=bid,
-										parent_id=pid,
-										parent_user_id=parent_user_id,
-										comment_id=cid )
+	new_object = BlogCommentsCreated(session_id=sid,
+									 timestamp=timestamp,
+									 parent_id=pid,
+									 parent_user_id=parent_user_id,
+									 comment_id=cid)
 
+	new_object._blog_record = blog_record
 	_set_blog_comment_attributes( db, new_object, comment )
-	db.session.add( new_object )
-	db.session.flush()
+	new_object._user_record = user
+	db.session.add(new_object)
 	return new_object
 
 
@@ -347,18 +334,17 @@ def delete_blog_comment(timestamp, comment_id):
 	db = get_analytics_db()
 	timestamp = timestamp_type( timestamp )
 	comment = db.session.query(BlogCommentsCreated).filter(
-										BlogCommentsCreated.comment_id == comment_id ).first()
+										BlogCommentsCreated.comment_id == comment_id).first()
 	if not comment:
-		logger.info( 'Blog comment never created (%s)', comment_id )
+		logger.info('Blog comment never created (%s)', comment_id)
 		return
 	comment.deleted=timestamp
-	db.session.flush()
 
 
 def _get_blog_comment_rating_record( db, table, user_id, comment_id ):
 	blog_coment_rating_record = db.session.query( table ).filter(
 									table.user_id == user_id,
-									table.comment_id == comment_id ).first()
+									table.comment_id == comment_id).first()
 	return blog_coment_rating_record
 
 
@@ -369,49 +355,47 @@ def _create_blog_comment_rating_record( db, table, user, session_id, timestamp, 
 	"""
 	if user is not None:
 		user_record = get_or_create_user( user )
-		user_id = user_record.user_id
 
-		blog_comment_rating = _get_blog_comment_rating_record( db, table,
-															user_id, comment_id)
+		blog_comment_rating = _get_blog_comment_rating_record(db,
+															  table,
+															  user_record.user_id,
+															  comment_id)
 
 		if not blog_comment_rating and delta > 0:
 			# Create
 			timestamp = timestamp_type( timestamp )
-			blog_comment_rating = table( comment_id=comment_id,
-								user_id=user_id,
-								timestamp=timestamp,
-								session_id=session_id,
-								creator_id=creator_id )
-			db.session.add( blog_comment_rating )
+			blog_comment_rating = table(comment_id=comment_id,
+									    timestamp=timestamp,
+									    session_id=session_id,
+									    creator_id=creator_id )
+			blog_comment_rating._user_record = user_record
+			db.session.add(blog_comment_rating)
 		elif blog_comment_rating and delta < 0:
 			# Delete
 			db.session.delete( blog_comment_rating )
-		db.session.flush()
 
 
 def like_comment( comment, user, session_id, timestamp, delta ):
 	db = get_analytics_db()
 	comment_id = get_ds_id( comment )
 	db_comment = db.session.query(BlogCommentsCreated).filter(
-								BlogCommentsCreated.comment_id == comment_id ).first()
+								BlogCommentsCreated.comment_id == comment_id).first()
 
 	if db_comment is not None:
-		db.session.flush()
 		creator_id = db_comment.user_id
 		comment_id = db_comment.comment_id
-		_set_blog_comment_attributes( db, db_comment, comment )
-		_create_blog_comment_rating_record( db, BlogCommentLikes, user,
-								session_id, timestamp, comment_id, delta, creator_id )
+		_set_blog_comment_attributes(db, db_comment, comment)
+		_create_blog_comment_rating_record(db, BlogCommentLikes, user,
+										   session_id, timestamp, comment_id, delta, creator_id)
 
 
 def favorite_comment( comment, user, session_id, timestamp, delta ):
 	db = get_analytics_db()
 	comment_id = get_ds_id( comment )
 	db_comment = db.session.query(BlogCommentsCreated).filter(
-									BlogCommentsCreated.comment_id == comment_id ).first()
+									BlogCommentsCreated.comment_id == comment_id).first()
 
 	if db_comment is not None:
-		db.session.flush()
 		creator_id = db_comment.user_id
 		comment_id = db_comment.comment_id
 		_set_blog_comment_attributes( db, db_comment, comment )
@@ -425,7 +409,6 @@ def flag_comment( comment, state ):
 	db_comment = db.session.query(BlogCommentsCreated).filter(
 									BlogCommentsCreated.comment_id == comment_id ).first()
 	db_comment.is_flagged = state
-	db.session.flush()
 
 
 def _resolve_blog( row, user=None ):

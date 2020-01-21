@@ -32,7 +32,6 @@ def _create_resource(db, resource_val, max_time_length):
 							 max_time_length=max_time_length)
 
 	db.session.add(new_resource)
-	db.session.flush()
 	return new_resource
 
 

@@ -186,46 +186,46 @@ def _lookup_coordinates_for_ip(ip_addr):
 	return geolite2.lookup(ip_addr)
 
 
-def _create_ip_location(db, ip_addr, user_id):
+def _create_ip_location(db, ip_addr, user_record):
 	ip_info = _lookup_coordinates_for_ip(ip_addr)
 	# In one case, we had ip_info but no lat/long.
 	if ip_info and ip_info.location and len(ip_info.location) > 1:
 		ip_location = IpGeoLocation(ip_addr=ip_addr,
-									user_id=user_id,
  									country_code=ip_info.country)
+		ip_location.user_record = user_record
 		db.session.add(ip_location)
-		db.session.flush()
 		# We truncate location coordinates to 4 decimal places
 		# and converting to strings. This way we have a consistent
 		# level of precision, and comparing as strings instead of
 		# floats ensures the accuracy of comparisons. Everything is
 		# stored as strings except if we need to do a lookup,
 		# in which case they are converted to floats for the lookup
-		ip_location.location_id = _get_location_id(db,
-													str(round(ip_info.location[0], 4)),
-													str(round(ip_info.location[1], 4)))
-		db.session.flush()
+		ip_location.location = _get_location(db,
+											str(round(ip_info.location[0], 4)),
+											str(round(ip_info.location[1], 4)))
 
 
-def check_ip_location(db, ip_addr, user_id):
+def check_ip_location(db, ip_addr, user_record):
 	# Should only be null in tests.
 	if ip_addr:
-		__traceback_info__ = ip_addr, user_id
+		__traceback_info__ = ip_addr, user_record.user_id
 		old_ip_location = db.session.query(IpGeoLocation).filter(
 										IpGeoLocation.ip_addr == ip_addr,
-										IpGeoLocation.user_id == user_id).first()
+										IpGeoLocation.user_id == user_record.user_id).first()
+		result = old_ip_location
 		if not old_ip_location:
 			# This is a new IP location
-			_create_ip_location(db, ip_addr, user_id)
+			result = _create_ip_location(db, ip_addr, user_record)
 
 		else:
 			old_location_data = db.session.query(Location).filter(
 									Location.location_id == old_ip_location.location_id).first()
 			# Still want to update location info in this path
 			__traceback_info__ = old_location_data.latitude, old_location_data.longitude, old_location_data.location_id
-			old_ip_location.location_id = _get_location_id(db,
-															old_location_data.latitude,
-															old_location_data.longitude)
+			old_ip_location.location = _get_location(db,
+													 old_location_data.latitude,
+													 old_location_data.longitude)
+		return result
 
 #: To avoid exhausting our service limit.
 UPDATE_LIMIT = 500
@@ -254,7 +254,7 @@ def update_missing_locations():
 	return update_count
 
 
-def _get_location_id(db, lat_str, long_str):
+def _get_location(db, lat_str, long_str):
 	"""
 	Fetches the location for a given lat/long, creating if not. If the location
 	exists, we attempt to retrieve and update any missing location info.
@@ -267,7 +267,7 @@ def _get_location_id(db, lat_str, long_str):
 		# We've never seen this location before, so create
 		# a new row for it in the Location table and return location_id
 		new_location = _create_new_location(db, lat_str, long_str)
-		return new_location.location_id
+		return new_location
 
 	else:
 		# This Location already exists, so make sure its fields are all
@@ -279,7 +279,7 @@ def _get_location_id(db, lat_str, long_str):
 			or 	existing_location.state == '' \
 			or 	existing_location.country == '':
 			_create_new_location(db, lat_str, long_str, existing_location)
-		return existing_location.location_id
+		return existing_location
 
 
 def _lookup_location(lat, long_):
@@ -321,6 +321,4 @@ def _create_new_location(db, lat_str, long_str, existing_location=None):
 		new_location = Location(latitude=lat_str, longitude=long_str,
 								city=_city, state=_state, country=_country)
 		db.session.add(new_location)
-		# need to flush here so that our new location will be assigned a location_id
-		db.session.flush()
 		return new_location

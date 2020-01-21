@@ -1,40 +1,48 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from __future__ import print_function, unicode_literals, absolute_import, division
-__docformat__ = "restructuredtext en"
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
 
 # disable: accessing protected members, too many methods
 # pylint: disable=W0212,R0904
 
 from hamcrest import all_of
-from hamcrest import assert_that
-from hamcrest import is_
 from hamcrest import has_item
 from hamcrest import has_entry
 from hamcrest import has_length
+from hamcrest import assert_that
 
 import fudge
 
 from zope import component
 
 from nti.analytics.database import locations
+
 from nti.analytics.database.database import AnalyticsDB
+
 from nti.analytics.database.interfaces import IAnalyticsDB
+
 from nti.analytics.database.root_context import get_root_context_id
 
+from nti.analytics.database.users import get_or_create_user
+
 from nti.contenttypes.courses import courses
+
 from nti.contenttypes.courses.interfaces import ICourseInstance
 from nti.contenttypes.courses.interfaces import ICourseEnrollmentManager
 
 from nti.dataserver.users.users import User
+
 from nti.dataserver.tests.mock_dataserver import WithMockDSTrans
 
 from nti.ntiids.ntiids import find_object_with_ntiid
 
 from nti.analytics.database.tests import NTIAnalyticsTestCase
 
-course = 'tag:nextthought.com,2011-10:OU-HTML-CLC3403_LawAndJustice.course_info'
+course = u'tag:nextthought.com,2011-10:OU-HTML-CLC3403_LawAndJustice.course_info'
+
 
 class TestLocations(NTIAnalyticsTestCase):
 
@@ -68,6 +76,7 @@ class TestLocations(NTIAnalyticsTestCase):
 		self.course = course
 		manager = ICourseEnrollmentManager(course)
 
+		user_record = get_or_create_user(principal)
 		# Enroll the user in the course
 		manager.enroll(principal, scope='Public')
 
@@ -76,23 +85,25 @@ class TestLocations(NTIAnalyticsTestCase):
 		# This user lives at Google.
 		fake_location_lookup.is_callable().calls(fake_location_data_for_coordinates)
 		fake_ip_lookup.is_callable().calls(fake_locations_for_ips)
-		locations._create_ip_location(self.db, '8.8.8.8', 1)
+		locations._create_ip_location(self.db, u'8.8.8.8', user_record)
 
 		location_results = locations.get_location_list(course, 'ALL_USERS')
 
 		# Verify that we got the correct user data
 		assert_that(location_results, has_length(1))
 		assert_that(location_results, has_item(all_of(has_entry('number_of_students', 1),
-													  has_entry('city', 'The Googleplex'),
+													  has_entry('city', u'The Googleplex'),
 													  has_entry('latitude', 37.422),
 													  has_entry('longitude', 122.084))))
 
 		# Create another user, and enroll them in the "ForCredit" scope
-		second_user = User.create_user(username='zachary.roux@nextthought.com', dataserver=self.ds)
+		second_user = User.create_user(username='zachary.roux@nextthought.com',
+									   dataserver=self.ds)
 		self.ds.root[second_user.id] = second_user
 		self.second_user = second_user
 		manager.enroll(second_user, scope='ForCredit')
-		locations._create_ip_location(self.db, '1.2.3.4', 2)
+		user_record2 = get_or_create_user(second_user)
+		locations._create_ip_location(self.db, u'1.2.3.4', user_record2)
 
 		# We should see both users in ALL_USERS, but only the second user in ForCredit.
 
@@ -100,12 +111,12 @@ class TestLocations(NTIAnalyticsTestCase):
 		location_results = locations.get_location_list(course, 'ALL_USERS')
 		assert_that(location_results, has_length(2))
 		assert_that(location_results, has_item(all_of(has_entry('number_of_students', 1),
-													  has_entry('city', 'The Googleplex'),
+													  has_entry('city', u'The Googleplex'),
 													  has_entry('latitude', 37.422),
 													  has_entry('longitude', 122.084))))
 
 		assert_that(location_results, has_item(all_of(has_entry('number_of_students', 1),
-													  has_entry('city', 'Norman'),
+													  has_entry('city', u'Norman'),
 													  has_entry('latitude', 12.345),
 													  has_entry('longitude', 67.890))))
 
@@ -121,15 +132,16 @@ class TestLocations(NTIAnalyticsTestCase):
 def fake_locations_for_ips(ip_address):
 	# Helper method for fudging the IP lookup service
 	fake_results = fudge.Fake()
-	if ip_address == "8.8.8.8":
-		return fake_results.has_attr(location=[37.422, 122.084], country="US")
-	elif ip_address == "1.2.3.4":
-		return fake_results.has_attr(location=[12.345, 67.890], country="US")
+	if ip_address == u"8.8.8.8":
+		return fake_results.has_attr(location=[37.422, 122.084], country=u"US")
+	elif ip_address == u"1.2.3.4":
+		return fake_results.has_attr(location=[12.345, 67.890], country=u"US")
+
 
 def fake_location_data_for_coordinates(latitude, longitude):
 	# Helper method for fudging the reverse geo-lookup service
 	if latitude == 37.422 and longitude == 122.084:
-		return ("The Googleplex", "California", "USA")
+		return (u"The Googleplex", u"California", u"USA")
 
 	if latitude == 12.345 and longitude == 67.890:  # fake coordinates :P
-		return ("Norman", "Oklahoma", "USA")
+		return (u"Norman", u"Oklahoma", u"USA")

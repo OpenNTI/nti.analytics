@@ -1,13 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from __future__ import print_function, unicode_literals, absolute_import, division
-__docformat__ = "restructuredtext en"
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
 
 # disable: accessing protected members, too many methods
 # pylint: disable=W0212,R0904
 
 import fudge
+
 from datetime import datetime
 
 from hamcrest import is_
@@ -38,20 +40,21 @@ from nti.dataserver.users.users import Principal
 
 from nti.analytics.database.tests import DEFAULT_INTID
 
+
 class TestResourceTags(AnalyticsTestBase):
 
 	def setUp(self):
 		super( TestResourceTags, self ).setUp()
 		self.resource_id = 1
-		self.context_path_flat = 'dashboard'
-		self.context_path= [ 'dashboard' ]
+		self.context_path_flat = u'dashboard'
+		self.context_path= [ u'dashboard' ]
 
-	@fudge.patch( 	'nti.analytics.database.resource_tags._get_sharing_enum',
-					'dm.zope.schema.schema.Object._validate',
-					'nti.analytics.database.resource_tags.get_root_context'  )
+	@fudge.patch('nti.analytics.database.resource_tags._get_sharing_enum',
+				 'dm.zope.schema.schema.Object._validate',
+				 'nti.analytics.database.resource_tags.get_root_context')
 	def test_note(self, mock_sharing_enum, mock_validate, mock_root_context):
 		mock_validate.is_callable().returns( True )
-		mock_sharing_enum.is_callable().returns( 'PRIVATE' )
+		mock_sharing_enum.is_callable().returns( u'PRIVATE' )
 		mock_root_context.is_callable().returns( self.course_id )
 		context_path = None
 
@@ -63,7 +66,7 @@ class TestResourceTags(AnalyticsTestBase):
 		# Pre-emptive delete is ok
 		db_tags.delete_note( datetime.now(), DEFAULT_INTID )
 
-		resource_id = 'ntiid:course_resource'
+		resource_id = u'ntiid:course_resource'
 		note_ds_id = DEFAULT_INTID
 		note_id = 1
 		my_note = MockNote( resource_id, containerId=resource_id, intid=note_ds_id )
@@ -80,7 +83,7 @@ class TestResourceTags(AnalyticsTestBase):
 		assert_that( note.course_id, is_( self.course_id ) )
 		assert_that( note.note_id, is_( note_id ) )
 		assert_that( note.resource_id, is_( self.resource_id ) )
-		assert_that( note.sharing, is_( 'PRIVATE' ) )
+		assert_that( note.sharing, is_( u'PRIVATE' ) )
 		assert_that( note.deleted, none() )
 		assert_that( note.timestamp, not_none() )
 
@@ -113,8 +116,8 @@ class TestResourceTags(AnalyticsTestBase):
 		assert_that( note.note_id, is_( note_id ) )
 		assert_that( note.deleted, not_none() )
 
-	@fudge.patch( 'nti.analytics.database.resource_tags._get_sharing_enum',
-					'nti.analytics.database.resource_tags.get_root_context'  )
+	@fudge.patch('nti.analytics.database.resource_tags._get_sharing_enum',
+				 'nti.analytics.database.resource_tags.get_root_context')
 	def test_idempotent_note(self, mock_sharing_enum, mock_root_context):
 		mock_sharing_enum.is_callable().returns( 'PRIVATE' )
 		mock_root_context.is_callable().returns( self.course_id )
@@ -125,7 +128,7 @@ class TestResourceTags(AnalyticsTestBase):
 		results = self.session.query( NotesViewed ).all()
 		assert_that( results, has_length( 0 ) )
 
-		resource_id = 'ntiid:course_resource'
+		resource_id = u'ntiid:course_resource'
 		note_ds_id = DEFAULT_INTID
 		my_note = MockNote( resource_id, containerId=resource_id, intid=note_ds_id )
 
@@ -158,12 +161,12 @@ class TestResourceTags(AnalyticsTestBase):
 		results = self.session.query( NotesViewed ).all()
 		assert_that( results, has_length( 1 ) )
 
-	@fudge.patch( 	'nti.analytics.database.resource_tags._get_sharing_enum',
-					'dm.zope.schema.schema.Object._validate',
-					'nti.analytics.database.resource_tags.get_root_context'   )
+	@fudge.patch('nti.analytics.database.resource_tags._get_sharing_enum',
+				 'dm.zope.schema.schema.Object._validate',
+				 'nti.analytics.database.resource_tags.get_root_context')
 	def test_lazy_note_create(self, mock_sharing_enum, mock_validate, mock_root_context):
 		mock_validate.is_callable().returns( True )
-		mock_sharing_enum.is_callable().returns( 'PRIVATE' )
+		mock_sharing_enum.is_callable().returns( u'PRIVATE' )
 		mock_root_context.is_callable().returns( self.course_id )
 		context_path = None
 
@@ -172,7 +175,7 @@ class TestResourceTags(AnalyticsTestBase):
 		results = self.session.query( NotesViewed ).all()
 		assert_that( results, has_length( 0 ) )
 
-		resource_id = 'ntiid:course_resource'
+		resource_id = u'ntiid:course_resource'
 		note_ds_id = DEFAULT_INTID
 		my_note = MockNote( resource_id, containerId=resource_id, intid=note_ds_id )
 		note_creator = Principal( username=str( test_user_ds_id ) )
@@ -180,7 +183,7 @@ class TestResourceTags(AnalyticsTestBase):
 		my_note.creator = note_creator
 
 		# Note view will create our Note record
-		db_tags.create_note_view( 	'9999',
+		db_tags.create_note_view( 	u'9999',
 									test_session_id, datetime.now(),
 									context_path,
 									self.course_id, my_note )
@@ -219,13 +222,13 @@ class TestResourceTags(AnalyticsTestBase):
 		my_note.__dict__['inReplyTo'] = parent_note
 
 		# Note view will create our Note record
-		db_tags.create_note( '9999', test_session_id, my_note )
+		db_tags.create_note( u'9999', test_session_id, my_note )
 
 		results = self.session.query( NotesCreated ).all()
 		assert_that( results, has_length( 2 ) )
 
 		# Get id
-		note_db_id = get_user_db_id( '9999' )
+		note_db_id = get_user_db_id( u'9999' )
 		parent_note_db_id = get_user_db_id( parent_note_creator )
 
 		results = db_tags.get_notes( course=self.course_id )
@@ -243,7 +246,7 @@ class TestResourceTags(AnalyticsTestBase):
 
 		event_time = datetime.now()
 		# Note
-		resource_id = 'ntiid:course_resource'
+		resource_id = u'ntiid:course_resource'
 		note_ds_id = DEFAULT_INTID
 		my_note = MockNote( resource_id, containerId=resource_id, intid=note_ds_id )
 
@@ -349,7 +352,7 @@ class TestResourceTags(AnalyticsTestBase):
 		# Pre-emptive delete is ok
 		db_tags.delete_bookmark( datetime.now(), DEFAULT_INTID )
 
-		resource_id = 'ntiid:course_resource'
+		resource_id = u'ntiid:course_resource'
 		bookmark_ds_id = DEFAULT_INTID
 		bookmark_id = 1
 		my_bookmark = MockHighlight( resource_id, intid=bookmark_ds_id, containerId=resource_id )
@@ -383,7 +386,7 @@ class TestResourceTags(AnalyticsTestBase):
 		results = self.session.query( BookmarksCreated ).all()
 		assert_that( results, has_length( 0 ) )
 
-		resource_id = 'ntiid:course_resource'
+		resource_id = u'ntiid:course_resource'
 		bookmark_ds_id = DEFAULT_INTID
 		my_bookmark = MockHighlight( resource_id, intid=bookmark_ds_id, containerId=resource_id )
 

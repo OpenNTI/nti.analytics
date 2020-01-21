@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from __future__ import print_function, unicode_literals, absolute_import, division
-__docformat__ = "restructuredtext en"
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
 
 # disable: accessing protected members, too many methods
 # pylint: disable=W0212,R0904
@@ -68,9 +69,10 @@ class TestSessions(AnalyticsTestBase):
 		self.session.flush()
 
 		# Using new generated user_id
-		user_agent = 'webapp-1.9'
-		ip_addr = '156.110.241.13'
-		db_sessions.create_session( test_user_ds_id, user_agent, time.time(), ip_addr )
+		user_agent = u'webapp-1.9'
+		ip_addr = u'156.110.241.13'
+		db_sessions.create_session( user, user_agent, time.time(), ip_addr )
+		self.session.flush()
 		results = self.session.query(Sessions).all()
 		assert_that( results, has_length( 1 ) )
 
@@ -92,7 +94,8 @@ class TestSessions(AnalyticsTestBase):
 		assert_that( user_agent_record.user_agent_id, is_( 1 ) )
 
 		# New session has our new session id, same user_agent
-		db_sessions.create_session( test_user_ds_id, user_agent, time.time(), ip_addr )
+		db_sessions.create_session( user, user_agent, time.time(), ip_addr )
+		self.session.flush()
 		results = self.session.query(Sessions).all()
 		assert_that( results, has_length( 2 ) )
 
@@ -100,8 +103,9 @@ class TestSessions(AnalyticsTestBase):
 		assert_that( results, has_length( 1 ) )
 
 		# Different user_agent
-		user_agent2 = 'ipad-blahblah'
-		db_sessions.create_session( test_user_ds_id, user_agent2, time.time(), ip_addr )
+		user_agent2 = u'ipad-blahblah'
+		db_sessions.create_session( user, user_agent2, time.time(), ip_addr )
+		self.session.flush()
 		results = self.session.query(Sessions).all()
 		assert_that( results, has_length( 3 ) )
 
@@ -110,7 +114,7 @@ class TestSessions(AnalyticsTestBase):
 
 		# End session
 		new_session_id = 3
-		db_sessions.end_session( test_user_ds_id, new_session_id, timestamp=time.time() )
+		db_sessions.end_session( user, new_session_id, timestamp=time.time() )
 
 		current_session = self.session.query(Sessions).filter( Sessions.session_id == new_session_id ).first()
 		assert_that( current_session, not_none() )
@@ -128,9 +132,9 @@ class TestSessions(AnalyticsTestBase):
 
 		# Using new generated user_id
 		# Massive user_agent (over 512)
-		user_agent = 'webapp-1.9' * 100
+		user_agent = u'webapp-1.9' * 100
 		assert_that( user_agent, has_length( greater_than( 512 )))
-		ip_addr = '156.110.241.13'
+		ip_addr = u'156.110.241.13'
 		db_sessions.create_session( test_user_ds_id, user_agent, time.time(), ip_addr )
 		results = self.session.query(Sessions).all()
 		assert_that( results, has_length( 1 ) )
@@ -155,9 +159,9 @@ class TestSessions(AnalyticsTestBase):
 		fakeLocationLookup.expects_call() \
 							.returns(('', '', '')) \
 							.next_call() \
-							.returns(('Norman', 'Oklahoma', 'United States')) \
+							.returns((u'Norman', u'Oklahoma', u'United States')) \
 							.next_call() \
-							.returns(('哈哈', 'Zürich', 'Encodingland'))
+							.returns((u'哈哈', u'Zürich', u'Encodingland'))
 
 		# Tables should be empty to start with
 		results = self.session.query(IpGeoLocation).all()
@@ -165,11 +169,14 @@ class TestSessions(AnalyticsTestBase):
 		location_results = self.session.query(Location).all()
 		assert_that( location_results, has_length( 0 ) )
 
-		ip_addr = '156.110.241.13' # alpha
+		ip_addr = u'156.110.241.13' # alpha
 		# Our fake web service will throw an exception on the first lookup.
 		# So we should get a location back, with empty city, state, and country.
 		# Everything else should work normally.
-		check_ip_location( self.db, ip_addr, test_user_ds_id )
+		user = Users(user_ds_id=test_user_ds_id)
+		self.session.add( user )
+		self.session.flush()
+		check_ip_location(self.db, ip_addr, user)
 
 		results = self.session.query(IpGeoLocation).all()
 		assert_that( results, has_length( 1 ) )
@@ -187,7 +194,7 @@ class TestSessions(AnalyticsTestBase):
 
 		# The next lookup works, so we should have the same location_id
 		# but with the information filled in. No new Location should be added.
-		check_ip_location( self.db, ip_addr, test_user_ds_id )
+		check_ip_location(self.db, ip_addr, user)
 		results = self.session.query(IpGeoLocation).all()
 		assert_that( results, has_length( 1 ) )
 		assert_that( results[0].country_code, is_( 'US' ))
@@ -205,7 +212,7 @@ class TestSessions(AnalyticsTestBase):
 		# Future calls will work normally with the fake web service.
 
 		# Dupe for user with filled-in information
-		check_ip_location( self.db, ip_addr, test_user_ds_id )
+		check_ip_location(self.db, ip_addr, user)
 
 		results = self.session.query(IpGeoLocation).all()
 		location_results = self.session.query(Location).all()
@@ -213,8 +220,8 @@ class TestSessions(AnalyticsTestBase):
 		assert_that( location_results, has_length( 1 ) )
 
 		# A different IP for the same user should add rows appropriately
-		another_ip = '8.8.8.8' # google
-		check_ip_location( self.db, another_ip, test_user_ds_id )
+		another_ip = u'8.8.8.8' # google
+		check_ip_location(self.db, another_ip, user)
 		ip_results = self.session.query(IpGeoLocation).all()
 		location_results = self.session.query(Location).all()
 		assert_that( ip_results, has_length( 2 ) )

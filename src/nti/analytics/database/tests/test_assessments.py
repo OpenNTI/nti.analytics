@@ -25,7 +25,6 @@ from zope.interface import directlyProvides
 
 from nti.app.assessment.feedback import UsersCourseAssignmentHistoryItemFeedback
 from nti.app.assessment.history import UsersCourseAssignmentHistory
-from nti.contenttypes.courses.courses import CourseInstance
 
 from nti.assessment.assessed import QAssessedQuestionSet
 from nti.assessment.assessed import QAssessedQuestion
@@ -59,6 +58,9 @@ from nti.analytics.database.assessments import AssignmentFeedback
 from nti.analytics.database.assessments import AssignmentDetailGrades
 from nti.analytics.database.assessments import SelfAssessmentsTaken
 from nti.analytics.database.assessments import SelfAssessmentDetails
+
+from nti.contenttypes.courses.courses import CourseInstance
+
 
 from nti.analytics.database.root_context import get_root_context_id
 

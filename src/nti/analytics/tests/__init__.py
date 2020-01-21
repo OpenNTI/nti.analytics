@@ -168,7 +168,7 @@ class AnalyticsTestBase(unittest.TestCase):
         component.getGlobalSiteManager().registerUtility(self.test_identifier,
                                                          IAnalyticsRootContextIdentifier)
 
-        db_users.create_user(test_user_ds_id)
+        self.db_user = db_users.create_user(test_user_ds_id)
         user_agent = 'webapp-1.9'
         ip_addr = '156.110.241.13'
         db_sessions.create_session(test_user_ds_id, user_agent,

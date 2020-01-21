@@ -26,7 +26,7 @@ from nti.analytics.database.database import AnalyticsDB
 
 from nti.analytics.database.root_context import Courses
 from nti.analytics.database.root_context import _create_course
-from nti.analytics.database.root_context import _get_next_id
+from nti.analytics.database.root_context import _get_next_id_record
 
 class MockCatalog(object):
 
@@ -63,16 +63,19 @@ class TestRootContext(unittest.TestCase):
 		assert_that( results[0].duration, not_none() )
 
 	def test_next_id(self):
-		id1 = _get_next_id( self.db )
-		assert_that( id1, not_none() )
+		id1 = _get_next_id_record( self.db )
+		self.session.flush()
+		assert_that( id1.context_id, not_none() )
 
-		id2 = _get_next_id( self.db )
+		id2 = _get_next_id_record( self.db )
+		self.session.flush()
 		assert_that( id2, not_none() )
-		assert_that( id2, greater_than( id1 ))
+		assert_that( id2.context_id, greater_than( id1.context_id ))
 
-		id3 = _get_next_id( self.db )
+		id3 = _get_next_id_record( self.db )
+		self.session.flush()
 		assert_that( id3, not_none() )
-		assert_that( id3, greater_than( id2 ))
+		assert_that( id3.context_id, greater_than( id2.context_id ))
 
 
 

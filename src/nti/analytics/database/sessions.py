@@ -14,8 +14,6 @@ from datetime import timedelta
 from sqlalchemy import or_
 from sqlalchemy import and_
 
-from sqlalchemy.orm.session import make_transient
-
 from nti.analytics_database.sessions import Sessions
 from nti.analytics_database.sessions import UserAgents
 
@@ -36,19 +34,18 @@ logger = __import__('logging').getLogger(__name__)
 def _create_user_agent(db, user_agent):
 	new_agent = UserAgents(user_agent=user_agent)
 	db.session.add(new_agent)
-	db.session.flush()
 	return new_agent
 
 
-def _get_user_agent_id(db, user_agent):
+def _get_user_agent(db, user_agent):
 	user_agent_record = db.session.query(UserAgents).filter(
 										UserAgents.user_agent == user_agent).first()
 	if user_agent_record is None:
 		user_agent_record = _create_user_agent(db, user_agent)
-	return user_agent_record.user_agent_id
+	return user_agent_record
 
 
-def _get_user_agent(user_agent):
+def _get_user_agent_str(user_agent):
 	# We have a 512 limit on user agent, truncate if we have to.
 	return user_agent[:512] if len(user_agent) > 512 else user_agent
 
@@ -93,24 +90,22 @@ def end_session(user, session_id, timestamp):
 def create_session(user, user_agent, start_time, ip_addr, end_time=None):
 	db = get_analytics_db()
 	user = get_or_create_user(user)
-	uid = user.user_id
 	start_time = timestamp_type(start_time)
 	end_time = timestamp_type(end_time) if end_time is not None else None
-	user_agent = _get_user_agent(user_agent)
-	user_agent_id = _get_user_agent_id(db, user_agent)
+	user_agent_str = _get_user_agent_str(user_agent)
+	user_agent = _get_user_agent(db, user_agent_str)
 
-	new_session = Sessions(user_id=uid,
-							start_time=start_time,
-							end_time=end_time,
-							ip_addr=ip_addr,
-							user_agent_id=user_agent_id)
+	new_session = Sessions(start_time=start_time,
+						   end_time=end_time,
+						   ip_addr=ip_addr)
 
-	check_ip_location(db, ip_addr, uid)
+	new_session.user_agent = user_agent
+	new_session._user_record = user
+	geo_location = check_ip_location(db, ip_addr, user)
+	if geo_location is not None:
+		new_session.geo_location = geo_location
 
 	db.session.add(new_session)
-	db.session.flush()
-
-	make_transient(new_session)
 	return new_session
 
 
@@ -118,8 +113,6 @@ def get_session_by_id(session_id):
 	db = get_analytics_db()
 	session_record = db.session.query(Sessions).filter(
 									Sessions.session_id == session_id).first()
-	if session_record:
-		make_transient(session_record)
 	return session_record
 
 

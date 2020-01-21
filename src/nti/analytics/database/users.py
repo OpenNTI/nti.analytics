@@ -62,7 +62,6 @@ def create_user(user):
 	# For race conditions, let's just throw since we cannot really handle retrying
 	# gracefully at this level. A job-level retry should work though.
 	db.session.add(user)
-	db.session.flush()
 	logger.info('Created user (user=%s) (user_id=%s) (user_ds_id=%s)',
 				username, user.user_id, uid)
 	return user
@@ -72,6 +71,8 @@ def get_user_record(user):
 	# Look into using sqlalchemy baked queries for this
 	# and other high volume calls that return a single row.
 	# This is still considered experimental for 1.0.0.
+	if isinstance(user, Users):
+		return user
 	db = get_analytics_db()
 	uid = get_ds_id(user)
 	found_user = db.session.query(Users).filter(Users.user_ds_id == uid).first()

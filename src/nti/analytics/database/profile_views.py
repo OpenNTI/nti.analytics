@@ -36,17 +36,15 @@ def _create_profile_view(event, table, nti_session):
 	db = get_analytics_db()
 	user = get_entity(event.user)
 	user = get_or_create_user(user)
-	user_id = user.user_id
 
 	target = get_entity(event.ProfileEntity)
 	target = get_or_create_user(target)
-	target_id = target.user_id
 
 	timestamp = timestamp_type(event.timestamp)
 	context_path = get_context_path(event.context_path)
 
-	existing_record = _profile_view_exists(db, table, user_id,
-										   target_id, timestamp)
+	existing_record = _profile_view_exists(db, table, user.user_id,
+										   target.user_id, timestamp)
 	time_length = event.time_length
 	sid = nti_session
 
@@ -55,12 +53,12 @@ def _create_profile_view(event, table, nti_session):
 			existing_record.time_length = time_length
 		return
 
-	view_record = table(user_id=user_id,
-						session_id=sid,
-						target_id=target_id,
+	view_record = table(session_id=sid,
 						timestamp=timestamp,
 						context_path=context_path,
 						time_length=time_length)
+	view_record._user_record = user
+	view_record._target_record = target
 	db.session.add(view_record)
 	logger.debug('Profile view event (user=%s) (target=%s)',
 				 event.user, event.ProfileEntity)

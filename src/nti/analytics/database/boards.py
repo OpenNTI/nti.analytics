@@ -36,7 +36,7 @@ from nti.analytics.database import should_update_event
 
 from nti.analytics.database._utils import get_context_path
 from nti.analytics.database._utils import get_body_text_length
-from nti.analytics.database._utils import get_root_context_ids
+from nti.analytics.database._utils import get_root_context_records
 
 from nti.analytics.database.mime_types import build_mime_type_records
 
@@ -57,20 +57,20 @@ from nti.dataserver.interfaces import IEntity
 logger = __import__('logging').getLogger(__name__)
 
 
-def _get_root_context_ids( obj ):
+def _get_root_context_records(obj):
 	"""
 	For the given object, return the root context ids (tuple of
 	context_id/entity_context_id), creating records if needed.
 	"""
-	root_context = get_course( obj )
+	root_context = get_course(obj)
 	if root_context is None:
-		root_context = get_object_root( obj, IEntity )
-	return get_root_context_ids( root_context )
+		root_context = get_object_root(obj, IEntity)
+	return get_root_context_records(root_context)
 
 
-def _get_forum( db, forum_ds_id ):
+def _get_forum(db, forum_ds_id):
 	forum = db.session.query(ForumsCreated).filter(
-							 ForumsCreated.forum_ds_id == forum_ds_id ).first()
+							 ForumsCreated.forum_ds_id == forum_ds_id).first()
 	return forum
 
 
@@ -81,14 +81,19 @@ def _get_forum_id( db, forum_ds_id ):
 _forum_exists = _get_forum_id
 
 
-def _get_forum_id_from_forum( db, forum ):
-	forum_ds_id = get_ds_id( forum )
-	return _get_forum_id( db, forum_ds_id )
+def _get_forum_id_from_forum(db, forum):
+	forum_ds_id = get_ds_id(forum)
+	return _get_forum_id(db, forum_ds_id)
+
+
+def _get_forum_record_from_forum(db, forum):
+	forum_ds_id = get_ds_id(forum)
+	return _get_forum(db, forum_ds_id)
 
 
 def _get_topic( db, topic_ds_id ):
 	topic = db.session.query(TopicsCreated).filter(
-							 TopicsCreated.topic_ds_id == topic_ds_id ).first()
+							 TopicsCreated.topic_ds_id == topic_ds_id).first()
 	return topic
 
 
@@ -99,9 +104,14 @@ def _get_topic_id( db, topic_ds_id ):
 _topic_exists = _get_topic_id
 
 
-def _get_topic_id_from_topic( db, topic ):
-	topic_ds_id = get_ds_id( topic )
-	return _get_topic_id( db, topic_ds_id )
+def _get_topic_id_from_topic(db, topic):
+	topic_ds_id = get_ds_id(topic)
+	return _get_topic_id(db, topic_ds_id)
+
+
+def _get_topic_record_from_topic(db, topic):
+	topic_ds_id = get_ds_id(topic)
+	return _get_topic(db, topic_ds_id)
 
 
 def _get_topic_from_db_id( topic_id ):
@@ -110,7 +120,7 @@ def _get_topic_from_db_id( topic_id ):
 	"""
 	db = get_analytics_db()
 	topic = db.session.query(TopicsCreated).filter(
-							 TopicsCreated.topic_id == topic_id ).first()
+							 TopicsCreated.topic_id == topic_id).first()
 	topic = get_ds_object( topic.topic_ds_id )
 	return topic
 
@@ -118,26 +128,24 @@ def _get_topic_from_db_id( topic_id ):
 def create_forum(user, nti_session, forum):
 	db = get_analytics_db()
 	user_record = get_or_create_user( user )
-	uid = user_record.user_id
 	sid = nti_session
 	forum_ds_id = get_ds_id( forum )
 
-	if _forum_exists( db, forum_ds_id ):
-		logger.warn( 'Forum already exists (ds_id=%s) (user=%s)', forum_ds_id, user )
+	if _forum_exists(db, forum_ds_id):
+		logger.warn('Forum already exists (ds_id=%s) (user=%s)', forum_ds_id, user)
 		return
 
-	course_id, entity_root_context_id = _get_root_context_ids( forum )
+	root_context, entity_root_context = _get_root_context_records(forum)
 
-	timestamp = get_created_timestamp( forum )
+	timestamp = get_created_timestamp(forum)
 
-	new_object = ForumsCreated( user_id=uid,
-								session_id=sid,
+	new_object = ForumsCreated( session_id=sid,
 								timestamp=timestamp,
-								course_id=course_id,
-								entity_root_context_id=entity_root_context_id,
 								forum_ds_id=forum_ds_id )
-	db.session.add( new_object )
-	db.session.flush()
+	new_object._root_context_record = root_context
+	new_object._entity_root_context_record = entity_root_context
+	new_object._user_record = user_record
+	db.session.add(new_object)
 	return new_object
 
 
@@ -161,7 +169,6 @@ def delete_forum(timestamp, forum_ds_id):
 	db.session.query( ForumCommentsCreated ).filter(
 						ForumCommentsCreated.forum_id == forum_id ).update(
 							{ ForumCommentsCreated.deleted : timestamp } )
-	db.session.flush()
 
 
 def _set_topic_attributes( topic_record, topic ):
@@ -177,46 +184,42 @@ def _set_topic_attributes( topic_record, topic ):
 def create_topic(user, nti_session, topic):
 	db = get_analytics_db()
 	user_record = get_or_create_user( user )
-	uid = user_record.user_id
 	sid = nti_session
 	__traceback_info__ = topic, topic.__parent__
 	topic_ds_id = get_ds_id( topic )
 
-	if _topic_exists( db, topic_ds_id ):
-		logger.warn( 'Topic already exists (ds_id=%s) (user=%s)',
-					topic_ds_id, user )
+	if _topic_exists(db, topic_ds_id):
+		logger.warn('Topic already exists (ds_id=%s) (user=%s)',
+					topic_ds_id, user)
 		return
 
-	fid = _get_forum_id_from_forum( db, topic.__parent__ )
 	forum = topic.__parent__
+	forum_record = _get_forum_record_from_forum(db, forum)
 
-	if not fid:
+	if forum_record is None:
 		# Ok, create our forum.
 		forum_creator = get_creator( forum )
-		new_forum = create_forum( forum_creator, None, forum )
-		logger.info( 'Created forum (forum=%s) (user=%s)',
-					forum, forum_creator )
-		fid = new_forum.forum_id
+		forum_record = create_forum( forum_creator, None, forum )
+		logger.info('Created forum (forum=%s) (user=%s)',
+					forum, forum_creator)
 
-	course_id, entity_root_context_id = _get_root_context_ids( forum )
-
+	root_context, entity_root_context = _get_root_context_records(forum)
 	timestamp = get_created_timestamp( topic )
 
-	new_object = TopicsCreated( user_id=uid,
-								session_id=sid,
+	new_object = TopicsCreated( session_id=sid,
 								timestamp=timestamp,
-								course_id=course_id,
-								entity_root_context_id=entity_root_context_id,
-								forum_id=fid,
 								topic_ds_id=topic_ds_id )
+	new_object._user_record = user_record
+	new_object._forum_record = forum_record
+	new_object._root_context_record = root_context
+	new_object._entity_root_context_record = entity_root_context
 	_set_topic_attributes( new_object, topic )
-	db.session.add( new_object )
-	db.session.flush()
+	db.session.add(new_object)
 	# We manually roll our headline into the comments table (same in blogs),
 	# since these objects are not broadcast. This may make it difficult to
 	# get topic/headline stats only without accessing the ds, and it will
 	# be difficult to get non-headline comment data only.
-	if getattr( topic, 'headline', None ) is not None:
+	if getattr(topic, 'headline', None) is not None:
 		create_forum_comment(user, nti_session, topic, topic.headline)
 	return new_object
 
@@ -249,7 +252,6 @@ def delete_topic(timestamp, topic_ds_id):
 	db.session.query( ForumCommentsCreated ).filter(
 					  ForumCommentsCreated.topic_id == topic_id ).update(
 											{ ForumCommentsCreated.deleted : timestamp } )
-	db.session.flush()
 
 
 def _get_topic_rating_record( db, table, user_id, topic_id ):
@@ -260,34 +262,32 @@ def _get_topic_rating_record( db, table, user_id, topic_id ):
 
 
 def _create_topic_rating_record(db, table, user, session_id, timestamp,
-								topic_id, delta, creator_id, course_id,
-								entity_root_context_id ):
+								topic_id, delta, creator_id, root_context_id,
+								entity_root_context_id):
 	"""
 	Creates a like or favorite record, based on given table. If
 	the delta is negative, we delete the like or favorite record.
 	"""
 	if user is not None:
-		user_record = get_or_create_user( user )
-		user_id = user_record.user_id
-
+		user_record = get_or_create_user(user)
 		topic_rating_record = _get_topic_rating_record( db, table,
-													user_id, topic_id )
+														user_record.user_id,
+														topic_id )
 
 		if not topic_rating_record and delta > 0:
 			# Create
-			timestamp = timestamp_type( timestamp )
-			topic_rating_record = table( topic_id=topic_id,
-								user_id=user_id,
-								timestamp=timestamp,
-								session_id=session_id,
-								creator_id=creator_id,
-								course_id=course_id,
-								entity_root_context_id=entity_root_context_id )
-			db.session.add( topic_rating_record )
+			timestamp = timestamp_type(timestamp)
+			topic_rating_record = table(timestamp=timestamp,
+										topic_id=topic_id,
+										session_id=session_id,
+										creator_id=creator_id,
+										root_context_id=root_context_id,
+										entity_root_context_id=entity_root_context_id)
+			topic_rating_record._user_record = user_record
+			db.session.add(topic_rating_record)
 		elif topic_rating_record and delta < 0:
 			# Delete
-			db.session.delete( topic_rating_record )
-		db.session.flush()
+			db.session.delete(topic_rating_record)
 
 
 def like_topic( topic, user, session_id, timestamp, delta ):
@@ -297,33 +297,31 @@ def like_topic( topic, user, session_id, timestamp, delta ):
 								TopicsCreated.topic_ds_id == topic_ds_id ).first()
 
 	if db_topic is not None:
-		db.session.flush()
 		topic_id = db_topic.topic_id
 		creator_id = db_topic.user_id
-		course_id = db_topic.course_id
+		root_context_id = db_topic.root_context_id
 		_set_topic_attributes( db_topic, topic )
 		entity_root_context_id = db_topic.entity_root_context_id
 		_create_topic_rating_record( db, TopicLikes, user,
 									session_id, timestamp, topic_id, delta,
-									creator_id, course_id, entity_root_context_id )
+									creator_id, root_context_id, entity_root_context_id )
 
 
-def favorite_topic( topic, user, session_id, timestamp, delta ):
+def favorite_topic(topic, user, session_id, timestamp, delta):
 	db = get_analytics_db()
 	topic_ds_id = get_ds_id( topic )
 	db_topic = db.session.query(TopicsCreated).filter(
 								TopicsCreated.topic_ds_id == topic_ds_id ).first()
 
 	if db_topic is not None:
-		db.session.flush()
 		topic_id = db_topic.topic_id
 		creator_id = db_topic.user_id
-		course_id = db_topic.course_id
+		root_context_id = db_topic.root_context_id
 		_set_topic_attributes( db_topic, topic )
 		entity_root_context_id = db_topic.entity_root_context_id
-		_create_topic_rating_record( db, TopicFavorites, user,
-								session_id, timestamp, topic_id, delta,
-								creator_id, course_id, entity_root_context_id )
+		_create_topic_rating_record(db, TopicFavorites, user,
+									session_id, timestamp, topic_id, delta,
+									creator_id, root_context_id, entity_root_context_id )
 
 
 def flag_topic( topic, state ):
@@ -332,7 +330,6 @@ def flag_topic( topic, state ):
 	db_topic = db.session.query(TopicsCreated).filter(
 								TopicsCreated.topic_ds_id == topic_ds_id ).first()
 	db_topic.is_flagged = state
-	db.session.flush()
 
 
 def _topic_view_exists( db, user_id, topic_id, timestamp ):
@@ -346,25 +343,24 @@ def create_topic_view(user, nti_session, timestamp, root_context, context_path,
 					  topic, time_length):
 	db = get_analytics_db()
 	user_record = get_or_create_user( user )
-	uid = user_record.user_id
 	sid = nti_session
 	__traceback_info__ = topic, topic.__parent__
-	did = _get_topic_id_from_topic( db, topic )
+	topic_record = _get_topic_record_from_topic( db, topic )
 
-	if not did:
+	if topic_record is None:
 		# Create our topic (and forum) if necessary.
 		topic_creator = get_creator( topic )
-		new_topic = create_topic( topic_creator, None, topic )
-		logger.info( 'Created topic (topic=%s) (user=%s)',
-					topic, topic_creator )
-		did = new_topic.topic_id
+		topic_record = create_topic( topic_creator, None, topic )
+		logger.info('Created topic (topic=%s) (user=%s)',
+					topic, topic_creator)
 
-	fid = _get_forum_id_from_forum( db, topic.__parent__ )
+	forum_record = _get_forum_record_from_forum(db, topic.__parent__)
 
-	course_id, entity_root_context_id = get_root_context_ids( root_context )
+	root_context, entity_root_context = get_root_context_records(root_context)
 	timestamp = timestamp_type( timestamp )
 
-	existing_record = _topic_view_exists( db, uid, did, timestamp )
+	existing_record = _topic_view_exists(db, user_record.user_id,
+										topic_record.topic_id, timestamp)
 
 	if existing_record is not None:
 		if should_update_event(existing_record, time_length):
@@ -373,21 +369,21 @@ def create_topic_view(user, nti_session, timestamp, root_context, context_path,
 		else:
 			# XXX: Really shouldn't happen anymore
 			logger.warn('Topic view already exists (user=%s) (topic=%s) (time_length=%s)',
-						user, did, time_length)
+						user, topic_record.topic_id, time_length)
 			return
 
 	context_path = get_context_path( context_path )
 
-	new_object = TopicsViewed( user_id=uid,
-								session_id=sid,
-								timestamp=timestamp,
-								course_id=course_id,
-								entity_root_context_id=entity_root_context_id,
-								context_path=context_path,
-								forum_id=fid,
-								topic_id=did,
-								time_length=time_length )
-	db.session.add( new_object )
+	new_object = TopicsViewed(session_id=sid,
+							  timestamp=timestamp,
+							  context_path=context_path,
+							  time_length=time_length)
+	new_object._user_record = user_record
+	new_object._topic_record = topic_record
+	new_object._forum_record = forum_record
+	new_object._root_context_record = root_context
+	new_object._entity_root_context_record = entity_root_context
+	db.session.add(new_object)
 
 
 def _get_comment( db, comment_id ):
@@ -430,28 +426,26 @@ def _set_comment_attributes( db, comment_record, comment ):
 def create_forum_comment(user, nti_session, topic, comment):
 	db = get_analytics_db()
 	user_record = get_or_create_user( user )
-	uid = user_record.user_id
 	sid = nti_session
 	forum = topic.__parent__
-	topic_id = _get_topic_id_from_topic( db, topic )
+	topic_record = _get_topic_record_from_topic(db, topic)
 	cid = get_ds_id(comment)
 
-	if not topic_id:
+	if topic_record is None:
 		# Create our topic (and forum) if necessary.
 		topic_creator = get_creator( topic )
-		new_topic = create_topic( topic_creator, None, topic )
-		logger.info( 'Created topic (topic=%s) (user=%s)',
-					topic, topic_creator )
-		topic_id = new_topic.topic_id
+		topic_record = create_topic( topic_creator, None, topic )
+		logger.info('Created topic (topic=%s) (user=%s)',
+					topic, topic_creator)
 
-	fid = _get_forum_id_from_forum( db, forum )
+	forum_record = _get_forum_record_from_forum(db, forum)
 
 	if _comment_exists( db, cid ):
-		logger.warn( 'Forum comment already exists (user=%s) (comment_id=%s)',
-					user, cid )
+		logger.warn('Forum comment already exists (user=%s) (comment_id=%s)',
+					user, cid)
 		return
 
-	course_id, entity_root_context_id = _get_root_context_ids( forum )
+	root_context, entity_root_context = _get_root_context_records(forum)
 	pid = parent_user_id = None
 	timestamp = get_created_timestamp( comment )
 
@@ -462,19 +456,18 @@ def create_forum_comment(user, nti_session, topic, comment):
 		parent_user_record = get_or_create_user( parent_creator )
 		parent_user_id = parent_user_record.user_id
 
-	new_object = ForumCommentsCreated( 	user_id=uid,
-										session_id=sid,
+	new_object = ForumCommentsCreated( 	session_id=sid,
 										timestamp=timestamp,
-										course_id=course_id,
-										entity_root_context_id=entity_root_context_id,
-										forum_id=fid,
-										topic_id=topic_id,
 										parent_id=pid,
 										parent_user_id=parent_user_id,
 										comment_id=cid )
-	_set_comment_attributes( db, new_object, comment )
-	db.session.add( new_object )
-	db.session.flush()
+	new_object._user_record = user_record
+	new_object._topic_record = topic_record
+	new_object._forum_record = forum_record
+	new_object._root_context_record = root_context
+	new_object._entity_root_context_record = entity_root_context
+	_set_comment_attributes(db, new_object, comment)
+	db.session.add(new_object)
 	return new_object
 
 
@@ -500,7 +493,6 @@ def delete_forum_comment(timestamp, comment_id):
 		logger.info( 'Comment never created (%s)', comment_id )
 		return
 	comment.deleted=timestamp
-	db.session.flush()
 
 
 def _get_comment_rating_record( db, table, user_id, comment_id ):
@@ -510,36 +502,35 @@ def _get_comment_rating_record( db, table, user_id, comment_id ):
 	return comment_rating_record
 
 
-def _create_forum_comment_rating_record( db, table, user, session_id,
+def _create_forum_comment_rating_record(db, table, user, session_id,
 										timestamp, comment_id, delta,
-										creator_id, course_id,
-										entity_root_context_id ):
+										creator_id, root_context_id,
+										entity_root_context_id):
 	"""
 	Creates a like or favorite record, based on given table. If
 	the delta is negative, we delete the like or favorite record.
 	"""
 	if user is not None:
 		user_record = get_or_create_user( user )
-		user_id = user_record.user_id
 
-		comment_rating_record = _get_comment_rating_record( db, table,
-														user_id, comment_id )
+		comment_rating_record = _get_comment_rating_record(db, table,
+														   user_record.user_id,
+														   comment_id)
 
 		if not comment_rating_record and delta > 0:
 			# Create
-			timestamp = timestamp_type( timestamp )
-			comment_rating_record = table( comment_id=comment_id,
-								user_id=user_id,
-								timestamp=timestamp,
-								session_id=session_id,
-								creator_id=creator_id,
-								course_id=course_id,
-								entity_root_context_id=entity_root_context_id )
-			db.session.add( comment_rating_record )
+			timestamp = timestamp_type(timestamp)
+			comment_rating_record = table(comment_id=comment_id,
+										  timestamp=timestamp,
+										  session_id=session_id,
+										  creator_id=creator_id,
+										  root_context_id=root_context_id,
+										  entity_root_context_id=entity_root_context_id )
+			comment_rating_record._user_record = user_record
+			db.session.add(comment_rating_record)
 		elif comment_rating_record and delta < 0:
 			# Delete
-			db.session.delete( comment_rating_record )
-		db.session.flush()
+			db.session.delete(comment_rating_record)
 
 
 def like_comment( comment, user, session_id, timestamp, delta ):
@@ -549,15 +540,14 @@ def like_comment( comment, user, session_id, timestamp, delta ):
 								ForumCommentsCreated.comment_id == comment_id ).one()
 
 	if db_comment is not None:
-		db.session.flush()
 		creator_id = db_comment.user_id
 		comment_id = db_comment.comment_id
-		course_id = db_comment.course_id
+		root_context_id = db_comment.root_context_id
 		_set_comment_attributes( db, db_comment, comment )
 		entity_root_context_id = db_comment.entity_root_context_id
 		_create_forum_comment_rating_record( db, ForumCommentLikes, user,
 								session_id, timestamp, comment_id, delta,
-								creator_id, course_id, entity_root_context_id )
+								creator_id, root_context_id, entity_root_context_id )
 
 
 def favorite_comment( comment, user, session_id, timestamp, delta ):
@@ -569,12 +559,12 @@ def favorite_comment( comment, user, session_id, timestamp, delta ):
 	if db_comment is not None:
 		creator_id = db_comment.user_id
 		comment_id = db_comment.comment_id
-		course_id = db_comment.course_id
+		root_context_id = db_comment.root_context_id
 		_set_comment_attributes( db, db_comment, comment )
 		entity_root_context_id = db_comment.entity_root_context_id
 		_create_forum_comment_rating_record( db, ForumCommentFavorites, user,
 								session_id, timestamp, comment_id, delta,
-								creator_id, course_id, entity_root_context_id )
+								creator_id, root_context_id, entity_root_context_id )
 
 
 def flag_comment( comment, state ):
@@ -583,7 +573,6 @@ def flag_comment( comment, state ):
 	db_comment = db.session.query(ForumCommentsCreated).filter(
 								ForumCommentsCreated.comment_id == comment_id ).one()
 	db_comment.is_flagged = state
-	db.session.flush()
 
 
 def _resolve_comment( row, user=None, course=None, parent_user=None ):
@@ -707,9 +696,9 @@ def get_topics_created_for_forum( forum ):
 
 def get_topics_created_for_course( course ):
 	db = get_analytics_db()
-	course_id = get_root_context_id( db, course )
+	root_context_id = get_root_context_id( db, course )
 	results = db.session.query(TopicsCreated).filter(
-								TopicsCreated.course_id == course_id,
+								TopicsCreated.root_context_id == root_context_id,
 								TopicsCreated.deleted == None  ).all()
 	return resolve_objects( _resolve_topic, results, course=course )
 

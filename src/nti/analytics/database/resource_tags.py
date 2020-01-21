@@ -29,7 +29,7 @@ from nti.analytics.database import get_analytics_db
 
 from nti.analytics.database._utils import get_context_path
 from nti.analytics.database._utils import get_body_text_length
-from nti.analytics.database._utils import get_root_context_ids
+from nti.analytics.database._utils import get_root_context_records
 
 from nti.analytics.database.mime_types import build_mime_type_records
 
@@ -40,9 +40,9 @@ from nti.analytics.database.query_utils import get_ratings_for_user_objects
 from nti.analytics.database.query_utils import get_replies_to_user as _get_replies_to_user
 from nti.analytics.database.query_utils import get_user_replies_to_others as _get_user_replies_to_others
 
-from nti.analytics.database.resources import get_resource_id
+from nti.analytics.database.resources import get_resource_record
 
-from nti.analytics.database.root_context import get_root_context_id
+from nti.analytics.database.root_context import get_root_context_record
 
 from nti.analytics.database.users import get_or_create_user
 from nti.analytics.database.users import get_user_db_id
@@ -150,11 +150,9 @@ def _set_note_attributes( db, note_record, note, course ):
 def create_note(user, nti_session, note):
 	db = get_analytics_db()
 	user_record = get_or_create_user(user)
-	uid = user_record.user_id
 	sid = nti_session
 	rid = get_ntiid_id(note.containerId)
-	rid = get_resource_id(db, rid, create=True)
-
+	resource_record = get_resource_record(db, rid, create=True)
 	note_ds_id = get_ds_id(note)
 
 	if _note_exists(db, note_ds_id):
@@ -163,7 +161,7 @@ def create_note(user, nti_session, note):
 		return
 
 	course = get_root_context(note)
-	course_id = get_root_context_id(db, course, create=True)
+	root_context_record = get_root_context_record(db, course, create=True)
 	timestamp = get_created_timestamp(note)
 
 	parent_id = parent_user_id = None
@@ -183,17 +181,16 @@ def create_note(user, nti_session, note):
 			parent_user_id = new_note.user_id
 			logger.info('Created parent note (user=%s) (note=%s)', note_creator, parent_note)
 
-	new_object = NotesCreated(	user_id=uid,
-								session_id=sid,
+	new_object = NotesCreated(	session_id=sid,
 								timestamp=timestamp,
-								course_id=course_id,
 								note_ds_id=note_ds_id,
-								resource_id=rid,
 								parent_id=parent_id,
 								parent_user_id=parent_user_id)
 	_set_note_attributes( db, new_object, note, course )
+	new_object._resource = resource_record
+	new_object._root_context_record = root_context_record
+	new_object._user_record = user_record
 	db.session.add(new_object)
-	db.session.flush()
 	return new_object
 
 
@@ -221,7 +218,6 @@ def delete_note(timestamp, note_ds_id):
 		return
 	note.deleted = timestamp
 	note.note_ds_id = None
-	db.session.flush()
 
 
 def _get_note_rating_record(db, table, user_id, note_id):
@@ -238,25 +234,25 @@ def _create_note_rating_record(db, table, user, session_id, timestamp, delta, no
 	"""
 	if user is not None:
 		user_record = get_or_create_user(user)
-		user_id = user_record.user_id
 		creator_id = note_record.user_id
 		note_id = note_record.note_id
 		course_id = note_record.course_id
 		entity_root_context_id = note_record.entity_root_context_id
 
 		note_rating_record = _get_note_rating_record(db, table,
-													 user_id, note_id)
+													 user_record.user_id,
+													 note_id)
 
 		if not note_rating_record and delta > 0:
 			# Create
 			timestamp = timestamp_type(timestamp)
 			note_rating_record = table(	note_id=note_id,
-										user_id=user_id,
 										timestamp=timestamp,
 										session_id=session_id,
 										creator_id=creator_id,
 										course_id=course_id,
 										entity_root_context_id=entity_root_context_id)
+			note_rating_record._user_record = user_record
 			db.session.add(note_rating_record)
 		elif note_rating_record and delta < 0:
 			# Delete
@@ -295,7 +291,6 @@ def flag_note(note, state):
 	db_note = db.session.query(NotesCreated).filter(
 							   NotesCreated.note_ds_id == note_ds_id).first()
 	db_note.is_flagged = state
-	db.session.flush()
 
 
 def _note_view_exists(db, note_id, user_id, timestamp):
@@ -308,10 +303,9 @@ def _note_view_exists(db, note_id, user_id, timestamp):
 def create_note_view(user, nti_session, timestamp, context_path, root_context, note):
 	db = get_analytics_db()
 	user_record = get_or_create_user(user)
-	uid = user_record.user_id
 	sid = nti_session
 	rid = get_ntiid_id(note.containerId)
-	rid = get_resource_id(db, rid, create=True)
+	resource_record = get_resource_record(db, rid, create=True)
 
 	note_ds_id = get_ds_id(note)
 	note_id = _get_note_id(db, note_ds_id)
@@ -323,22 +317,22 @@ def create_note_view(user, nti_session, timestamp, context_path, root_context, n
 
 	timestamp = timestamp_type(timestamp)
 
-	if _note_view_exists(db, note_id, uid, timestamp):
+	if _note_view_exists(db, note_id, user_record.user_id, timestamp):
 		logger.warn('Note view already exists (user=%s) (note_id=%s)',
 					user, note_id)
 		return
 
 	context_path = get_context_path(context_path)
-	course_id, entity_root_context_id = get_root_context_ids(root_context)
+	root_context, entity_root_context = get_root_context_records(root_context)
 
-	new_object = NotesViewed(user_id=uid,
-							 session_id=sid,
+	new_object = NotesViewed(session_id=sid,
 							 timestamp=timestamp,
-							 course_id=course_id,
-							 entity_root_context_id=entity_root_context_id,
 							 context_path=context_path,
-							 resource_id=rid,
 							 note_id=note_id)
+	new_object._resource = resource_record
+	new_object._user_record = user_record
+	new_object._root_context_record = root_context
+	new_object._entity_root_context_record = entity_root_context
 	db.session.add(new_object)
 
 
@@ -350,11 +344,9 @@ def _highlight_exists(db, highlight_ds_id):
 def create_highlight(user, nti_session, highlight):
 	db = get_analytics_db()
 	user_record = get_or_create_user(user)
-	uid = user_record.user_id
 	sid = nti_session
 	rid = get_ntiid_id(highlight.containerId)
-	rid = get_resource_id(db, rid, create=True)
-
+	rid = get_resource_record(db, rid, create=True)
 	highlight_ds_id = get_ds_id(highlight)
 
 	if _highlight_exists(db, highlight_ds_id):
@@ -363,15 +355,15 @@ def create_highlight(user, nti_session, highlight):
 		return
 
 	course = get_root_context(highlight)
-	course_id = get_root_context_id(db, course, create=True)
+	root_context_record = get_root_context_record(db, course, create=True)
 	timestamp = get_created_timestamp(highlight)
 
-	new_object = HighlightsCreated(	user_id=uid,
-									session_id=sid,
+	new_object = HighlightsCreated(	session_id=sid,
 									timestamp=timestamp,
-									course_id=course_id,
 									highlight_ds_id=highlight_ds_id,
 									resource_id=rid)
+	new_object._user_record = user_record
+	new_object._root_context_record = root_context_record
 	db.session.add(new_object)
 
 
@@ -385,7 +377,6 @@ def delete_highlight(timestamp, highlight_ds_id):
 		return
 	highlight.deleted = timestamp
 	highlight.highlight_ds_id = None
-	db.session.flush()
 
 
 def _bookmark_exists(db, bookmark_ds_id):
@@ -396,10 +387,9 @@ def _bookmark_exists(db, bookmark_ds_id):
 def create_bookmark(user, nti_session, bookmark):
 	db = get_analytics_db()
 	user_record = get_or_create_user(user)
-	uid = user_record.user_id
 	sid = nti_session
 	rid = get_ntiid_id(bookmark.containerId)
-	rid = get_resource_id(db, rid, create=True)
+	resource_record = get_resource_record(db, rid, create=True)
 
 	bookmark_ds_id = get_ds_id(bookmark)
 
@@ -409,15 +399,15 @@ def create_bookmark(user, nti_session, bookmark):
 		return
 
 	course = get_root_context(bookmark)
-	course_id = get_root_context_id(db, course, create=True)
+	root_context_record = get_root_context_record(db, course, create=True)
 	timestamp = get_created_timestamp(bookmark)
 
-	new_object = BookmarksCreated(	user_id=uid,
-									session_id=sid,
-									timestamp=timestamp,
-									root_context_id=course_id,
-									bookmark_ds_id=bookmark_ds_id,
-									resource_id=rid)
+	new_object = BookmarksCreated(session_id=sid,
+								  timestamp=timestamp,
+								  bookmark_ds_id=bookmark_ds_id)
+	new_object._resource = resource_record
+	new_object._user_record = user_record
+	new_object._root_context_record = root_context_record
 	db.session.add(new_object)
 
 
@@ -431,7 +421,6 @@ def delete_bookmark(timestamp, bookmark_ds_id):
 		return
 	bookmark.deleted = timestamp
 	bookmark.bookmark_ds_id = None
-	db.session.flush()
 
 
 def _get_note_from_db_id(note_id):

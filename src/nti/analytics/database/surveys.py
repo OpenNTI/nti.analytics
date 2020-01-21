@@ -19,7 +19,7 @@ from nti.analytics.database import get_analytics_db
 
 from nti.analytics.database.assessments import create_assessment_view
 
-from nti.analytics.database.root_context import get_root_context_id
+from nti.analytics.database.root_context import get_root_context_record
 
 from nti.analytics.database.query_utils import get_filtered_records
 
@@ -38,9 +38,8 @@ def _poll_exists(db, submission_id):
 def create_poll_taken(user, nti_session, timestamp, course, submission):
 	db = get_analytics_db()
 	user_record = get_or_create_user(user)
-	uid = user_record.user_id
 	sid = nti_session
-	course_id = get_root_context_id(db, course, create=True)
+	root_context_record = get_root_context_record(db, course, create=True)
 	timestamp = timestamp_type(timestamp)
 	submission_id = get_ds_id(submission)
 
@@ -49,14 +48,13 @@ def create_poll_taken(user, nti_session, timestamp, course, submission):
 					submission_id, user)
 		return False
 
-	new_object = PollsTaken(user_id=uid,
-							session_id=sid,
+	new_object = PollsTaken(session_id=sid,
 							timestamp=timestamp,
-							course_id=course_id,
 							poll_id=submission.inquiryId,
 							submission_id=submission_id)
+	new_object._root_context_record = root_context_record
+	new_object._user_record = user_record
 	db.session.add(new_object)
-	db.session.flush()
 	return new_object
 
 
@@ -68,9 +66,8 @@ def _survey_exists(db, submission_id):
 def create_survey_taken(user, nti_session, timestamp, course, submission):
 	db = get_analytics_db()
 	user_record = get_or_create_user(user)
-	uid = user_record.user_id
 	sid = nti_session
-	course_id = get_root_context_id(db, course, create=True)
+	root_context_record = get_root_context_record(db, course, create=True)
 	timestamp = timestamp_type(timestamp)
 	submission_id = get_ds_id(submission)
 
@@ -79,14 +76,13 @@ def create_survey_taken(user, nti_session, timestamp, course, submission):
 					submission_id, user)
 		return False
 
-	new_object = SurveysTaken(user_id=uid,
-							  session_id=sid,
+	new_object = SurveysTaken(session_id=sid,
 							  timestamp=timestamp,
-							  course_id=course_id,
 							  survey_id=submission.inquiryId,
 							  submission_id=submission_id)
+	new_object._root_context_record = root_context_record
+	new_object._user_record = user_record
 	db.session.add(new_object)
-	db.session.flush()
 	return new_object
 
 

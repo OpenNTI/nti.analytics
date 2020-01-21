@@ -35,6 +35,7 @@ from nti.analytics.database.blogs import BlogCommentsCreated
 from nti.analytics.database.blogs import BlogCommentLikes
 from nti.analytics.database.blogs import BlogCommentFavorites
 
+from nti.analytics.database.users import Users
 from nti.analytics.database.users import get_user_db_id
 
 # For new objects, this is the default intid stored in the database.
@@ -55,7 +56,7 @@ class TestBlog(AnalyticsTestBase):
 		new_blog_id = 1
 		new_blog_ds_id = 999
 		new_blog = MockParent( None, intid=new_blog_ds_id )
-		db_blogs.create_blog( test_user_ds_id, test_session_id, new_blog )
+		db_blogs.create_blog(self.db_user, test_session_id, new_blog)
 		results = self.session.query( BlogsCreated ).all()
 		assert_that( results, has_length( 1 ) )
 
@@ -70,7 +71,7 @@ class TestBlog(AnalyticsTestBase):
 		results = self.session.query( BlogsViewed ).all()
 		assert_that( results, has_length( 0 ) )
 
-		db_blogs.create_blog_view( test_user_ds_id, test_session_id, datetime.now(), context_path, new_blog, 18 )
+		db_blogs.create_blog_view(self.db_user, test_session_id, datetime.now(), context_path, new_blog, 18)
 		results = self.session.query( BlogsViewed ).all()
 		assert_that( results, has_length( 1 ) )
 
@@ -94,7 +95,7 @@ class TestBlog(AnalyticsTestBase):
 
 		new_blog_ds_id = 999
 		new_blog = MockParent( None, intid=new_blog_ds_id )
-		db_blogs.create_blog( test_user_ds_id, test_session_id, new_blog )
+		db_blogs.create_blog(self.db_user, test_session_id, new_blog)
 
 		results = self.session.query( BlogsCreated ).all()
 		assert_that( results, has_length( 1 ) )
@@ -115,15 +116,15 @@ class TestBlog(AnalyticsTestBase):
 		event_time = datetime.now()
 		new_blog_ds_id = 999
 		new_blog = MockParent( None, intid=new_blog_ds_id )
-		db_blogs.create_blog( test_user_ds_id, test_session_id, new_blog )
-		db_blogs.create_blog_view( test_user_ds_id, test_session_id,
-								  event_time, context_path, new_blog, time_length )
+		db_blogs.create_blog(self.db_user, test_session_id, new_blog)
+		db_blogs.create_blog_view(self.db_user, test_session_id,
+								  event_time, context_path, new_blog, time_length)
 
 		results = self.session.query( BlogsViewed ).all()
 		assert_that( results, has_length( 1 ) )
 
-		db_blogs.create_blog_view( test_user_ds_id, test_session_id,
-								  event_time, context_path, new_blog, new_time_length )
+		db_blogs.create_blog_view(self.db_user, test_session_id,
+								  event_time, context_path, new_blog, new_time_length)
 
 		results = self.session.query( BlogsViewed ).all()
 		assert_that( results, has_length( 1 ) )
@@ -139,14 +140,17 @@ class TestBlog(AnalyticsTestBase):
 		event_time = datetime.now()
 		new_blog_ds_id = 999
 		new_blog = MockParent( None, intid=new_blog_ds_id )
-		new_blog_record = db_blogs.create_blog( test_user_ds_id,
+		new_blog_record = db_blogs.create_blog( self.db_user,
 												test_session_id,
 												new_blog )
 
 		delta = 1
 		new_user_ds_id = 111111
-		_rating_call( new_blog, new_user_ds_id,
-						test_session_id, event_time, delta )
+		user = Users(user_ds_id=new_user_ds_id)
+		self.session.add(user)
+		self.session.flush()
+		_rating_call( new_blog, user,
+					  test_session_id, event_time, delta )
 
 		results = self.session.query( table ).all()
 		assert_that( results, has_length( 1 ) )
@@ -160,7 +164,7 @@ class TestBlog(AnalyticsTestBase):
 
 		# Now revert
 		delta = -1
-		_rating_call( new_blog, new_user_ds_id, test_session_id, event_time, delta )
+		_rating_call( new_blog, user, test_session_id, event_time, delta )
 		results = self.session.query( table ).all()
 		assert_that( results, has_length( 0 ) )
 
@@ -177,7 +181,7 @@ class TestBlogComments(AnalyticsTestBase):
 		self.blog_ds_id = 999
 		self.blog_id = 1
 		new_blog = MockParent( None, intid=self.blog_ds_id )
-		db_blogs.create_blog( test_user_ds_id, test_session_id, new_blog )
+		db_blogs.create_blog(self.db_user, test_session_id, new_blog)
 
 	def tearDown(self):
 		self.session.close()
@@ -189,7 +193,7 @@ class TestBlogComments(AnalyticsTestBase):
 		# Empty parent
 		comment_id = DEFAULT_INTID
 		my_comment = MockComment( MockThought( None ), intid=comment_id )
-		db_blogs.create_blog_comment( test_user_ds_id, test_session_id, self.blog_ds_id, my_comment )
+		db_blogs.create_blog_comment(self.db_user, test_session_id, self.blog_ds_id, my_comment)
 
 		results = self.session.query( BlogCommentsCreated ).all()
 		assert_that( results, has_length( 1 ) )
@@ -214,12 +218,12 @@ class TestBlogComments(AnalyticsTestBase):
 
 		comment_id = DEFAULT_INTID
 		my_comment = MockComment( MockThought( None ), intid=comment_id )
-		db_blogs.create_blog_comment( test_user_ds_id, test_session_id, self.blog_ds_id, my_comment )
+		db_blogs.create_blog_comment( self.db_user, test_session_id, self.blog_ds_id, my_comment )
 
 		results = self.session.query( BlogCommentsCreated ).all()
 		assert_that( results, has_length( 1 ) )
 
-		db_blogs.create_blog_comment( test_user_ds_id, test_session_id, self.blog_ds_id, my_comment )
+		db_blogs.create_blog_comment( self.db_user, test_session_id, self.blog_ds_id, my_comment )
 
 		results = self.session.query( BlogCommentsCreated ).all()
 		assert_that( results, has_length( 1 ) )
@@ -231,7 +235,7 @@ class TestBlogComments(AnalyticsTestBase):
 		# Empty parent
 		my_comment = MockComment( MockThought( None ) )
 
-		db_blogs.create_blog_comment( test_user_ds_id, test_session_id, self.blog_ds_id, my_comment )
+		db_blogs.create_blog_comment( self.db_user, test_session_id, self.blog_ds_id, my_comment )
 
 		db_blogs.delete_blog( datetime.now(), self.blog_ds_id )
 
@@ -250,7 +254,7 @@ class TestBlogComments(AnalyticsTestBase):
 		my_comment = MockComment( CommentPost(), inReplyTo=CommentPost(),
 								  intid=comment_id )
 
-		db_blogs.create_blog_comment( test_user_ds_id, test_session_id,
+		db_blogs.create_blog_comment( self.db_user, test_session_id,
 									  self.blog_ds_id, my_comment )
 
 		results = self.session.query( BlogCommentsCreated ).all()
@@ -278,12 +282,15 @@ class TestBlogComments(AnalyticsTestBase):
 		event_time = datetime.now()
 		comment_id = DEFAULT_INTID
 		my_comment = MockComment( CommentPost(), inReplyTo=CommentPost(), intid=comment_id )
-		comment_record = db_blogs.create_blog_comment( test_user_ds_id, test_session_id,
+		comment_record = db_blogs.create_blog_comment( self.db_user, test_session_id,
 													self.blog_ds_id, my_comment )
 
 		delta = 1
 		new_user_ds_id = 111111
-		_rating_call( my_comment, new_user_ds_id,
+		user = Users(user_ds_id=new_user_ds_id)
+		self.session.add( user )
+		self.session.flush()
+		_rating_call( my_comment, user,
 					  test_session_id, event_time, delta )
 
 		results = self.session.query( table ).all()
@@ -298,7 +305,7 @@ class TestBlogComments(AnalyticsTestBase):
 
 		# Now revert
 		delta = -1
-		_rating_call( my_comment, new_user_ds_id, test_session_id, event_time, delta )
+		_rating_call( my_comment, user, test_session_id, event_time, delta )
 		results = self.session.query( table ).all()
 		assert_that( results, has_length( 0 ) )
 
@@ -307,6 +314,7 @@ class TestBlogComments(AnalyticsTestBase):
 
 	def test_favorites(self):
 		self._do_test_rating( BlogCommentFavorites, db_blogs.favorite_comment )
+
 
 class TestBlogLazyCreate(AnalyticsTestBase):
 	"""
@@ -320,6 +328,9 @@ class TestBlogLazyCreate(AnalyticsTestBase):
 		self.new_blog = MockParent( None, intid=self.blog_ds_id )
 		self.blog_creator = Principal( username=str( test_user_ds_id ) )
 		self.blog_creator.__dict__['_ds_intid'] = test_user_ds_id
+		self.db_user = Users(user_ds_id='9999')
+		self.session.add(self.db_user)
+		self.session.flush()
 		self.new_blog.creator = self.blog_creator
 
 	def tearDown(self):
@@ -333,8 +344,8 @@ class TestBlogLazyCreate(AnalyticsTestBase):
 
 		# Create comment
 		comment_id = DEFAULT_INTID
-		my_comment = MockComment( self.new_blog, intid=comment_id )
-		db_blogs.create_blog_comment( '9999', test_session_id, self.new_blog, my_comment )
+		my_comment = MockComment(self.new_blog, intid=comment_id)
+		db_blogs.create_blog_comment(self.db_user, test_session_id, self.new_blog, my_comment)
 
 		results = self.session.query( BlogCommentsCreated ).all()
 		assert_that( results, has_length( 1 ) )
@@ -353,7 +364,8 @@ class TestBlogLazyCreate(AnalyticsTestBase):
 		context_path = None
 
 		# Create blog
-		db_blogs.create_blog_view( '9999', test_session_id, datetime.now(), context_path, self.new_blog, 18 )
+		db_blogs.create_blog_view(self.db_user, test_session_id,
+								datetime.now(), context_path, self.new_blog, 18)
 
 		blog_creator_db_id = get_user_db_id( self.blog_creator )
 
