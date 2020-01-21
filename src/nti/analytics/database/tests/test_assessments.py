@@ -116,7 +116,7 @@ class TestAssessments(AnalyticsTestBase):
 																  self.course_id)
 		sa_records = [x for x in sa_records]
 		assert_that( sa_records, has_length( 0 ) )
-		sa_records = db_assessments.get_self_assessments_for_course( self.course_id )
+		sa_records = db_assessments.get_self_assessments_for_course( self.course_record )
 		sa_records = [x for x in sa_records]
 		assert_that( sa_records, has_length( 0 ))
 		sa_details = self.db.session.query( SelfAssessmentDetails ).all()
@@ -126,13 +126,13 @@ class TestAssessments(AnalyticsTestBase):
 		record = db_assessments.create_self_assessment_taken(test_user_ds_id,
 															test_session_id,
 															datetime.now(),
-															self.course_id,
+															self.course_record,
 															new_assessment )
 
 		submission_id = record.submission_id
 
 		# By course/user
-		sa_records = db_assessments.get_self_assessments_for_user( test_user_ds_id, self.course_id )
+		sa_records = db_assessments.get_self_assessments_for_user( test_user_ds_id, self.course_record )
 		sa_records = [x for x in sa_records]
 		assert_that( sa_records, has_length( 1 ))
 
@@ -141,7 +141,7 @@ class TestAssessments(AnalyticsTestBase):
 		assert_that( sa_taken.timestamp, not_none() )
 
 		# By course
-		sa_records = db_assessments.get_self_assessments_for_course( self.course_id )
+		sa_records = db_assessments.get_self_assessments_for_course( self.course_record )
 		sa_records = [x for x in sa_records]
 		assert_that( sa_records, has_length( 1 ))
 
@@ -175,22 +175,22 @@ class TestAssessments(AnalyticsTestBase):
 		assert_that( sa_detail.question_part_id, is_( 0 ) )
 
 	def test_idempotent(self):
-		sa_records = db_assessments.get_self_assessments_for_user( test_user_ds_id, self.course_id )
+		sa_records = db_assessments.get_self_assessments_for_user( test_user_ds_id, self.course_record )
 		sa_records = [x for x in sa_records]
 		assert_that( sa_records, has_length( 0 ) )
 
 		assessment_time = datetime.now()
 		new_assessment = _get_assessed_question_set()
 		db_assessments.create_self_assessment_taken(
-								test_user_ds_id, test_session_id, assessment_time, self.course_id, new_assessment )
+								test_user_ds_id, test_session_id, assessment_time, self.course_record, new_assessment )
 
-		sa_records = db_assessments.get_self_assessments_for_user( test_user_ds_id, self.course_id )
+		sa_records = db_assessments.get_self_assessments_for_user( test_user_ds_id, self.course_record )
 		sa_records = [x for x in sa_records]
 		assert_that( sa_records, has_length( 1 ) )
 
 		# Again
 		db_assessments.create_self_assessment_taken(
-								test_user_ds_id, test_session_id, assessment_time, self.course_id, new_assessment )
+								test_user_ds_id, test_session_id, assessment_time, self.course_record, new_assessment )
 
 		sa_records = [x for x in sa_records]
 		assert_that( sa_records, has_length( 1 ) )
@@ -632,7 +632,7 @@ class TestUserActivity(NTIAnalyticsTestCase):
 
 		db.session.flush()
 		user_map = {user_id: count for user_id, count in
-					get_assignments_taken_by_user(root_context=self.course_id, timestamp=now, max_timestamp=max_time)}
+					get_assignments_taken_by_user(root_context=self.course_record, timestamp=now, max_timestamp=max_time)}
 
 		assert_that(user_map, has_length(2))
 		assert_that(user_map, has_entry(user.username, 2))
