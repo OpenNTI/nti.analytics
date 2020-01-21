@@ -40,7 +40,7 @@ class TestCourseResources(AnalyticsTestBase):
 		self.context_path= [ 'dashboard' ]
 
 	def test_resource_view(self):
-		results = db_views.get_user_resource_views( test_user_ds_id, self.course_id )
+		results = db_views.get_user_resource_views(test_user_ds_id, self.course_id)
 		results = [x for x in results]
 		assert_that( results, has_length( 0 ) )
 		results = self.session.query( ResourceViews ).all()
@@ -49,9 +49,9 @@ class TestCourseResources(AnalyticsTestBase):
 		resource_val = 'ntiid:course_resource'
 		time_length = 30
 		event_time = datetime.now()
-		db_views.create_course_resource_view( test_user_ds_id,
+		db_views.create_course_resource_view(self.db_user,
 											test_session_id, event_time,
-											self.course_id, self.context_path,
+											self.course_record, self.context_path,
 											resource_val, time_length )
 		results = self.session.query(ResourceViews).all()
 		assert_that( results, has_length( 1 ) )
@@ -65,20 +65,20 @@ class TestCourseResources(AnalyticsTestBase):
 		assert_that( resource_view.resource_id, is_( self.resource_id ) )
 		assert_that( resource_view.time_length, is_( time_length ) )
 
-		results = db_views.get_user_resource_views( test_user_ds_id, self.course_id )
+		results = db_views.get_user_resource_views( test_user_ds_id, self.course_record )
 		results = [x for x in results]
 		assert_that( results, has_length( 1 ) )
 
 		resource_view = results[0]
 		assert_that( resource_view.user, is_( test_user_ds_id ) )
-		assert_that( resource_view.RootContext, is_( self.course_id ))
+		assert_that( resource_view.RootContext, is_( self.course_record ))
 		assert_that( resource_view.ResourceId, is_( resource_val ))
 
 		# Idempotent check; our time_length can be updated
 		new_time_length = time_length + 1
-		db_views.create_course_resource_view( test_user_ds_id,
+		db_views.create_course_resource_view(self.db_user,
 											test_session_id, event_time,
-											self.course_id, self.context_path,
+											self.course_record, self.context_path,
 											resource_val, new_time_length )
 
 		results = self.session.query(ResourceViews).all()
@@ -97,9 +97,9 @@ class TestCourseResources(AnalyticsTestBase):
 
 		resource_val = 'ntiid:course_resource'
 		time_length = 30
-		db_views.create_course_resource_view( test_user_ds_id,
+		db_views.create_course_resource_view(self.db_user,
 											test_session_id, t0,
-											self.course_id, self.context_path,
+											self.course_record, self.context_path,
 											resource_val, time_length )
 		results = self.session.query( Resources ).all()
 		assert_that( results, has_length( 1 ) )
@@ -109,23 +109,23 @@ class TestCourseResources(AnalyticsTestBase):
 		assert_that( resource_record.resource_ds_id, is_( resource_val ) )
 
 		# Now another insert does not change our Resources table
-		db_views.create_course_resource_view( test_user_ds_id,
+		db_views.create_course_resource_view(self.db_user,
 											test_session_id, t1,
-											self.course_id, self.context_path,
+											self.course_record, self.context_path,
 											resource_val, time_length )
 		results = self.session.query( Resources ).all()
 		assert_that( results, has_length( 1 ) )
 
 		# Now we add a new resource id
-		db_views.create_course_resource_view( test_user_ds_id,
+		db_views.create_course_resource_view(self.db_user,
 											test_session_id, t0,
-											self.course_id, self.context_path,
+											self.course_record, self.context_path,
 											'ntiid:course_resource2', time_length )
 		results = self.session.query( Resources ).all()
 		assert_that( results, has_length( 2 ) )
 
 	def test_video_view(self):
-		results = db_views.get_user_video_views( test_user_ds_id, self.course_id )
+		results = db_views.get_user_video_views( test_user_ds_id, self.course_record )
 		results = [x for x in results]
 		assert_that( results, has_length( 0 ) )
 		results = self.session.query( VideoEvents ).all()
@@ -142,9 +142,9 @@ class TestCourseResources(AnalyticsTestBase):
 		play_speed = 2
 		player_configuration = u'inline'
 		event_time = datetime.now()
-		db_views.create_video_event( test_user_ds_id,
+		db_views.create_video_event(self.db_user,
 									test_session_id, event_time,
-									self.course_id, self.context_path,
+									self.course_record, self.context_path,
 									resource_val, time_length, max_time_length,
 									video_event_type, video_start_time,
 									video_end_time,  with_transcript, play_speed, player_configuration )
@@ -166,13 +166,13 @@ class TestCourseResources(AnalyticsTestBase):
 		assert_that( resource_view.play_speed, is_( str( play_speed )) )
 		assert_that( resource_view.player_configuration, is_( str('inline')) )
 
-		results = db_views.get_user_video_views( test_user_ds_id, self.course_id )
+		results = db_views.get_user_video_views( test_user_ds_id, self.course_record )
 		results = [x for x in results]
 		assert_that( results, has_length( 1 ) )
 
 		resource_view = results[0]
 		assert_that( resource_view.user, is_( test_user_ds_id ) )
-		assert_that( resource_view.RootContext, is_( self.course_id ))
+		assert_that( resource_view.RootContext, is_( self.course_record ))
 		assert_that( resource_view.ResourceId, is_( resource_val ))
 		assert_that( resource_view.VideoStartTime, is_( video_start_time ))
 		assert_that( resource_view.VideoEndTime, is_( video_end_time ))
@@ -183,9 +183,9 @@ class TestCourseResources(AnalyticsTestBase):
 		# Idempotent check; fields can be updated.
 		new_time_length = time_length + 1
 		new_video_end_time = video_end_time + 1
-		db_views.create_video_event( test_user_ds_id,
+		db_views.create_video_event(self.db_user,
 									test_session_id, event_time,
-									self.course_id, self.context_path,
+									self.course_record, self.context_path,
 									resource_val, new_time_length, max_time_length,
 									video_event_type, video_start_time,
 									new_video_end_time,  with_transcript, None, None )
@@ -203,7 +203,7 @@ class TestCourseResources(AnalyticsTestBase):
 		"""
 		Validate video start events (with missing data) can be entered.
 		"""
-		results = db_views.get_user_video_views( test_user_ds_id, self.course_id )
+		results = db_views.get_user_video_views( test_user_ds_id, self.course_record )
 		results = [x for x in results]
 		assert_that( results, has_length( 0 ) )
 		results = self.session.query( VideoEvents ).all()
@@ -215,9 +215,9 @@ class TestCourseResources(AnalyticsTestBase):
 		video_event_type = 'WATCH'
 		with_transcript = True
 		event_time = datetime.now()
-		db_views.create_video_event( test_user_ds_id,
+		db_views.create_video_event(self.db_user,
 									test_session_id, event_time,
-									self.course_id, self.context_path,
+									self.course_record, self.context_path,
 									resource_val, time_length, max_time_length,
 									video_event_type, video_start_time,
 									video_end_time,  with_transcript, None, None )
@@ -245,10 +245,10 @@ class TestCourseResources(AnalyticsTestBase):
 		event_time = video_start_time = datetime.now()
 		old_play_speed = 1
 		new_play_speed = 2
-		db_views.create_play_speed_event( test_user_ds_id,
+		db_views.create_play_speed_event(self.db_user,
 										test_session_id,
 										event_time,
-										self.course_id,
+										self.course_record,
 										resource_val,
 										video_time,
 										old_play_speed,
@@ -271,12 +271,12 @@ class TestCourseResources(AnalyticsTestBase):
 
 		# Now our video watch event, with same timestamp
 		# updates our play_speed record with our view id.
-		db_views.create_video_event( test_user_ds_id,
+		db_views.create_video_event(self.db_user,
 									test_session_id, event_time,
-									self.course_id, self.context_path,
+									self.course_record, self.context_path,
 									resource_val, time_length, max_time_length,
 									video_event_type, video_start_time,
-									video_end_time,  with_transcript, None, None )
+									video_end_time,  with_transcript, None, None)
 
 		results = self.session.query(VideoEvents).all()
 		assert_that( results, has_length( 1 ) )
@@ -285,20 +285,20 @@ class TestCourseResources(AnalyticsTestBase):
 		assert_that( play_speed.video_view_id, is_( 1 ) )
 
 		# Now another play speed event, contains the correct view id.
-		db_views.create_play_speed_event( test_user_ds_id,
+		db_views.create_play_speed_event(self.db_user,
 										test_session_id,
 										event_time,
-										self.course_id,
+										self.course_record,
 										resource_val,
 										video_time + 1,
 										'2x',
 										'4x' )
-
+		self.session.flush()
 		results = self.session.query(VideoPlaySpeedEvents).all()
 		assert_that( results, has_length( 2 ) )
 
 		results = [x.video_view_id for x in results]
-		assert_that( results, contains( 1, 1 ) )
+		assert_that(results, contains(1, 1))
 
 
 	def test_context_path(self):

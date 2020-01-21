@@ -124,7 +124,9 @@ def create_play_speed_event(user, nti_session, timestamp, root_context, resource
 		return
 
 	root_context, entity_root_context = get_root_context_records(root_context)
-	video_record = _video_view_exists(db, user.user_id, vid, timestamp, 'WATCH')
+	video_record = _video_view_exists(db, user.user_id,
+									  resource_record.resource_id,
+									  timestamp, 'WATCH')
 	video_view_id = video_record.video_view_id if video_record else None
 
 	new_object = VideoPlaySpeedEvents(session_id=sid,
@@ -141,10 +143,10 @@ def create_play_speed_event(user, nti_session, timestamp, root_context, resource
 
 
 def _get_video_play_speed( db, user_id, resource_id, timestamp ):
-	return db.session.query( VideoPlaySpeedEvents ).filter(
+	return db.session.query(VideoPlaySpeedEvents).filter(
 							VideoPlaySpeedEvents.user_id == user_id,
 							VideoPlaySpeedEvents.resource_id == resource_id,
-							VideoPlaySpeedEvents.timestamp == timestamp ).first()
+							VideoPlaySpeedEvents.timestamp == timestamp).first()
 
 
 def create_video_event(	user,
@@ -211,7 +213,9 @@ def create_video_event(	user,
 	db.session.add(new_object)
 
 	# Update our referenced field, if necessary.
-	video_play_speed = _get_video_play_speed(db, user_record.user_id, vid, timestamp)
+	video_play_speed = _get_video_play_speed(db, user_record.user_id,
+											 resource_record.resource_id,
+											 timestamp)
 	if video_play_speed:
 		video_play_speed.video_view_id = new_object.video_view_id
 
