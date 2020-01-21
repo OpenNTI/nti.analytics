@@ -61,7 +61,6 @@ from nti.analytics.database.assessments import SelfAssessmentDetails
 
 from nti.contenttypes.courses.courses import CourseInstance
 
-
 from nti.analytics.database.root_context import get_root_context_id
 
 from nti.dataserver.interfaces import IUser

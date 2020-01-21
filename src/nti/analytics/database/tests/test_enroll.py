@@ -40,9 +40,9 @@ class TestCourseViews(AnalyticsTestBase):
 		time_length = 30
 		db_enrollments.create_course_catalog_view( test_user_ds_id, test_session_id, datetime.now(),
 													context_path,
-													self.course_id, time_length )
+													self.course_record, time_length )
 
-		results = self.session.query( CourseCatalogViews ).all()
+		results = self.session.query(CourseCatalogViews).all()
 		assert_that( results, has_length( 1 ) )
 
 		catalog_view = self.session.query( CourseCatalogViews ).one()
@@ -64,11 +64,11 @@ class TestCourseViews(AnalyticsTestBase):
 
 		for_credit = 'for_credit'
 		db_enrollments.create_course_enrollment( test_user_ds_id, test_session_id,
-												datetime.now(), self.course_id, for_credit )
+												datetime.now(), self.course_record, for_credit )
 
 		results = self.session.query( CourseEnrollments ).all()
 		assert_that( results, has_length( 1 ) )
-		results = db_enrollments.get_enrollments_for_course( self.course_id )
+		results = db_enrollments.get_enrollments_for_course(self.course_record)
 		assert_that( results, has_length( 1 ) )
 
 		enrollment = self.session.query( CourseEnrollments ).one()
@@ -87,22 +87,22 @@ class TestCourseViews(AnalyticsTestBase):
 
 		# Another enrollment
 		db_enrollments.create_course_enrollment( test_user_ds_id + 1, test_session_id,
-												datetime.now(), self.course_id, for_credit )
+												datetime.now(), self.course_record, for_credit )
 
 		results = self.session.query( CourseEnrollments ).all()
 		assert_that( results, has_length( 2 ) )
-		results = db_enrollments.get_enrollments_for_course( self.course_id )
+		results = db_enrollments.get_enrollments_for_course( self.course_record )
 		assert_that( results, has_length( 2 ) )
 
 		results = self.session.query( EnrollmentTypes ).all()
 		assert_that( results, has_length( 1 ) )
 
 		# Drop
-		db_enrollments.create_course_drop( test_user_ds_id, test_session_id, datetime.now(), self.course_id )
+		db_enrollments.create_course_drop( test_user_ds_id, test_session_id, datetime.now(), self.course_record )
 
 		results = self.session.query( CourseEnrollments ).all()
 		assert_that( results, has_length( 1 ) )
-		results = db_enrollments.get_enrollments_for_course( self.course_id )
+		results = db_enrollments.get_enrollments_for_course( self.course_record )
 		assert_that( results, has_length( 1 ) )
 
 		results = self.session.query( CourseDrops ).all()
@@ -120,13 +120,13 @@ class TestCourseViews(AnalyticsTestBase):
 		for_credit = 'for_credit'
 		event_time = datetime.now()
 		db_enrollments.create_course_enrollment( test_user_ds_id, test_session_id,
-												event_time, self.course_id, for_credit )
+												event_time, self.course_record, for_credit )
 
 		results = self.session.query( CourseEnrollments ).all()
 		assert_that( results, has_length( 1 ) )
 
 		db_enrollments.create_course_enrollment( test_user_ds_id, test_session_id,
-												event_time, self.course_id, for_credit )
+												event_time, self.course_record, for_credit )
 
 		results = self.session.query( CourseEnrollments ).all()
 		assert_that( results, has_length( 1 ) )
@@ -139,13 +139,13 @@ class TestCourseViews(AnalyticsTestBase):
 		event_time = datetime.now()
 		time_length = 30
 		db_enrollments.create_course_catalog_view( test_user_ds_id, test_session_id, event_time,
-													context_path, self.course_id, time_length )
+													context_path, self.course_record, time_length )
 
 		results = self.session.query( CourseCatalogViews ).all()
 		assert_that( results, has_length( 1 ) )
 
 		db_enrollments.create_course_catalog_view( test_user_ds_id, test_session_id, event_time,
-													context_path, self.course_id, time_length )
+													context_path, self.course_record, time_length )
 
 		results = self.session.query( CourseCatalogViews ).all()
 		assert_that( results, has_length( 1 ) )

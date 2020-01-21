@@ -41,6 +41,8 @@ from nti.analytics_database.interfaces import IAnalyticsRootContextIdentifier
 
 from nti.analytics_database.database import AnalyticsDB
 
+from nti.analytics.database.root_context import _create_course
+
 from nti.analytics.database import users as db_users
 from nti.analytics.database import sessions as db_sessions
 from nti.analytics.database import root_context as db_courses
@@ -174,7 +176,7 @@ class AnalyticsTestBase(unittest.TestCase):
         db_sessions.create_session(test_user_ds_id, user_agent,
                                    time.time(), ip_addr)
         self.course_id = 1
-        self.course_record = db_courses.get_root_context_record(self.db, self.course_id, create=True)
+        self.course_record = _create_course(self.db, object(), self.course_id)
 
     def tearDown(self):
         component.getGlobalSiteManager().unregisterUtility(self.db)
