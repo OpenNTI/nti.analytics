@@ -34,9 +34,9 @@ def _add_mime_type_record( mime_type, mime_dict, db, factory ):
 	if mime_type is not None:
 		record = mime_dict.get( mime_type )
 		if record is None:
-			mime_type_id = get_mime_type_id(db, mime_type)
-			record = factory( file_mime_type_id=mime_type_id,
-					 		  count=0 )
+			mime_type_record = get_mime_type_record(db, mime_type)
+			record = factory( count=0 )
+			record._mime_type = mime_type_record
 			mime_dict[mime_type] = record
 		record.count += 1
 

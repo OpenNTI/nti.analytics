@@ -241,9 +241,9 @@ class TestTopics(NTIAnalyticsTestCase):
 
 		# View topic
 		time_length = 30
-		db_boards.create_topic_view(test_user_ds_id,
+		db_boards.create_topic_view(self.db_user,
 									test_session_id, datetime.now(),
-									self.course_id, context_path, my_topic,
+									self.course_record, context_path, my_topic,
 									time_length)
 
 		results = self.session.query( TopicsViewed ).all()
@@ -285,12 +285,12 @@ class TestTopics(NTIAnalyticsTestCase):
 		self.forum = self._get_forum( )
 		my_topic = _get_topic( test_user_ds_id, self.forum )
 		# Create topic
-		db_boards.create_topic( test_user_ds_id, test_session_id, my_topic )
+		db_boards.create_topic( self.db_user, test_session_id, my_topic )
 
 		results = self.session.query( TopicsCreated ).all()
 		assert_that( results, has_length( 1 ) )
 
-		db_boards.create_topic( test_user_ds_id, test_session_id, my_topic )
+		db_boards.create_topic( self.db_user, test_session_id, my_topic )
 
 		results = self.session.query( TopicsCreated ).all()
 		assert_that( results, has_length( 1 ) )
@@ -304,22 +304,22 @@ class TestTopics(NTIAnalyticsTestCase):
 		self.forum = self._get_forum()
 		my_topic = _get_topic( test_user_ds_id, self.forum )
 		# Create topic
-		db_boards.create_topic( test_user_ds_id, test_session_id, my_topic )
+		db_boards.create_topic( self.db_user, test_session_id, my_topic )
 
 		event_time = datetime.now()
 		time_length = 30
 		new_time_length = time_length + 1
-		db_boards.create_topic_view( test_user_ds_id,
+		db_boards.create_topic_view( self.db_user,
 										test_session_id, event_time,
-										self.course_id, context_path, my_topic,
+										self.course_record, context_path, my_topic,
 										time_length )
 
 		results = self.session.query( TopicsViewed ).all()
 		assert_that( results, has_length( 1 ) )
 
-		db_boards.create_topic_view( test_user_ds_id,
+		db_boards.create_topic_view( self.db_user,
 										test_session_id, event_time,
-										self.course_id, context_path, my_topic,
+										self.course_record, context_path, my_topic,
 										new_time_length )
 
 		results = self.session.query( TopicsViewed ).all()
@@ -337,7 +337,7 @@ class TestTopics(NTIAnalyticsTestCase):
 		self.forum = self._get_forum( )
 		my_topic = _get_topic( test_user_ds_id, self.forum )
 		# Create topic
-		topic_record = db_boards.create_topic( test_user_ds_id, test_session_id, my_topic )
+		topic_record = db_boards.create_topic( self.db_user, test_session_id, my_topic )
 
 		delta = 1
 		new_user_ds_id = 111111

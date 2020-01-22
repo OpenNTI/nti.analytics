@@ -287,7 +287,6 @@ def _add_note_event( event, nti_session=None ):
 	user = get_entity( event.user )
 	root_context = _get_root_context( event )
 	note = find_object_with_ntiid( event.note_id )
-
 	db_resource_tags.create_note_view(
 								user,
 								nti_session,
