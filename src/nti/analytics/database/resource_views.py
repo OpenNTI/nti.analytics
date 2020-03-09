@@ -178,7 +178,7 @@ def create_video_event(	user,
 		and video_start_time is not None \
 		and video_end_time is not None:
 		# The client may not provide this
-		time_length = abs( video_end_time - video_start_time )
+		time_length = abs(video_end_time - video_start_time)
 
 	if existing_record is not None:
 		if should_update_event(existing_record, time_length):

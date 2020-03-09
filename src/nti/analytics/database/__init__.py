@@ -40,7 +40,8 @@ def should_update_event(old_record, new_time_length):
     event should be updated based on the new time_length given. This
     allows clients to heartbeat update the view event.
     """
-    # We want to update if our new time_length is greater than the old,
-    # or if our old time_length is none.
+    # We want to update if our new time_length is greater than or
+    # equal to the old (to update if heartbeat matches) or if our
+    # old time_length is none.
     return old_record.time_length is None \
-        or old_record.time_length < new_time_length
+        or old_record.time_length <= new_time_length
