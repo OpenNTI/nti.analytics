@@ -201,7 +201,7 @@ class TestResourceViews( NTIAnalyticsTestCase ):
 		_create_video_event( test_user_ds_id, video_ntiid, community )
 
 		# Empty
-		results = get_video_views_for_ntiid( video_ntiid + 'dne' )
+		results = get_video_views_for_ntiid( 'tag:nextthought.com,2011-10:dne' )
 		assert_that( results, has_length( 0 ))
 
 		results = get_video_views_for_ntiid( video_ntiid )
