@@ -127,7 +127,7 @@ def _get_user_ids_subquery(users):
 	"""
 	db = get_analytics_db()
 	result = db.session.query(Users.user_id).filter(
-					Users.usernames.in_([x.username for x in users]))
+					Users.username.in_([x.username for x in users]))
 	return result.subquery()
 
 
