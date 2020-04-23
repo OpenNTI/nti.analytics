@@ -26,6 +26,7 @@ from nti.analytics.database.locations import check_ip_location
 
 from nti.analytics.database.query_utils import get_filtered_records
 
+from nti.analytics_database.users import Users
 from nti.analytics.database.users import get_or_create_user
 
 logger = __import__('logging').getLogger(__name__)
@@ -120,8 +121,18 @@ def _resolve_session(row):
 	return row
 
 
+def _get_user_ids_subquery(users):
+	"""
+	Get user id subquery for a set of platform users.
+	"""
+	db = get_analytics_db()
+	result = db.session.query(Users.user_id).filter(
+					Users.usernames.in_([x.username for x in users]))
+	return result.subquery()
+
+
 def get_user_sessions(user, timestamp=None, max_timestamp=None,
-                      for_timestamp=None, query_builder=None):
+                      for_timestamp=None, query_builder=None, excluded_users=None):
 	"""
 	Fetch any sessions for a user started *after* the optionally given timestamp.
 	"""
@@ -136,13 +147,18 @@ def get_user_sessions(user, timestamp=None, max_timestamp=None,
 		filters.append(Sessions.start_time <= for_timestamp)
 		filters.append(Sessions.end_time >= for_timestamp)
 
+	if excluded_users:
+		user_id_subquery = _get_user_ids_subquery(excluded_users)
+		filters.append(Sessions.user_id.notin_(user_id_subquery))
+
 	results = get_filtered_records(user, Sessions,
 								   filters=filters,
 								   query_builder=query_builder)
 	return resolve_objects(_resolve_session, results)
 
 
-def get_recent_user_sessions(user, limit=None, not_after=None):
+def get_recent_user_sessions(user, limit=None, not_after=None,
+							 excluded_users=None):
 	def query_builder(query):
 		query = query.order_by(Sessions.session_id.desc())
 		if limit:
@@ -150,7 +166,8 @@ def get_recent_user_sessions(user, limit=None, not_after=None):
 		return query
 	return get_user_sessions(user,
 	                         max_timestamp=not_after,
-	                         query_builder=query_builder)
+	                         query_builder=query_builder,
+	                         excluded_users=excluded_users)
 
 
 FUZZY_START_DELTA = timedelta(hours=4)
