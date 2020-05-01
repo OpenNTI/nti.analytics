@@ -18,8 +18,6 @@ from nti.contenttypes.completion.progress import Progress
 
 from nti.schema.eqhash import EqHash
 
-from nti.schema.fieldproperty import createDirectFieldProperties
-
 logger = __import__('logging').getLogger(__name__)
 
 
@@ -27,13 +25,16 @@ logger = __import__('logging').getLogger(__name__)
         'HasProgress', 'LastModified', 'MostRecentEndTime')
 @interface.implementer(IVideoProgress)
 class VideoProgress(Progress):
-    createDirectFieldProperties(IVideoProgress)
 
     __external_can_create__ = False
 
     # Re-use the original class for BWC.
     __external_class_name__ = "Progress"
     mime_type = mimeType = 'application/vnd.nextthought.videoprogress'
+
+    def __init__(self, MostRecentEndTime=None, *args, **kwargs):
+        super(VideoProgress, self).__init__(*args, **kwargs)
+        self.MostRecentEndTime = MostRecentEndTime
 
 
 def _get_last_mod(last_mod):
