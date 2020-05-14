@@ -15,6 +15,10 @@ from hamcrest import none
 from hamcrest import has_length
 from hamcrest import assert_that
 
+from zope.securitypolicy.interfaces import IPrincipalRoleManager
+
+from nti.dataserver.authorization import ROLE_ADMIN
+
 from nti.dataserver.users import User
 
 from nti.dataserver.tests.mock_dataserver import WithMockDSTrans
@@ -186,3 +190,13 @@ class TestSessions( NTIAnalyticsTestCase ):
 		baseline += 1
 		stats = _active_session_count(_now=now)
 		assert_that(stats.count, is_(baseline))
+
+		def make_admin(admin_user):
+			ds_role_manager = IPrincipalRoleManager(self.ds.dataserver_folder)
+			ds_role_manager.assignRoleToPrincipal(ROLE_ADMIN.id, admin_user.username)
+
+		for new_admin_user in (user, user2, user3):
+			make_admin(new_admin_user)
+			baseline -= 1
+			stats = _active_session_count(_now=now)
+			assert_that(stats.count, is_(baseline))

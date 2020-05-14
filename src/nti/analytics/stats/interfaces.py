@@ -130,10 +130,10 @@ class IActiveSessionStats(ICountStats):
 
 class IActiveSessionStatsSource(IAnalyticsStatsSource):
     """
-    A utility for returning IActiveSessionStats object
+    A utility for returning IActiveSessionStats object.
     """
 
-    def __call__():
+    def __call__(include_admins=False):
         """
         A callable that returns an IActiveSessionStats object
         """
