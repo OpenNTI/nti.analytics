@@ -29,6 +29,8 @@ from nti.analytics.database.query_utils import get_filtered_records
 from nti.analytics_database.users import Users
 from nti.analytics.database.users import get_or_create_user
 
+from nti.app.users.utils import get_admins
+
 logger = __import__('logging').getLogger(__name__)
 
 
@@ -176,7 +178,8 @@ FUZZY_END_DELTA = timedelta(minutes=5)
 
 def get_active_session_count(fuzzy_start_delta=FUZZY_START_DELTA,
                              fuzzy_end_delta=FUZZY_END_DELTA,
-                             _now=None):
+                             _now=None,
+                             include_admins=False):
 	"""
 	Query sessions that have begun recently (based on fuzzy_start_delta) and
 	have not ended or have ended recently (fuzzy_end_delta). The heuristics
@@ -201,5 +204,13 @@ def get_active_session_count(fuzzy_start_delta=FUZZY_START_DELTA,
 	ended_recently_filter = (Sessions.end_time >= ended_after)
 
 	query = query.filter(or_(not_ended_filter, ended_recently_filter))
+	if not include_admins:
+		admin_users = get_admins()
+		if admin_users:
+			usernames = [x.username for x in admin_users]
+			admin_ids = db.session.query(Users.user_id).filter(Users.username.in_(usernames)).all()
+			if admin_ids:
+				admin_ids = [x[0] for x in admin_ids]
+				query = query.filter(Sessions.user_id.notin_(admin_ids))
 	return query.distinct().count()
 
