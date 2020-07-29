@@ -34,12 +34,15 @@ from nti.analytics.database.users import get_user_db_id
 from nti.analytics.database.users import get_or_create_user
 
 
-def _get_chat_id(db, chat_ds_id):
-	chat = db.session.query(ChatsInitiated).filter(
+def _get_chat_record(db, chat):
+	chat_ds_id = get_ds_id(chat)
+	result = db.session.query(ChatsInitiated).filter(
 							ChatsInitiated.chat_ds_id == chat_ds_id).first()
-	return chat and chat.chat_id
+	return result
 
-_chat_exists = _get_chat_id
+
+def _chat_exists(db, chat):
+	return _get_chat_record(db, chat) is not None
 
 
 def create_chat_initiated(user, nti_session, chat):
@@ -48,7 +51,7 @@ def create_chat_initiated(user, nti_session, chat):
 	sid = nti_session
 	chat_ds_id = get_ds_id(chat)
 
-	if _chat_exists(db, chat_ds_id):
+	if _chat_exists(db, chat):
 		logger.warn('Chat already exists (ds_id=%s) (owner=%s)', chat_ds_id, user)
 		return
 
@@ -65,13 +68,14 @@ def chat_joined(user, nti_session, timestamp, chat):
 	db = get_analytics_db()
 	user = get_or_create_user(user)
 	sid = nti_session
-	chat_ds_id = get_ds_id(chat)
-	chat_id = _get_chat_id(db, chat_ds_id)
+	chat = _get_chat_record(db, chat)
+	if chat is None:
+		return
 	timestamp = timestamp_type(timestamp)
 
 	new_object = ChatsJoined(session_id=sid,
-							 timestamp=timestamp,
-							 chat_id=chat_id)
+							 timestamp=timestamp)
+	new_object.chat = chat
 	new_object._user_record = user
 	db.session.add(new_object)
 
@@ -85,17 +89,18 @@ def _get_chat_members(db, chat_id):
 def update_chat(timestamp, chat, new_members):
 	db = get_analytics_db()
 	timestamp = timestamp_type(timestamp)
-	chat_ds_id = get_ds_id(chat)
-	chat_id = _get_chat_id(db, chat_ds_id)
+	chat = _get_chat_record(db, chat)
+	if chat is None:
+		return
 
-	old_members = _get_chat_members(db, chat_id)
+	old_members = _get_chat_members(db, chat.chat_id)
 	old_members = [x._user_record for x in old_members]
 	members_to_add, _ = _find_members(new_members, old_members)
 
 	for new_member in members_to_add:
 		new_object = ChatsJoined(session_id=None,
-								 timestamp=timestamp,
-								 chat_id=chat_id)
+								 timestamp=timestamp)
+		new_object.chat = chat
 		new_object._user_record = new_member
 		db.session.add(new_object)
 
@@ -136,7 +141,7 @@ def create_dynamic_friends_list(user, nti_session, dynamic_friends_list):
 
 
 # Note: with this and friends_list, we're leaving members in their
-# (now deleted) groups.  This could be useful (or we can remove
+# (now deleted) groups. This could be useful (or we can remove
 # them at a later date).
 def remove_dynamic_friends_list(timestamp, dfl_ds_id):
 	db = get_analytics_db()
