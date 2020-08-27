@@ -80,13 +80,14 @@ def _get_duration( submission ):
 	return int( time_length )
 
 
-def _get_response( user, question_part, response ):
+def _get_response(user, question_part, response, contextually_randomized=False):
 	"""
 	For a submission part, return the user-provided response.
 	"""
 	# Part should only be None for unit tests.
 	if 		question_part is not None \
-		and IQRandomizedPart.providedBy( question_part ) \
+		and (	contextually_randomized
+			 or IQRandomizedPart.providedBy(question_part)) \
 		and response is not None:
 		# XXX Need a migration for these in the db.
 
@@ -109,7 +110,7 @@ def _get_response( user, question_part, response ):
 		# I think, most importantly, we need to compare responses between users
 		# (which this will handle) and to know if the answer was correct.
 		# We may be fine as-is with json.
-		result = json.dumps( response )
+		result = json.dumps(response)
 	except TypeError:
 		logger.info('Submission response is not serializable (type=%s)',
 					type(response))
@@ -200,13 +201,9 @@ def create_self_assessment_taken(user, nti_session, timestamp, course, submissio
 			question_part = question.parts[idx] if question is not None else None
 
 			# Mark randomized if question set is a randomized parts container.
-			try:
-				if IRandomizedPartsContainer.providedBy( qset ):
-					interface.alsoProvides( question_part, IQRandomizedPart )
-				response = _get_response( user, question_part, part.submittedResponse )
-			finally:
-				if IRandomizedPartsContainer.providedBy( qset ):
-					interface.noLongerProvides(question_part, IQRandomizedPart)
+			contextually_randomized = IRandomizedPartsContainer.providedBy(qset)
+			response = _get_response(user, question_part, part.submittedResponse,
+									 contextually_randomized=contextually_randomized)
 
 			grade_details = SelfAssessmentDetails(session_id=sid,
 												  timestamp=timestamp,
