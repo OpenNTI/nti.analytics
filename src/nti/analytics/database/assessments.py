@@ -303,14 +303,9 @@ def create_assignment_taken( user, nti_session, timestamp, course, submission ):
 				logger.info( 'Getting response for (aid=%s) (user=%s) (q=%s) (idx=%s) (submission=%s)',
 							 assignment_id, user, question_id, idx, submission_id)
 
-				# Mark randomized if question set is a randomized parts container.
-				try:
-					if IRandomizedPartsContainer.providedBy( qset ):
-						interface.alsoProvides( question_part, IQRandomizedPart )
-					response = _get_response( user, question_part, response )
-				finally:
-					if IRandomizedPartsContainer.providedBy( qset ):
-						interface.noLongerProvides(question_part, IQRandomizedPart)
+				contextually_randomized = IRandomizedPartsContainer.providedBy(qset)
+				response = _get_response(user, question_part, response,
+										 contextually_randomized=contextually_randomized)
 				parts = AssignmentDetails( 	session_id=sid,
 											timestamp=timestamp,
 											assignment_taken_id=assignment_taken_id,
