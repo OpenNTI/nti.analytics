@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import print_function, unicode_literals, absolute_import, division
+from nti.analytics.database.users import get_or_create_user
 __docformat__ = "restructuredtext en"
 
 # disable: accessing protected members, too many methods
@@ -17,7 +18,8 @@ from nti.analytics.tests import NTIAnalyticsTestCase
 
 from nti.analytics.database import get_analytics_db
 
-from nti.analytics.database.resource_views import get_video_views_by_user, get_resource_views_by_user
+from nti.analytics.database.resource_views import get_video_views_by_user, get_resource_views_by_user,\
+	remove_video_data
 
 from nti.analytics_database.resource_views import VideoEvents, ResourceViews
 
@@ -67,6 +69,8 @@ class TestResourceViews(NTIAnalyticsTestCase):
 		user = User.create_user(username='new_user1', dataserver=self.ds)
 		user2 = User.create_user(username='new_user2', dataserver=self.ds)
 
+		user_record1 = get_or_create_user(user)
+		user_record2 = get_or_create_user(user2)
 		now = datetime.now()
 		time_length = 30
 		before_window = now - timedelta(seconds=time_length)
@@ -80,38 +84,38 @@ class TestResourceViews(NTIAnalyticsTestCase):
 
 		events = [
 			# Events included in user activity
-			video_event(user.username,
+			video_event(user_record1.user_id,
 						timestamp=now,
 						resource_id=resource.resource_id,
 						time_length=5,
 						video_event_type='WATCH'),
-			video_event(user.username,
+			video_event(user_record1.user_id,
 						timestamp=now,
 						resource_id=resource.resource_id,
 						time_length=5,
 						video_event_type='WATCH'),
-			video_event(user2.username,
+			video_event(user_record2.user_id,
 						timestamp=now,
 						resource_id=resource.resource_id,
 						time_length=5,
 						video_event_type='WATCH'),
 
 			# Excluded b/c time_length==0
-			video_event(user.username,
+			video_event(user_record1.user_id,
 						timestamp=now,
 						resource_id=resource.resource_id,
 						time_length=0,
 						video_event_type='WATCH'),
 
 			# Excluded b/c video_event_type != 'WATCH'
-			video_event(user.username,
+			video_event(user_record1.user_id,
 						timestamp=now,
 						resource_id=resource.resource_id,
 						time_length=0,
 						video_event_type='SKIP'),
 
 			# Excluded b/c timestamp is prior to `now`
-			video_event(user.username,
+			video_event(user_record1.user_id,
 						timestamp=before_window,
 						resource_id=resource.resource_id,
 						time_length=0,
@@ -129,8 +133,16 @@ class TestResourceViews(NTIAnalyticsTestCase):
 		user_map = {user_id: count for user_id, count in get_video_views_by_user(timestamp=now, max_timestamp=max_time)}
 
 		assert_that(user_map, has_length(2))
-		assert_that(user_map, has_entry('new_user1', 2))
-		assert_that(user_map, has_entry('new_user2', 1))
+		assert_that(user_map, has_entry(user_record1.user_id, 2))
+		assert_that(user_map, has_entry(user_record2.user_id, 1))
+
+		db.session.commit()
+		remove_video_data(user, resource.resource_ds_id)
+		db.session.flush()
+		user_map = {user_id: count for user_id, count in get_video_views_by_user(timestamp=now, max_timestamp=max_time)}
+
+		assert_that(user_map, has_length(1))
+		assert_that(user_map, has_entry(user_record2.user_id, 1))
 
 
 	@WithMockDSTrans

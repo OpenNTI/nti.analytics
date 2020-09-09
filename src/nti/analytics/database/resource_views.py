@@ -318,3 +318,40 @@ def get_video_views_by_user(root_context=None, **kwargs):
 									root_context=root_context,
 									filters=filters,
 									**kwargs)
+
+
+def remove_video_data(user, video):
+	"""
+	Remove the video data for a user and video. Useful for QA.
+	"""
+	db = get_analytics_db()
+	# Testing
+	resource_ds_id = getattr(video, 'ntiid', video)
+	resource_record = get_resource_record(db, resource_ds_id)
+	if resource_record is not None:
+		resource_id = resource_record.resource_id
+		user_record = get_or_create_user(user)
+		if user_record is not None:
+			user_id = user_record.user_id
+			db.session.query(VideoEvents).filter(
+							 VideoEvents.user_id == user_id,
+							 VideoEvents.resource_id == resource_id).delete()
+
+
+def remove_resource_data(user, resource):
+	"""
+	Remove the resource data for a user and reading. Useful for QA.
+	"""
+	db = get_analytics_db()
+	# Testing
+	resource_ds_id = getattr(resource, 'ntiid', resource)
+	resource_record = get_resource_record(db, resource_ds_id)
+	if resource_record is not None:
+		resource_id = resource_record.resource_id
+		user_record = get_or_create_user(user)
+		if user_record is not None:
+			user_id = user_record.user_id
+			db.session.query(ResourceViews).filter(
+							 ResourceViews.user_id == user_id,
+							 ResourceViews.resource_id == resource_id).delete()
+

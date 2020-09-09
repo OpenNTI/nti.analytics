@@ -80,6 +80,9 @@ from nti.ntiids.ntiids import find_object_with_ntiid
 
 logger = __import__('logging').getLogger(__name__)
 
+remove_video_data = db_resource_views.remove_video_data
+remove_resource_data = db_resource_views.remove_resource_data
+
 get_resource_views = db_resource_views.get_resource_views
 get_resource_views_by_user = db_resource_views.get_resource_views_by_user
 get_user_resource_views = db_resource_views.get_user_resource_views
