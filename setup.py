@@ -23,12 +23,12 @@ setup(
     keywords='pyramid preference',
     classifiers=[
         'Intended Audience :: Developers',
-		'Natural Language :: English',
-		'Operating System :: OS Independent',
-		'Programming Language :: Python :: 2',
-		'Programming Language :: Python :: 2.7',
-		'Programming Language :: Python :: Implementation :: CPython',
-		'Programming Language :: Python :: Implementation :: PyPy',
+        'Natural Language :: English',
+        'Operating System :: OS Independent',
+        'Programming Language :: Python :: 2',
+        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: Implementation :: CPython',
+        'Programming Language :: Python :: Implementation :: PyPy',
     ],
     packages=find_packages('src'),
     package_dir={'': 'src'},
@@ -37,15 +37,15 @@ setup(
         'setuptools',
         'alembic',
         'geopy',
-		'nti.analytics_database',
-		'nti.app.assessment',
-		'nti.app.products.courseware',
+        'nti.analytics_database',
+        'nti.app.assessment',
+        'nti.app.products.courseware',
         'nti.app.products.courseware_scorm',
-		'nti.app.products.courseware_ims',
-		'nti.app.products.gradebook',
-		'nti.asynchronous',
+        'nti.app.products.courseware_ims',
+        'nti.app.products.gradebook',
+        'nti.asynchronous',
         'nti.contenttypes.completion',
-		'nti.namedfile',
+        'nti.namedfile',
         'python-geoip',
         'python-geoip-geolite2',
         'sqlalchemy',
@@ -53,5 +53,11 @@ setup(
         'zope.deferredimport',
         'zope.deprecation',
     ],
+    extras_require={
+        'test': [
+            'fudge',
+            'nti.app.testing'
+        ]
+    },
     entry_points=entry_points
 )
