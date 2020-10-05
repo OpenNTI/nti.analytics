@@ -46,6 +46,8 @@ def _get_or_create_resource(db, resource_val, max_time_length):
 			found_resource.resource_display_name = display_name
 		if 		max_time_length \
 			and found_resource.max_time_length != max_time_length:
+			logger.debug('Updating resource max_time_length (old=%s) (new=%s)',
+						found_resource.max_time_length, max_time_length)
 			found_resource.max_time_length = max_time_length
 	return found_resource or _create_resource(db, resource_val, max_time_length)
 

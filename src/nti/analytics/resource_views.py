@@ -484,12 +484,13 @@ def _add_video_event( event, nti_session=None ):
 						event.with_transcript,
 						event.PlaySpeed,
 						event.player_configuration )
-	logger.debug( 	"Video event (user=%s) (root_context=%s) (resource=%s) (type=%s) (start=%s) (end=%s) (time_length=%s)",
+	logger.debug( 	"Video event (user=%s) (root_context=%s) (resource=%s) (type=%s) (start=%s) (end=%s) (time_length=%s) (max_duration=%s)",
 					user,
 					getattr( root_context, '__name__', root_context ),
 					resource_id,
 					event.event_type, event.video_start_time,
-					event.video_end_time, event.time_length )
+					event.video_end_time, event.time_length,
+					event.MaxDuration )
 
 	if event.event_type == 'WATCH':
 		clazz = VideoWatchRecordedEvent
