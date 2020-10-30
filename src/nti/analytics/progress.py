@@ -144,6 +144,8 @@ def _get_last_mod_progress(values, id_val, item, user, course):
     """
     For a collection of items, gather progress based on last modified
     timestamp.
+
+    Used in tests.
     """
     progress = None
     if values:
@@ -159,23 +161,3 @@ def _get_last_mod_progress(values, id_val, item, user, course):
                             HasProgress=True)
     return progress
 
-
-def get_progress_for_lti_launches(ntiid, launch_records, asset, user, course):
-    progress = progress = Progress(NTIID=ntiid,
-                                   MaxPossibleProgress=1,
-                                   HasProgress=False,
-                                   Item=asset,
-                                   User=user,
-                                   CompletionContext=course)
-
-    # Progress is 1 (max) if the asset has ever been launched
-    if len(launch_records) > 0:
-        launch_records = tuple(launch_records)
-        last_mod = max(x.timestamp for x in launch_records)
-        last_mod = _get_last_mod(last_mod)
-        progress.LastModified = last_mod
-        progress.AbsoluteProgress = 1
-        progress.HasProgress = True
-    else:
-        progress.AbsoluteProgress = 0
-    return progress
