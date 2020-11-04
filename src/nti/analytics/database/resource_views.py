@@ -164,11 +164,11 @@ def create_video_event(	user,
 	db = get_analytics_db()
 	user_record = get_or_create_user(user)
 	sid = nti_session
-	vid = get_ntiid_id( video_resource )
+	vid = get_ntiid_id(video_resource)
 	resource_record = get_resource_record(db, vid, create=True,
 										  max_time_length=max_time_length)
 
-	timestamp = timestamp_type( timestamp )
+	timestamp = timestamp_type(timestamp)
 
 	existing_record = _video_view_exists(db, user_record.user_id,
 										 resource_record.resource_id,
@@ -176,9 +176,10 @@ def create_video_event(	user,
 
 	if 		time_length is None \
 		and video_start_time is not None \
-		and video_end_time is not None:
+		and video_end_time is not None \
+		and video_start_time < video_end_time:
 		# The client may not provide this
-		time_length = abs(video_end_time - video_start_time)
+		time_length = video_end_time - video_start_time
 
 	if existing_record is not None:
 		if should_update_event(existing_record, time_length):
