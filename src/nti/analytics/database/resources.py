@@ -45,7 +45,9 @@ def _get_or_create_resource(db, resource_val, max_time_length):
 			and found_resource.resource_display_name != display_name:
 			found_resource.resource_display_name = display_name
 		if 		max_time_length \
-			and found_resource.max_time_length != max_time_length:
+			and (	found_resource.max_time_length is None \
+				 or abs(found_resource.max_time_length - max_time_length) > 4):
+			# To reduce churn, only update this if it changes considerably.
 			logger.debug('Updating resource max_time_length (%s) (old=%s) (new=%s)',
 						resource_val, found_resource.max_time_length, max_time_length)
 			found_resource.max_time_length = max_time_length
