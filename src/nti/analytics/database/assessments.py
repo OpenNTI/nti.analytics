@@ -300,7 +300,7 @@ def create_assignment_taken( user, nti_session, timestamp, course, submission ):
 			for idx, response in enumerate( question_submission.parts ):
 				# Serialize our response
 				question_part = question.parts[idx] if question is not None else None
-				logger.info( 'Getting response for (aid=%s) (user=%s) (q=%s) (idx=%s) (submission=%s)',
+				logger.debug('Getting response for (aid=%s) (user=%s) (q=%s) (idx=%s) (submission=%s)',
 							 assignment_id, user, question_id, idx, submission_id)
 
 				contextually_randomized = IRandomizedPartsContainer.providedBy(qset)
