@@ -6,17 +6,22 @@ Directives to be used in ZCML
 $Id$
 """
 from __future__ import print_function, unicode_literals, absolute_import, division
-__docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
 from zope import component
 from zope import interface
+
 from zope.component.zcml import utility
 
 from nti.asynchronous.interfaces import IQueue
 from nti.asynchronous.interfaces import IRedisQueue
+
 from nti.asynchronous.redis_queue import RedisQueue
+
+from nti.asynchronous.scheduled import ImmediateQueueRunner
+from nti.asynchronous.scheduled import NonRaisingImmediateQueueRunner
+
 from nti.asynchronous import get_job_queue as async_queue
 
 from nti.dataserver.interfaces import IRedisClient
@@ -25,19 +30,29 @@ from . import QUEUE_NAMES
 
 from .interfaces import IAnalyticsQueueFactory
 
-class ImmediateQueueRunner(object):
+
+@interface.implementer(IAnalyticsQueueFactory)
+class _TestImmediateQueueFactory(object):
 	"""
-	A queue that immediately runs the given job. This is generally
-	desired for test or dev mode.
+	Used for inlining jobs during tests. These tests may fail for various
+	test ad-hoc reasons. This job runner will swallow such exceptions.
+
+	This should not be used in any live environment.
 	"""
-	def put(self, job):
-		job()
+
+	def get_queue(self, name):
+		return NonRaisingImmediateQueueRunner()
+
 
 @interface.implementer(IAnalyticsQueueFactory)
 class _ImmediateQueueFactory(object):
+	"""
+	Used for inlining jobs in live environments.
+	"""
 
-	def get_queue( self, name ):
+	def get_queue(self, name):
 		return ImmediateQueueRunner()
+
 
 @interface.implementer(IAnalyticsQueueFactory)
 class _AbstractProcessingQueueFactory(object):
@@ -68,6 +83,11 @@ class _AnalyticsRedisProcessingQueueFactory(_AbstractProcessingQueueFactory):
 def registerImmediateProcessingQueue(_context):
 	logger.info( "Registering immediate analytics processing queue" )
 	factory = _ImmediateQueueFactory()
+	utility( _context, provides=IAnalyticsQueueFactory, component=factory)
+
+def registerTestImmediateProcessingQueue(_context):
+	logger.info( "Registering test immediate analytics processing queue" )
+	factory = _TestImmediateQueueFactory()
 	utility( _context, provides=IAnalyticsQueueFactory, component=factory)
 
 def registerProcessingQueue(_context):

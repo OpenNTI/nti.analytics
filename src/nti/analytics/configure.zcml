@@ -230,7 +230,7 @@
 		</configure>
 
 		<configure zcml:condition="have testmode">
-			<ana:registerImmediateProcessingQueue />
+			<ana:registerTestImmediateProcessingQueue />
 		</configure>
 
 	</configure>
