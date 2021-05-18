@@ -93,6 +93,7 @@ get_video_views_by_user = db_resource_views.get_video_views_by_user
 get_video_views_for_ntiid = db_resource_views.get_video_views_for_ntiid
 get_resource_views_for_ntiid = db_resource_views.get_resource_views_for_ntiid
 get_user_video_views_for_ntiid = db_resource_views.get_user_video_views_for_ntiid
+get_watched_segments_for_ntiid = db_resource_views.get_watched_segments_for_ntiid
 
 
 def get_active_users_with_resource_views(**kwargs):

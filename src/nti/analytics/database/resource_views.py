@@ -8,6 +8,8 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
 
+from sqlalchemy import func
+
 from nti.analytics_database.resource_views import VideoEvents
 from nti.analytics_database.resource_views import ResourceViews
 from nti.analytics_database.resource_views import VideoPlaySpeedEvents
@@ -279,6 +281,38 @@ def get_video_views_for_ntiid( resource_ntiid, user=None, course=None, **kwargs 
 								  max_time_length=max_time_length)
 	return results
 
+
+def _segment_query_factory(session, table):
+	return session.query(VideoEvents.video_start_time,
+						 VideoEvents.video_end_time,
+						 func.count('*'))
+
+def get_watched_segments_for_ntiid( resource_ntiid, user=None, course=None, **kwargs ):
+	"""
+	Returns an iterable of triples indentifying the distinct segments of the video
+	that have been watched.
+
+	The return value is a list of tuples of the form (video_start_time, video_end_time, count)
+	"""
+	db = get_analytics_db()
+	resource_record = get_resource_record( db, resource_ntiid )
+	results = ()
+	if resource_record is not None:
+		resource_id = resource_record.resource_id
+		filters = ( VideoEvents.video_event_type == VIDEO_WATCH,
+					VideoEvents.resource_id == resource_id )
+		query = get_filtered_records(user,
+									 VideoEvents,
+									 course=course,
+									 filters=filters,
+									 query_factory=_segment_query_factory,
+									 yield_per=None, #give us the query so we can group_by
+									 **kwargs )
+		query = query.group_by(VideoEvents.video_start_time,
+							   VideoEvents.video_end_time)
+		results = query.all()
+		
+	return results
 
 def get_user_video_views_for_ntiid(user, resource_ntiid):
 	return get_video_views_for_ntiid(resource_ntiid, user=user)
