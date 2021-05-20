@@ -283,8 +283,20 @@ def get_video_views_for_ntiid( resource_ntiid, user=None, course=None, **kwargs 
 
 
 def _segment_query_factory(session, table):
-	return session.query(VideoEvents.video_start_time,
-						 VideoEvents.video_end_time,
+	# When a user starts watching a video we get an initial watch
+	# event with a video_start_time, but no duration, and no video_end_time.
+	# if they close the window or we don't get any updates for that event.
+	# In that case our segment is (start, start). When we start getting heartbeats
+	# we then have a duration (time_length) that is the delta between the current
+	# playhead location and the start time. In this case in active segment is
+	# (start, start + time_length). We deal with all that in this query, which is
+	# nastier than it would ideally be. We'd need to change how we send these events
+	# and clean data to simplify this. One such approach would be to make sure
+	# we always have a video_end_time
+	return session.query(VideoEvents.video_start_time.label('start'),
+						 func.coalesce(func.nullif(VideoEvents.video_end_time, 0),
+									   VideoEvents.video_start_time \
+									   + func.coalesce(VideoEvents.time_length, 0)).label('end'),
 						 func.count('*'))
 
 def get_watched_segments_for_ntiid( resource_ntiid, user=None, course=None, **kwargs ):
@@ -308,8 +320,7 @@ def get_watched_segments_for_ntiid( resource_ntiid, user=None, course=None, **kw
 									 query_factory=_segment_query_factory,
 									 yield_per=None, #give us the query so we can group_by
 									 **kwargs )
-		query = query.group_by(VideoEvents.video_start_time,
-							   VideoEvents.video_end_time)
+		query = query.group_by('start', 'end')
 		results = query.all()
 		
 	return results
