@@ -19,6 +19,7 @@ from hamcrest import none
 from hamcrest import not_none
 from hamcrest import assert_that
 from hamcrest import has_length
+from hamcrest import contains_inanyorder
 
 from nti.analytics.database import resource_views as db_views
 
@@ -30,6 +31,7 @@ from nti.analytics.resource_views import get_video_views_for_ntiid
 from nti.analytics.resource_views import get_video_progress_for_course
 from nti.analytics.resource_views import get_user_video_views_for_ntiid
 from nti.analytics.resource_views import get_user_resource_views_for_ntiid
+from nti.analytics.resource_views import get_watched_segments_for_ntiid
 
 from nti.analytics.tests import test_session_id
 from nti.analytics.tests import AnalyticsTestBase
@@ -50,11 +52,11 @@ from nti.testing.time import time_monotonically_increases
 test_user_ds_id = MockUser(u'78')
 
 
-def _create_video_event(user_id, resource_val, root_context=None, max_time_length=None):
+def _create_video_event(user_id, resource_val, root_context=None, max_time_length=None, start=30, end=60):
 	time_length = 30
 	video_event_type = 'WATCH'
-	video_start_time = 30
-	video_end_time = 60
+	video_start_time = start
+	video_end_time = end
 	root_context = root_context or 1
 	with_transcript = True
 	event_time = time.time()
@@ -220,3 +222,29 @@ class TestResourceViews( NTIAnalyticsTestCase ):
 
 		results = get_video_views_for_ntiid( video_ntiid )
 		assert_that( results, has_length( 2 ))
+
+	@WithMockDSTrans
+	@time_monotonically_increases
+	def test_video_segments(self):
+
+		video_ntiid = u'tag:video_id'
+		course = CourseInstance()
+
+		results = get_watched_segments_for_ntiid(video_ntiid)
+		assert_that(results, has_length(0))
+		
+		_create_video_event( test_user_ds_id, video_ntiid, course )
+		_create_video_event( test_user_ds_id, video_ntiid, course )
+
+		results = get_watched_segments_for_ntiid(video_ntiid)
+
+		assert_that(results, is_([(30, 60, 2)]))
+
+		_create_video_event( test_user_ds_id, video_ntiid, course, start=100, end=200)
+
+		results = get_watched_segments_for_ntiid(video_ntiid)
+
+		assert_that(results,
+					contains_inanyorder((30, 60, 2),
+										(100, 200, 1)))
+		
