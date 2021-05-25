@@ -25,10 +25,10 @@ from nti.analytics.database import resource_views as db_views
 
 from nti.analytics.progress import get_progress_for_video_views
 from nti.analytics.progress import get_progress_for_resource_views
+from nti.analytics.progress import get_video_progress_for_course
 
 from nti.analytics.resource_views import get_video_views
 from nti.analytics.resource_views import get_video_views_for_ntiid
-from nti.analytics.resource_views import get_video_progress_for_course
 from nti.analytics.resource_views import get_user_video_views_for_ntiid
 from nti.analytics.resource_views import get_user_resource_views_for_ntiid
 from nti.analytics.resource_views import get_watched_segments_for_ntiid
@@ -52,20 +52,21 @@ from nti.testing.time import time_monotonically_increases
 test_user_ds_id = MockUser(u'78')
 
 
-def _create_video_event(user_id, resource_val, root_context=None, max_time_length=None, start=30, end=60):
-	time_length = 30
+def _create_video_event(user_id, resource_val, root_context=None, max_time_length=None, start=30, end=60, time_length=None, timestamp=None):
+	time_length = end-start if time_length is None else time_length
 	video_event_type = 'WATCH'
 	video_start_time = start
 	video_end_time = end
 	root_context = root_context or 1
 	with_transcript = True
-	event_time = time.time()
+	event_time = timestamp or time.time()
 	db_views.create_video_event(user_id,
 								test_session_id, event_time,
 								root_context, [ u'dashboard' ],
 								resource_val, time_length, max_time_length,
 								video_event_type, video_start_time,
 								video_end_time,  with_transcript, None, None )
+create_video_event = _create_video_event
 
 
 class TestResourceProgress(AnalyticsTestBase):
@@ -88,7 +89,7 @@ class TestResourceProgress(AnalyticsTestBase):
 	def test_progress(self):
 		resource_ntiid = u'tag:resource_id'
 		video_ntiid = u'tag:video_id'
-		user = MockUser(u'test_user')
+		user = test_user_ds_id
 		item = MockCompletableItem(u'ntiid')
 		context = MockCompletionContext()
 		events = get_user_resource_views_for_ntiid(test_user_ds_id, resource_ntiid)
@@ -102,23 +103,18 @@ class TestResourceProgress(AnalyticsTestBase):
 		assert_that( progress, not_none() )
 		assert_that( progress.HasProgress, is_( True ) )
 
-		events = get_user_video_views_for_ntiid(test_user_ds_id, video_ntiid)
-		progress = get_progress_for_video_views(video_ntiid, events, item, user, context)
+		progress = get_progress_for_video_views(video_ntiid, item, user, context)
 		assert_that( progress, none() )
 
 		# Video view
-		_create_video_event( test_user_ds_id, video_ntiid, max_time_length=60 )
+		_create_video_event( test_user_ds_id,
+							 video_ntiid,
+							 root_context=context,
+							 max_time_length=60 )
 
-		events = get_user_video_views_for_ntiid(test_user_ds_id, video_ntiid)
-		progress = get_progress_for_video_views(video_ntiid, events, item, user, context)
+		progress = get_progress_for_video_views(video_ntiid, item, user, context)
 		assert_that( progress, not_none() )
-		assert_that( progress.HasProgress, is_( True ) )
-
-		events = get_user_video_views_for_ntiid(test_user_ds_id, video_ntiid)
-		progress = get_progress_for_video_views(video_ntiid, events, item, user, context)
-		assert_that( progress, not_none() )
-		assert_that( progress.HasProgress, is_( True ) )
-		assert_that( progress.AbsoluteProgress, is_( 30 ) )
+		assert_that( progress.AbsoluteProgress, is_( 31 ) )
 		assert_that( progress.MaxPossibleProgress, is_( 60 ) )
 
 		# Dupe does not change anything
@@ -130,11 +126,10 @@ class TestResourceProgress(AnalyticsTestBase):
 		assert_that( progress, not_none() )
 		assert_that( progress.HasProgress, is_( True ) )
 
-		events = get_user_video_views_for_ntiid(test_user_ds_id, video_ntiid)
-		progress = get_progress_for_video_views(video_ntiid, events, item, user, context)
+		progress = get_progress_for_video_views(video_ntiid, item, user, context)
 		assert_that( progress, not_none() )
 		assert_that( progress.HasProgress, is_( True ) )
-		assert_that( progress.AbsoluteProgress, is_( 60 ) )
+		assert_that( progress.AbsoluteProgress, is_( 31 ) )
 		assert_that( progress.MaxPossibleProgress, is_( 60 ) )
 
 	@time_monotonically_increases

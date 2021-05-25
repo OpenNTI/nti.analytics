@@ -9,18 +9,28 @@ __docformat__ = "restructuredtext en"
 
 from datetime import datetime
 
+import time
+
 from hamcrest import is_
 from hamcrest import assert_that
 from hamcrest import none
 
 from unittest import TestCase
 
+from nti.analytics.tests import AnalyticsTestBase
+
+from nti.analytics.tests.test_resource_views import create_video_event
+
+from nti.testing.time import time_monotonically_increases
+
+from nti.analytics.progress import _compute_watched_seconds
 from nti.analytics.progress import _get_last_mod_progress
 from nti.analytics.progress import get_progress_for_video_views
 
 from nti.contenttypes.completion.tests.test_models import MockUser
 from nti.contenttypes.completion.tests.test_models import MockCompletableItem
 from nti.contenttypes.completion.tests.test_models import MockCompletionContext
+
 
 
 class MockDBRecord( object ):
@@ -35,7 +45,26 @@ class MockDBRecord( object ):
 		self.VideoEndTime = VideoEndTime
 
 
-class TestProgress( TestCase ):
+class TestProgress( AnalyticsTestBase ):
+
+	def test_compute_watched_seconds(self):
+		vid_length = 100
+		segments = [(0, 10), (0, 20), (15, 70), (15, 60), (20, 100)]
+
+		watched = _compute_watched_seconds(segments)
+		assert_that(watched, is_(101)) # 101 not 100 because inclusivity of both ends of the segments
+
+		segments = [(0, 100)]
+		watched = _compute_watched_seconds(segments)
+		assert_that(watched, is_(101)) # 101 not 100 because inclusivity of both ends of the segments
+
+		segments = [(20, 50)]
+		watched = _compute_watched_seconds(segments)
+		assert_that(watched, is_(31))
+
+		watched = _compute_watched_seconds([])
+		assert_that(watched, is_(0))
+		
 
 	def test_last_mod_progress(self):
 		user = MockUser(u'test_user')
@@ -66,39 +95,40 @@ class TestProgress( TestCase ):
 		assert_that( result.LastModified, is_(last_mod))
 		assert_that( result.NTIID, is_('test'))
 
+	@time_monotonically_increases
 	def test_video_progress(self):
 		user = MockUser(u'test_user')
 		ntiid = u'ntiid_video'
 		item = MockCompletableItem(ntiid)
 		context = MockCompletionContext()
 		# Non cases
-		result = get_progress_for_video_views(ntiid, [], item, user, context)
-		assert_that( result, none() )
-		result = get_progress_for_video_views(ntiid, None, item, user, context)
+		result = get_progress_for_video_views(ntiid, item, user, context)
 		assert_that( result, none() )
 
 		# Single
-		record = MockDBRecord( timestamp=1 )
-		last_mod = datetime.utcfromtimestamp(1)
-		records = (record,)
-		result = get_progress_for_video_views(ntiid, records, item, user, context)
+		timestamp = int(time.time())
+		create_video_event(user, ntiid, root_context=context, timestamp=timestamp)
+		result = get_progress_for_video_views(ntiid, item, user, context)
 		assert_that( result.NTIID, is_( ntiid ))
-		assert_that( result.AbsoluteProgress, is_( 0 ))
+		assert_that( result.AbsoluteProgress, is_( 31 ))
 		assert_that( result.HasProgress, is_( True ))
-		assert_that( result.LastModified, is_(last_mod))
+		assert_that( result.LastModified,
+					 is_(datetime.utcfromtimestamp(timestamp)))
 		assert_that( result.MaxPossibleProgress, none())
-		assert_that( result.MostRecentEndTime, none())
+		assert_that( result.MostRecentEndTime, 60)
 
 		# Multiple
-		record2 = MockDBRecord( timestamp=2, time_length=05, MaxDuration=30, VideoEndTime=7 )
-		record3 = MockDBRecord( timestamp=3, time_length=0, MaxDuration=None, VideoEndTime=27 )
-		record4 = MockDBRecord( timestamp=4, time_length=25, MaxDuration=30, VideoEndTime=17 )
-		records = (record, record2, record3, record4)
-		result = get_progress_for_video_views(ntiid, records, item, user, context)
+		create_video_event(user, ntiid, root_context=context, start=0, max_time_length=30, end=7, time_length=5)
+		create_video_event(user, ntiid, root_context=context, start=0, max_time_length=None, end=27, time_length=0)
+		timestamp = int(time.time())
+		create_video_event(user, ntiid, root_context=context,
+						   start=0, max_time_length=30, end=17,
+						   time_length=25, timestamp=timestamp)
+		result = get_progress_for_video_views(ntiid, item, user, context)
 		assert_that( result.NTIID, is_( ntiid ))
-		assert_that( result.AbsoluteProgress, is_( 30 ))
+		assert_that( result.AbsoluteProgress, is_( 30 )) # we clamp to max_time_length
 		assert_that( result.HasProgress, is_( True ))
 		assert_that(result.LastModified,
-					is_(datetime.utcfromtimestamp(4)))
+					is_(datetime.utcfromtimestamp(timestamp)))
 		assert_that( result.MaxPossibleProgress, is_( 30 ))
 		assert_that( result.MostRecentEndTime, is_( 17 ))
