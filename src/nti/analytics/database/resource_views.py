@@ -8,6 +8,8 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
 
+from six import string_types
+
 from sqlalchemy import func
 
 from nti.analytics_database.resource_views import VideoEvents
@@ -265,7 +267,9 @@ def get_user_resource_views_for_ntiid(user, resource_ntiid):
 def get_video_views_for_ntiid( resource_ntiid, user=None, course=None, **kwargs ):
 	results = ()
 	db = get_analytics_db()
-	resource_record = get_resource_record( db, resource_ntiid )
+	resource_record = resource_ntiid
+	if isinstance(resource_ntiid, string_types):
+		resource_record = get_resource_record( db, resource_ntiid )
 	if resource_record is not None:
 		resource_id = resource_record.resource_id
 		max_time_length = resource_record.max_time_length
@@ -307,7 +311,9 @@ def get_watched_segments_for_ntiid( resource_ntiid, user=None, course=None, **kw
 	The return value is a list of tuples of the form (video_start_time, video_end_time, count)
 	"""
 	db = get_analytics_db()
-	resource_record = get_resource_record( db, resource_ntiid )
+	resource_record = resource_ntiid
+	if isinstance(resource_ntiid, string_types):
+		resource_record = get_resource_record( db, resource_ntiid )
 	results = ()
 	if resource_record is not None:
 		resource_id = resource_record.resource_id

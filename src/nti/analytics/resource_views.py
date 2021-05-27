@@ -54,8 +54,6 @@ from nti.analytics.database import surveys as db_survey_views
 
 from nti.analytics.database.users import get_user
 
-from nti.analytics.progress import get_progress_for_video_views
-
 from nti.analytics.recorded import VideoSkipRecordedEvent
 from nti.analytics.recorded import BlogViewedRecordedEvent
 from nti.analytics.recorded import NoteViewedRecordedEvent
@@ -108,24 +106,6 @@ def get_active_users_with_video_views(**kwargs):
 		user = get_user(user_id)
 		if user:
 			yield user, count
-
-
-def get_video_progress_for_course(user, course):
-	"""
-	For a given user/course, return a collection of progress for all videos we have on record.
-	"""
-	resource_views = get_user_video_views(user, course)
-	view_dict = {}
-
-	for resource_view in resource_views:
-		view_dict.setdefault( resource_view.ResourceId, [] ).append( resource_view )
-
-	result = []
-	for ntiid, events in view_dict.items():
-		video = find_object_with_ntiid(ntiid)
-		progress = get_progress_for_video_views(ntiid, events, video, user, course)
-		result.append(progress)
-	return result
 
 
 def _get_course( event ):
