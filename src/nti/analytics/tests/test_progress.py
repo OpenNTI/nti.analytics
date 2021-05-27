@@ -48,22 +48,26 @@ class MockDBRecord( object ):
 class TestProgress( AnalyticsTestBase ):
 
 	def test_compute_watched_seconds(self):
-		vid_length = 100
-		segments = [(0, 10), (0, 20), (15, 70), (15, 60), (20, 100)]
 
-		watched = _compute_watched_seconds(segments)
-		assert_that(watched, is_(101)) # 101 not 100 because inclusivity of both ends of the segments
+		# No segments is 0 time watched
+		watched = _compute_watched_seconds([])
+		assert_that(watched, is_(0))
 
+		# Simple single segment
 		segments = [(0, 100)]
 		watched = _compute_watched_seconds(segments)
 		assert_that(watched, is_(101)) # 101 not 100 because inclusivity of both ends of the segments
-
+	
 		segments = [(20, 50)]
 		watched = _compute_watched_seconds(segments)
 		assert_that(watched, is_(31))
 
-		watched = _compute_watched_seconds([])
-		assert_that(watched, is_(0))
+		segments = [(0, 10), (20, 100)]
+		assert_that(_compute_watched_seconds(segments), is_(92))
+
+		segments = [(0, 10), (0, 20), (15, 70), (15, 60), (20, 100)]
+		watched = _compute_watched_seconds(segments)
+		assert_that(watched, is_(101)) # 101 not 100 because inclusivity of both ends of the segments
 		
 
 	def test_last_mod_progress(self):
