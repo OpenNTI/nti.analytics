@@ -343,6 +343,11 @@ def get_root_context_from_index( obj ):
 					getattr( obj, 'ntiid', None ))
 	obj = find_object_with_ntiid( ntiid )
 	if obj is not None:
+		# Course lineage?
+		course = find_interface(obj, ICourseInstance, strict=False)
+		if course is not None:
+			return result
+		
 		containers = list(catalog.get_containers( obj ))
 		containers.append(ntiid)
 
