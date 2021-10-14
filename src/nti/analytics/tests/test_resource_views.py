@@ -242,4 +242,16 @@ class TestResourceViews( NTIAnalyticsTestCase ):
 		assert_that(results,
 					contains_inanyorder((30, 60, 2),
 										(100, 200, 1)))
-		
+
+	@WithMockDSTrans
+	@time_monotonically_increases
+	def test_video_segments_ignores_bad_data(self):
+
+		video_ntiid = u'tag:video_id'
+		course = CourseInstance()
+
+		_create_video_event( test_user_ds_id, video_ntiid, course, start=100, end=200)
+		_create_video_event( test_user_ds_id, video_ntiid, course, start=10000, end=200)
+		results = get_watched_segments_for_ntiid(video_ntiid)
+
+		assert_that(results, is_([(100, 200, 1)]))

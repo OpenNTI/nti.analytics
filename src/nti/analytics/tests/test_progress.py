@@ -68,6 +68,10 @@ class TestProgress( AnalyticsTestBase ):
 		segments = [(0, 10), (0, 20), (15, 70), (15, 60), (20, 100)]
 		watched = _compute_watched_seconds(segments)
 		assert_that(watched, is_(101)) # 101 not 100 because inclusivity of both ends of the segments
+
+	def test_jacked_segments(self):
+		segments = [(0, 10), (20, 100), (80000, 100)]
+		assert_that(_compute_watched_seconds(segments), is_(92))
 		
 
 	def test_last_mod_progress(self):
