@@ -159,7 +159,13 @@ def _compute_watched_seconds(segments):
     but still slow (3.8ms for the same test case). Instead if we
     reduce the segments to a set of non overlapping (but equivalent)
     segments we can them simply sum the seconds covered by each
-    segment. This is the fastest approach given the same inputs (748 us).
+    segment. This is the fastest approach given the same inputs (748
+    us).
+
+    This implementation requires that segment start <= segment end,
+    which seems like an obvious and safe assumption given these are
+    based on watch events. Unfortunately we have some data where that
+    isn't the case.
     """
     # Special case the common case of no data
     if not segments:
@@ -173,10 +179,19 @@ def _compute_watched_seconds(segments):
 
     stack = []
     for segment in segments:
+
+        # Validate we don't have crap
+        if segment[0] > segment[1]:
+            # start > end; bad segment.
+            # TODO should this raise? We know we have junk data but that should be filtered
+            # out downstream now.
+            continue
+        
         top = stack[-1] if stack else None
         if top is None:
             stack.append(segment)
             continue
+        
         overlaps = segment[0] <= top[1] and top[0] <= segment[1]
         if not overlaps:
             stack.append(segment)

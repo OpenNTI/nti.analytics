@@ -11,6 +11,7 @@ from __future__ import absolute_import
 from six import string_types
 
 from sqlalchemy import func
+from sqlalchemy import or_
 
 from nti.analytics_database.resource_views import VideoEvents
 from nti.analytics_database.resource_views import ResourceViews
@@ -318,7 +319,16 @@ def get_watched_segments_for_ntiid( resource_ntiid, user=None, course=None, **kw
 	if resource_record is not None:
 		resource_id = resource_record.resource_id
 		filters = ( VideoEvents.video_event_type == VIDEO_WATCH,
-					VideoEvents.resource_id == resource_id )
+					VideoEvents.resource_id == resource_id,
+					# We have video watch events where the start > end, which seems nonsensical.
+					# The starts are large and look like at one point we might be sending start
+					# times in ms instead of seconds??? As a watched segment these don't make sense
+					# and cause problems upstream so strip them here. We have to be careful that
+					# we don't filter out the events where there is no end time. We want those
+					# TODO Should we migrate and actually remove them?
+					or_(func.nullif(VideoEvents.video_end_time, 0) == None,
+						VideoEvents.video_start_time <= VideoEvents.video_end_time)
+				   )
 		query = get_filtered_records(user,
 									 VideoEvents,
 									 course=course,
